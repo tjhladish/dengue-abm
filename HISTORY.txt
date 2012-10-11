@@ -1,0 +1,7 @@
+History of the dengue transmission model code 
+
+Version 1.0 - September 2012
+First release of the code and Bangphae data. This was used for our PLoS NTD paper ("Controlling dengue with vaccines in Thailand"). 
+The simulations were run on a 64-bit Ubuntu (v12.04) machine, and 
+compiled using gcc version 4.6.3 and linked to the GNU Scientific
+Library (GSL) version 1.15.
