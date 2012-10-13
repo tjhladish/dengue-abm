@@ -11,11 +11,11 @@
 #include <assert.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include "Parameters.h"
 #include "Person.h"
 #include "Mosquito.h"
 #include "Location.h"
 #include "Community.h"
-#include "Parameters.h"
 
 using namespace std;
 
@@ -23,7 +23,7 @@ const int VERSIONNUMBERMAJOR = 1;
 const int VERSIONNUMBERMINOR = 0;
 
 int main(int argc, char *argv[]) {
-    gsl_rng* rng = gsl_rng_alloc (gsl_rng_taus2);
+
 
     int randomseed = 5489;
     int nRunLength = 100;
@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    gsl_rng_set(rng, randomseed);
+    gsl_rng_set(RNG, randomseed);
 
     cerr << "population file = " << szPopulationFile << endl;
     cerr << "immunity file = " << szImmunityFile << endl;
@@ -350,10 +350,11 @@ int main(int argc, char *argv[]) {
         nInitialExposed[1]>0 ||
         nInitialExposed[2]>0 ||
     nInitialExposed[3]>0) {
+
         for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
             cerr << "Initial serotype " << serotype+1 << " exposed = " << nInitialExposed[serotype] << endl;
             for (int i=0; i<nInitialExposed[serotype]; i++)
-                community.infect(rng,gsl_rng_uniform_int(rng, community.getNumPerson()), (Serotype) serotype,0);
+                community.infect(gsl_rng_uniform_int(RNG, community.getNumPerson()), (Serotype) serotype,0);
         }
     } else if (nInitialInfected[0]>0 ||
         nInitialInfected[1]>0 ||
@@ -365,7 +366,7 @@ int main(int argc, char *argv[]) {
                                                                       
             // must infect nInitialInfected persons
             while (community.getNumInfected(0)<count+nInitialInfected[serotype]) {
-                community.infect(rng,gsl_rng_uniform_int(rng, community.getNumPerson()), (Serotype) serotype,0);
+                community.infect(gsl_rng_uniform_int(RNG, community.getNumPerson()), (Serotype) serotype,0);
             }
         }
     }
@@ -375,12 +376,12 @@ int main(int argc, char *argv[]) {
     }
 
     if (fPreVaccinateFraction>0.0)
-        community.vaccinate(rng,fPreVaccinateFraction);
+        community.vaccinate(fPreVaccinateFraction);
 
     if (nSizePrevaccinateAge>0) {
         for (int j=0; j<nSizePrevaccinateAge; j++)
             for (int k=nPrevaccinateAgeMin[j]; k<=nPrevaccinateAgeMax[j]; k++)
-                community.vaccinate(rng,fPrevaccinateAgeFraction[j],k);
+                community.vaccinate(fPrevaccinateAgeFraction[j],k);
     }
 
     for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
@@ -397,7 +398,7 @@ int main(int argc, char *argv[]) {
             int year = (int)(t/365);
             for (int i=0; i<nSizeVaccinate; i++) {
                 if (year==nVaccinateYear[i]) {
-                    community.vaccinate(rng,fVaccinateFraction[i],nVaccinateAge[i]);
+                    community.vaccinate(fVaccinateFraction[i],nVaccinateAge[i]);
                     cerr << "vaccinating " << fVaccinateFraction[i]*100 << "% of age " << nVaccinateAge[i] << endl;
                 }
             }
@@ -412,7 +413,7 @@ int main(int argc, char *argv[]) {
             int numperson = community.getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++)
                 for (int i=0; i<nDailyExposed[serotype]; i++)
-                    if (community.infect(rng,gsl_rng_uniform_int(rng, numperson),(Serotype) serotype,t))
+                    if (community.infect(gsl_rng_uniform_int(RNG, numperson),(Serotype) serotype,t))
                         count++;
         }
 
@@ -483,10 +484,10 @@ int main(int argc, char *argv[]) {
             peopleFile.close();
         }
 
-        community.tick(rng);
+        community.tick();
     }
 
-    gsl_rng_free(rng);
+    //gsl_rng_free(RNG);
 
     if (!bSecondaryTransmission) {
         // outputs

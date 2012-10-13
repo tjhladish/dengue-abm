@@ -7,6 +7,7 @@ MAKE     = make --no-print-directory
 SHELL    = /bin/sh
 CFLAGS		= -Wall -pedantic 
 OPTI            = -O3
+#OPTI            = -g
 LDFLAGS	= 
 INCLUDES	= 
 LIBS	= -lm -lgsl -lgslcblas
@@ -17,7 +18,7 @@ default: model
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o
 	$(CCLINKER) -o model Person.o Location.o Mosquito.o Community.o driver.o $(OBJS) $(LDFLAGS) $(LIBS)
 
-%.o: %.cpp Person.h Makefile
+%.o: %.cpp Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<
 
 zip: *.cpp *.h Makefile README LICENSE.txt HISTORY.txt *-bangphae.txt

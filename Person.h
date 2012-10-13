@@ -45,14 +45,14 @@ class Person
         int getInfectedByID(int infectionsago=0) { return _nInfectedByID[infectionsago]; }
         int getNumInfections() { return _nNumInfections; }
 
-        bool infect(gsl_rng *rng, int sourceid, Serotype serotype, int time, int sourceloc, double primarysymptomatic, double secondaryscaling, int maxinfectionparity);
+        bool infect(int sourceid, Serotype serotype, int time, int sourceloc, double primarysymptomatic, double secondaryscaling, int maxinfectionparity);
         bool isViremic(int time);
 
         void kill(int time);
         bool isDead() { return _bDead; }
         bool naturalDeath(int t);                                     // die of old age check?
 
-        static void generateRandomIDs(gsl_rng *rng, int num, int bound, int *ids);
+        static void generateRandomIDs(int num, int bound, int *ids);
 
         //  bool isCase();                // is detected as a case
         bool isInfected(int time);                                    // is currently infected
@@ -62,7 +62,7 @@ class Person
         }
         //  double getSusceptibility();   // 0=not susceptible, 1=max susceptibility
         //  double getInfectiousness();   // 0=not infectious
-        bool vaccinate(gsl_rng *rng);                                 // vaccinate this person
+        bool vaccinate();                                 // vaccinate this person
         static void setVES(double f) { _fVES[0] = _fVES[1] = _fVES[2] = _fVES[3] = f; }
         static void setVESs(double f1,double f2,double f3,double f4) { _fVES[0] = f1; _fVES[1] = f2; _fVES[2] = f3; _fVES[3] = f4; }
         static void setVEI(double f) { _fVEI = f; }

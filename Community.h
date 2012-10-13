@@ -22,14 +22,14 @@ class Community
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
         int getNumSusceptible(Serotype serotype);
-        void populate(gsl_rng *rng, Person **parray, int targetpop);
+        void populate(Person **parray, int targetpop);
         int getNumLocation() { return _nNumLocation; }
-        bool infect(gsl_rng *rng, int id, Serotype serotype, int day);
-        int addMosquito(gsl_rng *rng, Location *p, Serotype serotype, int nInfectedByID);
+        bool infect(int id, Serotype serotype, int day);
+        int addMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() {                                                // what day is it?
             return _nDay;
         }
-        void tick(gsl_rng *rng);                                      // simulate one day
+        void tick();                                      // simulate one day
         void setBetaPM(double f) { _fBetaPM = f; }
         void setBetaMP(double f) { _fBetaMP = f; }
         void setMosquitoMoveProbability(double f) { _fMosquitoMoveProb = f; }
@@ -43,7 +43,7 @@ class Community
         double getMosquitoMultiplier() { return _fMosquitoCapacityMultiplier; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
-        void vaccinate(gsl_rng *rng, double f, int age=-1);
+        void vaccinate(double f, int age=-1);
         void setVES(double f);
         void setVESs(double f1,double f2,double f3,double f4);
         void setVEI(double f);
@@ -108,7 +108,7 @@ class Community
 
         void expandExposedQueues();
         void expandMosquitoQueues();
-        void moveMosquito(Mosquito *m, gsl_rng *rng);
+        void moveMosquito(Mosquito *m);
         double _fDailyBitingPDF[STEPSPERDAY];                         // probability of biting at 3 different times of day (as defined in Location.h)
 };
 #endif

@@ -290,10 +290,10 @@ bool Community::loadLocations(string szLocs,string szNet) {
 
 
 // infect - infects person id
-bool Community::infect(gsl_rng *rng, int id, Serotype serotype, int day) {
+bool Community::infect(int id, Serotype serotype, int day) {
     for (int i=0; i<_nNumPerson; i++)
     if (_person[i].getID()==id) {
-        bool result =  _person[i].infect(rng, -1, serotype, day, 0,
+        bool result =  _person[i].infect(-1, serotype, day, 0,
             _fPrimarySymptomaticScaling[(int) serotype],
             _fSecondarySymptomaticScaling[(int) serotype],
             _nMaxInfectionParity);
@@ -308,20 +308,20 @@ bool Community::infect(gsl_rng *rng, int id, Serotype serotype, int day) {
 
 // vaccinate - vaccinate fraction f of the population
 // if age>=0, then vaccinate only those who are "age" years old
-void Community::vaccinate(gsl_rng *rng, double f, int age) {
+void Community::vaccinate(double f, int age) {
     if (f<=0.0)
         return;
     if (age<0) {                                                      // vaccinate everyone
         for (int i=0; i<_nNumPerson; i++)
-            if (gsl_rng_uniform(rng)<f)
-                _person[i].vaccinate(rng);
+            if (gsl_rng_uniform(RNG)<f)
+                _person[i].vaccinate();
     }
     else {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
-            if (!p->isVaccinated() && gsl_rng_uniform(rng)<f)
-                p->vaccinate(rng);
+            if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f)
+                p->vaccinate();
         }
     }
 }
@@ -369,9 +369,9 @@ void Community::expandMosquitoQueues() {
 
 
 // returns number of days mosquito has left to live
-int Community::addMosquito(gsl_rng *rng, Location *p, Serotype serotype, int nInfectedByID) {
+int Community::addMosquito(Location *p, Serotype serotype, int nInfectedByID) {
     assert(serotype>=0 && serotype<4);
-    Mosquito *m = new Mosquito(rng, p, serotype, nInfectedByID);
+    Mosquito *m = new Mosquito(p, serotype, nInfectedByID);
     int daysleft = m->getAgeDeath()-m->getAgeInfected();
     int daysinfectious = daysleft-MOSQUITOINCUBATION;
     if (daysinfectious<=0) {
@@ -449,20 +449,20 @@ void Community::expandExposedQueues() {
 }
 
 
-void Community::moveMosquito(Mosquito *m, gsl_rng *rng) {
-    double r = gsl_rng_uniform(rng);
+void Community::moveMosquito(Mosquito *m) {
+    double r = gsl_rng_uniform(RNG);
     if (r<_fMosquitoMoveProb) {
         if (r<_fMosquitoTeleportProb) {                               // teleport
             int location;
             do {
-                location = gsl_rng_uniform_int(rng,_nNumLocation);
+                location = gsl_rng_uniform_int(RNG,_nNumLocation);
             } while (_location[location].getUndefined());
             m->setLocation(_location+location);
         }                                                             // move to neighbor
         else {
             Location *pLoc = m->getLocation();
             if (pLoc->getNumNeighbors()>0) {
-                int n = gsl_rng_uniform_int(rng,pLoc->getNumNeighbors());
+                int n = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
                 m->setLocation(pLoc->getNeighbor(n));
             }
         }
@@ -470,7 +470,7 @@ void Community::moveMosquito(Mosquito *m, gsl_rng *rng) {
 }
 
 
-void Community::tick(gsl_rng *rng) {
+void Community::tick() {
     assert(_nDay<MAXRUNTIME);
 
     //  if (false) {
@@ -484,7 +484,7 @@ void Community::tick(gsl_rng *rng) {
             for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
                 Person *p = _personAgeCohort[age][pnum];
                 assert(p!=NULL);
-                int r = gsl_rng_uniform_int(rng,_nPersonAgeCohortSizes[age1]);
+                int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age1]);
                 p->copyImmunity(_personAgeCohort[age1][r]);
             }
         }
@@ -517,12 +517,12 @@ void Community::tick(gsl_rng *rng) {
     for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++) {
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++) {
             Location *pLoc = (**m).getLocation();
-            if (gsl_rng_uniform(rng)<_fBetaMP) {                      // infectious mosquito bites
+            if (gsl_rng_uniform(RNG)<_fBetaMP) {                      // infectious mosquito bites
                 // take sum of people in the location, weighting by time of day
                 double exposuretime[STEPSPERDAY];
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++)
                     exposuretime[timeofday] = pLoc->getNumPerson(timeofday) * _fDailyBitingPDF[timeofday];
-                double r = gsl_rng_uniform(rng)*(exposuretime[0]+exposuretime[1]+exposuretime[2]);
+                double r = gsl_rng_uniform(RNG)*(exposuretime[0]+exposuretime[1]+exposuretime[2]);
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
                     if (r<exposuretime[timeofday]) {
                         // bite at this time of day
@@ -530,7 +530,7 @@ void Community::tick(gsl_rng *rng) {
                         Person *p = pLoc->getPerson(id, timeofday);
                         //	    cerr << " infect person " << id << "/" << pLoc->getNumPerson(timeofday) << "  " << p->getID() << " with " << (**m).getSerotype() << endl;
                         Serotype serotype = (**m).getSerotype();
-                        if (p->infect(rng, (**m).getID(), serotype, _nDay, pLoc->getID(),
+                        if (p->infect((**m).getID(), serotype, _nDay, pLoc->getID(),
                             _fPrimarySymptomaticScaling[(int) serotype],
                             _fSecondarySymptomaticScaling[(int) serotype],
                         _nMaxInfectionParity)) {
@@ -607,13 +607,13 @@ void Community::tick(gsl_rng *rng) {
                 if (m<0)
                     m=0;
                                                                       // how many susceptible mosquitoes bite viremic hosts in this location?
-                int numbites = gsl_ran_binomial(rng, _fBetaPM*sumviremic/(sumviremic+sumnonviremic), m);
+                int numbites = gsl_ran_binomial(RNG, _fBetaPM*sumviremic/(sumviremic+sumnonviremic), m);
                 while (numbites-->0) {
                     int serotype;                                     // which serotype infects mosquito
                     if (sumserotype[0]==1.0) {
                         serotype = 0;
                     } else {
-                        double r = gsl_rng_uniform(rng);
+                        double r = gsl_rng_uniform(RNG);
                         for (serotype=0; serotype<5 && r>sumserotype[serotype]; serotype++)
                             r -= sumserotype[serotype];
                     }
@@ -624,7 +624,7 @@ void Community::tick(gsl_rng *rng) {
                         cerr << endl;
                     }*/
                     assert (serotype >= 0 && serotype<4);
-                    int daysleft = addMosquito(rng, _location+loc, (Serotype) serotype, locid);
+                    int daysleft = addMosquito(_location+loc, (Serotype) serotype, locid);
                     if (!_numLocationMosquitoCreated[locid]) {
                         _numLocationMosquitoCreated[locid] = new int[MAXRUNTIME];
                         for (int j=0; j<MAXRUNTIME; j++)
@@ -680,10 +680,10 @@ void Community::tick(gsl_rng *rng) {
     // move mosquitoes
     for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++)
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++)
-            moveMosquito(*m, rng);
+            moveMosquito(*m);
     for (int mosdays=0; mosdays<MOSQUITOINCUBATION; mosdays++)
         for (Mosquito **m=_exposedMosquitoQueue[mosdays]; *m!=NULL; m++)
-            moveMosquito(*m, rng);
+            moveMosquito(*m);
 
     _nDay++;
     //  if (_nDay%365==1) {
@@ -711,10 +711,10 @@ void Community::tick(gsl_rng *rng) {
             }
 
             for (int age=1; age<MAXPERSONAGE-1; age++) {
-                int numkill = gsl_ran_binomial(rng, _fMortality[age], _nPersonAgeCohortSizes[age]);
+                int numkill = gsl_ran_binomial(RNG, _fMortality[age], _nPersonAgeCohortSizes[age]);
                 //      cerr << _nDay << "," << age << ", kill " << numkill << "/" << _nPersonAgeCohortSizes[age] << endl;
                 for (int i=0; i<numkill; i++) {
-                    int r = gsl_rng_uniform_int(rng,_nPersonAgeCohortSizes[age]);
+                    int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age]);
                     Person *p = _personAgeCohort[age][r];
                     assert(p!=NULL);
                     //	cerr << "select " << r << ", age " << age << ", size=" << _nPersonAgeCohortSizes[age] << ", numperson=" << _nNumPerson << endl;
@@ -760,7 +760,7 @@ void Community::tick(gsl_rng *rng) {
               groupsize += _nPersonAgeCohortSizes[group*5-1];
             assert(groupsize>0);
             while (groupdiff>0) {
-              int r = gsl_rng_uniform_int(rng,groupsize);
+              int r = gsl_rng_uniform_int(RNG,groupsize);
               int age=group*5-1;
               if (age<1)
                 age=1;

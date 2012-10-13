@@ -12,7 +12,7 @@ class Mosquito
 {
     public:
         Mosquito();
-        Mosquito(gsl_rng *rng, Location *p, Serotype serotype, int nInfectedAtID);
+        Mosquito(Location *p, Serotype serotype, int nInfectedAtID);
         virtual ~Mosquito();
         int getID() { return _nID; }
         Location *getLocation() { return _pLocation; }

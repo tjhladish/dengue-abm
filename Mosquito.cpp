@@ -39,18 +39,18 @@ Mosquito::Mosquito() {
 }
 
 
-Mosquito::Mosquito(gsl_rng *rng, Location *p, Serotype serotype, int nInfectedAtID) {
+Mosquito::Mosquito(Location *p, Serotype serotype, int nInfectedAtID) {
     //assert(nSerotype>0 && nSerotype<=4);
     _nID = _nNextID++;
     _bDead = false;
     _eSerotype = serotype;
     _nInfectedAtID = nInfectedAtID;
-    double r = gsl_rng_uniform(rng);
+    double r = gsl_rng_uniform(RNG);
     _nAgeInfected = 0;
     while (_fAgeDistribution[_nAgeInfected]<r && _nAgeInfected<MAXMOSQUITOAGE-1)
         _nAgeInfected++;
     _nAgeDeath = _nAgeInfected;
-    r = 1.0-(gsl_rng_uniform(rng)*(1.0-_fAgeDistribution[_nAgeDeath]));
+    r = 1.0-(gsl_rng_uniform(RNG)*(1.0-_fAgeDistribution[_nAgeDeath]));
     while (_fAgeDistribution[_nAgeDeath]<r && _nAgeDeath<MAXMOSQUITOAGE-1)
         _nAgeDeath++;
     //  cerr << "Mosquito " << _nID << ", age=" << _nAgeInfected << ", death=" << _nAgeDeath << endl;
