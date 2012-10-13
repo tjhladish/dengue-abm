@@ -19,7 +19,7 @@
 
 using namespace std;
 
-const double Community::SYMPTOMATICBYAGE[Person::MAXPERSONAGE] = {
+const double Community::SYMPTOMATICBYAGE[MAXPERSONAGE] = {
     0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,
     0.1017964,0.1017964,0.1017964,0.1017964,0.1017964,
     0.2774451,0.2774451,0.2774451,0.2774451,0.2774451,
@@ -33,7 +33,7 @@ const double Community::SYMPTOMATICBYAGE[Person::MAXPERSONAGE] = {
 };
 
 //2005 Thai mortality data by age from Porapakkham 2010
-//double thaimortality[Community::Person::MAXPERSONAGE] = {0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0007,0.0007,0.0007,0.0007,0.0007,0.0009,0.0009,0.0009,0.0009,0.0009,0.0016,0.0016,0.0016,0.0016,0.0016,0.002,0.002,0.002,0.002,0.002,0.0022,0.0022,0.0022,0.0022,0.0022,0.0028,0.0028,0.0028,0.0028,0.0028,0.0038,0.0038,0.0038,0.0038,0.0038,0.005,0.005,0.005,0.005,0.005,0.0077,0.0077,0.0077,0.0077,0.0077,0.012,0.012,0.012,0.012,0.012,0.0185,0.0185,0.0185,0.0185,0.0185,0.0287,0.0287,0.0287,0.0287,0.0287,0.0457,0.0457,0.0457,0.0457,0.0457,0.0767,0.0767,0.0767,0.0767,0.0767,0.1434,0.1434,0.1434,0.1434,0.1434};
+//double thaimortality[Community::MAXPERSONAGE] = {0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0007,0.0007,0.0007,0.0007,0.0007,0.0009,0.0009,0.0009,0.0009,0.0009,0.0016,0.0016,0.0016,0.0016,0.0016,0.002,0.002,0.002,0.002,0.002,0.0022,0.0022,0.0022,0.0022,0.0022,0.0028,0.0028,0.0028,0.0028,0.0028,0.0038,0.0038,0.0038,0.0038,0.0038,0.005,0.005,0.005,0.005,0.005,0.0077,0.0077,0.0077,0.0077,0.0077,0.012,0.012,0.012,0.012,0.012,0.0185,0.0185,0.0185,0.0185,0.0185,0.0287,0.0287,0.0287,0.0287,0.0287,0.0457,0.0457,0.0457,0.0457,0.0457,0.0767,0.0767,0.0767,0.0767,0.0767,0.1434,0.1434,0.1434,0.1434,0.1434};
 
 // Community
 Community::Community() {
@@ -57,9 +57,9 @@ Community::Community() {
         _exposedQueue[i] = new Person *[_nExposedQueueCapacity];
         _exposedQueue[i][0] = NULL;
     }
-    _infectiousMosquitoQueue = new Mosquito**[Mosquito::MAXAGE-MOSQUITOINCUBATION];
+    _infectiousMosquitoQueue = new Mosquito**[MAXMOSQUITOAGE-MOSQUITOINCUBATION];
     _nMosquitoQueueCapacity = 100;
-    for (int i=0; i<Mosquito::MAXAGE-MOSQUITOINCUBATION; i++) {
+    for (int i=0; i<MAXMOSQUITOAGE-MOSQUITOINCUBATION; i++) {
         _infectiousMosquitoQueue[i] = new Mosquito *[_nMosquitoQueueCapacity];
         _infectiousMosquitoQueue[i][0] = NULL;
     }
@@ -93,7 +93,7 @@ Community::~Community() {
         delete [] _exposedQueue;
     }
     if (_infectiousMosquitoQueue) {
-        for (int i=0; i<Mosquito::MAXAGE-MOSQUITOINCUBATION; i++)
+        for (int i=0; i<MAXMOSQUITOAGE-MOSQUITOINCUBATION; i++)
             if (_infectiousMosquitoQueue[i])
                 delete [] _infectiousMosquitoQueue[i];
         delete [] _infectiousMosquitoQueue;
@@ -105,7 +105,7 @@ Community::~Community() {
         delete [] _exposedMosquitoQueue;
     }
     if (_personAgeCohort) {
-        for (int i=0; i<Person::MAXPERSONAGE; i++)
+        for (int i=0; i<MAXPERSONAGE; i++)
             if (_personAgeCohort[i])
                 delete [] _personAgeCohort[i];
         delete [] _personAgeCohort;
@@ -139,8 +139,8 @@ bool Community::loadPopulation(string szPop,string szImm) {
     _nNumPerson=0;
     _nMaxPerson = numlines*4;
     _person = new Person[_nMaxPerson];
-    int agecounts[Person::MAXPERSONAGE];
-    for (int i=0; i<Person::MAXPERSONAGE; i++)
+    int agecounts[MAXPERSONAGE];
+    for (int i=0; i<MAXPERSONAGE; i++)
         agecounts[i] = 0;
     while (iss) {
         char temp[500];
@@ -161,7 +161,7 @@ bool Community::loadPopulation(string szPop,string szImm) {
             _location[house].addPerson(_person+_nNumPerson, 0);
             _location[work].addPerson(_person+_nNumPerson, 1);
             _location[house].addPerson(_person+_nNumPerson, 2);
-            assert(age<Person::MAXPERSONAGE);
+            assert(age<MAXPERSONAGE);
             agecounts[age]++;
             /*if (imm1>0)
                 _person[_nNumPerson].setImmunity(1);
@@ -214,21 +214,21 @@ bool Community::loadPopulation(string szPop,string szImm) {
 
     // keep track of all age cohorts for aging and mortality
     _nPersonAgeCohortMaxSize = 0;
-    for (int i=0; i<Person::MAXPERSONAGE; i++)
+    for (int i=0; i<MAXPERSONAGE; i++)
         if (_nPersonAgeCohortMaxSize<agecounts[i])
             _nPersonAgeCohortMaxSize=agecounts[i];
     _nPersonAgeCohortMaxSize *= 1.25;
-    _personAgeCohort = new Person **[Person::MAXPERSONAGE];
-    for (int i=0; i<Person::MAXPERSONAGE; i++) {
+    _personAgeCohort = new Person **[MAXPERSONAGE];
+    for (int i=0; i<MAXPERSONAGE; i++) {
         _nPersonAgeCohortSizes[i] = 0;
         _personAgeCohort[i] = new Person *[_nPersonAgeCohortMaxSize];
     }
     for (int i=0; i<_nNumPerson; i++) {
         int age = _person[i].getAge();
-        assert(age<Person::MAXPERSONAGE);
+        assert(age<MAXPERSONAGE);
         _personAgeCohort[age][_nPersonAgeCohortSizes[age]++]=_person+i;
     }
-    for (int i=0; i<Person::MAXPERSONAGE; i++)
+    for (int i=0; i<MAXPERSONAGE; i++)
         _nOriginalPersonAgeCohortSizes[i] = _nPersonAgeCohortSizes[i];
     return true;
 }
@@ -350,7 +350,7 @@ void Community::setVEP(double f) {
 // expandMosquitoQueues - increases the capacity of the queues
 // that keep track of the mosquito populations
 void Community::expandMosquitoQueues() {
-    for (int j=0; j<Mosquito::MAXAGE-MOSQUITOINCUBATION; j++) {
+    for (int j=0; j<MAXMOSQUITOAGE-MOSQUITOINCUBATION; j++) {
         Mosquito **temp = new Mosquito *[_nMosquitoQueueCapacity*2];
         for (int k=0; k<_nMosquitoQueueCapacity; k++)
             temp[k] = _infectiousMosquitoQueue[j][k];
@@ -395,7 +395,7 @@ int Community::addMosquito(gsl_rng *rng, Location *p, Serotype serotype, int nIn
 
 int Community::getNumInfectiousMosquitoes() {
     int count = 0;
-    for (int mosAge=0; mosAge<Mosquito::MAXAGE-MOSQUITOINCUBATION-1; mosAge++)
+    for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++)
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++)
             count++;
     return count;
@@ -413,7 +413,7 @@ int Community::getNumExposedMosquitoes() {
 
 Mosquito *Community::getInfectiousMosquito(int n) {
     int count = 0;
-    for (int mosAge=0; mosAge<Mosquito::MAXAGE-MOSQUITOINCUBATION-1; mosAge++)
+    for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++)
     for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++) {
         if (count==n)
             return *m;
@@ -478,7 +478,7 @@ void Community::tick(gsl_rng *rng) {
         //    cerr << "swap!" << endl;
         // big annual swap!
         // For people of age x, copy immune status from people of age x-1
-        for (int age=Person::MAXPERSONAGE-1; age>0; age--) {
+        for (int age=MAXPERSONAGE-1; age>0; age--) {
             //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
             int age1 = age-1;
             for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
@@ -514,7 +514,7 @@ void Community::tick(gsl_rng *rng) {
     }
 
     // infect people
-    for (int mosAge=0; mosAge<Mosquito::MAXAGE-MOSQUITOINCUBATION-1; mosAge++) {
+    for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++) {
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++) {
             Location *pLoc = (**m).getLocation();
             if (gsl_rng_uniform(rng)<_fBetaMP) {                      // infectious mosquito bites
@@ -649,9 +649,9 @@ void Community::tick(gsl_rng *rng) {
     // advance age of infectious mosquitoes
     Mosquito **pm = _infectiousMosquitoQueue[0];
     pm[0] = NULL;
-    for (int i=0; i<Mosquito::MAXAGE-MOSQUITOINCUBATION-1; i++)
+    for (int i=0; i<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; i++)
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
-    _infectiousMosquitoQueue[Mosquito::MAXAGE-MOSQUITOINCUBATION-1] = pm;
+    _infectiousMosquitoQueue[MAXMOSQUITOAGE-MOSQUITOINCUBATION-1] = pm;
 
     // advance incubation period of exposed mosquitoes
     for (int mnum=0; ; mnum++) {
@@ -678,7 +678,7 @@ void Community::tick(gsl_rng *rng) {
     _exposedMosquitoQueue[MOSQUITOINCUBATION-1] = pm;
 
     // move mosquitoes
-    for (int mosAge=0; mosAge<Mosquito::MAXAGE-MOSQUITOINCUBATION-1; mosAge++)
+    for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++)
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++)
             moveMosquito(*m, rng);
     for (int mosdays=0; mosdays<MOSQUITOINCUBATION; mosdays++)
@@ -694,23 +694,23 @@ void Community::tick(gsl_rng *rng) {
             int newborncount = 0;                                     // number of people who die/are born this year
 
             // kill off oldest age bracket
-            // use _personAgeCohort[Person::MAXPERSONAGE-1] to hold newborns
-            for (int i=0; i<_nPersonAgeCohortSizes[Person::MAXPERSONAGE-1]; i++) {
+            // use _personAgeCohort[MAXPERSONAGE-1] to hold newborns
+            for (int i=0; i<_nPersonAgeCohortSizes[MAXPERSONAGE-1]; i++) {
                 assert (_nNumPerson+1<_nMaxPerson);
-                Person *p = _personAgeCohort[Person::MAXPERSONAGE-1][i];
+                Person *p = _personAgeCohort[MAXPERSONAGE-1][i];
                 p->kill(_nDay);
                 // copy attributes to newborn
                 Person *newborn = _person + _nNumPerson;
                 newborn->setHomeID(p->getHomeID());
                 newborn->setWorkID(p->getWorkID());                   // infants work at old place?
                 newborn->setAge(0);
-                _personAgeCohort[Person::MAXPERSONAGE-1][i] = _person + _nNumPerson;
+                _personAgeCohort[MAXPERSONAGE-1][i] = _person + _nNumPerson;
                 newborncount++;
                 assert (newborncount<_nPersonAgeCohortMaxSize);
                 _nNumPerson++;
             }
 
-            for (int age=1; age<Person::MAXPERSONAGE-1; age++) {
+            for (int age=1; age<MAXPERSONAGE-1; age++) {
                 int numkill = gsl_ran_binomial(rng, _fMortality[age], _nPersonAgeCohortSizes[age]);
                 //      cerr << _nDay << "," << age << ", kill " << numkill << "/" << _nPersonAgeCohortSizes[age] << endl;
                 for (int i=0; i<numkill; i++) {
@@ -726,7 +726,7 @@ void Community::tick(gsl_rng *rng) {
                         newborn->setHomeID(p->getHomeID());
                         newborn->setWorkID(p->getWorkID());           // infants work at old place?
                         newborn->setAge(0);
-                        _personAgeCohort[Person::MAXPERSONAGE-1][newborncount] = newborn;
+                        _personAgeCohort[MAXPERSONAGE-1][newborncount] = newborn;
                         newborncount++;
                         assert (newborncount<_nPersonAgeCohortMaxSize);
                         _nNumPerson++;
@@ -745,10 +745,10 @@ void Community::tick(gsl_rng *rng) {
             /* 
             // kill younger people based on population pyramid
             // do this in 5-year age groups
-            int diff[Person::MAXPERSONAGE];
-            for (int i=1; i<Person::MAXPERSONAGE; i++)
+            int diff[MAXPERSONAGE];
+            for (int i=1; i<MAXPERSONAGE; i++)
               diff[i-1] = _nPersonAgeCohortSizes[i-1] - _nOriginalPersonAgeCohortSizes[i];
-            for (int group=0; group<(Person::MAXPERSONAGE-2)/5; group++) {
+            for (int group=0; group<(MAXPERSONAGE-2)/5; group++) {
               int groupdiff = diff[group*5] + diff[group*5+1] + diff[group*5+2] + diff[group*5+3] + diff[group*5+4];
               //      cerr << "Group " << group << " diff= " << groupdiff << endl;
               if (groupdiff>0) {
@@ -767,7 +767,7 @@ void Community::tick(gsl_rng *rng) {
               while(_nPersonAgeCohortSizes[age]<=r) {
                 r-=_nPersonAgeCohortSizes[age];
                 age++;
-                assert(age<Person::MAXPERSONAGE);
+                assert(age<MAXPERSONAGE);
               }
               assert(r<_nPersonAgeCohortSizes[age]);
               Person *p = _personAgeCohort[age][r];
@@ -781,7 +781,7 @@ void Community::tick(gsl_rng *rng) {
                 newborn->setHomeID(p->getHomeID());
                 newborn->setWorkID(p->getWorkID()); // infants work at old place?
                 newborn->setAge(0);
-                _personAgeCohort[Person::MAXPERSONAGE-1][r] = _person + _nNumPerson;
+                _personAgeCohort[MAXPERSONAGE-1][r] = _person + _nNumPerson;
                 newborncount++;
                 assert (newborncount<_nPersonAgeCohortMaxSize);
                 _nNumPerson++;
@@ -798,8 +798,8 @@ void Community::tick(gsl_rng *rng) {
             }
             */
             // age population 1 year
-            Person **temp = _personAgeCohort[Person::MAXPERSONAGE-1];
-            for (int i=Person::MAXPERSONAGE-1; i>0; i--) {
+            Person **temp = _personAgeCohort[MAXPERSONAGE-1];
+            for (int i=MAXPERSONAGE-1; i>0; i--) {
                 _personAgeCohort[i] = _personAgeCohort[i-1];
                 _nPersonAgeCohortSizes[i] = _nPersonAgeCohortSizes[i-1];
             }
@@ -812,7 +812,7 @@ void Community::tick(gsl_rng *rng) {
 
             // children age out and start working?
 
-            for (int i=0; i<Person::MAXPERSONAGE; i++) {
+            for (int i=0; i<MAXPERSONAGE; i++) {
                 cout << _nDay << " " << i << " " << _nPersonAgeCohortSizes[i] << endl;
             }
             _nDay++;

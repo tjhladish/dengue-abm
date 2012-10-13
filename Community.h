@@ -68,12 +68,7 @@ class Community
         const int *getNumNewlyInfected(Serotype serotype) { return _nNumNewlyInfected[(int) serotype]; }
         const int *getNumNewlySymptomatic(Serotype serotype) { return _nNumNewlySymptomatic[(int) serotype]; }
 
-        //const static int MAXSEROTYPES = 4;                            // maximum number of serotypes
-        const static int STEPSPERDAY = 3;                             // number of time steps per day
-        const static int MAXINCUBATION = 15;                          // maximum incubation period for humans
-        const static int MOSQUITOINCUBATION = 11;                     // number of days for mosquito incubation (extrinsic incubation period)
-        const static int MAXRUNTIME = 7400;                           // maximum number of simulation days (+ extra for mosquito lifetime)
-        const static double SYMPTOMATICBYAGE[Person::MAXPERSONAGE];   // for some serotypes, the fraction who are symptomatic upon primary infection
+        const static double SYMPTOMATICBYAGE[MAXPERSONAGE];   // for some serotypes, the fraction who are symptomatic upon primary infection
 
     protected:
         string _szPopulationFilename;                                 // population data filename
@@ -83,9 +78,9 @@ class Community
         //  Mosquito *_mosquito;
         Person *_person;                                              // the array index is equal to the ID
         Person ***_personAgeCohort;                                   // array of pointers to people of the same age
-        int _nPersonAgeCohortSizes[Person::MAXPERSONAGE];             // size of each age cohort
+        int _nPersonAgeCohortSizes[MAXPERSONAGE];             // size of each age cohort
         int _nPersonAgeCohortMaxSize;                                 // size of largest cohort
-        int _nOriginalPersonAgeCohortSizes[Person::MAXPERSONAGE];     // size of each age cohort at simulation start time
+        int _nOriginalPersonAgeCohortSizes[MAXPERSONAGE];     // size of each age cohort at simulation start time
         double *_fMortality;                                          // mortality by year, starting from 0
         Location *_location;                                          // the array index is equal to the ID
         int **_numLocationMosquitoCreated;                            // number of instantiated mosquitoes at this location at time t.  the first 

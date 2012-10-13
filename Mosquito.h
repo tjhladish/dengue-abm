@@ -23,7 +23,6 @@ class Mosquito
         bool isDead() { return _bDead; }
         Serotype getSerotype() { return _eSerotype; }
 
-        static const int MAXAGE = 60;                                 // maximum age of mosquito in days
 
     protected:
         int _nID;                                                     // unique identifier
@@ -36,8 +35,8 @@ class Mosquito
         int _nInfectedAtID;                                           // location ID where infected
         //  int _nInfectedByID;     // which person infected me?
         static int _nNextID;                                          // unique ID to assign to the next Mosquito allocated
-        //  static double _fDeathProbability[Mosquito::MAXAGE]; // probability of death each day
-        static double _fAgeDistribution[Mosquito::MAXAGE];            // cumulative density of mosquito ages (in days)
-        //  static double _fLifespanDistribution[Mosquito::MAXAGE];  // cumulative density of mosquito lifespans (in days)
+        //  static double _fDeathProbability[MAXMOSQUITOAGE]; // probability of death each day
+        static double _fAgeDistribution[MAXMOSQUITOAGE];            // cumulative density of mosquito ages (in days)
+        //  static double _fLifespanDistribution[MAXMOSQUITOAGE];  // cumulative density of mosquito lifespans (in days)
 };
 #endif

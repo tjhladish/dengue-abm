@@ -73,10 +73,7 @@ class Person
         static void setDaysImmune(int n) { _nDaysImmune = n; }
         static int getDaysImmune() { return _nDaysImmune; }
 
-        const static int MAXPERSONAGE = 95;                           // maximum age-1 for a person
-        static const int MAXINCUBATION = 9;                           // max incubation period in days
         static const double _fIncubationDistribution[MAXINCUBATION];
-        static const int MAXHISTORY = 50;                             // length of exposure history in years
 
     protected:
         void pushInfectionHistory();

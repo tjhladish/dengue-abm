@@ -23,7 +23,8 @@ const int VERSIONNUMBERMAJOR = 1;
 const int VERSIONNUMBERMINOR = 0;
 
 int main(int argc, char *argv[]) {
-    gsl_rng * rng = gsl_rng_alloc (gsl_rng_taus2);
+    gsl_rng* rng = gsl_rng_alloc (gsl_rng_taus2);
+
     int randomseed = 5489;
     int nRunLength = 100;
     double betaPM = 0.2;
@@ -249,7 +250,7 @@ int main(int argc, char *argv[]) {
     cerr << "location file = " << szLocationFile << endl;
     cerr << "network file = " << szNetworkFile << endl;
     cerr << "runlength = " << nRunLength << endl;
-    if (nRunLength>Community::MAXRUNTIME) {
+    if (nRunLength>MAXRUNTIME) {
         cerr << "ERROR: runlength is too long: " << nRunLength << endl;
         cerr << " change Community.h and recompile." << endl;
         exit(-1);
