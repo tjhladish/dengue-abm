@@ -3,7 +3,7 @@
 #ifndef __COMMUNITY_H
 #define __COMMUNITY_H
 #include <string>
-#include "Parameters.h"
+//#include "Parameters.h"
 using namespace std;
 
 class Person;

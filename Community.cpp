@@ -291,6 +291,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
 
 // infect - infects person id
 bool Community::infect(int id, Serotype serotype, int day) {
+    cerr << "community rng: " << RNG << endl;
     for (int i=0; i<_nNumPerson; i++)
     if (_person[i].getID()==id) {
         bool result =  _person[i].infect(-1, serotype, day, 0,

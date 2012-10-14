@@ -23,6 +23,7 @@ const int VERSIONNUMBERMAJOR = 1;
 const int VERSIONNUMBERMINOR = 0;
 
 int main(int argc, char *argv[]) {
+    cerr << "main rng: " << RNG << endl;
 
 
     int randomseed = 5489;
@@ -76,8 +77,8 @@ int main(int argc, char *argv[]) {
     fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
     fSecondaryScaling[0] = fSecondaryScaling[1] = fSecondaryScaling[2] = fSecondaryScaling[3] = 1.0;
 
-    cerr << "Dengue model, Version " << VERSIONNUMBERMAJOR << "." << VERSIONNUMBERMINOR << endl;
-    cerr << "written by Dennis Chao in 2012" << endl;
+    //cerr << "Dengue model, Version " << VERSIONNUMBERMAJOR << "." << VERSIONNUMBERMINOR << endl;
+    //cerr << "written by Dennis Chao in 2012" << endl;
 
     if (argc>1) {
         for (int i=1; i<argc; i++) {
@@ -238,48 +239,49 @@ int main(int argc, char *argv[]) {
                 i++;
             }
             else {
-                cerr << "Unknown option: " << argv[i] << endl;
+                //cerr << "Unknown option: " << argv[i] << endl;
                 exit(-1);
             }
         }
     }
     gsl_rng_set(RNG, randomseed);
-    gsl_rng* rng_clone = gsl_rng_clone(RNG);
-    cerr << "RANDOM NUM ---------------------------------------> " << gsl_rng_uniform(RNG) << endl;
-    cerr << "RANDOM NUM clone----------------------------------> " << gsl_rng_uniform(rng_clone) << endl;
-    cerr << "RANDOM NUM2 --------------------------------------> " << gsl_rng_uniform(RNG) << endl;
-    gsl_rng_set(RNG, randomseed);
+    //gsl_rng* rng_clone = gsl_rng_clone(RNG);
+    ////cerr << "RANDOM NUM ---------------------------------------> " << gsl_rng_uniform(RNG) << endl;
+    ////cerr << "RANDOM NUM clone----------------------------------> " << gsl_rng_uniform(rng_clone) << endl;
+    ////cerr << "RANDOM NUM2 --------------------------------------> " << gsl_rng_uniform(RNG) << endl;
+    //gsl_rng_set(RNG, randomseed+1);
+    cerr << "main rng: " << RNG << endl;
 
-    cerr << "population file = " << szPopulationFile << endl;
-    cerr << "immunity file = " << szImmunityFile << endl;
-    cerr << "location file = " << szLocationFile << endl;
-    cerr << "network file = " << szNetworkFile << endl;
-    cerr << "runlength = " << nRunLength << endl;
+    //cerr << "population file = " << szPopulationFile << endl;
+    //cerr << "immunity file = " << szImmunityFile << endl;
+    //cerr << "location file = " << szLocationFile << endl;
+    //cerr << "network file = " << szNetworkFile << endl;
+    //cerr << "runlength = " << nRunLength << endl;
     if (nRunLength>MAXRUNTIME) {
-        cerr << "ERROR: runlength is too long: " << nRunLength << endl;
-        cerr << " change Community.h and recompile." << endl;
+        //cerr << "ERROR: runlength is too long: " << nRunLength << endl;
+        //cerr << " change Community.h and recompile." << endl;
         exit(-1);
     }
     if (nRunLength==365) {
-        cerr << "ERROR: you probably want runlength to be 364, not 365" << endl;
+        //cerr << "ERROR: you probably want runlength to be 364, not 365" << endl;
         exit(-1);
     }
-    cerr << "random seed = " << randomseed << endl;
-    cerr << "beta_PM = " << betaPM << endl;
-    cerr << "beta_MP = " << betaMP << endl;
-    cerr << "days of complete cross protection = " << nDaysImmune << endl;
-    cerr << "maximum infection parity = " << nMaxInfectionParity << endl;
-    cerr << "pathogenicity of primary infection =";
+    //cerr << "random seed = " << randomseed << endl;
+    //cerr << "beta_PM = " << betaPM << endl;
+    //cerr << "beta_MP = " << betaMP << endl;
+    //cerr << "days of complete cross protection = " << nDaysImmune << endl;
+    //cerr << "maximum infection parity = " << nMaxInfectionParity << endl;
+    //cerr << "pathogenicity of primary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++)
-        cerr << " " << fPrimaryPathogenicity[i];
-    cerr << endl;
-    cerr << "pathogenicity scaling for secondary infection =";
+        //cerr << " " << fPrimaryPathogenicity[i];
+    //cerr << endl;
+    //cerr << "pathogenicity scaling for secondary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++)
-        cerr << " " << fSecondaryScaling[i];
-    cerr << endl;
-    cerr << "mosquito move prob = " << fMosquitoMove << endl;
-    cerr << "mosquito teleport prob = " << fMosquitoTeleport << endl;
-    cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << endl;
+        //cerr << " " << fSecondaryScaling[i];
+    //cerr << endl;
+    //cerr << "mosquito move prob = " << fMosquitoMove << endl;
+    //cerr << "mosquito teleport prob = " << fMosquitoTeleport << endl;
+    //cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << endl;
     Location::setDefaultMosquitoCapacity(nDefaultMosquitoCapacity);
     if (nSizeMosquitoMultipliers>0) {
         cerr << "mosquito seasonal multipliers (days,mult) =";
@@ -287,58 +289,62 @@ int main(int argc, char *argv[]) {
             cerr << " (" << nMosquitoMultiplierDays[j] << "," << fMosquitoMultipliers[j] << ")";
         cerr << endl;
     }
-    cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << endl;
+    //cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << endl;
     if (nSizeVaccinate>0) {
-        cerr << "Phased vaccinate (year, age, frac) = ";
+        //cerr << "Phased vaccinate (year, age, frac) = ";
         for (int j=0; j<nSizeVaccinate; j++) {
-            cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
+            //cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
         }
-        cerr << endl;
+        //cerr << endl;
     }
     if (nSizePrevaccinateAge>0) {
-        cerr << "Pre-vaccinate by age (min, max, frac) = ";
+        //cerr << "Pre-vaccinate by age (min, max, frac) = ";
         for (int j=0; j<nSizePrevaccinateAge; j++) {
-            cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
+            //cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
         }
-        cerr << endl;
+        //cerr << endl;
     }
-    cerr << "VE_S = " << fVES << endl;
-    cerr << "VE_I = " << fVEI << endl;
-    cerr << "VE_P = " << fVEP << endl;
+    //cerr << "VE_S = " << fVES << endl;
+    //cerr << "VE_I = " << fVEI << endl;
+    //cerr << "VE_P = " << fVEP << endl;
     if (fVES>1.0 || fVEI>1.0 || fVEP>1.0) {
-        cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << endl;
+        //cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << endl;
         exit(-1);
     }
     if (fVES<0.0) {
-        cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << endl;
+        //cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << endl;
     }
 
-    if (szPeopleFile.length()>0)
-        cerr << "people output file = " << szPeopleFile << endl;
-    else
-        cerr << "no people output file" << endl;
-    if (szYearlyPeopleFile.length()>0)
-        cerr << "yearly people output file = " << szYearlyPeopleFile << endl;
-    if (szDailyFile.length()>0)
-        cerr << "daily output file = " << szDailyFile << endl;
-    else
-        cerr << "no daily output file" << endl;
+    if (szPeopleFile.length()>0) {
+        //cerr << "people output file = " << szPeopleFile << endl;
+    } else {
+        //cerr << "no people output file" << endl;
+    }
+    if (szYearlyPeopleFile.length()>0) {
+        //cerr << "yearly people output file = " << szYearlyPeopleFile << endl;
+    }
+    if (szDailyFile.length()>0) {
+        //cerr << "daily output file = " << szDailyFile << endl;
+    } else {
+        //cerr << "no daily output file" << endl;
+    }
 
     Community community;
     if (!community.loadLocations(szLocationFile.c_str(),szNetworkFile.c_str())) {
-        cerr << "Could not load locations" << endl;
+        //cerr << "Could not load locations" << endl;
         exit(-1);
     }
     if (!community.loadPopulation(szPopulationFile.c_str(),szImmunityFile.c_str())) {
-        cerr << "Could not load population" << endl;
+        //cerr << "Could not load population" << endl;
         exit(-1);
     }
     community.setBetaPM(betaPM);
     community.setBetaMP(betaMP);
-    if (fVES<0.0)
+    if (fVES<0.0) {
         community.setVESs(fVESs[0],fVESs[1],fVESs[2],fVESs[3]);
-    else
+    } else {
         community.setVES(fVES);
+    }
     community.setVEI(fVEI);
     community.setVEP(fVEP);
     community.setMaxInfectionParity(nMaxInfectionParity);
@@ -348,7 +354,7 @@ int main(int argc, char *argv[]) {
     community.setPrimaryPathogenicityScaling(fPrimaryPathogenicity[0],fPrimaryPathogenicity[1],fPrimaryPathogenicity[2],fPrimaryPathogenicity[3]);
     community.setSecondaryPathogenicityScaling(fSecondaryScaling[0],fSecondaryScaling[1],fSecondaryScaling[2],fSecondaryScaling[3]);
 
-    cerr << community.getNumPerson() << " people" << endl;
+    //cerr << community.getNumPerson() << " people" << endl;
 
     // seed epidemic
     if (nInitialExposed[0]>0 ||
@@ -357,7 +363,7 @@ int main(int argc, char *argv[]) {
     nInitialExposed[3]>0) {
 
         for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-            cerr << "Initial serotype " << serotype+1 << " exposed = " << nInitialExposed[serotype] << endl;
+            //cerr << "Initial serotype " << serotype+1 << " exposed = " << nInitialExposed[serotype] << endl;
             for (int i=0; i<nInitialExposed[serotype]; i++)
                 community.infect(gsl_rng_uniform_int(RNG, community.getNumPerson()), (Serotype) serotype,0);
         }
@@ -366,7 +372,7 @@ int main(int argc, char *argv[]) {
         nInitialInfected[2]>0 ||
     nInitialInfected[3]>0) {
         for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-            cerr << "Initial serotype " << serotype+1 << " infected = " << nInitialInfected[serotype] << endl;
+            //cerr << "Initial serotype " << serotype+1 << " infected = " << nInitialInfected[serotype] << endl;
             int count = community.getNumInfected(0);
                                                                       
             // must infect nInitialInfected persons
@@ -377,7 +383,7 @@ int main(int argc, char *argv[]) {
     }
     if (!bSecondaryTransmission) {
         community.setNoSecondaryTransmission();
-        //    cerr << "No secondary transmission, 1 person infected" << endl;
+        //    //cerr << "No secondary transmission, 1 person infected" << endl;
     }
 
     if (fPreVaccinateFraction>0.0)
@@ -404,7 +410,7 @@ int main(int argc, char *argv[]) {
             for (int i=0; i<nSizeVaccinate; i++) {
                 if (year==nVaccinateYear[i]) {
                     community.vaccinate(fVaccinateFraction[i],nVaccinateAge[i]);
-                    cerr << "vaccinating " << fVaccinateFraction[i]*100 << "% of age " << nVaccinateAge[i] << endl;
+                    //cerr << "vaccinating " << fVaccinateFraction[i]*100 << "% of age " << nVaccinateAge[i] << endl;
                 }
             }
         }
@@ -457,17 +463,17 @@ int main(int argc, char *argv[]) {
         }
 
         if (t%100==0)
-            cerr << "Time " << t << endl;
+            //cerr << "Time " << t << endl;
 
         // output people file
         if (t%365==364 && szYearlyPeopleFile.length()>0) {
             ofstream peopleFile;
             ostringstream ssFilename;
             ssFilename << szYearlyPeopleFile << ((int)(t/365)) << ".csv";
-            cerr << "outputing yearly people information to " << ssFilename.str() << endl;
+            //cerr << "outputing yearly people information to " << ssFilename.str() << endl;
             peopleFile.open(ssFilename.str().c_str());
             if(peopleFile.fail()) {
-                cerr << "ERROR: People file '" << szPeopleFile << "' cannot be open for writing." << endl;
+                //cerr << "ERROR: People file '" << szPeopleFile << "' cannot be open for writing." << endl;
                 return false;
             }
             peopleFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4" << endl;
@@ -542,11 +548,11 @@ int main(int argc, char *argv[]) {
 
     // output daily infected/symptomatic file
     if (szDailyFile.length()>0) {
-        cerr << "outputing daily infected/symptomatic information to " << szDailyFile << endl;
+        //cerr << "outputing daily infected/symptomatic information to " << szDailyFile << endl;
         ofstream dailyFile;
         dailyFile.open(szDailyFile.c_str());
         if(dailyFile.fail()) {
-            cerr << "ERROR: Daily file '" << szDailyFile << "' cannot be open for writing." << endl;
+            //cerr << "ERROR: Daily file '" << szDailyFile << "' cannot be open for writing." << endl;
             return false;
         }
         dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
@@ -574,11 +580,11 @@ int main(int argc, char *argv[]) {
 
     // output people file
     if (szPeopleFile.length()>0) {
-        cerr << "outputing people information to " << szPeopleFile << endl;
+        //cerr << "outputing people information to " << szPeopleFile << endl;
         ofstream peopleFile;
         peopleFile.open(szPeopleFile.c_str());
         if(peopleFile.fail()) {
-            cerr << "ERROR: People file '" << szPeopleFile << "' cannot be open for writing." << endl;
+            //cerr << "ERROR: People file '" << szPeopleFile << "' cannot be open for writing." << endl;
             return false;
         }
         peopleFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;

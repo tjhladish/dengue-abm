@@ -40,6 +40,7 @@ Mosquito::Mosquito() {
 
 
 Mosquito::Mosquito(Location *p, Serotype serotype, int nInfectedAtID) {
+    cerr << "mosquito rng: " << RNG << endl;
     //assert(nSerotype>0 && nSerotype<=4);
     _nID = _nNextID++;
     _bDead = false;
