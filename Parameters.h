@@ -10,7 +10,7 @@ enum Serotype {
     NULL_SEROTYPE      // Make sure this is last
 };
 
-        static const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+        extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
         // from Person.h
         const static int MAXPERSONAGE = 95;                           // maximum age-1 for a person
