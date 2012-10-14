@@ -244,6 +244,11 @@ int main(int argc, char *argv[]) {
         }
     }
     gsl_rng_set(RNG, randomseed);
+    gsl_rng* rng_clone = gsl_rng_clone(RNG);
+    cerr << "RANDOM NUM ---------------------------------------> " << gsl_rng_uniform(RNG) << endl;
+    cerr << "RANDOM NUM clone----------------------------------> " << gsl_rng_uniform(rng_clone) << endl;
+    cerr << "RANDOM NUM2 --------------------------------------> " << gsl_rng_uniform(RNG) << endl;
+    gsl_rng_set(RNG, randomseed);
 
     cerr << "population file = " << szPopulationFile << endl;
     cerr << "immunity file = " << szImmunityFile << endl;

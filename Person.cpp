@@ -131,6 +131,9 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, do
     pushInfectionHistory();
 
     _nInfectedTime[0] = time;
+
+    gsl_rng* rng_clone = gsl_rng_clone(RNG);
+    cerr << "P::infect RANDOM NUM clone----------------------------------> " << gsl_rng_uniform(rng_clone) << endl;
     double r = gsl_rng_uniform(RNG);
     _nInfectiousTime[0] = 0;
     while (_nInfectiousTime[0]<MAXINCUBATION && _fIncubationDistribution[_nInfectiousTime[0]]<r)
