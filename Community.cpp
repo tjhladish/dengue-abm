@@ -470,33 +470,31 @@ void Community::moveMosquito(Mosquito *m) {
 }
 
 
-void Community::tick() {
-    assert(_nDay<MAXRUNTIME);
-
-    //  if (false) {
-    if (_nDay%365==364) {
-        //    cerr << "swap!" << endl;
-        // big annual swap!
-        // For people of age x, copy immune status from people of age x-1
-        for (int age=MAXPERSONAGE-1; age>0; age--) {
-            //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
-            int age1 = age-1;
-            for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-                Person *p = _personAgeCohort[age][pnum];
-                assert(p!=NULL);
-                int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age1]);
-                p->copyImmunity(_personAgeCohort[age1][r]);
-            }
-        }
-        // For people of age 0, reset immunity
-        for (int pnum=0; pnum<_nPersonAgeCohortSizes[0]; pnum++) {
-            Person *p = _personAgeCohort[0][pnum];
+void Community::swapImmuneStates() {
+    //    cerr << "swap!" << endl;
+    // big annual swap!
+    // For people of age x, copy immune status from people of age x-1
+    for (int age=MAXPERSONAGE-1; age>0; age--) {
+        //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
+        int age1 = age-1;
+        for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+            Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
-            p->resetImmunity();
+            int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age1]);
+            p->copyImmunity(_personAgeCohort[age1][r]);
         }
     }
+    // For people of age 0, reset immunity
+    for (int pnum=0; pnum<_nPersonAgeCohortSizes[0]; pnum++) {
+        Person *p = _personAgeCohort[0][pnum];
+        assert(p!=NULL);
+        p->resetImmunity();
+    }
+    return;
+}
 
-    // check for withdrawn people
+
+void Community::updateWithdrawnStatus() {
     for (int i=0; i<_nNumPerson; i++) {
         Person *p = _person+i;
         if (p->getSymptomTime()==_nDay)                               // started showing symptoms
@@ -512,8 +510,11 @@ void Community::tick() {
             p->getLocation(0)->removePerson(p,1);                     // stops staying at home
         }
     }
+    return;
+}
 
-    // infect people
+
+void Community::mosquitoToHumanTransmission() {
     for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++) {
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++) {
             Location *pLoc = (**m).getLocation();
@@ -528,7 +529,8 @@ void Community::tick() {
                         // bite at this time of day
                         int id = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
                         Person *p = pLoc->getPerson(id, timeofday);
-                        //	    cerr << " infect person " << id << "/" << pLoc->getNumPerson(timeofday) << "  " << p->getID() << " with " << (**m).getSerotype() << endl;
+                        //	    cerr << " infect person " << id << "/" << pLoc->getNumPerson(timeofday) 
+                        //           << "  " << p->getID() << " with " << (**m).getSerotype() << endl;
                         Serotype serotype = (**m).getSerotype();
                         if (p->infect((**m).getID(), serotype, _nDay, pLoc->getID(),
                             _fPrimarySymptomaticScaling[(int) serotype],
@@ -562,10 +564,11 @@ void Community::tick() {
             }
         }
     }
+    return;
+}
 
-    // maybe add the occasional random infection of a person to reflect sporadic travel
 
-    // infect mosquitoes in each location
+void Community::humanToMosquitoTransmission() {
     for (int loc=0; loc<_nNumLocation; loc++) {
         if (!_location[loc].getUndefined()) {
             double sumviremic = 0.0;
@@ -638,7 +641,11 @@ void Community::tick() {
             //	  cerr << "Mosquito infected by Person " << _person[i].getID() << " at " << _person[i].getLocation(timeofday)->getID() << "." << endl;
         }
     }
+    return;
+}
 
+
+void Community::_advanceTimers() {
     // advance incubation in people
     Person **p = _exposedQueue[0];
     for (int i=0; i<MAXINCUBATION-1; i++)
@@ -676,7 +683,11 @@ void Community::tick() {
     for (int i=0; i<MOSQUITOINCUBATION-1; i++)
         _exposedMosquitoQueue[i] = _exposedMosquitoQueue[i+1];
     _exposedMosquitoQueue[MOSQUITOINCUBATION-1] = pm;
+    return;
+}
 
+
+void Community::_modelMosquitoMovement() {
     // move mosquitoes
     for (int mosAge=0; mosAge<MAXMOSQUITOAGE-MOSQUITOINCUBATION-1; mosAge++)
         for (Mosquito **m=_infectiousMosquitoQueue[mosAge]; *m!=NULL; m++)
@@ -684,10 +695,28 @@ void Community::tick() {
     for (int mosdays=0; mosdays<MOSQUITOINCUBATION; mosdays++)
         for (Mosquito **m=_exposedMosquitoQueue[mosdays]; *m!=NULL; m++)
             moveMosquito(*m);
+    return;
+}
+
+
+void Community::tick() {
+    assert(_nDay<MAXRUNTIME);
+
+    if (_nDay%365==364) { swapImmuneStates(); }                       // randomize and advance immune states
+    updateWithdrawnStatus();                                          // make people stay home or return to work
+    mosquitoToHumanTransmission();                                    // infect people
+
+    // maybe add the occasional random infection of a person to reflect sporadic travel
+    humanToMosquitoTransmission();                                    // infect mosquitoes in each location
+    _advanceTimers();                                                 // advance H&M incubation periods and M ages
+    _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
 
     _nDay++;
-    //  if (_nDay%365==1) {
-    if (false) {
+    return;
+}
+
+//void Community::modelBirthsAndDeaths() {
+/*if (false) {
         for (int blah=0; blah<50; blah++) {
             cerr << "Day " <<  _nDay << endl;
 
@@ -742,7 +771,6 @@ void Community::tick() {
                 }
             }
 
-            /* 
             // kill younger people based on population pyramid
             // do this in 5-year age groups
             int diff[MAXPERSONAGE];
@@ -796,7 +824,6 @@ void Community::tick() {
             }
               }
             }
-            */
             // age population 1 year
             Person **temp = _personAgeCohort[MAXPERSONAGE-1];
             for (int i=MAXPERSONAGE-1; i>0; i--) {
@@ -817,8 +844,9 @@ void Community::tick() {
             }
             _nDay++;
         }
-    }
-}
+    }*/
+
+//}
 
 
 // getNumInfected - counts number of infected residents

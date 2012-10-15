@@ -29,6 +29,10 @@ class Community
         int getDay() {                                                // what day is it?
             return _nDay;
         }
+        void swapImmuneStates(); 
+        void updateWithdrawnStatus(); 
+        void mosquitoToHumanTransmission();
+        void humanToMosquitoTransmission();
         void tick();                                      // simulate one day
         void setBetaPM(double f) { _fBetaPM = f; }
         void setBetaMP(double f) { _fBetaMP = f; }
@@ -109,6 +113,8 @@ class Community
         void expandExposedQueues();
         void expandMosquitoQueues();
         void moveMosquito(Mosquito *m);
+        void _advanceTimers();
+        void _modelMosquitoMovement();
         double _fDailyBitingPDF[STEPSPERDAY];                         // probability of biting at 3 different times of day (as defined in Location.h)
 };
 #endif
