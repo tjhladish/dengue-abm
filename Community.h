@@ -3,6 +3,7 @@
 #ifndef __COMMUNITY_H
 #define __COMMUNITY_H
 #include <string>
+#include <vector>
 #include "Parameters.h"
 using namespace std;
 
@@ -91,8 +92,8 @@ class Community
                                                                       // array index is equal to the location ID, the second to the day
         Person ***_exposedQueue;                                      // queue of people with n days of latency left
         int _nExposedQueueCapacity;                                   // capacity for each day
-        Mosquito ***_infectiousMosquitoQueue;                         // queue of infectious mosquitoes with n days left to live
-        Mosquito ***_exposedMosquitoQueue;                            // queue of exposed mosquitoes with n days of latency left
+        vector< vector<Mosquito*> > _infectiousMosquitoQueue;         // queue of infectious mosquitoes with n days left to live
+        vector< vector<Mosquito*> > _exposedMosquitoQueue;            // queue of exposed mosquitoes with n days of latency left
         int _nMosquitoQueueCapacity;                                  // capacity for each day
         int _nDay;                                                    // current day
         int _nNumPerson;                                              // number of persons in the simulation
