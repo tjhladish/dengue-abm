@@ -73,13 +73,13 @@ public:
     double fVES;
     double fVEI;
     double fVEP;
-    double fVESs[4];
+    std::vector<double> fVESs;
     double fPreVaccinateFraction;
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     int nDailyExposed[NUM_OF_SEROTYPES];                    // serotypes
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
-    double fPrimaryPathogenicity[NUM_OF_SEROTYPES];         // serotypes
-    double fSecondaryScaling[NUM_OF_SEROTYPES];             //
+    std::vector<double> fPrimaryPathogenicity;              // serotypes
+    std::vector<double> fSecondaryScaling;                  //
     int nDefaultMosquitoCapacity;
     double fMosquitoMultipliers[54];                        // number of mosquitoes per week (up to 53), conforming to a 365-day cycle
     double nMosquitoMultiplierDays[54];                     // when to change the mosquito population

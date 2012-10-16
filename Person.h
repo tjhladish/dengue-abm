@@ -63,11 +63,11 @@ class Person
         //  double getSusceptibility();   // 0=not susceptible, 1=max susceptibility
         //  double getInfectiousness();   // 0=not infectious
         bool vaccinate();                                 // vaccinate this person
-        static void setVES(double f) { _fVES[0] = _fVES[1] = _fVES[2] = _fVES[3] = f; }
-        static void setVESs(double f1,double f2,double f3,double f4) { _fVES[0] = f1; _fVES[1] = f2; _fVES[2] = f3; _fVES[3] = f4; }
+        static void setVES(double f) { _fVES.clear(); _fVES.resize(NUM_OF_SEROTYPES, f); }
+        static void setVESs(std::vector<double> f) { _fVES = f;}
         static void setVEI(double f) { _fVEI = f; }
         static void setVEP(double f) { _fVEP = f; }
-        static double *getVES() { return _fVES; }
+        static std::vector<double> getVES() { return _fVES; }
         static double getVEI() { return _fVEI; }
         static double getVEP() { return _fVEP; }
         static void setDaysImmune(int n) { _nDaysImmune = n; }
@@ -103,7 +103,7 @@ class Person
         Serotype _eSerotype[MAXHISTORY];                              // from 1-4
 
         static int _nDaysImmune;                                      // length of complete cross-protective immunity in days
-        static double _fVES[4];                                       // vaccine protection (all-or-none, different for each serotype)
+        static std::vector<double> _fVES;                               // vaccine protection (all-or-none, different for each serotype)
         static double _fVEI;                                          // vaccine protection
         static double _fVEP;                                          // vaccine protection
         static int _nNextID;                                          // unique ID to assign to the next Person allocated

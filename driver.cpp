@@ -34,7 +34,7 @@ Community* build_community(Parameters* par) {
     community->setBetaPM(par->betaPM);
     community->setBetaMP(par->betaMP);
     if (par->fVES<0.0) {
-        community->setVESs(par->fVESs[0],par->fVESs[1],par->fVESs[2],par->fVESs[3]);
+        community->setVESs(par->fVESs);
     } else {
         community->setVES(par->fVES);
     }
@@ -44,8 +44,8 @@ Community* build_community(Parameters* par) {
     Person::setDaysImmune(par->nDaysImmune);
     community->setMosquitoMoveProbability(par->fMosquitoMove);
     community->setMosquitoTeleportProbability(par->fMosquitoTeleport);
-    community->setPrimaryPathogenicityScaling(par->fPrimaryPathogenicity[0],par->fPrimaryPathogenicity[1],par->fPrimaryPathogenicity[2],par->fPrimaryPathogenicity[3]);
-    community->setSecondaryPathogenicityScaling(par->fSecondaryScaling[0],par->fSecondaryScaling[1],par->fSecondaryScaling[2],par->fSecondaryScaling[3]);
+    community->setPrimaryPathogenicityScaling(par->fPrimaryPathogenicity);
+    community->setSecondaryPathogenicityScaling(par->fSecondaryScaling);
 
     cerr << community->getNumPerson() << " people" << endl;
 
@@ -71,27 +71,26 @@ Community* build_community(Parameters* par) {
 
 
 void seed_epidemic(Parameters* par, Community* community) {
-    if (par->nInitialExposed[0]>0 ||
-        par->nInitialExposed[1]>0 ||
-        par->nInitialExposed[2]>0 ||
-    par->nInitialExposed[3]>0) {
-
-        for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+    // epidemic may be seeded with initial exposure OR initial infection -- not sure why
+    bool attempt_initial_infection = true;
+    for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+        if (par->nInitialExposed[serotype] > 0) {
+            attempt_initial_infection = false;
             cerr << "Initial serotype " << serotype+1 << " exposed = " << par->nInitialExposed[serotype] << endl;
             for (int i=0; i<par->nInitialExposed[serotype]; i++)
                 community->infect(gsl_rng_uniform_int(RNG, community->getNumPerson()), (Serotype) serotype,0);
         }
-    } else if (par->nInitialInfected[0]>0 ||
-        par->nInitialInfected[1]>0 ||
-        par->nInitialInfected[2]>0 ||
-    par->nInitialInfected[3]>0) {
+    }
+    if (attempt_initial_infection) {
         for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-            cerr << "Initial serotype " << serotype+1 << " infected = " << par->nInitialInfected[serotype] << endl;
-            int count = community->getNumInfected(0);
-                                                                      
-            // must infect nInitialInfected persons
-            while (community->getNumInfected(0)<count+par->nInitialInfected[serotype]) {
-                community->infect(gsl_rng_uniform_int(RNG, community->getNumPerson()), (Serotype) serotype,0);
+            if(par->nInitialInfected[serotype] > 0) {
+                cerr << "Initial serotype " << serotype+1 << " infected = " << par->nInitialInfected[serotype] << endl;
+                int count = community->getNumInfected(0);
+
+                // must infect nInitialInfected persons -- this bit is mysterious
+                while (community->getNumInfected(0) < count + par->nInitialInfected[serotype]) {
+                    community->infect(gsl_rng_uniform_int(RNG, community->getNumPerson()), (Serotype) serotype,0);
+                }
             }
         }
     }
@@ -311,6 +310,9 @@ void write_output(Parameters* par, Community* community) {
 
 int main(int argc, char *argv[]) {
     Parameters* par = new Parameters(argc, argv);
+    par->fPrimaryPathogenicity[0] = par->fPrimaryPathogenicity[2] = 1.0;
+    par->fPrimaryPathogenicity[1] = par->fPrimaryPathogenicity[3] = 0.25;
+
     gsl_rng_set(RNG, par->randomseed);
 
     Community* community = build_community(par);

@@ -71,8 +71,8 @@ Community::Community() {
     //  _fMortality = thaimortality;
     _numLocationMosquitoCreated = NULL;
     _bNoSecondaryTransmission = false;
-    _fPrimarySymptomaticScaling[0] = _fPrimarySymptomaticScaling[1] = _fPrimarySymptomaticScaling[2] = _fPrimarySymptomaticScaling[3] = 1.0;
-    _fSecondarySymptomaticScaling[0] = _fSecondarySymptomaticScaling[1] = _fSecondarySymptomaticScaling[2] = _fSecondarySymptomaticScaling[3] = 1.0;
+    _fPrimarySymptomaticScaling.clear();   _fPrimarySymptomaticScaling.resize(NUM_OF_SEROTYPES, 1.0);
+    _fSecondarySymptomaticScaling.clear(); _fSecondarySymptomaticScaling.resize(NUM_OF_SEROTYPES, 1.0);
     for (int i=0; i<MAXRUNTIME; i++)
         for (int j=0; j<NUM_OF_SEROTYPES; j++)
             _nNumNewlyInfected[j][i] = _nNumNewlySymptomatic[j][i] = 0;
@@ -337,8 +337,8 @@ void Community::setVES(double f) {
 }
 
 
-void Community::setVESs(double f1,double f2,double f3,double f4) {
-    Person::setVESs(f1,f2,f3,f4);
+void Community::setVESs(vector<double> f) {
+    Person::setVESs(f);
 }
 
 

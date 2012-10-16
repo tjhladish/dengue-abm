@@ -11,7 +11,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fVES = 0.95;
         fVEI = 0.0;
         fVEP = 0.0;
-        for (int i = 0; i<NUM_OF_SEROTYPES; i++) fVESs[i]=0.0;
+        fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.0);
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
         nSizeMosquitoMultipliers = 0;
@@ -33,9 +33,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
             nInitialInfected[i]=0;
             nDailyExposed[i]=0;
         }
-        fPrimaryPathogenicity[0] = fPrimaryPathogenicity[2] = 1.0;
-        fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
-        fSecondaryScaling[0] = fSecondaryScaling[1] = fSecondaryScaling[2] = fSecondaryScaling[3] = 1.0;
+        fPrimaryPathogenicity.clear();
+        fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
+        fSecondaryScaling.clear();
+        fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 
         std::cerr << "Dengue model, Version " << VERSIONNUMBERMAJOR << "." << VERSIONNUMBERMINOR << std::endl;
         std::cerr << "written by Dennis Chao in 2012" << std::endl;

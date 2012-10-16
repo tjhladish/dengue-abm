@@ -22,9 +22,7 @@ const double Person::_fIncubationDistribution[MAXINCUBATION] = {
     0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1
 };
 
-double Person::_fVES[4] = {                                           // (all-or-none)
-    0.9,0.9,0.9,0.9
-};
+vector<double> Person::_fVES(NUM_OF_SEROTYPES, 0.9);                                           // (all-or-none)
 double Person::_fVEI = 0.0;
 double Person::_fVEP = 0.0;
 int Person::_nDaysImmune = 365;                                       // length of complete cross-protective immunity in da

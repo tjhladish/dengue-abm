@@ -48,21 +48,11 @@ class Community
         int getNumExposedMosquitoes();
         void vaccinate(double f, int age=-1);
         void setVES(double f);
-        void setVESs(double f1,double f2,double f3,double f4);
+        void setVESs(std::vector<double> f);
         void setVEI(double f);
         void setVEP(double f);
-        void setPrimaryPathogenicityScaling(double f1,double f2,double f3,double f4) {
-            _fPrimarySymptomaticScaling[0] = f1;
-            _fPrimarySymptomaticScaling[1] = f2;
-            _fPrimarySymptomaticScaling[2] = f3;
-            _fPrimarySymptomaticScaling[3] = f4;
-        }
-        void setSecondaryPathogenicityScaling(double f1,double f2,double f3,double f4) {
-            _fSecondarySymptomaticScaling[0] = f1;
-            _fSecondarySymptomaticScaling[1] = f2;
-            _fSecondarySymptomaticScaling[2] = f3;
-            _fSecondarySymptomaticScaling[3] = f4;
-        }
+        void setPrimaryPathogenicityScaling(std::vector<double> f) { _fPrimarySymptomaticScaling = f; }
+        void setSecondaryPathogenicityScaling(std::vector<double> f) { _fSecondarySymptomaticScaling = f; }
         double getSecondaryPathogenicityScaling(Serotype serotype) { return _fSecondarySymptomaticScaling[(int) serotype]; }
         int getMaxInfectionParity() { return _nMaxInfectionParity; }
         void setMaxInfectionParity(int n) { _nMaxInfectionParity=n; }
@@ -104,8 +94,8 @@ class Community
         double _fMosquitoTeleportProb;                                // daily probability of mosquito teleportation (long-range movement)
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-        double _fPrimarySymptomaticScaling[NUM_OF_SEROTYPES];
-        double _fSecondarySymptomaticScaling[NUM_OF_SEROTYPES];
+        std::vector<double> _fPrimarySymptomaticScaling;
+        std::vector<double> _fSecondarySymptomaticScaling;
         int _nNumNewlyInfected[NUM_OF_SEROTYPES][MAXRUNTIME];
         int _nNumNewlySymptomatic[NUM_OF_SEROTYPES][MAXRUNTIME];
 
