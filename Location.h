@@ -3,7 +3,6 @@
 // Maintains lists of which humans are in the building at 3 points in the day
 #ifndef __LOCATION_H
 #define __LOCATION_H
-#include "Parameters.h"
 
 class Person;
 

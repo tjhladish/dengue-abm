@@ -9,8 +9,9 @@
 #include "Mosquito.h"
 #include "Person.h"
 #include "Location.h"
+#include "Parameters.h"
 
-using namespace std;
+using namespace dengue::standard;
 
 int Location::_nNextID = 0;
 int Location::_nDefaultMosquitoCapacity = 20;

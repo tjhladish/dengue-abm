@@ -16,8 +16,9 @@
 #include "Mosquito.h"
 #include "Location.h"
 #include "Community.h"
+#include "Parameters.h"
 
-using namespace std;
+using namespace dengue::standard;
 
 const double Community::SYMPTOMATICBYAGE[MAXPERSONAGE] = {
     0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,

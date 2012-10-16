@@ -12,8 +12,9 @@
 #include <gsl/gsl_randist.h>
 #include "Person.h"
 #include "Community.h"
+#include "Parameters.h"
 
-using namespace std;
+using namespace dengue::standard;
 
 int Person::_nNextID = 1;
 const double Person::_fIncubationDistribution[MAXINCUBATION] = {

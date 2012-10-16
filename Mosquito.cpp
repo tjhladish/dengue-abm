@@ -8,8 +8,9 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include "Mosquito.h"
+#include "Parameters.h"
 
-using namespace std;
+using namespace dengue::standard;
 
 int Mosquito::_nNextID = 0;
 

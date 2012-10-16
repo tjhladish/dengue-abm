@@ -4,8 +4,6 @@
 #define __COMMUNITY_H
 #include <string>
 #include <vector>
-#include "Parameters.h"
-using namespace std;
 
 class Person;
 class Mosquito;
@@ -16,8 +14,8 @@ class Community
     public:
         Community();
         virtual ~Community();
-        bool loadPopulation(string szPop,string szImm);
-        bool loadLocations(string szLocs,string szNet);
+        bool loadPopulation(std::string szPop,std::string szImm);
+        bool loadLocations(std::string szLocs,std::string szNet);
         int getNumPerson() { return _nNumPerson; }
         Person *getPerson(int n) { return _person+n; }
         int getNumInfected(int day);
@@ -76,10 +74,10 @@ class Community
         const static double SYMPTOMATICBYAGE[MAXPERSONAGE];   // for some serotypes, the fraction who are symptomatic upon primary infection
 
     protected:
-        string _szPopulationFilename;                                 // population data filename
-        string _szImmunityFilename;                                   // immune status data filename
-        string _szLocationFilename;                                   // location filename
-        string _szNetworkFilename;                                    // location network filename
+        std::string _szPopulationFilename;                                 // population data filename
+        std::string _szImmunityFilename;                                   // immune status data filename
+        std::string _szLocationFilename;                                   // location filename
+        std::string _szNetworkFilename;                                    // location network filename
         //  Mosquito *_mosquito;
         Person *_person;                                              // the array index is equal to the ID
         Person ***_personAgeCohort;                                   // array of pointers to people of the same age
@@ -92,8 +90,8 @@ class Community
                                                                       // array index is equal to the location ID, the second to the day
         Person ***_exposedQueue;                                      // queue of people with n days of latency left
         int _nExposedQueueCapacity;                                   // capacity for each day
-        vector< vector<Mosquito*> > _infectiousMosquitoQueue;         // queue of infectious mosquitoes with n days left to live
-        vector< vector<Mosquito*> > _exposedMosquitoQueue;            // queue of exposed mosquitoes with n days of latency left
+        std::vector< std::vector<Mosquito*> > _infectiousMosquitoQueue;         // queue of infectious mosquitoes with n days left to live
+        std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;            // queue of exposed mosquitoes with n days of latency left
         int _nMosquitoQueueCapacity;                                  // capacity for each day
         int _nDay;                                                    // current day
         int _nNumPerson;                                              // number of persons in the simulation
