@@ -35,6 +35,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
         }
         fPrimaryPathogenicity.clear();
         fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
+        fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
+
         fSecondaryScaling.clear();
         fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 

@@ -20,6 +20,25 @@
 
 using namespace dengue::standard;
 const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+
+// Predeclare local functions
+Community* build_community(Parameters* par);
+void seed_epidemic(Parameters* par, Community* community);
+void simulate_epidemic(Parameters* par, Community* community);
+void write_output(Parameters* par, Community* community);
+
+int main(int argc, char *argv[]) {
+    Parameters* par = new Parameters(argc, argv);
+
+    gsl_rng_set(RNG, par->randomseed);
+
+    Community* community = build_community(par);
+    seed_epidemic(par, community);
+    simulate_epidemic(par, community);
+    write_output(par, community);
+
+    return 0;
+}
  
 Community* build_community(Parameters* par) {
     Community* community = new Community();
@@ -256,23 +275,17 @@ void write_output(Parameters* par, Community* community) {
         }
         dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
         const int *pInfected1 = community->getNumNewlyInfected(SEROTYPE_1);
-        const int *pSymptomatic1 = community->getNumNewlySymptomatic(SEROTYPE_1);
         const int *pInfected2 = community->getNumNewlyInfected(SEROTYPE_2);
-        const int *pSymptomatic2 = community->getNumNewlySymptomatic(SEROTYPE_2);
         const int *pInfected3 = community->getNumNewlyInfected(SEROTYPE_3);
-        const int *pSymptomatic3 = community->getNumNewlySymptomatic(SEROTYPE_3);
         const int *pInfected4 = community->getNumNewlyInfected(SEROTYPE_4);
+        const int *pSymptomatic1 = community->getNumNewlySymptomatic(SEROTYPE_1);
+        const int *pSymptomatic2 = community->getNumNewlySymptomatic(SEROTYPE_2);
+        const int *pSymptomatic3 = community->getNumNewlySymptomatic(SEROTYPE_3);
         const int *pSymptomatic4 = community->getNumNewlySymptomatic(SEROTYPE_4);
         for (int t=0; t<par->nRunLength; t++) {
             dailyFile << t << ","
-                      << pInfected1[t] << "," 
-                      << pInfected2[t] << "," 
-                      << pInfected3[t] << "," 
-                      << pInfected4[t] << "," 
-                      << pSymptomatic1[t] << "," 
-                      << pSymptomatic2[t] << "," 
-                      << pSymptomatic3[t] << "," 
-                      << pSymptomatic4[t] << endl;
+                      << pInfected1[t] << "," << pInfected2[t] << "," << pInfected3[t] << "," << pInfected4[t] << "," 
+                      << pSymptomatic1[t] << "," << pSymptomatic2[t] << "," << pSymptomatic3[t] << "," << pSymptomatic4[t] << endl;
         }
         dailyFile.close();
     }
@@ -307,18 +320,3 @@ void write_output(Parameters* par, Community* community) {
     }
 }
 
-
-int main(int argc, char *argv[]) {
-    Parameters* par = new Parameters(argc, argv);
-    par->fPrimaryPathogenicity[0] = par->fPrimaryPathogenicity[2] = 1.0;
-    par->fPrimaryPathogenicity[1] = par->fPrimaryPathogenicity[3] = 0.25;
-
-    gsl_rng_set(RNG, par->randomseed);
-
-    Community* community = build_community(par);
-    seed_epidemic(par, community);
-    simulate_epidemic(par, community);
-    write_output(par, community);
-
-    return 0;
-}
