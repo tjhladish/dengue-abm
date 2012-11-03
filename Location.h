@@ -6,8 +6,7 @@
 
 class Person;
 
-class Location
-{
+class Location {
     public:
         Location();
         virtual ~Location();
@@ -16,7 +15,7 @@ class Location
         //  int getNumMosquitoes(int n) { return _nNumMosquitoes; }
         void addPerson(Person *p, int t);
         bool removePerson(Person *p, int t);
-        int getNumPerson(int timeofday) { return _nNumPerson[timeofday]; }
+        int getNumPerson(int timeofday) { return _person[timeofday].size(); } //_nNumPerson[timeofday]; }
         int getBaseMosquitoCapacity() { return _nBaseMosquitoCapacity; }
         Person *getPerson(int id, int timeofday);
         void addNeighbor(Location *p);
@@ -27,16 +26,10 @@ class Location
         static void setDefaultMosquitoCapacity(int x) { _nDefaultMosquitoCapacity = x; }
         static int getDefaultMosquitoCapacity() { return _nDefaultMosquitoCapacity; }
 
-        // bitmasks for coding _nPersonTimes
-        static const unsigned char TIME_MORNING = 0x01;
-        static const unsigned char TIME_MIDDAY = 0x02;
-        static const unsigned char TIME_AFTERNOON = 0x04;
     protected:
         int _nID;                                                     // unique identifier
         //  int _nNumMosquitoes;    // number of mosquitoes living here
-        Person ***_person;                                            // pointers to person who come to this location
-        int _nNumPerson[3];                                           // number of people present in the morning, at midday, and in the afternoon
-        int _nMaxPerson;                                              // number of people present in the morning, at midday, and in the afternoon
+        std::vector< std::vector<Person*> > _person;                                            // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
         Location **_neighbors;
         int _nNumNeighbors;

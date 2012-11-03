@@ -509,9 +509,9 @@ void Community::mosquitoToHumanTransmission() {
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
                     if (r<exposuretime[timeofday]) {
                         // bite at this time of day
-                        int id = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
-                        Person *p = pLoc->getPerson(id, timeofday);
-//                        cerr << " infect person " << id << "/" << pLoc->getNumPerson(timeofday) 
+                        int idx = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
+                        Person *p = pLoc->getPerson(idx, timeofday);
+//                        cerr << " infect person " << idx << "/" << pLoc->getNumPerson(timeofday) 
 //                            << "  " << p->getID() << " with " << m->getSerotype() << " from " << m->getID() << endl;
                         Serotype serotype = m->getSerotype();
                         if (p->infect(m->getID(), serotype, _nDay, pLoc->getID(),

@@ -16,11 +16,9 @@ using namespace dengue::standard;
 int Location::_nNextID = 0;
 int Location::_nDefaultMosquitoCapacity = 20;
 
-Location::Location() {
+Location::Location()
+    : _person(3, vector<Person*>(0) ) {
     _nID = _nNextID++;
-    _person = NULL;
-    _nMaxPerson = 0;
-    _nNumPerson[0] = _nNumPerson[1] = _nNumPerson[2] = 0;
     _neighbors = NULL;
     _nNumNeighbors = _nMaxNeighbors = 0;
     _nBaseMosquitoCapacity = _nDefaultMosquitoCapacity;
@@ -29,11 +27,12 @@ Location::Location() {
 
 
 Location::~Location() {
-    if (_person) {
-        delete [] _person[0];
-        delete [] _person[1];
-        delete [] _person[2];
-        delete [] _person;
+    if (_person.size()) {
+        for (unsigned int i = 0; i<_person.size(); i++) {
+            for (unsigned int j = 0; j<_person[i].size(); j++) {
+                delete _person[i][j]; 
+            }
+        }
     }
     if (_neighbors)
         delete [] _neighbors;
@@ -41,35 +40,17 @@ Location::~Location() {
 
 
 void Location::addPerson(Person *p, int t) {
-    if (!_person) {
-        _person = new Person **[3];
-        _nMaxPerson = 20;
-        _person[0] = new Person*[_nMaxPerson];
-        _person[1] = new Person*[_nMaxPerson];
-        _person[2] = new Person*[_nMaxPerson];
-    }
-    if (_nNumPerson[t]>=_nMaxPerson) {
-        _nMaxPerson *= 2;
-        for (int t=0; t<3; t++) {
-            Person **temp = new Person*[_nMaxPerson];
-            for (int i=0; i<_nNumPerson[t]; i++) {
-                temp[i] = _person[t][i];
-            }
-            delete [] _person[t];
-            _person[t] = temp;
-        }
-    }
-    _person[t][_nNumPerson[t]] = p;
-    _nNumPerson[t]++;
+    //assert((unsigned) t < _person.size());
+    _person[t].push_back(p);
 }
 
 
 bool Location::removePerson(Person *p, int t) {
-    assert(_person);
-    for (int i=0; i<_nNumPerson[t]; i++) {
+    //assert((unsigned) t < _person.size());
+    for (unsigned int i=0; i<_person[t].size(); i++) {
         if (_person[t][i] == p) {
-            _person[t][i] = _person[t][_nNumPerson[t]-1];
-            _nNumPerson[t]--;
+            _person[t][i] = _person[t].back();
+            _person[t].pop_back();
             return true;
         }
     }
@@ -77,10 +58,10 @@ bool Location::removePerson(Person *p, int t) {
 }
 
 
-Person *Location::getPerson(int id, int timeofday) {
-    assert(id<_nNumPerson[timeofday]);
-    assert(timeofday<3);
-    return _person[timeofday][id];
+Person *Location::getPerson(int idx, int timeofday) {
+    //assert((unsigned) timeofday < _person.size());
+    //assert((unsigned) idx < _person[timeofday].size());
+    return _person[timeofday][idx];
 }
 
 
