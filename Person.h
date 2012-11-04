@@ -63,7 +63,7 @@ class Person
         //  double getSusceptibility();   // 0=not susceptible, 1=max susceptibility
         //  double getInfectiousness();   // 0=not infectious
         bool vaccinate();                                 // vaccinate this person
-        static void setVES(double f) { _fVES.clear(); _fVES.resize(NUM_OF_SEROTYPES, f); }
+        //static void setVES(double f) { _fVES.clear(); _fVES.resize(NUM_OF_SEROTYPES, f); }
         static void setVESs(std::vector<double> f) { _fVES = f;}
         static void setVEI(double f) { _fVEI = f; }
         static void setVEP(double f) { _fVEP = f; }

@@ -19,8 +19,6 @@ int Location::_nDefaultMosquitoCapacity = 20;
 Location::Location()
     : _person(3, vector<Person*>(0) ) {
     _nID = _nNextID++;
-    _neighbors = NULL;
-    _nNumNeighbors = _nMaxNeighbors = 0;
     _nBaseMosquitoCapacity = _nDefaultMosquitoCapacity;
     _bUndefined = false;
 }
@@ -34,8 +32,11 @@ Location::~Location() {
             }
         }
     }
-    if (_neighbors)
-        delete [] _neighbors;
+    if (_neighbors.size()) {
+        for (unsigned int i = 0; i<_neighbors.size(); i++) {
+            delete _neighbors[i];
+        }
+    }
 }
 
 
@@ -68,19 +69,7 @@ Person *Location::getPerson(int idx, int timeofday) {
 // addNeighbor - adds location p to the location's neighbor list.
 // Note that this relationship is one-way.
 void Location::addNeighbor(Location *p) {
-    if (_neighbors==NULL) {
-        _nMaxNeighbors = 20;
-        _neighbors = new Location *[_nMaxNeighbors];
-    }
-    for (int i=0; i<_nNumNeighbors; i++)
-        if (_neighbors[i]==p)
-            return;                                                   // already a neighbor
-    if (_nNumNeighbors>=_nMaxNeighbors) {
-        Location **temp = new Location *[_nMaxNeighbors*2];
-        for (int i=0; i<_nNumNeighbors; i++)
-            temp[i] = _neighbors[i];
-        delete [] _neighbors;
-        _neighbors = temp;
-    }
-    _neighbors[_nNumNeighbors++] = p;
+    for (unsigned int i=0; i<_neighbors.size(); i++)
+        if (_neighbors[i]==p) return;                                                   // already a neighbor
+    _neighbors.push_back(p);
 }

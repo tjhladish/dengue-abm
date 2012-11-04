@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 }
  
 Community* build_community(Parameters* par) {
-    Community* community = new Community();
+    Community* community = new Community(par);
     if (!community->loadLocations(par->szLocationFile.c_str(),par->szNetworkFile.c_str())) {
         cerr << "Could not load locations" << endl;
         exit(-1);
@@ -50,36 +50,31 @@ Community* build_community(Parameters* par) {
         cerr << "Could not load population" << endl;
         exit(-1);
     }
-    community->setBetaPM(par->betaPM);
-    community->setBetaMP(par->betaMP);
-    if (par->fVES<0.0) {
+/*    if (par->fVES<0.0) {
         community->setVESs(par->fVESs);
     } else {
         community->setVES(par->fVES);
-    }
-    community->setVEI(par->fVEI);
-    community->setVEP(par->fVEP);
-    community->setMaxInfectionParity(par->nMaxInfectionParity);
+    }*/
+    Person::setVESs(par->fVESs);
+    Person::setVEI(par->fVEI);
+    Person::setVEP(par->fVEP);
     Person::setDaysImmune(par->nDaysImmune);
-    community->setMosquitoMoveProbability(par->fMosquitoMove);
-    community->setMosquitoTeleportProbability(par->fMosquitoTeleport);
-    community->setPrimaryPathogenicityScaling(par->fPrimaryPathogenicity);
-    community->setSecondaryPathogenicityScaling(par->fSecondaryScaling);
-
     cerr << community->getNumPerson() << " people" << endl;
 
     if (!par->bSecondaryTransmission) {
         community->setNoSecondaryTransmission();
-        //    cerr << "No secondary transmission, 1 person infected" << endl;
     }
 
-    if (par->fPreVaccinateFraction>0.0)
+    if (par->fPreVaccinateFraction>0.0) {
         community->vaccinate(par->fPreVaccinateFraction);
+    }
 
     if (par->nSizePrevaccinateAge>0) {
-        for (int j=0; j<par->nSizePrevaccinateAge; j++)
-            for (int k=par->nPrevaccinateAgeMin[j]; k<=par->nPrevaccinateAgeMax[j]; k++)
+        for (int j=0; j<par->nSizePrevaccinateAge; j++) {
+            for (int k=par->nPrevaccinateAgeMin[j]; k<=par->nPrevaccinateAgeMax[j]; k++) {
                 community->vaccinate(par->fPrevaccinateAgeFraction[j],k);
+            }
+        }
     }
 
     for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
@@ -273,19 +268,15 @@ void write_output(Parameters* par, Community* community) {
             cerr << "ERROR: Daily file '" << par->szDailyFile << "' cannot be open for writing." << endl;
             exit(-1);
         }
-        dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
-        const int *pInfected1 = community->getNumNewlyInfected(SEROTYPE_1);
-        const int *pInfected2 = community->getNumNewlyInfected(SEROTYPE_2);
-        const int *pInfected3 = community->getNumNewlyInfected(SEROTYPE_3);
-        const int *pInfected4 = community->getNumNewlyInfected(SEROTYPE_4);
-        const int *pSymptomatic1 = community->getNumNewlySymptomatic(SEROTYPE_1);
-        const int *pSymptomatic2 = community->getNumNewlySymptomatic(SEROTYPE_2);
-        const int *pSymptomatic3 = community->getNumNewlySymptomatic(SEROTYPE_3);
-        const int *pSymptomatic4 = community->getNumNewlySymptomatic(SEROTYPE_4);
+        dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"
+                  << "newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
+        vector< vector<int> > infected =    community->getNumNewlyInfected();
+        vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
         for (int t=0; t<par->nRunLength; t++) {
-            dailyFile << t << ","
-                      << pInfected1[t] << "," << pInfected2[t] << "," << pInfected3[t] << "," << pInfected4[t] << "," 
-                      << pSymptomatic1[t] << "," << pSymptomatic2[t] << "," << pSymptomatic3[t] << "," << pSymptomatic4[t] << endl;
+            dailyFile << t << ",";
+            for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyFile << infected[i][t] << ",";
+            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyFile << symptomatic[i][t] << ","; 
+            dailyFile << symptomatic[NUM_OF_SEROTYPES-1][t] << endl;
         }
         dailyFile.close();
     }

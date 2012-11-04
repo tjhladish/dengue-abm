@@ -108,11 +108,6 @@ bool Person::naturalDeath(int t) {
 
 void Person::kill(int time) {
     _bDead = true;
-    //  if (_nInfectedTime<time) {
-    //    _nSymptomTime=0;
-    //    _nInfectiousTime=0;
-    //    _nRecoveryTime=0;
-    //  }
 }
 
 
@@ -145,7 +140,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, do
     _eSerotype[0] = serotype;
 
     if (primarysymptomatic>0.0 &&
-        gsl_rng_uniform(RNG)<primarysymptomatic*Community::SYMPTOMATICBYAGE[_nAge] * (isVaccinated()?(1.0-_fVEP):1.0) *
+        gsl_rng_uniform(RNG)<primarysymptomatic*SYMPTOMATIC_BY_AGE[_nAge] * (isVaccinated()?(1.0-_fVEP):1.0) *
     (_nImmunity>0?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
         _nSymptomTime[0] = _nInfectiousTime[0] + 1;                   // symptomatic one day before infectious
         double r = gsl_rng_uniform(RNG);
@@ -172,7 +167,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, do
         _nSymptomTime[0] = -10000;
     }
     _nImmunity |= (1<<((int) serotype));
-    //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << Community::SYMPTOMATICBYAGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
+    //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << SYMPTOMATIC_BY_AGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
 
     return true;
 }

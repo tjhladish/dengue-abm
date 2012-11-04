@@ -20,62 +20,26 @@
 
 using namespace dengue::standard;
 
-const double Community::SYMPTOMATICBYAGE[MAXPERSONAGE] = {
-    0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,
-    0.1017964,0.1017964,0.1017964,0.1017964,0.1017964,
-    0.2774451,0.2774451,0.2774451,0.2774451,0.2774451,
-    0.4870259,0.4870259,0.4870259,0.4870259,0.4870259,
-    0.4870259,0.4870259,0.4870259,0.4870259,0.4870259,
-    0.8522954,0.8522954,0.8522954,0.8522954,0.8522954,
-    0.8522954,0.8522954,0.8522954,0.8522954,0.8522954,
-    0.9600798,0.9600798,0.9600798,0.9600798,0.9600798,
-    0.9600798,0.9600798,0.9600798,0.9600798,0.9600798,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-};
-
-//2005 Thai mortality data by age from Porapakkham 2010
-//double thaimortality[Community::MAXPERSONAGE] = {0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0005,0.0007,0.0007,0.0007,0.0007,0.0007,0.0009,0.0009,0.0009,0.0009,0.0009,0.0016,0.0016,0.0016,0.0016,0.0016,0.002,0.002,0.002,0.002,0.002,0.0022,0.0022,0.0022,0.0022,0.0022,0.0028,0.0028,0.0028,0.0028,0.0028,0.0038,0.0038,0.0038,0.0038,0.0038,0.005,0.005,0.005,0.005,0.005,0.0077,0.0077,0.0077,0.0077,0.0077,0.012,0.012,0.012,0.012,0.012,0.0185,0.0185,0.0185,0.0185,0.0185,0.0287,0.0287,0.0287,0.0287,0.0287,0.0457,0.0457,0.0457,0.0457,0.0457,0.0767,0.0767,0.0767,0.0767,0.0767,0.1434,0.1434,0.1434,0.1434,0.1434};
-
 // Community
-Community::Community() {
+Community::Community(Parameters* parameters) 
+    : _exposedQueue(MAXINCUBATION, vector<Person*>(0)),
+    _infectiousMosquitoQueue(MAXMOSQUITOAGE-MOSQUITOINCUBATION, vector<Mosquito*>(0)),
+    _exposedMosquitoQueue(MOSQUITOINCUBATION, vector<Mosquito*>(0)),
+    //_fPrimarySymptomaticScaling(NUM_OF_SEROTYPES, 1.0),
+    //_fSecondarySymptomaticScaling(NUM_OF_SEROTYPES, 1.0),
+    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAXRUNTIME)),
+    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAXRUNTIME))
+    {
+    _par = parameters;
     _nDay = 0;
     _nNumPerson = 0;
     _nNumLocation = 0;
     _person = NULL;
     _location = NULL;
-    _fBetaPM = 1.0;
-    _fBetaMP = 0.05;
-    _fMosquitoMoveProb = 0.3;
-    _fMosquitoTeleportProb = 0.02;
-    _fDailyBitingPDF[0] = 0.08;
-    _fDailyBitingPDF[1] = 0.76;
-    _fDailyBitingPDF[2] = 0.16;
-    _nMaxInfectionParity = NUM_OF_SEROTYPES;
-    _exposedQueue = new Person **[MAXINCUBATION];
-    _nExposedQueueCapacity = 100;
+    //_nMaxInfectionParity = NUM_OF_SEROTYPES;
     _fMosquitoCapacityMultiplier = 1.0;
-    for (int i=0; i<MAXINCUBATION; i++) {
-        _exposedQueue[i] = new Person *[_nExposedQueueCapacity];
-        _exposedQueue[i][0] = NULL;
-    }
-    for (int i=0; i<MAXMOSQUITOAGE-MOSQUITOINCUBATION; i++) {
-        vector<Mosquito*> x;
-        _infectiousMosquitoQueue.push_back(x);
-    }
-    for (int i=0; i<MOSQUITOINCUBATION; i++) {
-        vector<Mosquito*> x;
-        _exposedMosquitoQueue.push_back(x);
-    }
-    _personAgeCohort = NULL;
     _fMortality = NULL;
-    //  _fMortality = thaimortality;
-    _numLocationMosquitoCreated = NULL;
     _bNoSecondaryTransmission = false;
-    _fPrimarySymptomaticScaling.clear();   _fPrimarySymptomaticScaling.resize(NUM_OF_SEROTYPES, 1.0);
-    _fSecondarySymptomaticScaling.clear(); _fSecondarySymptomaticScaling.resize(NUM_OF_SEROTYPES, 1.0);
-    for (int i=0; i<MAXRUNTIME; i++)
-        for (int j=0; j<NUM_OF_SEROTYPES; j++)
-            _nNumNewlyInfected[j][i] = _nNumNewlySymptomatic[j][i] = 0;
 }
 
 
@@ -84,43 +48,12 @@ Community::~Community() {
         delete [] _person;
     if (_location)
         delete [] _location;
-    if (_exposedQueue) {
-        for (int i=0; i<MAXINCUBATION; i++)
-            if (_exposedQueue[i])
-                delete [] _exposedQueue[i];
-        delete [] _exposedQueue;
-    }
 
-    if (_infectiousMosquitoQueue.size()) {
-        for(unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
-            for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
-               delete _infectiousMosquitoQueue[i][j]; 
-            }
-        }
-        _infectiousMosquitoQueue.clear();
-    }
-
-    if (_exposedMosquitoQueue.size()) {
-        for(unsigned int i=0; i<_exposedMosquitoQueue.size(); i++) {
-            for(unsigned int j=0; j<_exposedMosquitoQueue[i].size(); j++) {
-                delete _exposedMosquitoQueue[i][j]; 
-            }
-        }
-        _exposedMosquitoQueue.clear();
-    }
-    
-    if (_personAgeCohort) {
-        for (int i=0; i<MAXPERSONAGE; i++)
-            if (_personAgeCohort[i])
-                delete [] _personAgeCohort[i];
-        delete [] _personAgeCohort;
-    }
-    if (_numLocationMosquitoCreated) {
-        for (int i=0; i<_nNumLocation; i++)
-            if (_numLocationMosquitoCreated[i])
-                delete [] _numLocationMosquitoCreated[i];
-        delete []_numLocationMosquitoCreated;
-    }
+    _exposedQueue.clear();
+    _infectiousMosquitoQueue.clear();
+    _exposedMosquitoQueue.clear();
+    _personAgeCohort.clear();
+    _numLocationMosquitoCreated.clear();
 }
 
 
@@ -151,12 +84,9 @@ bool Community::loadPopulation(string szPop,string szImm) {
         char temp[500];
         iss.getline(temp,500);
         istringstream line(temp);
-        int id, age, house, work;//, imm1, imm2, imm3, imm4;
-        //imm1 = imm2 = imm3 = imm4 = 0;
+        int id, age, house, work;
         int temp1, temp2;
         string gender;
-        //    if (line >> id >> age >> gender >> house >> work >> imm1 >> imm2 >> imm3 >> imm4) {
-                                                                      // >> imm1 >> imm2 >> imm3 >> imm4) {
         if (line >> id >> house >> age >> gender >> temp1 >> temp2 >> work) {
             _person[_nNumPerson].setAge(age);
             _person[_nNumPerson].setHomeID(house);
@@ -168,14 +98,6 @@ bool Community::loadPopulation(string szPop,string szImm) {
             _location[house].addPerson(_person+_nNumPerson, 2);
             assert(age<MAXPERSONAGE);
             agecounts[age]++;
-            /*if (imm1>0)
-                _person[_nNumPerson].setImmunity(1);
-            if (imm2>0)
-                _person[_nNumPerson].setImmunity(2);
-            if (imm3>0)
-                _person[_nNumPerson].setImmunity(3);
-            if (imm4>0)
-                _person[_nNumPerson].setImmunity(4);*/
             _nNumPerson++;
         }
         else {
@@ -218,23 +140,15 @@ bool Community::loadPopulation(string szPop,string szImm) {
     }
 
     // keep track of all age cohorts for aging and mortality
-    _nPersonAgeCohortMaxSize = 0;
-    for (int i=0; i<MAXPERSONAGE; i++)
-        if (_nPersonAgeCohortMaxSize<agecounts[i])
-            _nPersonAgeCohortMaxSize=agecounts[i];
-    _nPersonAgeCohortMaxSize *= 1.25;
-    _personAgeCohort = new Person **[MAXPERSONAGE];
-    for (int i=0; i<MAXPERSONAGE; i++) {
-        _nPersonAgeCohortSizes[i] = 0;
-        _personAgeCohort[i] = new Person *[_nPersonAgeCohortMaxSize];
-    }
+    _personAgeCohort.clear();
+    _personAgeCohort.resize(MAXPERSONAGE, vector<Person*>(0));
+
     for (int i=0; i<_nNumPerson; i++) {
         int age = _person[i].getAge();
         assert(age<MAXPERSONAGE);
-        _personAgeCohort[age][_nPersonAgeCohortSizes[age]++]=_person+i;
+        _personAgeCohort[age].push_back(_person + i);
+        _nPersonAgeCohortSizes[age]++;
     }
-    for (int i=0; i<MAXPERSONAGE; i++)
-        _nOriginalPersonAgeCohortSizes[i] = _nPersonAgeCohortSizes[i];
     return true;
 }
 
@@ -263,9 +177,11 @@ bool Community::loadLocations(string szLocs,string szNet) {
     cerr << _nNumLocation << " locations" << endl;
     _location = new Location[_nNumLocation];
 
-    _numLocationMosquitoCreated = new int *[_nNumLocation];
-    for (int i=0; i<_nNumLocation; i++)
-        _numLocationMosquitoCreated[i] = NULL;
+    _numLocationMosquitoCreated.clear();
+    _numLocationMosquitoCreated.resize(_nNumLocation, vector<int>(MAXRUNTIME, 0));
+    //_numLocationMosquitoCreated = new int *[_nNumLocation];
+    //for (int i=0; i<_nNumLocation; i++)
+    //    _numLocationMosquitoCreated[i] = NULL;
 
     iss.open(_szNetworkFilename.c_str());
     if (!iss) {
@@ -299,9 +215,9 @@ bool Community::infect(int id, Serotype serotype, int day) {
     for (int i=0; i<_nNumPerson; i++)
     if (_person[i].getID()==id) {
         bool result =  _person[i].infect(-1, serotype, day, 0,
-            _fPrimarySymptomaticScaling[(int) serotype],
-            _fSecondarySymptomaticScaling[(int) serotype],
-            _nMaxInfectionParity);
+            _par->fPrimaryPathogenicity[(int) serotype],
+            _par->fSecondaryScaling[(int) serotype],
+            _par->nMaxInfectionParity);
         if (result)
             _nNumNewlyInfected[(int) serotype][_nDay]++;
         return result;
@@ -331,7 +247,7 @@ void Community::vaccinate(double f, int age) {
     }
 }
 
-
+/*
 void Community::setVES(double f) {
     Person::setVES(f);
 }
@@ -341,7 +257,6 @@ void Community::setVESs(vector<double> f) {
     Person::setVESs(f);
 }
 
-
 void Community::setVEI(double f) {
     Person::setVEI(f);
 }
@@ -350,6 +265,7 @@ void Community::setVEI(double f) {
 void Community::setVEP(double f) {
     Person::setVEP(f);
 }
+*/
 
 
 // returns number of days mosquito has left to live
@@ -414,24 +330,10 @@ Mosquito *Community::getExposedMosquito(int n) {
 }
 
 
-// expandExposedQueues - increases the capacity of the queues
-// that keep track of exposed humans
-void Community::expandExposedQueues() {
-    for (int i=0; i<MAXINCUBATION; i++) {
-        Person **temp = new Person *[_nExposedQueueCapacity*2];
-        for (int j=0; j<_nExposedQueueCapacity; j++)
-            temp[j] = _exposedQueue[i][j];
-        delete [] _exposedQueue[i];
-        _exposedQueue[i] = temp;
-    }
-    _nExposedQueueCapacity *= 2;
-}
-
-
 void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
-    if (r<_fMosquitoMoveProb) {
-        if (r<_fMosquitoTeleportProb) {                               // teleport
+    if (r<_par->fMosquitoMove) {
+        if (r<_par->fMosquitoTeleport) {                               // teleport
             int location;
             do {
                 location = gsl_rng_uniform_int(RNG,_nNumLocation);
@@ -498,12 +400,12 @@ void Community::mosquitoToHumanTransmission() {
         for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
             Mosquito* m = _infectiousMosquitoQueue[i][j];
             Location *pLoc = m->getLocation();
-            if (gsl_rng_uniform(RNG)<_fBetaMP) {                      // infectious mosquito bites
+            if (gsl_rng_uniform(RNG)<_par->betaMP) {                      // infectious mosquito bites
 
                 // take sum of people in the location, weighting by time of day
                 double exposuretime[STEPSPERDAY];
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
-                    exposuretime[timeofday] = pLoc->getNumPerson(timeofday) * _fDailyBitingPDF[timeofday];
+                    exposuretime[timeofday] = pLoc->getNumPerson(timeofday) * DAILY_BITING_PDF[timeofday];
                 }
                 double r = gsl_rng_uniform(RNG) * (exposuretime[0]+exposuretime[1]+exposuretime[2]);
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
@@ -515,9 +417,9 @@ void Community::mosquitoToHumanTransmission() {
 //                            << "  " << p->getID() << " with " << m->getSerotype() << " from " << m->getID() << endl;
                         Serotype serotype = m->getSerotype();
                         if (p->infect(m->getID(), serotype, _nDay, pLoc->getID(),
-                                    _fPrimarySymptomaticScaling[(int) serotype],
-                                    _fSecondarySymptomaticScaling[(int) serotype],
-                                    _nMaxInfectionParity)) {
+                                    _par->fPrimaryPathogenicity[(int) serotype],
+                                    _par->fSecondaryScaling[(int) serotype],
+                                    _par->nMaxInfectionParity)) {
                             _nNumNewlyInfected[(int) p->getSerotype()][_nDay]++;
                             if (_bNoSecondaryTransmission) {
                                 p->kill(_nDay);                       // kill secondary cases so they do not transmit
@@ -526,17 +428,7 @@ void Community::mosquitoToHumanTransmission() {
                                 // NOTE: We are storing the location ID of infection, not person ID!!!
                                 //	      cerr << "Person " << p->getID() << " infected" << endl;
                                 // add to queue
-                                Person **q = _exposedQueue[p->getInfectiousTime()-_nDay];
-                                int count=0;
-                                while (*q) {
-                                    q++;
-                                    count++;
-                                }
-                                *q = p;
-                                q++;
-                                *q = NULL;
-                                if (count+2>=_nExposedQueueCapacity)
-                                    expandExposedQueues();
+                                _exposedQueue[p->getInfectiousTime()-_nDay].push_back(p);
                             }
                         }
                         break;
@@ -567,16 +459,16 @@ void Community::humanToMosquitoTransmission() {
                         int serotype = (int) p->getSerotype();
                         //assert(serotype<4);
                         if (vaceffect==1.0) {
-                            sumviremic += _fDailyBitingPDF[timeofday];
-                            sumserotype[serotype] += _fDailyBitingPDF[timeofday];
+                            sumviremic += DAILY_BITING_PDF[timeofday];
+                            sumserotype[serotype] += DAILY_BITING_PDF[timeofday];
                         } else {
-                            sumviremic += _fDailyBitingPDF[timeofday]*vaceffect;
-                            sumserotype[serotype] += _fDailyBitingPDF[timeofday]*vaceffect;
+                            sumviremic += DAILY_BITING_PDF[timeofday]*vaceffect;
+                            sumserotype[serotype] += DAILY_BITING_PDF[timeofday]*vaceffect;
                             // a vaccinated person is treated like a fraction of an infectious person and a fraction of a non-infectious person
-                            sumnonviremic += _fDailyBitingPDF[timeofday]*(1.0-vaceffect);
+                            sumnonviremic += DAILY_BITING_PDF[timeofday]*(1.0-vaceffect);
                         }
                     } else {
-                        sumnonviremic += _fDailyBitingPDF[timeofday];
+                        sumnonviremic += DAILY_BITING_PDF[timeofday];
                     }
                 }
             }
@@ -587,12 +479,12 @@ void Community::humanToMosquitoTransmission() {
                 int m;                                                // number of susceptible mosquitoes
                 int locid = _location[loc].getID();                   // location ID
                 m = int(_location[loc].getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);
-                if (_numLocationMosquitoCreated[locid])
+                //if (_numLocationMosquitoCreated[locid])
                     m -= _numLocationMosquitoCreated[locid][_nDay];
                 if (m<0)
                     m=0;
                                                                       // how many susceptible mosquitoes bite viremic hosts in this location?
-                int numbites = gsl_ran_binomial(RNG, _fBetaPM*sumviremic/(sumviremic+sumnonviremic), m);
+                int numbites = gsl_ran_binomial(RNG, _par->betaPM*sumviremic/(sumviremic+sumnonviremic), m);
                 while (numbites-->0) {
                     int serotype;                                     // which serotype infects mosquito
                     if (sumserotype[0]==1.0) {
@@ -604,23 +496,18 @@ void Community::humanToMosquitoTransmission() {
                     }
                     /*if (serotype==0) {
                         cerr << "serotypes: ";
-                        for (int i=0; i<5; i++)
-                            cerr << sumserotype[i] << ",";
+                        for (int i=0; i<5; i++) cerr << sumserotype[i] << ",";
                         cerr << endl;
                     }*/
                     assert (serotype >= 0 && serotype<4);
                     int daysleft = addMosquito(_location+loc, (Serotype) serotype, locid);
-                    if (!_numLocationMosquitoCreated[locid]) {
-                        _numLocationMosquitoCreated[locid] = new int[MAXRUNTIME];
-                        for (int j=0; j<MAXRUNTIME; j++)
-                            _numLocationMosquitoCreated[locid][j] = 0;
-                    }
                     assert(_nDay+daysleft<MAXRUNTIME);
                     for (int j=0; j<daysleft; j++)
                         _numLocationMosquitoCreated[locid][_nDay+j]++;
                 }
             }
-            //	  cerr << "Mosquito infected by Person " << _person[i].getID() << " at " << _person[i].getLocation(timeofday)->getID() << "." << endl;
+            //	  cerr << "Mosquito infected by Person " << _person[i].getID() << " at " 
+            //         << _person[i].getLocation(timeofday)->getID() << "." << endl;
         }
     }
     return;
@@ -629,11 +516,11 @@ void Community::humanToMosquitoTransmission() {
 
 void Community::_advanceTimers() {
     // advance incubation in people
-    Person **p = _exposedQueue[0];
-    for (int i=0; i<MAXINCUBATION-1; i++)
+    for (unsigned int i=0; i<_exposedQueue.size()-1; i++) {
         _exposedQueue[i] = _exposedQueue[i+1];
-    _exposedQueue[MAXINCUBATION-1] = p;
-    _exposedQueue[MAXINCUBATION-1][0] = NULL;
+    }
+    _exposedQueue.back().clear();
+
 
     // advance age of infectious mosquitoes
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
@@ -691,139 +578,6 @@ void Community::tick() {
     _nDay++;
     return;
 }
-
-//void Community::modelBirthsAndDeaths() {
-/*if (false) {
-        for (int blah=0; blah<50; blah++) {
-            cerr << "Day " <<  _nDay << endl;
-
-            int newborncount = 0;                                     // number of people who die/are born this year
-
-            // kill off oldest age bracket
-            // use _personAgeCohort[MAXPERSONAGE-1] to hold newborns
-            for (int i=0; i<_nPersonAgeCohortSizes[MAXPERSONAGE-1]; i++) {
-                assert (_nNumPerson+1<_nMaxPerson);
-                Person *p = _personAgeCohort[MAXPERSONAGE-1][i];
-                p->kill(_nDay);
-                // copy attributes to newborn
-                Person *newborn = _person + _nNumPerson;
-                newborn->setHomeID(p->getHomeID());
-                newborn->setWorkID(p->getWorkID());                   // infants work at old place?
-                newborn->setAge(0);
-                _personAgeCohort[MAXPERSONAGE-1][i] = _person + _nNumPerson;
-                newborncount++;
-                assert (newborncount<_nPersonAgeCohortMaxSize);
-                _nNumPerson++;
-            }
-
-            for (int age=1; age<MAXPERSONAGE-1; age++) {
-                int numkill = gsl_ran_binomial(RNG, _fMortality[age], _nPersonAgeCohortSizes[age]);
-                //      cerr << _nDay << "," << age << ", kill " << numkill << "/" << _nPersonAgeCohortSizes[age] << endl;
-                for (int i=0; i<numkill; i++) {
-                    int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age]);
-                    Person *p = _personAgeCohort[age][r];
-                    assert(p!=NULL);
-                    //	cerr << "select " << r << ", age " << age << ", size=" << _nPersonAgeCohortSizes[age] << ", numperson=" << _nNumPerson << endl;
-                    if (!p->isDead()) {
-                        //	    cerr << ". kill " << p->getID() << ", age=" << p->getAge();
-                        p->kill(_nDay);
-                        // copy attributes to newborn
-                        Person *newborn = _person + _nNumPerson;
-                        newborn->setHomeID(p->getHomeID());
-                        newborn->setWorkID(p->getWorkID());           // infants work at old place?
-                        newborn->setAge(0);
-                        _personAgeCohort[MAXPERSONAGE-1][newborncount] = newborn;
-                        newborncount++;
-                        assert (newborncount<_nPersonAgeCohortMaxSize);
-                        _nNumPerson++;
-                        assert(_nNumPerson<_nMaxPerson);
-                        _nPersonAgeCohortSizes[age]--;
-                        // move the last person in the list to this spot
-                        if (_nPersonAgeCohortSizes[age]>0)
-                            _personAgeCohort[age][r] =
-                                _personAgeCohort[age][_nPersonAgeCohortSizes[age]];
-                        else
-                            _personAgeCohort[age][r] = NULL;
-                    }
-                }
-            }
-
-            // kill younger people based on population pyramid
-            // do this in 5-year age groups
-            int diff[MAXPERSONAGE];
-            for (int i=1; i<MAXPERSONAGE; i++)
-              diff[i-1] = _nPersonAgeCohortSizes[i-1] - _nOriginalPersonAgeCohortSizes[i];
-            for (int group=0; group<(MAXPERSONAGE-2)/5; group++) {
-              int groupdiff = diff[group*5] + diff[group*5+1] + diff[group*5+2] + diff[group*5+3] + diff[group*5+4];
-              //      cerr << "Group " << group << " diff= " << groupdiff << endl;
-              if (groupdiff>0) {
-            // kill excess people in this age group
-            int groupsize = 0;
-            for (int i=1; i<5; i++)
-              groupsize += _nPersonAgeCohortSizes[group*5-1+i];
-            if (group>0)
-              groupsize += _nPersonAgeCohortSizes[group*5-1];
-            assert(groupsize>0);
-            while (groupdiff>0) {
-              int r = gsl_rng_uniform_int(RNG,groupsize);
-              int age=group*5-1;
-              if (age<1)
-                age=1;
-              while(_nPersonAgeCohortSizes[age]<=r) {
-                r-=_nPersonAgeCohortSizes[age];
-                age++;
-                assert(age<MAXPERSONAGE);
-              }
-              assert(r<_nPersonAgeCohortSizes[age]);
-              Person *p = _personAgeCohort[age][r];
-              assert(p!=NULL);
-              cerr << "select " << r << ", age " << age << ", size=" << _nPersonAgeCohortSizes[age] << ", numperson=" << _nNumPerson << endl;
-              if (!p->isDead()) {
-                //	    cerr << ". kill " << p->getID() << ", age=" << p->getAge();
-                p->kill();
-                // copy attributes to newborn
-                Person *newborn = _person + _nNumPerson;
-                newborn->setHomeID(p->getHomeID());
-                newborn->setWorkID(p->getWorkID()); // infants work at old place?
-                newborn->setAge(0);
-                _personAgeCohort[MAXPERSONAGE-1][r] = _person + _nNumPerson;
-                newborncount++;
-                assert (newborncount<_nPersonAgeCohortMaxSize);
-                _nNumPerson++;
-                assert(_nNumPerson<_nMaxPerson);
-                groupdiff--;
-                _nPersonAgeCohortSizes[age]--;
-                // move the last person in the list to this spot
-                _personAgeCohort[age][r] =
-                  _personAgeCohort[age][--_nPersonAgeCohortSizes[age]];
-                groupsize--;
-              }
-            }
-              }
-            }
-            // age population 1 year
-            Person **temp = _personAgeCohort[MAXPERSONAGE-1];
-            for (int i=MAXPERSONAGE-1; i>0; i--) {
-                _personAgeCohort[i] = _personAgeCohort[i-1];
-                _nPersonAgeCohortSizes[i] = _nPersonAgeCohortSizes[i-1];
-            }
-            _nPersonAgeCohortSizes[0] = newborncount;
-            cerr << "newborncount " << newborncount << endl;
-            _personAgeCohort[0] = temp;
-            for (int i=0; i<_nNumPerson; i++)
-                if (!_person[i].isDead())
-                    _person[i].setAge(_person[i].getAge()+1);
-
-            // children age out and start working?
-
-            for (int i=0; i<MAXPERSONAGE; i++) {
-                cout << _nDay << " " << i << " " << _nPersonAgeCohortSizes[i] << endl;
-            }
-            _nDay++;
-        }
-    }*/
-
-//}
 
 
 // getNumInfected - counts number of infected residents

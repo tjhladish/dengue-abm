@@ -19,7 +19,7 @@ class Location {
         int getBaseMosquitoCapacity() { return _nBaseMosquitoCapacity; }
         Person *getPerson(int id, int timeofday);
         void addNeighbor(Location *p);
-        int getNumNeighbors() { return _nNumNeighbors; }
+        int getNumNeighbors() { return _neighbors.size(); }
         Location *getNeighbor(int n) { return _neighbors[n]; }
         void setUndefined() { _bUndefined=true; }
         bool getUndefined() { return _bUndefined; }
@@ -31,9 +31,7 @@ class Location {
         //  int _nNumMosquitoes;    // number of mosquitoes living here
         std::vector< std::vector<Person*> > _person;                                            // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
-        Location **_neighbors;
-        int _nNumNeighbors;
-        int _nMaxNeighbors;
+        std::vector<Location*> _neighbors;
         bool _bUndefined;
         static int _nNextID;                                          // unique ID to assign to the next Location allocated
         static int _nDefaultMosquitoCapacity;

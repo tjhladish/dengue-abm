@@ -35,8 +35,5 @@ class Mosquito
         int _nInfectedAtID;                                           // location ID where infected
         //  int _nInfectedByID;     // which person infected me?
         static int _nNextID;                                          // unique ID to assign to the next Mosquito allocated
-        //  static double _fDeathProbability[MAXMOSQUITOAGE]; // probability of death each day
-        static double _fAgeDistribution[MAXMOSQUITOAGE];            // cumulative density of mosquito ages (in days)
-        //  static double _fLifespanDistribution[MAXMOSQUITOAGE];  // cumulative density of mosquito lifespans (in days)
 };
 #endif

@@ -8,10 +8,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
         betaMP = 0.1;
         fMosquitoMove = 0.2;
         fMosquitoTeleport = 0.01;
-        fVES = 0.95;
+        //fVES = 0.95;
         fVEI = 0.0;
         fVEP = 0.0;
-        fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.0);
+        //fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.0);
+        fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
         nSizeMosquitoMultipliers = 0;
@@ -134,7 +135,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     assert(nMaxInfectionParity>0 && nMaxInfectionParity<=NUM_OF_SEROTYPES);
                 }
                 else if (strcmp(argv[i], "-VES")==0 || strcmp(argv[i], "-ves")==0) {
-                    fVES = strtod(argv[i+1],end);
+                    //fVES = strtod(argv[i+1],end);
+                    fVESs.clear();
+                    fVESs.resize(4, strtod(argv[i+1],end));
                     i++;
                 }
                 else if (strcmp(argv[i], "-VESs")==0 || strcmp(argv[i], "-vess")==0) {
@@ -143,7 +146,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     fVESs[1] = strtod(argv[i+2],end);
                     fVESs[2] = strtod(argv[i+3],end);
                     fVESs[3] = strtod(argv[i+4],end);
-                    fVES=-1.0;                                            // make fVES parameter invalid
+                    //fVES=-1.0;                                            // make fVES parameter invalid
                     i+=4;
                 }
                 else if (strcmp(argv[i], "-VEI")==0 || strcmp(argv[i], "-vei")==0) {
@@ -259,16 +262,13 @@ void Parameters::readParameters(int argc, char *argv[]) {
             }
             std::cerr << std::endl;
         }
-        std::cerr << "VE_S = " << fVES << std::endl;
         std::cerr << "VE_I = " << fVEI << std::endl;
         std::cerr << "VE_P = " << fVEP << std::endl;
-        if (fVES>1.0 || fVEI>1.0 || fVEP>1.0) {
+        if (fVEI>1.0 || fVEP>1.0) {
             std::cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << std::endl;
             exit(-1);
         }
-        if (fVES<0.0) {
-            std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
-        }
+        std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
 
         if (szPeopleFile.length()>0) {
             std::cerr << "people output file = " << szPeopleFile << std::endl;
