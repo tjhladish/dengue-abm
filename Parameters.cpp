@@ -8,10 +8,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
         betaMP = 0.1;
         fMosquitoMove = 0.2;
         fMosquitoTeleport = 0.01;
-        //fVES = 0.95;
         fVEI = 0.0;
         fVEP = 0.0;
-        //fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.0);
         fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
@@ -135,7 +133,6 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     assert(nMaxInfectionParity>0 && nMaxInfectionParity<=NUM_OF_SEROTYPES);
                 }
                 else if (strcmp(argv[i], "-VES")==0 || strcmp(argv[i], "-ves")==0) {
-                    //fVES = strtod(argv[i+1],end);
                     fVESs.clear();
                     fVESs.resize(4, strtod(argv[i+1],end));
                     i++;
@@ -146,7 +143,6 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     fVESs[1] = strtod(argv[i+2],end);
                     fVESs[2] = strtod(argv[i+3],end);
                     fVESs[3] = strtod(argv[i+4],end);
-                    //fVES=-1.0;                                            // make fVES parameter invalid
                     i+=4;
                 }
                 else if (strcmp(argv[i], "-VEI")==0 || strcmp(argv[i], "-vei")==0) {
@@ -240,7 +236,6 @@ void Parameters::readParameters(int argc, char *argv[]) {
         std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-        Location::setDefaultMosquitoCapacity(nDefaultMosquitoCapacity);
         if (nSizeMosquitoMultipliers>0) {
             std::cerr << "mosquito seasonal multipliers (days,mult) =";
             for (int j=0; j<nSizeMosquitoMultipliers; j++)

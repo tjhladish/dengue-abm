@@ -26,9 +26,9 @@ class Person
         void copyImmunity(const Person *p);
         void resetImmunity();
 
-        bool isSusceptible(Serotype serotype);                       // is susceptible to serotype (and is alive)
+        bool isSusceptible(Serotype serotype);                        // is susceptible to serotype (and is alive)
         int getInfectionParity();                                     // is immune to n serotypes
-        Serotype getSerotype(int infectionsago=0) {                        // last infected with
+        Serotype getSerotype(int infectionsago=0) {                   // last infected with
             return _eSerotype[infectionsago];
         }
         Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
@@ -45,7 +45,7 @@ class Person
         int getInfectedByID(int infectionsago=0) { return _nInfectedByID[infectionsago]; }
         int getNumInfections() { return _nNumInfections; }
 
-        bool infect(int sourceid, Serotype serotype, int time, int sourceloc, double primarysymptomatic, double secondaryscaling, int maxinfectionparity);
+        bool infect(int sourceid, Serotype serotype, int time, int sourceloc);
         bool isViremic(int time);
 
         void kill(int time);
@@ -54,24 +54,13 @@ class Person
 
         static void generateRandomIDs(int num, int bound, int *ids);
 
-        //  bool isCase();                // is detected as a case
         bool isInfected(int time);                                    // is currently infected
         bool isSymptomatic(int time);                                 // has symptoms
         bool isVaccinated() {                                         // has been vaccinated
             return _bVaccinated;
         }
-        //  double getSusceptibility();   // 0=not susceptible, 1=max susceptibility
-        //  double getInfectiousness();   // 0=not infectious
         bool vaccinate();                                 // vaccinate this person
-        //static void setVES(double f) { _fVES.clear(); _fVES.resize(NUM_OF_SEROTYPES, f); }
-        static void setVESs(std::vector<double> f) { _fVES = f;}
-        static void setVEI(double f) { _fVEI = f; }
-        static void setVEP(double f) { _fVEP = f; }
-        static std::vector<double> getVES() { return _fVES; }
-        static double getVEI() { return _fVEI; }
-        static double getVEP() { return _fVEP; }
-        static void setDaysImmune(int n) { _nDaysImmune = n; }
-        static int getDaysImmune() { return _nDaysImmune; }
+        static void setPar(const Parameters* par) { _par = par; }
 
         static const double _fIncubationDistribution[MAXINCUBATION];
 
@@ -83,14 +72,14 @@ class Person
         int _nHomeID;                                                 // family membership
         int _nWorkID;                                                 // ID of location of work
         bool _bCase;                                                  // ever detected as case?
-        Location *_pLocation[3];                                      // where this person is at morning, day, and evening
+        Location *_pLocation[STEPSPERDAY];                            // where this person is at morning, day, and evening
         int _nAge;                                                    // age in years
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead
         int _nImmunity;                                               // bitmask of serotype exposure
         bool _bVaccinated;                                            // has been vaccinated
 
-        // __nNumInfections counts the number of infections, up to MAXHISTORY infections.
+        // _nNumInfections counts the number of infections, up to MAXHISTORY infections.
         // arrays that use this index store the most recent infection at index 0 and data from n years ago at index n
         int _nNumInfections;                                          // number of dengue infections, index of the first exposure
         int _nInfectedByID[MAXHISTORY];                               // who infected this person
@@ -102,10 +91,7 @@ class Person
         int _nRecoveryTime[MAXHISTORY];                               // when recovered?
         Serotype _eSerotype[MAXHISTORY];                              // from 1-4
 
-        static int _nDaysImmune;                                      // length of complete cross-protective immunity in days
-        static std::vector<double> _fVES;                               // vaccine protection (all-or-none, different for each serotype)
-        static double _fVEI;                                          // vaccine protection
-        static double _fVEP;                                          // vaccine protection
+        static const Parameters* _par;
         static int _nNextID;                                          // unique ID to assign to the next Person allocated
 };
 #endif

@@ -20,23 +20,20 @@
 
 using namespace dengue::standard;
 
+const Parameters* Community::_par;
+
 // Community
-Community::Community(Parameters* parameters) 
-    : _exposedQueue(MAXINCUBATION, vector<Person*>(0)),
+Community::Community(const Parameters* parameters) :
+    _exposedQueue(MAXINCUBATION, vector<Person*>(0)),
     _infectiousMosquitoQueue(MAXMOSQUITOAGE-MOSQUITOINCUBATION, vector<Mosquito*>(0)),
     _exposedMosquitoQueue(MOSQUITOINCUBATION, vector<Mosquito*>(0)),
-    //_fPrimarySymptomaticScaling(NUM_OF_SEROTYPES, 1.0),
-    //_fSecondarySymptomaticScaling(NUM_OF_SEROTYPES, 1.0),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAXRUNTIME)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAXRUNTIME))
     {
     _par = parameters;
     _nDay = 0;
     _nNumPerson = 0;
-    _nNumLocation = 0;
     _person = NULL;
-    _location = NULL;
-    //_nMaxInfectionParity = NUM_OF_SEROTYPES;
     _fMosquitoCapacityMultiplier = 1.0;
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
@@ -46,9 +43,8 @@ Community::Community(Parameters* parameters)
 Community::~Community() {
     if (_person)
         delete [] _person;
-    if (_location)
-        delete [] _location;
 
+    _location.clear();
     _exposedQueue.clear();
     _infectiousMosquitoQueue.clear();
     _exposedMosquitoQueue.clear();
@@ -68,8 +64,8 @@ bool Community::loadPopulation(string szPop,string szImm) {
     // count lines
     int numlines = 0;
     while (iss) {
-        char temp[500];
-        iss.getline(temp,500);
+        char buffer[500];
+        iss.getline(buffer,500);
         numlines++;
     }
     iss.close();
@@ -81,21 +77,21 @@ bool Community::loadPopulation(string szPop,string szImm) {
     for (int i=0; i<MAXPERSONAGE; i++)
         agecounts[i] = 0;
     while (iss) {
-        char temp[500];
-        iss.getline(temp,500);
-        istringstream line(temp);
+        char buffer[500];
+        iss.getline(buffer,500);
+        istringstream line(buffer);
         int id, age, house, work;
         int temp1, temp2;
         string gender;
         if (line >> id >> house >> age >> gender >> temp1 >> temp2 >> work) {
             _person[_nNumPerson].setAge(age);
             _person[_nNumPerson].setHomeID(house);
-            _person[_nNumPerson].setLocation(_location+house, 0);
-            _person[_nNumPerson].setLocation(_location+work, 1);
-            _person[_nNumPerson].setLocation(_location+house, 2);
-            _location[house].addPerson(_person+_nNumPerson, 0);
-            _location[work].addPerson(_person+_nNumPerson, 1);
-            _location[house].addPerson(_person+_nNumPerson, 2);
+            _person[_nNumPerson].setLocation(_location[house], 0);
+            _person[_nNumPerson].setLocation(_location[work], 1);
+            _person[_nNumPerson].setLocation(_location[house], 2);
+            _location[house]->addPerson(_person+_nNumPerson, 0);
+            _location[work]->addPerson(_person+_nNumPerson, 1);
+            _location[house]->addPerson(_person+_nNumPerson, 2);
             assert(age<MAXPERSONAGE);
             agecounts[age]++;
             _nNumPerson++;
@@ -115,9 +111,9 @@ bool Community::loadPopulation(string szPop,string szImm) {
             return false;
         }
         while (immiss) {
-            char temp[500];
-            immiss.getline(temp,500);
-            istringstream line(temp);
+            char buffer[500];
+            immiss.getline(buffer,500);
+            istringstream line(buffer);
             int id, imm1, imm2, imm3, imm4;
             string gender;
             if (line >> id >> imm1 >> imm2 >> imm3 >> imm4) {
@@ -161,27 +157,28 @@ bool Community::loadLocations(string szLocs,string szNet) {
         cerr << "ERROR: " << _szLocationFilename << " not found." << endl;
         return false;
     }
-    _nNumLocation=0;
+    int maxLocationID = 0;
     while (iss) {
-        char temp[500];
-        iss.getline(temp,500);
-        istringstream line(temp);
-        int temp1;
-        if (line >> temp1) {
-            if (temp1>_nNumLocation)
-                _nNumLocation = temp1;
+        char buffer[500];
+        iss.getline(buffer,500);
+        istringstream line(buffer);
+        int locID;
+        if (line >> locID) {
+            if (locID>maxLocationID) maxLocationID = locID;
         }
     }
     iss.close();
-    _nNumLocation+=1;                                                 // the ID of the highest location + 1
-    cerr << _nNumLocation << " locations" << endl;
-    _location = new Location[_nNumLocation];
+    maxLocationID+=1;  // we don't actually use index 0 in the location vector . . .
+    cerr << maxLocationID << " locations" << endl;
+    _location.clear();
+    _location.resize(maxLocationID);
+    for (unsigned int i=0; i<_location.size(); i++) {
+        _location[i] = new Location();
+        _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+    } 
 
     _numLocationMosquitoCreated.clear();
-    _numLocationMosquitoCreated.resize(_nNumLocation, vector<int>(MAXRUNTIME, 0));
-    //_numLocationMosquitoCreated = new int *[_nNumLocation];
-    //for (int i=0; i<_nNumLocation; i++)
-    //    _numLocationMosquitoCreated[i] = NULL;
+    _numLocationMosquitoCreated.resize(maxLocationID, vector<int>(MAXRUNTIME, 0));
 
     iss.open(_szNetworkFilename.c_str());
     if (!iss) {
@@ -189,23 +186,23 @@ bool Community::loadLocations(string szLocs,string szNet) {
         return false;
     }
     while (iss) {
-        char temp[500];
-        iss.getline(temp,500);
-        istringstream line(temp);
-        int temp1,temp2;
-        if (line >> temp1 >> temp2) {
-            //      cerr << temp1 << " , " << temp2 << endl;
-            _location[temp1].addNeighbor(_location+temp2);            // should check for ID
-            _location[temp2].addNeighbor(_location+temp1);
+        char buffer[500];
+        iss.getline(buffer,500);
+        istringstream line(buffer);
+        int locID1,locID2;
+        if (line >> locID1 >> locID2) {
+            //      cerr << locID1 << " , " << locID2 << endl;
+            _location[locID1]->addNeighbor(_location[locID2]);            // should check for ID
+            _location[locID2]->addNeighbor(_location[locID1]);
         }
         else {
             //      cerr << "header" << endl;
         }
     }
     iss.close();
-    for (int i=0; i<_nNumLocation; i++)
-        if (_location[i].getNumNeighbors()<=0)
-            _location[i].setUndefined();
+    for (unsigned int i=0; i<_location.size(); i++)
+        if (_location[i]->getNumNeighbors()<=0)
+            _location[i]->setUndefined();
     return true;
 }
 
@@ -214,10 +211,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
 bool Community::infect(int id, Serotype serotype, int day) {
     for (int i=0; i<_nNumPerson; i++)
     if (_person[i].getID()==id) {
-        bool result =  _person[i].infect(-1, serotype, day, 0,
-            _par->fPrimaryPathogenicity[(int) serotype],
-            _par->fSecondaryScaling[(int) serotype],
-            _par->nMaxInfectionParity);
+        bool result =  _person[i].infect(-1, serotype, day, 0);
         if (result)
             _nNumNewlyInfected[(int) serotype][_nDay]++;
         return result;
@@ -246,26 +240,6 @@ void Community::vaccinate(double f, int age) {
         }
     }
 }
-
-/*
-void Community::setVES(double f) {
-    Person::setVES(f);
-}
-
-
-void Community::setVESs(vector<double> f) {
-    Person::setVESs(f);
-}
-
-void Community::setVEI(double f) {
-    Person::setVEI(f);
-}
-
-
-void Community::setVEP(double f) {
-    Person::setVEP(f);
-}
-*/
 
 
 // returns number of days mosquito has left to live
@@ -334,11 +308,11 @@ void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
         if (r<_par->fMosquitoTeleport) {                               // teleport
-            int location;
+            int locID;
             do {
-                location = gsl_rng_uniform_int(RNG,_nNumLocation);
-            } while (_location[location].getUndefined());
-            m->setLocation(_location+location);
+                locID = gsl_rng_uniform_int(RNG,_location.size());
+            } while (_location[locID]->getUndefined());
+            m->setLocation(_location[locID]);
         }                                                             // move to neighbor
         else {
             Location *pLoc = m->getLocation();
@@ -416,11 +390,8 @@ void Community::mosquitoToHumanTransmission() {
 //                        cerr << " infect person " << idx << "/" << pLoc->getNumPerson(timeofday) 
 //                            << "  " << p->getID() << " with " << m->getSerotype() << " from " << m->getID() << endl;
                         Serotype serotype = m->getSerotype();
-                        if (p->infect(m->getID(), serotype, _nDay, pLoc->getID(),
-                                    _par->fPrimaryPathogenicity[(int) serotype],
-                                    _par->fSecondaryScaling[(int) serotype],
-                                    _par->nMaxInfectionParity)) {
-                            _nNumNewlyInfected[(int) p->getSerotype()][_nDay]++;
+                        if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
+                            _nNumNewlyInfected[(int) serotype][_nDay]++;
                             if (_bNoSecondaryTransmission) {
                                 p->kill(_nDay);                       // kill secondary cases so they do not transmit
                             }
@@ -443,8 +414,8 @@ void Community::mosquitoToHumanTransmission() {
 
 
 void Community::humanToMosquitoTransmission() {
-    for (int loc=0; loc<_nNumLocation; loc++) {
-        if (!_location[loc].getUndefined()) {
+    for (unsigned int loc=0; loc<_location.size(); loc++) {
+        if (!_location[loc]->getUndefined()) {
             double sumviremic = 0.0;
             double sumnonviremic = 0.0;
             double sumserotype[5];                                    // serotype fractions at location
@@ -452,10 +423,10 @@ void Community::humanToMosquitoTransmission() {
 
             // calculate fraction of people who are viremic
             for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
-                for (int i=_location[loc].getNumPerson(timeofday)-1; i>=0; i--) {
-                    Person *p = _location[loc].getPerson(i, timeofday);
+                for (int i=_location[loc]->getNumPerson(timeofday)-1; i>=0; i--) {
+                    Person *p = _location[loc]->getPerson(i, timeofday);
                     if (p->isViremic(_nDay)) {
-                        double vaceffect = (p->isVaccinated()?(1.0-Person::getVEI()):1.0);
+                        double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
                         int serotype = (int) p->getSerotype();
                         //assert(serotype<4);
                         if (vaceffect==1.0) {
@@ -477,8 +448,8 @@ void Community::humanToMosquitoTransmission() {
                 for (int i=0; i<5; i++)
                     sumserotype[i] /= sumviremic;
                 int m;                                                // number of susceptible mosquitoes
-                int locid = _location[loc].getID();                   // location ID
-                m = int(_location[loc].getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);
+                int locid = _location[loc]->getID();                   // location ID
+                m = int(_location[loc]->getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);
                 //if (_numLocationMosquitoCreated[locid])
                     m -= _numLocationMosquitoCreated[locid][_nDay];
                 if (m<0)
@@ -500,7 +471,7 @@ void Community::humanToMosquitoTransmission() {
                         cerr << endl;
                     }*/
                     assert (serotype >= 0 && serotype<4);
-                    int daysleft = addMosquito(_location+loc, (Serotype) serotype, locid);
+                    int daysleft = addMosquito(_location[loc], (Serotype) serotype, locid);
                     assert(_nDay+daysleft<MAXRUNTIME);
                     for (int j=0; j<daysleft; j++)
                         _numLocationMosquitoCreated[locid][_nDay+j]++;
@@ -601,10 +572,15 @@ int Community::getNumSymptomatic(int day) {
 
 
 // getNumSusceptible - counts number of susceptible residents
-int Community::getNumSusceptible(Serotype serotype) {
-    int count=0;
-    for (int i=0; i<_nNumPerson; i++)
-        if (_person[i].isSusceptible(serotype))
-            count++;
-    return count;
+vector<int> Community::getNumSusceptible() {
+    vector<int> counts(NUM_OF_SEROTYPES, 0);
+    //int count=0;
+    for (int i=0; i<_nNumPerson; i++) {
+        for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+            if (_person[i].isSusceptible((Serotype) s))
+                counts[s]++;
+        }
+    }
+    return counts;
 }
+

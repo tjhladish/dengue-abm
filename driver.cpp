@@ -22,25 +22,26 @@ using namespace dengue::standard;
 const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 
 // Predeclare local functions
-Community* build_community(Parameters* par);
-void seed_epidemic(Parameters* par, Community* community);
-void simulate_epidemic(Parameters* par, Community* community);
-void write_output(Parameters* par, Community* community);
+Community* build_community(const Parameters* par);
+void seed_epidemic(const Parameters* par, Community* community);
+void simulate_epidemic(const Parameters* par, Community* community);
+void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 
 int main(int argc, char *argv[]) {
-    Parameters* par = new Parameters(argc, argv);
+    const Parameters* par = new Parameters(argc, argv);
 
     gsl_rng_set(RNG, par->randomseed);
 
     Community* community = build_community(par);
+    vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
     simulate_epidemic(par, community);
-    write_output(par, community);
+    write_output(par, community, initial_susceptibles);
 
     return 0;
 }
  
-Community* build_community(Parameters* par) {
+Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
     if (!community->loadLocations(par->szLocationFile.c_str(),par->szNetworkFile.c_str())) {
         cerr << "Could not load locations" << endl;
@@ -50,15 +51,12 @@ Community* build_community(Parameters* par) {
         cerr << "Could not load population" << endl;
         exit(-1);
     }
-/*    if (par->fVES<0.0) {
-        community->setVESs(par->fVESs);
-    } else {
-        community->setVES(par->fVES);
-    }*/
-    Person::setVESs(par->fVESs);
-    Person::setVEI(par->fVEI);
-    Person::setVEP(par->fVEP);
-    Person::setDaysImmune(par->nDaysImmune);
+
+    Person::setPar(par);
+    //Person::setVESs(par->fVESs);
+    //Person::setVEI(par->fVEI);
+    //Person::setVEP(par->fVEP);
+    //Person::setDaysImmune(par->nDaysImmune);
     cerr << community->getNumPerson() << " people" << endl;
 
     if (!par->bSecondaryTransmission) {
@@ -76,15 +74,16 @@ Community* build_community(Parameters* par) {
             }
         }
     }
+    
 
-    for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-        par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
-    }
+    //for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+    //    par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
+    //}
     return community;
 }
 
 
-void seed_epidemic(Parameters* par, Community* community) {
+void seed_epidemic(const Parameters* par, Community* community) {
     // epidemic may be seeded with initial exposure OR initial infection -- not sure why
     bool attempt_initial_infection = true;
     for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
@@ -112,7 +111,7 @@ void seed_epidemic(Parameters* par, Community* community) {
 }
 
 
-void write_people_file(Parameters* par, Community* community, int time) {
+void write_people_file(const Parameters* par, Community* community, int time) {
     if (time%365==364 && par->szYearlyPeopleFile.length()>0) {
         ofstream peopleFile;
         ostringstream ssFilename;
@@ -144,7 +143,7 @@ void write_people_file(Parameters* par, Community* community, int time) {
     return;
 }
 
-void simulate_epidemic(Parameters* par, Community* community) {
+void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextMosquitoMultiplier = 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn" << endl;
     for (int t=0; t<par->nRunLength; t++) {
@@ -212,15 +211,16 @@ void simulate_epidemic(Parameters* par, Community* community) {
 
 
 
-void write_output(Parameters* par, Community* community) {
+void write_output(const Parameters* par, Community* community, vector<int> numInitialSusceptible) {
     if (!par->bSecondaryTransmission) {
         // outputs
         //   number of secondary infections by serotype (4)
         //   number of households infected
         //   age of index case
         //   age(s) of secondary cases
-        for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-            cout << (par->nNumInitialSusceptible[serotype] - community->getNumSusceptible((Serotype) serotype)) << " ";
+        vector<int> numCurrentSusceptible = community->getNumSusceptible();
+        for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+            cout << (numInitialSusceptible[s] - numCurrentSusceptible[s]) << " ";
         }
         //    cout << "secondary infections" << endl;
 

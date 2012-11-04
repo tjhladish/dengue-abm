@@ -12,7 +12,7 @@ class Location;
 class Community
 {
     public:
-        Community(Parameters* parameters);
+        Community(const Parameters* parameters);
         virtual ~Community();
         bool loadPopulation(std::string szPop,std::string szImm);
         bool loadLocations(std::string szLocs,std::string szNet);
@@ -20,9 +20,8 @@ class Community
         Person *getPerson(int n) { return _person+n; }
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
-        int getNumSusceptible(Serotype serotype);
+        std::vector<int> getNumSusceptible();
         void populate(Person **parray, int targetpop);
-        int getNumLocation() { return _nNumLocation; }
         bool infect(int id, Serotype serotype, int day);
         int addMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() {                                                // what day is it?
@@ -32,7 +31,7 @@ class Community
         void updateWithdrawnStatus(); 
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
-        void tick();                                      // simulate one day
+        void tick();                                                  // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
         void setMosquitoMultiplier(double f) {                        // seasonality multiplier for number of mosquitoes
             _fMosquitoCapacityMultiplier = f;
@@ -43,13 +42,6 @@ class Community
         void vaccinate(double f, int age=-1);
         void setVES(double f);
         void setVESs(std::vector<double> f);
-        //void setVEI(double f);
-        //void setVEP(double f);
-        //void setPrimaryPathogenicityScaling(std::vector<double> f) { _fPrimarySymptomaticScaling = f; }
-        //void setSecondaryPathogenicityScaling(std::vector<double> f) { _fSecondarySymptomaticScaling = f; }
-        //double getSecondaryPathogenicityScaling(Serotype serotype) { return _fSecondarySymptomaticScaling[(int) serotype]; }
-        //int getMaxInfectionParity() { return _nMaxInfectionParity; }
-        //void setMaxInfectionParity(int n) { _nMaxInfectionParity=n; }
         Mosquito *getInfectiousMosquito(int n);
         Mosquito *getExposedMosquito(int n);
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
@@ -57,7 +49,7 @@ class Community
 
 
     protected:
-        Parameters* _par;
+        static const Parameters* _par;
         std::string _szPopulationFilename;                            // population data filename
         std::string _szImmunityFilename;                              // immune status data filename
         std::string _szLocationFilename;                              // location filename
@@ -66,7 +58,7 @@ class Community
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
         int _nPersonAgeCohortSizes[MAXPERSONAGE];                     // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
-        Location *_location;                                          // the array index is equal to the ID
+        std::vector<Location*> _location;                             // the array index is equal to the ID
         std::vector< std::vector<int> > _numLocationMosquitoCreated;  // number of instantiated mosquitoes at 
                                                                       // this location at time t.  the first 
                                                                       // array index is equal to the location ID,
@@ -78,12 +70,9 @@ class Community
         int _nDay;                                                    // current day
         int _nNumPerson;                                              // number of persons in the simulation
         int _nMaxPerson;                                              // max of persons ever in the simulation
-        int _nNumLocation;                                            // number of locations in the simulation
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-        //std::vector<double> _fPrimarySymptomaticScaling;
-        //std::vector<double> _fSecondarySymptomaticScaling;
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
 

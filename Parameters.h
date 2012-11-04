@@ -28,15 +28,19 @@ static const int MAXPERSONAGE = 95;                           // maximum age-1 f
 static const int MAXINCUBATION = 9;                           // max incubation period in days
 static const int MAXHISTORY = 50;                             // length of exposure history in years
 
-// from Community.h
+// cdf of incubation period, starting from day 1 (from Nishiura 2007)
+const double INCUBATION_DISTRIBUTION[MAXINCUBATION] = {
+    0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1
+};
+
+// from Community
 static const int STEPSPERDAY = 3;                             // number of time steps per day
 static const int MOSQUITOINCUBATION = 11;                     // number of days for mosquito incubation (extrinsic incubation period)
 static const int MAXRUNTIME = 7400;                           // maximum number of simulation days (+ extra for mosquito lifetime)
-static const float DAILY_BITING_PDF[3] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
+static const float DAILY_BITING_PDF[STEPSPERDAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
-// from Mosquito.h
+// from Mosquito
 static const int MAXMOSQUITOAGE = 60;                                 // maximum age of mosquito in days
-
 
 //double MOSQUITO_DEATH_PROBABILITY[MAXMOSQUITOAGE] = { // probability of death each day
 //    0.0018,0.002069514,0.002378646,0.002732982,0.003138823,0.003603251,0.004134191,
@@ -122,7 +126,6 @@ public:
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
-    //double fVES;
     double fVEI;
     double fVEP;
     std::vector<double> fVESs;

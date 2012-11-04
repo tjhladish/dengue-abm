@@ -17,15 +17,8 @@
 using namespace dengue::standard;
 
 int Person::_nNextID = 1;
-const double Person::_fIncubationDistribution[MAXINCUBATION] = {
-                                                                      // cdf of incubation period, starting from day 1 (from Nishiura 2007)
-    0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1
-};
 
-vector<double> Person::_fVES(NUM_OF_SEROTYPES, 0.9);                                           // (all-or-none)
-double Person::_fVEI = 0.0;
-double Person::_fVEP = 0.0;
-int Person::_nDaysImmune = 365;                                       // length of complete cross-protective immunity in da
+const Parameters* Person::_par;
 
 Person::Person() {
     _nID = _nNextID++;
@@ -36,7 +29,7 @@ Person::Person() {
     _nImmunity = 0;
     _nNumInfections = -1;
     pushInfectionHistory();
-    _pLocation[0] = _pLocation[1] = _pLocation[2] = NULL;
+    for(int i=0; i<STEPSPERDAY; i++) _pLocation[i] = NULL;
     _bDead = false;
     _bVaccinated = false;
     _bCase = false;
@@ -115,11 +108,13 @@ void Person::kill(int time) {
 // primary symptomatic is a scaling factor for pathogenicity of primary infections.
 // secondaryscaling * primarysymptomatic is the scaling factor for pathogenicity of secondary infections.
 // returns true if infection occurs
-bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, double primarysymptomatic, double secondaryscaling, int maxinfectionparity) {
+bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
+    double primarysymptomatic = _par->fPrimaryPathogenicity[(int) serotype];
+    double secondaryscaling = _par->fSecondaryScaling[(int) serotype];
+    int maxinfectionparity = _par->nMaxInfectionParity;
     //assert(serotype>=1 && serotype<=4);
     if (!isSusceptible(serotype) ||                                   // already infected by serotype
-        //      _nRecoveryTime[0]>time+_nDaysImmune || // cross-serotype protection
-        _nRecoveryTime[0]+_nDaysImmune>time ||                        // cross-serotype protection
+        _nRecoveryTime[0]+_par->nDaysImmune>time ||                        // cross-serotype protection
         getInfectionParity()>=maxinfectionparity)                     // already infected max number of times
         return false;
     pushInfectionHistory();
@@ -128,7 +123,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, do
 
     double r = gsl_rng_uniform(RNG);
     _nInfectiousTime[0] = 0;
-    while (_nInfectiousTime[0]<MAXINCUBATION && _fIncubationDistribution[_nInfectiousTime[0]]<r)
+    while (_nInfectiousTime[0]<MAXINCUBATION && INCUBATION_DISTRIBUTION[_nInfectiousTime[0]]<r)
         _nInfectiousTime[0]++;
     //    cerr << "symp " << _nSymptomTime << "," << r << endl;
     _nInfectiousTime[0] += time;
@@ -140,7 +135,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc, do
     _eSerotype[0] = serotype;
 
     if (primarysymptomatic>0.0 &&
-        gsl_rng_uniform(RNG)<primarysymptomatic*SYMPTOMATIC_BY_AGE[_nAge] * (isVaccinated()?(1.0-_fVEP):1.0) *
+        gsl_rng_uniform(RNG)<primarysymptomatic*SYMPTOMATIC_BY_AGE[_nAge] * (isVaccinated()?(1.0-_par->fVEP):1.0) *
     (_nImmunity>0?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
         _nSymptomTime[0] = _nInfectiousTime[0] + 1;                   // symptomatic one day before infectious
         double r = gsl_rng_uniform(RNG);
@@ -206,7 +201,7 @@ bool Person::isWithdrawn(int time) {
 
 
 bool Person::isSusceptible(Serotype serotype) {
-    return (!(_nImmunity & (1<<((int) serotype))) && !_bDead);
+    return !_bDead && !(_nImmunity & (1<<((int) serotype)));
 }
 
 
@@ -220,6 +215,7 @@ int Person::getInfectionParity() {
 
 
 bool Person::vaccinate() {
+    vector<double> _fVES = _par->fVESs;
     if (!_bVaccinated & !_bDead) {
         _bVaccinated = true;
         if ((_fVES[0]==_fVES[1]) &&

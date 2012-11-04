@@ -14,18 +14,20 @@
 using namespace dengue::standard;
 
 int Location::_nNextID = 0;
-int Location::_nDefaultMosquitoCapacity = 20;
+//int Location::_nDefaultMosquitoCapacity;
 
 Location::Location()
-    : _person(3, vector<Person*>(0) ) {
+    : _person(STEPSPERDAY, vector<Person*>(0) ) {
     _nID = _nNextID++;
-    _nBaseMosquitoCapacity = _nDefaultMosquitoCapacity;
+    _nBaseMosquitoCapacity = 0;
     _bUndefined = false;
 }
 
 
 Location::~Location() {
-    if (_person.size()) {
+    _person.clear();
+    _neighbors.clear();
+    /*if (_person.size()) {
         for (unsigned int i = 0; i<_person.size(); i++) {
             for (unsigned int j = 0; j<_person[i].size(); j++) {
                 delete _person[i][j]; 
@@ -36,7 +38,7 @@ Location::~Location() {
         for (unsigned int i = 0; i<_neighbors.size(); i++) {
             delete _neighbors[i];
         }
-    }
+    }*/
 }
 
 
