@@ -16,12 +16,13 @@ class Location {
         int getNumPerson(int timeofday) { return _person[timeofday].size(); } 
         void setBaseMosquitoCapacity(int capacity) { _nBaseMosquitoCapacity = capacity; }
         int getBaseMosquitoCapacity() { return _nBaseMosquitoCapacity; }
-        Person *getPerson(int id, int timeofday);
         void addNeighbor(Location *p);
         int getNumNeighbors() { return _neighbors.size(); }
         Location *getNeighbor(int n) { return _neighbors[n]; }
         void setUndefined() { _bUndefined=true; }
         bool getUndefined() { return _bUndefined; }
+        inline Person* getPerson(int idx, int timeofday) { return _person[timeofday][idx]; }
+
         //static void setDefaultMosquitoCapacity(int x) { _nDefaultMosquitoCapacity = x; }
 
     protected:

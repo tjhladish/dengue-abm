@@ -61,11 +61,6 @@ bool Location::removePerson(Person *p, int t) {
 }
 
 
-Person *Location::getPerson(int idx, int timeofday) {
-    //assert((unsigned) timeofday < _person.size());
-    //assert((unsigned) idx < _person[timeofday].size());
-    return _person[timeofday][idx];
-}
 
 
 // addNeighbor - adds location p to the location's neighbor list.

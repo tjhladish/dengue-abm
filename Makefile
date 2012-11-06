@@ -6,6 +6,7 @@ CCLINKER = g++
 MAKE     = make --no-print-directory
 SHELL    = /bin/sh
 CFLAGS   = -Wall -pedantic 
+#OPTI     = -p
 OPTI     = -O3
 #OPTI     = -g
 LDFLAGS	= 
@@ -16,7 +17,7 @@ DEFINES = -DVERBOSE
 default: model
 
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
-	$(CCLINKER) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CCLINKER) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cpp Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<

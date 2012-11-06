@@ -84,7 +84,7 @@ void Person::copyImmunity(const Person *p) {
 
 // resetImmunity - reset immune status (infants)
 void Person::resetImmunity() {
-    _nImmunity.reset();// = 0;
+    _nImmunity.reset();
     _nNumInfections = -1;
     pushInfectionHistory();
     _bVaccinated = false;
@@ -148,21 +148,6 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
                 _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS!!!!)
             }
         }
-        /*if (r<0.5) {
-            _nWithdrawnTime[0] = _nSymptomTime[0];                    // withdraws (FIX THIS!!!!)
-        }
-        else if (r<0.75) {
-            _nWithdrawnTime[0] = _nSymptomTime[0] + 1;                // withdraws (FIX THIS!!!!)
-        }
-        else if (r<0.75) {
-            _nWithdrawnTime[0] = _nSymptomTime[0] + 2;                // withdraws (FIX THIS!!!!)
-        }
-        else if (r<0.875) {
-            _nWithdrawnTime[0] = _nSymptomTime[0] + 3;                // withdraws (FIX THIS!!!!)
-        }
-        else if (r<0.945) {
-            _nWithdrawnTime[0] = _nSymptomTime[0] + 4;                // withdraws (FIX THIS!!!!)
-        }*/
         if (_nRecoveryTime[0]<_nWithdrawnTime[0])
             _nWithdrawnTime[0] = 100000;
         _bCase = true;
@@ -186,7 +171,7 @@ bool Person::isInfected(int time) {
 
 
 bool Person::isViremic(int time) {
-    if (time>=_nInfectiousTime[0] && time<_nRecoveryTime[0] && !_bDead)
+    if (time>=_nInfectiousTime[0] && time<_nRecoveryTime[0] && !_bDead )
         return true;
     else
         return false;
@@ -194,7 +179,7 @@ bool Person::isViremic(int time) {
 
 
 bool Person::isSymptomatic(int time) {
-    if (time>=_nSymptomTime[0] && time<_nRecoveryTime[0] && !_bDead)
+    if (!_bDead && time>=_nSymptomTime[0] && time<_nRecoveryTime[0])
         return true;
     else
         return false;
@@ -202,7 +187,7 @@ bool Person::isSymptomatic(int time) {
 
 
 bool Person::isWithdrawn(int time) {
-    if (time>=_nWithdrawnTime[0] && time<_nRecoveryTime[0] && !_bDead)
+    if (!_bDead && time>=_nWithdrawnTime[0] && time<_nRecoveryTime[0])
         return true;
     else
         return false;
@@ -221,27 +206,12 @@ int Person::getInfectionParity() {
 
 
 bool Person::vaccinate() {
-    vector<double> _fVES = _par->fVESs;
-    if (!_bVaccinated & !_bDead) {
+    if (!_bDead) {
+        //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
-
-/*        bool all_same = 1;
-        for (int i=1; i<NUM_OF_SEROTYPES; i++) {/// This looks like a bug.  We should probably be testing the rng against all values
-            if (_fVES[0] != _fVES[i]) {
-                all_same = 0;
-                break;
-            }
+        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+            if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
         }
-        if (all_same) {                                       // same protection against all 4 serotypes
-            if (gsl_rng_uniform(RNG)<_fVES[0]) {
-                _nImmunity.reset().flip();                            // this person is protected against all serotypes
-            }
-        }
-        else {*/
-            for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-                if (gsl_rng_uniform(RNG)<_fVES[i]) _nImmunity[i] = 1;                                // protect against serotype i
-            }
-       // }
         return true;
     } else {
         return false;

@@ -14,7 +14,7 @@ class Person
     public:
         Person();
         ~Person();
-        int getID() { return _nID; }
+        inline int getID() { return _nID; }
         int getAge() { return _nAge; }
         void setAge(int n) { _nAge = n; }
         int getLifespan() { return _nLifespan; }
@@ -23,7 +23,7 @@ class Person
         void setHomeID(int n) { _nHomeID = n; }
         int getWorkID() { return _nWorkID; }
         void setWorkID(int n) { _nWorkID = n; }
-        void setImmunity(Serotype serotype) { _nImmunity |= 1<<((int) serotype); }
+        void setImmunity(Serotype serotype) { _nImmunity[(int) serotype] = 1; }
         void copyImmunity(const Person *p);
         void resetImmunity();
 
