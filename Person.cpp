@@ -6,8 +6,10 @@
 
 #include <iostream>
 #include <string>
+#include <math.h>
 
 #include <assert.h>
+#include <bitset>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include "Person.h"
@@ -26,7 +28,7 @@ Person::Person() {
     _nLifespan = -1;
     _nHomeID = -1;
     _nWorkID = -1;
-    _nImmunity = 0;
+    //_nImmunity = 0;
     _nNumInfections = -1;
     pushInfectionHistory();
     for(int i=0; i<STEPSPERDAY; i++) _pLocation[i] = NULL;
@@ -82,7 +84,7 @@ void Person::copyImmunity(const Person *p) {
 
 // resetImmunity - reset immune status (infants)
 void Person::resetImmunity() {
-    _nImmunity = 0;
+    _nImmunity.reset();// = 0;
     _nNumInfections = -1;
     pushInfectionHistory();
     _bVaccinated = false;
@@ -127,18 +129,25 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         _nInfectiousTime[0]++;
     //    cerr << "symp " << _nSymptomTime << "," << r << endl;
     _nInfectiousTime[0] += time;
-    _nRecoveryTime[0] = _nInfectiousTime[0]+5;                        // should draw from distribution!!!!!!
-    if (_nImmunity>0)
-        _nRecoveryTime[0]--;                                          // secondary infections are one day shorter
+    if (_nImmunity.any()) {
+        _nRecoveryTime[0] = _nInfectiousTime[0]+INFECTIOUS_PERIOD_SEC;        // should draw from distribution!!!!!!
+    } else {
+        _nRecoveryTime[0] = _nInfectiousTime[0]+INFECTIOUS_PERIOD_PRI;        // should draw from distribution!!!!!!
+    }
     _nInfectedByID[0] = sourceid;
     _nInfectedPlace[0] = sourceloc;
     _eSerotype[0] = serotype;
 
     if (primarysymptomatic>0.0 &&
         gsl_rng_uniform(RNG)<primarysymptomatic*SYMPTOMATIC_BY_AGE[_nAge] * (isVaccinated()?(1.0-_par->fVEP):1.0) *
-    (_nImmunity>0?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
+    (_nImmunity.any()?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
         _nSymptomTime[0] = _nInfectiousTime[0] + 1;                   // symptomatic one day before infectious
         double r = gsl_rng_uniform(RNG);
+        /*for (int i=0; i<_nRecoveryTime[0] - _nInfectiousTime[0]; i++) {
+            if (r < 1-pow(0.5,1+i) ) {
+                _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS!!!!)
+            }
+        }*/
         if (r<0.5) {
             _nWithdrawnTime[0] = _nSymptomTime[0];                    // withdraws (FIX THIS!!!!)
         }
@@ -161,7 +170,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     else {
         _nSymptomTime[0] = -10000;
     }
-    _nImmunity |= (1<<((int) serotype));
+    _nImmunity[(int) serotype] = 1;
     //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << SYMPTOMATIC_BY_AGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
 
     return true;
@@ -201,16 +210,13 @@ bool Person::isWithdrawn(int time) {
 
 
 bool Person::isSusceptible(Serotype serotype) {
-    return !_bDead && !(_nImmunity & (1<<((int) serotype)));
+    return !_bDead && !(_nImmunity[serotype] == 1);  //1<<0=1  1<<1=2  1<<2=4  1<<3=8   1<<4=16
 }
 
 
 // getInfectionParity - number of serotypes with immunity (including vaccination)
 int Person::getInfectionParity() {
-    return ((_nImmunity & (1<<(1-1))) +
-        ((_nImmunity & (1<<(2-1)))>>1) +
-        ((_nImmunity & (1<<(3-1)))>>2) +
-        ((_nImmunity & (1<<(4-1)))>>3));
+    return _nImmunity.count(); // count number of 1's in bit string
 }
 
 
@@ -218,42 +224,27 @@ bool Person::vaccinate() {
     vector<double> _fVES = _par->fVESs;
     if (!_bVaccinated & !_bDead) {
         _bVaccinated = true;
-        if ((_fVES[0]==_fVES[1]) &&
-            (_fVES[1]==_fVES[2]) &&
-        (_fVES[2]==_fVES[3])) {                                       // same protection against all 4 serotypes
+
+        bool all_same = 1;
+        for (int i=1; i<NUM_OF_SEROTYPES; i++) {/// This looks like a bug.  We should probably be testing the rng against all values
+            if (_fVES[0] != _fVES[i]) {
+                all_same = 0;
+                break;
+            }
+        }
+        if (all_same) {                                       // same protection against all 4 serotypes
             if (gsl_rng_uniform(RNG)<_fVES[0]) {
-                _nImmunity = 0xff;                                    // this person is protected against all serotypes
+                _nImmunity.reset().flip();                            // this person is protected against all serotypes
             }
         }
         else {
-            if (gsl_rng_uniform(RNG)<_fVES[0])
-                _nImmunity |= (1<<(1-1));                             // protected against serotype 1
-            if (gsl_rng_uniform(RNG)<_fVES[1])
-                _nImmunity |= (1<<(2-1));                             // protected against serotype 2
-            if (gsl_rng_uniform(RNG)<_fVES[2])
-                _nImmunity |= (1<<(3-1));                             // protected against serotype 3
-            if (gsl_rng_uniform(RNG)<_fVES[3])
-                _nImmunity |= (1<<(4-1));                             // protected against serotype 4
+            for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+                if (gsl_rng_uniform(RNG)<_fVES[i]) _nImmunity[i] = 1;                                // protect against serotype i
+            }
         }
         return true;
-    }
-    return false;
-}
-
-
-// generateRandomIDs - generate num sorted unique ints between 0 and bound-1
-void Person::generateRandomIDs(int num, int bound, int *ids) {
-    for (int i=0; i<num; i++) {
-        int r = gsl_rng_uniform_int(RNG, bound-i);
-        int j;
-        for (j=0; j<i; j++) {
-            if (r>=ids[j])
-                r++;
-            else
-                break;
-        }
-        for (int k=i-1; k>=j; k--)
-            ids[k+1]=ids[k];                                          // move entry over
-        ids[j]=r;
+    } else {
+        return false;
     }
 }
+

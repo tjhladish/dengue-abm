@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <assert.h>
+#include <bitset>
 #include <gsl/gsl_rng.h>
 
 static const int VERSIONNUMBERMAJOR = 1;
@@ -22,6 +23,9 @@ enum Serotype {
 };
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
+
+static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
+static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
 // from Person.h
 static const int MAXPERSONAGE = 95;                           // maximum age-1 for a person
@@ -107,6 +111,7 @@ namespace dengue {
         using std::strcmp;
         using std::strtol;
         using std::strtod;
+        using std::bitset;
     }
 }
 

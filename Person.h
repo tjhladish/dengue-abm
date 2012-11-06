@@ -4,6 +4,7 @@
 
 #ifndef __PERSON_H
 #define __PERSON_H
+#include <bitset>
 #include "Parameters.h"
 
 class Location;
@@ -52,8 +53,6 @@ class Person
         bool isDead() { return _bDead; }
         bool naturalDeath(int t);                                     // die of old age check?
 
-        static void generateRandomIDs(int num, int bound, int *ids);
-
         bool isInfected(int time);                                    // is currently infected
         bool isSymptomatic(int time);                                 // has symptoms
         bool isVaccinated() {                                         // has been vaccinated
@@ -76,7 +75,7 @@ class Person
         int _nAge;                                                    // age in years
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead
-        int _nImmunity;                                               // bitmask of serotype exposure
+        std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype exposure
         bool _bVaccinated;                                            // has been vaccinated
 
         // _nNumInfections counts the number of infections, up to MAXHISTORY infections.
