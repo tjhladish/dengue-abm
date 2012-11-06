@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     seed_epidemic(par, community);
     simulate_epidemic(par, community);
     write_output(par, community, initial_susceptibles);
-
+    
     return 0;
 }
  

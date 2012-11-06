@@ -79,6 +79,13 @@ void Person::copyImmunity(const Person *p) {
         _nRecoveryTime[i] = p->_nRecoveryTime[i];
         _eSerotype[i] = p->_eSerotype[i];
     }
+
+/*    for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
+        for (int t=0; t<STEPSPERDAY; t++) {
+            Community::unflagInfectedLocation(p->_pLocation[t], d);
+            Community::flagInfectedLocation(_pLocation[t], d);
+        }
+    }*/
 }
 
 
@@ -145,7 +152,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         double r = gsl_rng_uniform(RNG);
         for (int i=0; i<_nRecoveryTime[0] - _nInfectiousTime[0]; i++) {
             if (r < 1-pow(0.5,1+i) ) {
-                _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS!!!!)
+                _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS?)
             }
         }
         if (_nRecoveryTime[0]<_nWithdrawnTime[0])
@@ -157,6 +164,12 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
     _nImmunity[(int) serotype] = 1;
     //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << SYMPTOMATIC_BY_AGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
+
+    for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
+        for (int t=0; t<STEPSPERDAY; t++) {
+            Community::flagInfectedLocation(_pLocation[t], d);
+        }
+    }
 
     return true;
 }

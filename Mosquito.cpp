@@ -17,7 +17,6 @@ int Mosquito::_nNextID = 0;
 Mosquito::Mosquito() {
     _nID = _nNextID++;
     _bDead = false;
-    //_bInfected = false;
     _nAgeInfected = -1;
     _eSerotype = NULL_SEROTYPE;
     _nInfectedAtID = -1;
@@ -26,7 +25,6 @@ Mosquito::Mosquito() {
 
 
 Mosquito::Mosquito(Location *p, Serotype serotype, int nInfectedAtID) {
-    //assert(nSerotype>0 && nSerotype<=4);
     _nID = _nNextID++;
     _bDead = false;
     _eSerotype = serotype;

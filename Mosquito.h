@@ -31,9 +31,8 @@ class Mosquito
         int _nAgeInfected;                                            // age when infected in days
         int _nAgeDeath;                                               // lifespan in days
         bool _bDead;                                                  // is dead?
-        Serotype _eSerotype;                                               // infecting serotype
+        Serotype _eSerotype;                                          // infecting serotype
         int _nInfectedAtID;                                           // location ID where infected
-        //  int _nInfectedByID;     // which person infected me?
         static int _nNextID;                                          // unique ID to assign to the next Mosquito allocated
 };
 #endif

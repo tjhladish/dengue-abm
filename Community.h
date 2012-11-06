@@ -4,6 +4,7 @@
 #define __COMMUNITY_H
 #include <string>
 #include <vector>
+#include <map>
 
 class Person;
 class Mosquito;
@@ -46,6 +47,8 @@ class Community
         Mosquito *getExposedMosquito(int n);
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
+        static void flagInfectedLocation(Location* _pLoc, int day) { _isHot[_pLoc][day] = true; }
+
 
 
     protected:
@@ -69,12 +72,12 @@ class Community
         std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
         int _nDay;                                                    // current day
         int _nNumPerson;                                              // number of persons in the simulation
-        int _nMaxPerson;                                              // max of persons ever in the simulation
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
+        static std::map< Location*, std::map<int, bool> > _isHot;
 
         void expandExposedQueues();
         void expandMosquitoQueues();

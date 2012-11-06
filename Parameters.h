@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <map>
 #include <iostream>
 #include <assert.h>
 #include <bitset>
@@ -104,6 +105,7 @@ namespace dengue {
         using std::endl;
         using std::string;
         using std::vector;
+        using std::map;
         using std::ifstream;
         using std::istringstream;
         using std::ofstream;
@@ -150,7 +152,7 @@ public:
     std::string szImmunityFile;
     std::string szNetworkFile;
     std::string szLocationFile;
-    int nNumInitialSusceptible[4];
+    int nNumInitialSusceptible[NUM_OF_SEROTYPES];
     std::string szPeopleFile;
     std::string szYearlyPeopleFile;
     std::string szDailyFile;

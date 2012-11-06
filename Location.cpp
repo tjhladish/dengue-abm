@@ -27,18 +27,6 @@ Location::Location()
 Location::~Location() {
     _person.clear();
     _neighbors.clear();
-    /*if (_person.size()) {
-        for (unsigned int i = 0; i<_person.size(); i++) {
-            for (unsigned int j = 0; j<_person[i].size(); j++) {
-                delete _person[i][j]; 
-            }
-        }
-    }
-    if (_neighbors.size()) {
-        for (unsigned int i = 0; i<_neighbors.size(); i++) {
-            delete _neighbors[i];
-        }
-    }*/
 }
 
 

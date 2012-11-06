@@ -1,6 +1,5 @@
 // Person.h
 // A single individual.
-// Note that serotypes are numbered 1-4
 
 #ifndef __PERSON_H
 #define __PERSON_H
@@ -88,7 +87,7 @@ class Person
         int _nSymptomTime[MAXHISTORY];                                // when symptoms start
         int _nWithdrawnTime[MAXHISTORY];                              // when person withdraws to home
         int _nRecoveryTime[MAXHISTORY];                               // when recovered?
-        Serotype _eSerotype[MAXHISTORY];                              // from 1-4
+        Serotype _eSerotype[MAXHISTORY]; 
 
         static const Parameters* _par;
         static int _nNextID;                                          // unique ID to assign to the next Person allocated

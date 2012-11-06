@@ -21,6 +21,7 @@
 using namespace dengue::standard;
 
 const Parameters* Community::_par;
+map< Location*, map<int, bool> > Community::_isHot;
 
 // Community
 Community::Community(const Parameters* parameters) :
@@ -62,17 +63,16 @@ bool Community::loadPopulation(string szPop,string szImm) {
         return false;
     }
     // count lines
-    int numlines = 0;
+    int maxPerson = 0;
     while (iss) {
         char buffer[500];
         iss.getline(buffer,500);
-        numlines++;
+        maxPerson++;
     }
     iss.close();
     iss.open(_szPopulationFilename.c_str());
     _nNumPerson=0;
-    _nMaxPerson = numlines*4;
-    _person = new Person[_nMaxPerson];
+    _person = new Person[maxPerson];
     int agecounts[MAXPERSONAGE];
     for (int i=0; i<MAXPERSONAGE; i++)
         agecounts[i] = 0;
@@ -110,27 +110,26 @@ bool Community::loadPopulation(string szPop,string szImm) {
             cerr << "ERROR: " << _szImmunityFilename << " not found." << endl;
             return false;
         }
+        char buffer[500];
+        int part;
+        vector<int> parts;
         while (immiss) {
-            char buffer[500];
             immiss.getline(buffer,500);
             istringstream line(buffer);
-            int id, imm1, imm2, imm3, imm4;
-            string gender;
-            if (line >> id >> imm1 >> imm2 >> imm3 >> imm4) {
+            while (line >> part) parts.push_back(part);
+
+            if (parts.size() >= 1 + NUM_OF_SEROTYPES) {
+                int id = parts[0];
                 for (int i=id-1; i<=id; i++) {
                     if (_person[i].getID()==id) {
-                        if (imm1>0)
-                            _person[i].setImmunity(SEROTYPE_1);
-                        if (imm2>0)
-                            _person[i].setImmunity(SEROTYPE_2);
-                        if (imm3>0)
-                            _person[i].setImmunity(SEROTYPE_3);
-                        if (imm4>0)
-                            _person[i].setImmunity(SEROTYPE_4);
+                        for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
+                            if (parts[s+1]>0) _person[i].setImmunity((Serotype) s);
+                        }
                         break;
                     }
                 }
             }
+            parts.clear();
         }
         immiss.close();
     }
@@ -175,6 +174,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
     for (unsigned int i=0; i<_location.size(); i++) {
         _location[i] = new Location();
         _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+        _isHot[_location[i]] = map<int,bool>();
     } 
 
     _numLocationMosquitoCreated.clear();
@@ -244,7 +244,6 @@ void Community::vaccinate(double f, int age) {
 
 // returns number of days mosquito has left to live
 int Community::addMosquito(Location *p, Serotype serotype, int nInfectedByID) {
-    assert(serotype>=0 && serotype<4);
     Mosquito *m = new Mosquito(p, serotype, nInfectedByID);
     int daysleft = m->getAgeDeath()-m->getAgeInfected();
     int daysinfectious = daysleft-MOSQUITOINCUBATION;
@@ -326,6 +325,8 @@ void Community::moveMosquito(Mosquito *m) {
 
 
 void Community::swapImmuneStates() {
+    map< Location*, map<int,bool> >::iterator it;
+    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
     //    cerr << "swap!" << endl;
     // big annual swap!
     // For people of age x, copy immune status from people of age x-1
@@ -337,6 +338,15 @@ void Community::swapImmuneStates() {
             assert(p!=NULL);
             int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age1]);
             p->copyImmunity(_personAgeCohort[age1][r]);
+
+            // update map of locations with infectious people
+            if (p->getRecoveryTime() > _nDay) {
+                for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
+                    for (int t=0; t<STEPSPERDAY; t++) {
+                        flagInfectedLocation(p->getLocation(t), d);
+                    }
+                }
+            }
         }
     }
     // For people of age 0, reset immunity
@@ -378,10 +388,12 @@ void Community::mosquitoToHumanTransmission() {
 
                 // take sum of people in the location, weighting by time of day
                 double exposuretime[STEPSPERDAY];
+                double totalExposureTime = 0;
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
                     exposuretime[timeofday] = pLoc->getNumPerson(timeofday) * DAILY_BITING_PDF[timeofday];
+                    totalExposureTime += exposuretime[timeofday];
                 }
-                double r = gsl_rng_uniform(RNG) * (exposuretime[0]+exposuretime[1]+exposuretime[2]);
+                double r = gsl_rng_uniform(RNG) * totalExposureTime;
                 for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
                     if (r<exposuretime[timeofday]) {
                         // bite at this time of day
@@ -415,11 +427,11 @@ void Community::mosquitoToHumanTransmission() {
 
 void Community::humanToMosquitoTransmission() {
     for (unsigned int loc=0; loc<_location.size(); loc++) {
-        if (!_location[loc]->getUndefined()) {
+        if (!_location[loc]->getUndefined() && _isHot[_location[loc]].count(_nDay)) {
+            _isHot[_location[loc]].erase(_nDay);  // works if transmission is modeled daily
             double sumviremic = 0.0;
             double sumnonviremic = 0.0;
-            double sumserotype[5];                                    // serotype fractions at location
-            sumserotype[0] = sumserotype[1] = sumserotype[2] = sumserotype[3] = sumserotype[4] = 0.0;
+            vector<double> sumserotype(NUM_OF_SEROTYPES,0.0);                                    // serotype fractions at location
 
             // calculate fraction of people who are viremic
             for (int timeofday=0; timeofday<STEPSPERDAY; timeofday++) {
@@ -428,7 +440,6 @@ void Community::humanToMosquitoTransmission() {
                     if (p->isViremic(_nDay)) {
                         double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
                         int serotype = (int) p->getSerotype();
-                        //assert(serotype<4);
                         if (vaceffect==1.0) {
                             sumviremic += DAILY_BITING_PDF[timeofday];
                             sumserotype[serotype] += DAILY_BITING_PDF[timeofday];
@@ -445,7 +456,8 @@ void Community::humanToMosquitoTransmission() {
             }
 
             if (sumviremic>0.0) {
-                for (int i=0; i<5; i++)
+        cerr << _location[loc]->getID() << endl;
+                for (int i=0; i<NUM_OF_SEROTYPES; i++)
                     sumserotype[i] /= sumviremic;
                 int m;                                                // number of susceptible mosquitoes
                 int locid = _location[loc]->getID();                   // location ID
@@ -462,7 +474,7 @@ void Community::humanToMosquitoTransmission() {
                         serotype = 0;
                     } else {
                         double r = gsl_rng_uniform(RNG);
-                        for (serotype=0; serotype<5 && r>sumserotype[serotype]; serotype++)
+                        for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
                             r -= sumserotype[serotype];
                     }
                     /*if (serotype==0) {
@@ -470,7 +482,6 @@ void Community::humanToMosquitoTransmission() {
                         for (int i=0; i<5; i++) cerr << sumserotype[i] << ",";
                         cerr << endl;
                     }*/
-                    assert (serotype >= 0 && serotype<4);
                     int daysleft = addMosquito(_location[loc], (Serotype) serotype, locid);
                     assert(_nDay+daysleft<MAXRUNTIME);
                     for (int j=0; j<daysleft; j++)
