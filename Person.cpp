@@ -143,12 +143,12 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     (_nImmunity.any()?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
         _nSymptomTime[0] = _nInfectiousTime[0] + 1;                   // symptomatic one day before infectious
         double r = gsl_rng_uniform(RNG);
-        /*for (int i=0; i<_nRecoveryTime[0] - _nInfectiousTime[0]; i++) {
+        for (int i=0; i<_nRecoveryTime[0] - _nInfectiousTime[0]; i++) {
             if (r < 1-pow(0.5,1+i) ) {
                 _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS!!!!)
             }
-        }*/
-        if (r<0.5) {
+        }
+        /*if (r<0.5) {
             _nWithdrawnTime[0] = _nSymptomTime[0];                    // withdraws (FIX THIS!!!!)
         }
         else if (r<0.75) {
@@ -162,7 +162,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         }
         else if (r<0.945) {
             _nWithdrawnTime[0] = _nSymptomTime[0] + 4;                // withdraws (FIX THIS!!!!)
-        }
+        }*/
         if (_nRecoveryTime[0]<_nWithdrawnTime[0])
             _nWithdrawnTime[0] = 100000;
         _bCase = true;
@@ -225,7 +225,7 @@ bool Person::vaccinate() {
     if (!_bVaccinated & !_bDead) {
         _bVaccinated = true;
 
-        bool all_same = 1;
+/*        bool all_same = 1;
         for (int i=1; i<NUM_OF_SEROTYPES; i++) {/// This looks like a bug.  We should probably be testing the rng against all values
             if (_fVES[0] != _fVES[i]) {
                 all_same = 0;
@@ -237,11 +237,11 @@ bool Person::vaccinate() {
                 _nImmunity.reset().flip();                            // this person is protected against all serotypes
             }
         }
-        else {
+        else {*/
             for (int i=0; i<NUM_OF_SEROTYPES; i++) {
                 if (gsl_rng_uniform(RNG)<_fVES[i]) _nImmunity[i] = 1;                                // protect against serotype i
             }
-        }
+       // }
         return true;
     } else {
         return false;
