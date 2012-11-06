@@ -40,7 +40,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 
         std::cerr << "Dengue model, Version " << VERSIONNUMBERMAJOR << "." << VERSIONNUMBERMINOR << std::endl;
-        std::cerr << "written by Dennis Chao in 2012" << std::endl;
+        std::cerr << "written by Dennis Chao and Thomas Hladish in 2012" << std::endl;
 
         if (argc>1) {
             for (int i=1; i<argc; i++) {
