@@ -17,7 +17,7 @@ int Location::_nNextID = 0;
 //int Location::_nDefaultMosquitoCapacity;
 
 Location::Location()
-    : _person(STEPSPERDAY, vector<Person*>(0) ) {
+    : _person(STEPS_PER_DAY, vector<Person*>(0) ) {
     _nID = _nNextID++;
     _nBaseMosquitoCapacity = 0;
     _bUndefined = false;

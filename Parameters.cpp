@@ -39,7 +39,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fSecondaryScaling.clear();
         fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 
-        std::cerr << "Dengue model, Version " << VERSIONNUMBERMAJOR << "." << VERSIONNUMBERMINOR << std::endl;
+        std::cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << std::endl;
         std::cerr << "written by Dennis Chao and Thomas Hladish in 2012" << std::endl;
 
         if (argc>1) {
@@ -211,7 +211,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         std::cerr << "location file = " << szLocationFile << std::endl;
         std::cerr << "network file = " << szNetworkFile << std::endl;
         std::cerr << "runlength = " << nRunLength << std::endl;
-        if (nRunLength>MAXRUNTIME) {
+        if (nRunLength>MAX_RUN_TIME) {
             std::cerr << "ERROR: runlength is too long: " << nRunLength << std::endl;
             std::cerr << " change Community.h and recompile." << std::endl;
             exit(-1);

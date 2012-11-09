@@ -59,7 +59,7 @@ class Community
         std::string _szNetworkFilename;                               // location network filename
         Person *_person;                                              // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
-        int _nPersonAgeCohortSizes[MAXPERSONAGE];                     // size of each age cohort
+        int _nPersonAgeCohortSizes[MAX_PERSON_AGE];                   // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
         std::vector<Location*> _location;                             // the array index is equal to the ID
         std::vector< std::vector<int> > _numLocationMosquitoCreated;  // number of instantiated mosquitoes at 

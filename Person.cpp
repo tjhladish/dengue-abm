@@ -31,7 +31,7 @@ Person::Person() {
     //_nImmunity = 0;
     _nNumInfections = -1;
     pushInfectionHistory();
-    for(int i=0; i<STEPSPERDAY; i++) _pLocation[i] = NULL;
+    for(int i=0; i<STEPS_PER_DAY; i++) _pLocation[i] = NULL;
     _bDead = false;
     _bVaccinated = false;
     _bCase = false;
@@ -44,7 +44,7 @@ Person::~Person() {
 
 void Person::pushInfectionHistory() {
     _nNumInfections++;
-    assert(_nNumInfections<MAXHISTORY);
+    assert(_nNumInfections<MAX_HISTORY);
     for (int i=_nNumInfections; i>0; i--) {
         _nInfectedByID[i] = _nInfectedByID[i-1];
         _nInfectedPlace[i] = _nInfectedPlace[i-1];
@@ -81,7 +81,7 @@ void Person::copyImmunity(const Person *p) {
     }
 
 /*    for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
-        for (int t=0; t<STEPSPERDAY; t++) {
+        for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::unflagInfectedLocation(p->_pLocation[t], d);
             Community::flagInfectedLocation(_pLocation[t], d);
         }
@@ -132,7 +132,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 
     double r = gsl_rng_uniform(RNG);
     _nInfectiousTime[0] = 0;
-    while (_nInfectiousTime[0]<MAXINCUBATION && INCUBATION_DISTRIBUTION[_nInfectiousTime[0]]<r)
+    while (_nInfectiousTime[0]<MAX_INCUBATION && INCUBATION_DISTRIBUTION[_nInfectiousTime[0]]<r)
         _nInfectiousTime[0]++;
     //    cerr << "symp " << _nSymptomTime << "," << r << endl;
     _nInfectiousTime[0] += time;
@@ -166,7 +166,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << SYMPTOMATIC_BY_AGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
 
     for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
-        for (int t=0; t<STEPSPERDAY; t++) {
+        for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
     }

@@ -11,8 +11,8 @@
 #include <bitset>
 #include <gsl/gsl_rng.h>
 
-static const int VERSIONNUMBERMAJOR = 1;
-static const int VERSIONNUMBERMINOR = 0;
+static const int VERSION_NUMBER_MAJOR = 1;
+static const int VERSION_NUMBER_MINOR = 0;
 
 enum Serotype {
     SEROTYPE_1,
@@ -29,25 +29,25 @@ static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days 
 static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
 // from Person.h
-static const int MAXPERSONAGE = 95;                           // maximum age-1 for a person
-static const int MAXINCUBATION = 9;                           // max incubation period in days
-static const int MAXHISTORY = 50;                             // length of exposure history in years
+static const int MAX_PERSON_AGE = 95;                         // maximum age-1 for a person
+static const int MAX_INCUBATION = 9;                          // max incubation period in days
+static const int MAX_HISTORY = 50;                            // length of exposure history in years
 
 // cdf of incubation period, starting from day 1 (from Nishiura 2007)
-const double INCUBATION_DISTRIBUTION[MAXINCUBATION] = {
+const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
     0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1
 };
 
 // from Community
-static const int STEPSPERDAY = 3;                             // number of time steps per day
-static const int MOSQUITOINCUBATION = 11;                     // number of days for mosquito incubation (extrinsic incubation period)
-static const int MAXRUNTIME = 7400;                           // maximum number of simulation days (+ extra for mosquito lifetime)
-static const float DAILY_BITING_PDF[STEPSPERDAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
+static const int STEPS_PER_DAY = 3;                           // number of time steps per day
+static const int MOSQUITO_INCUBATION = 11;                    // number of days for mosquito incubation (extrinsic incubation period)
+static const int MAX_RUN_TIME = 7400;                         // maximum number of simulation days (+ extra for mosquito lifetime)
+static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
 // from Mosquito
-static const int MAXMOSQUITOAGE = 60;                                 // maximum age of mosquito in days
+static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of mosquito in days
 
-//double MOSQUITO_DEATH_PROBABILITY[MAXMOSQUITOAGE] = { // probability of death each day
+//double MOSQUITO_DEATH_PROBABILITY[MAX_MOSQUITO_AGE] = { // probability of death each day
 //    0.0018,0.002069514,0.002378646,0.002732982,0.003138823,0.003603251,0.004134191,
 //    0.004740476,0.005431895,0.006219231,0.007114273,0.008129798,0.009279508,
 //    0.01057792,0.01204018,0.01368180,0.01551828,0.01756467,0.01983494,0.02234135,
@@ -59,7 +59,7 @@ static const int MAXMOSQUITOAGE = 60;                                 // maximum
 //    0.1290510,0.1294285,0.1297580,0.1300453};
 
 // cumulative density of mosquito ages
-static const double MOSQUITO_AGE_DISTRIBUTION[MAXMOSQUITOAGE] = {
+static const double MOSQUITO_AGE_DISTRIBUTION[MAX_MOSQUITO_AGE] = {
     0.03115129,0.06224651,0.09327738,0.1242344,0.1551069,0.1858824,0.2165471,
     0.247085,0.2774781,0.3077061,0.3377462,0.3675725,0.3971563,0.4264656,0.4554649,
     0.484115,0.5123732,0.5401928,0.5675238,0.5943126,0.620503,0.6460362,0.6708519,
@@ -71,7 +71,7 @@ static const double MOSQUITO_AGE_DISTRIBUTION[MAXMOSQUITOAGE] = {
 };
 
 // for some serotypes, the fraction who are symptomatic upon primary infection
-static const double SYMPTOMATIC_BY_AGE[MAXPERSONAGE] = {
+static const double SYMPTOMATIC_BY_AGE[MAX_PERSON_AGE] = {
     0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,
     0.1017964,0.1017964,0.1017964,0.1017964,0.1017964,
     0.2774451,0.2774451,0.2774451,0.2774451,0.2774451,
@@ -85,7 +85,7 @@ static const double SYMPTOMATIC_BY_AGE[MAXPERSONAGE] = {
 };
 
 //2005 Thai mortality data by age from Porapakkham 2010
-//double thaimortality[MAXPERSONAGE] = {
+//double thaimortality[MAX_PERSON_AGE] = {
 //    0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,
 //    0.0005,0.0005,0.0005,0.0005,0.0005,0.0007,0.0007,0.0007,0.0007,0.0007,
 //    0.0009,0.0009,0.0009,0.0009,0.0009,0.0016,0.0016,0.0016,0.0016,0.0016,

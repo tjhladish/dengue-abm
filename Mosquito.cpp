@@ -31,11 +31,11 @@ Mosquito::Mosquito(Location *p, Serotype serotype, int nInfectedAtID) {
     _nInfectedAtID = nInfectedAtID;
     double r = gsl_rng_uniform(RNG);
     _nAgeInfected = 0;
-    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeInfected]<r && _nAgeInfected<MAXMOSQUITOAGE-1)
+    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeInfected]<r && _nAgeInfected<MAX_MOSQUITO_AGE-1)
         _nAgeInfected++;
     _nAgeDeath = _nAgeInfected;
     r = 1.0-(gsl_rng_uniform(RNG)*(1.0-MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]));
-    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]<r && _nAgeDeath<MAXMOSQUITOAGE-1)
+    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]<r && _nAgeDeath<MAX_MOSQUITO_AGE-1)
         _nAgeDeath++;
     //  cerr << "Mosquito " << _nID << ", age=" << _nAgeInfected << ", death=" << _nAgeDeath << endl;
     _pLocation = _pOriginLocation = p;
