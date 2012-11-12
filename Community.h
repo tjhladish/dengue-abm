@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "types.h"
 
 class Person;
 class Mosquito;
@@ -45,8 +46,8 @@ class Community
         void setVESs(std::vector<double> f);
         Mosquito *getInfectiousMosquito(int n);
         Mosquito *getExposedMosquito(int n);
-        std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
-        std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
+        VectorMP< VectorMP<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
+        VectorMP< VectorMP<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         static void flagInfectedLocation(Location* _pLoc, int day) { _isHot[_pLoc][day] = true; }
 
 
@@ -66,21 +67,26 @@ class Community
                                                                       // this location at time t.  the first 
                                                                       // array index is equal to the location ID,
                                                                       // the second to the day
-        std::vector< std::vector<Person*> > _exposedQueue;            // queue of people with n days of latency left
-        std::vector< std::vector<Mosquito*> > _infectiousMosquitoQueue;  // queue of infectious mosquitoes with n days
+        VectorMP< VectorMP<Person*> > _exposedQueue;            // queue of people with n days of latency left
+        //std::vector< std::vector<Mosquito*> > _infectiousMosquitoQueue;  // queue of infectious mosquitoes with n days
+        //                                                                 // left to live
+        //std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
+        VectorMP< VectorMP<Mosquito*> > _infectiousMosquitoQueue;  // queue of infectious mosquitoes with n days
                                                                          // left to live
-        std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
+        VectorMP< VectorMP<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
         int _nDay;                                                    // current day
         int _nNumPerson;                                              // number of persons in the simulation
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-        std::vector< std::vector<int> > _nNumNewlyInfected;
-        std::vector< std::vector<int> > _nNumNewlySymptomatic;
-        static std::map< Location*, std::map<int, bool> > _isHot;
+        VectorMP< VectorMP<int> > _nNumNewlyInfected;
+        VectorMP< VectorMP<int> > _nNumNewlySymptomatic;
+        //std::vector< std::vector<int> > _nNumNewlyInfected;
+        //std::vector< std::vector<int> > _nNumNewlySymptomatic;
+        static MapMP< Location*, MapMP<int, bool> > _isHot;
 
-        void expandExposedQueues();
-        void expandMosquitoQueues();
+        //void expandExposedQueues();
+        //void expandMosquitoQueues();
         void moveMosquito(Mosquito *m);
         void _advanceTimers();
         void _modelMosquitoMovement();

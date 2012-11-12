@@ -11,7 +11,7 @@ OPTI     = -O3
 #OPTI     = -g
 LDFLAGS	= 
 INCLUDES	= 
-LIBS	= -lm -lgsl -lgslcblas
+LIBS	= -lm -lgsl -lgslcblas -fopenmp
 DEFINES = -DVERBOSE 
 
 default: model
@@ -19,8 +19,8 @@ default: model
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
 	$(CCLINKER) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
-%.o: %.cpp Parameters.h Person.h Makefile
-	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<
+%.o: %.cpp types.h Parameters.h Person.h Makefile
+	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -fopenmp -c $<
 
 zip: *.cpp *.h Makefile README LICENSE.txt HISTORY.txt *-bangphae.txt
 	cd ..; zip denguemodelcode/denguemodel.zip denguemodelcode/README denguemodelcode/LICENSE.txt denguemodelcode/HISTORY.txt denguemodelcode/gpl.txt denguemodelcode/Makefile denguemodelcode/*.cpp denguemodelcode/*.h denguemodelcode/*-bangphae.txt

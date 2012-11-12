@@ -17,20 +17,42 @@
 #include "Location.h"
 #include "Community.h"
 #include "Parameters.h"
+#include "types.h"
 
 using namespace dengue::standard;
 
 const Parameters* Community::_par;
-map< Location*, map<int, bool> > Community::_isHot;
+MapMP< Location*,  MapMP<int, bool> > Community::_isHot;
+//map< Location*, map<int, bool> > Community::_isHot;
 
 // Community
-Community::Community(const Parameters* parameters) :
-    _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
-    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE-MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
-    _exposedMosquitoQueue(MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
-    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
-    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
+Community::Community(const Parameters* parameters) /*:
+    _exposedQueue(MAX_INCUBATION, VectorMP<Person*>()),
+    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE-MOSQUITO_INCUBATION, VectorMP<Mosquito*>(0)),
+    _exposedMosquitoQueue(MOSQUITO_INCUBATION, VectorMP<Mosquito*>(0)),
+    _nNumNewlyInfected(NUM_OF_SEROTYPES, VectorMP<int>(MAX_RUN_TIME)),
+    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, VectorMP<int>(MAX_RUN_TIME))*/
     {
+    for (int i=0; i<MAX_INCUBATION; i++) {
+        VectorMP<Person*> x;
+        _exposedQueue.push_back_mp(x);
+    }
+    for (int i=0; i<MAX_MOSQUITO_AGE-MOSQUITO_INCUBATION; i++) {
+        VectorMP<Mosquito*> x;
+        _infectiousMosquitoQueue.push_back_mp(x); 
+    }
+    for (int i=0; i<MOSQUITO_INCUBATION; i++) {
+         VectorMP<Mosquito*> x;
+        _exposedMosquitoQueue.push_back_mp(x);
+    }
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+        VectorMP<int> x(MAX_RUN_TIME);
+        _nNumNewlyInfected.push_back_mp(x);
+    }
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+        VectorMP<int> x(MAX_RUN_TIME);
+        _nNumNewlySymptomatic.push_back_mp(x);
+    }
     _par = parameters;
     _nDay = 0;
     _nNumPerson = 0;
@@ -46,9 +68,9 @@ Community::~Community() {
         delete [] _person;
 
     _location.clear();
-    _exposedQueue.clear();
-    _infectiousMosquitoQueue.clear();
-    _exposedMosquitoQueue.clear();
+    _exposedQueue.clear_mp();
+    _infectiousMosquitoQueue.clear_mp();
+    _exposedMosquitoQueue.clear_mp();
     _personAgeCohort.clear();
     _numLocationMosquitoCreated.clear();
 }
@@ -174,7 +196,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
     for (unsigned int i=0; i<_location.size(); i++) {
         _location[i] = new Location();
         _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
-        _isHot[_location[i]] = map<int,bool>();
+        _isHot[_location[i]] = MapMP<int,bool>();
     } 
 
     _numLocationMosquitoCreated.clear();
@@ -254,15 +276,15 @@ int Community::addMosquito(Location *p, Serotype serotype, int nInfectedByID) {
 
     //on the latest possible day
     // add mosquito to latency queue
-    _exposedMosquitoQueue.back().push_back(m); 
+    _exposedMosquitoQueue.back_mp().push_back_mp(m); 
     return daysleft;
 }
 
 
 int Community::getNumInfectiousMosquitoes() {
     int count = 0;
-    for (unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
-        count += _infectiousMosquitoQueue[i].size();
+    for (int i=0; i<_infectiousMosquitoQueue.size_mp(); i++) {
+        count += _infectiousMosquitoQueue[i].size_mp();
     }
     return count;
 }
@@ -270,16 +292,16 @@ int Community::getNumInfectiousMosquitoes() {
 
 int Community::getNumExposedMosquitoes() {
     int count = 0;
-    for (unsigned int i=0; i<_exposedMosquitoQueue.size(); i++) {
-        count += _exposedMosquitoQueue[i].size();
+    for (int i=0; i<_exposedMosquitoQueue.size_mp(); i++) {
+        count += _exposedMosquitoQueue[i].size_mp();
     }
     return count;
 }
 
 
 Mosquito *Community::getInfectiousMosquito(int n) {
-    for (unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
-        int bin_size = _infectiousMosquitoQueue[i].size();
+    for (int i=0; i<_infectiousMosquitoQueue.size_mp(); i++) {
+        int bin_size = _infectiousMosquitoQueue[i].size_mp();
         if (n >= bin_size) {
             n -= bin_size;
         } else {
@@ -291,8 +313,8 @@ Mosquito *Community::getInfectiousMosquito(int n) {
 
 
 Mosquito *Community::getExposedMosquito(int n) {
-    for (unsigned int i=0; i<_exposedMosquitoQueue.size(); i++) {
-        int bin_size = _exposedMosquitoQueue[i].size();
+    for (int i=0; i<_exposedMosquitoQueue.size_mp(); i++) {
+        int bin_size = _exposedMosquitoQueue[i].size_mp();
         if (n >= bin_size) {
             n -= bin_size;
         } else {
@@ -325,8 +347,8 @@ void Community::moveMosquito(Mosquito *m) {
 
 
 void Community::swapImmuneStates() {
-    map< Location*, map<int,bool> >::iterator it;
-    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
+    map< Location*, MapMP<int,bool> >::iterator it;
+    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear_mp(); // not threadsafe!
     //    cerr << "swap!" << endl;
     // big annual swap!
     // For people of age x, copy immune status from people of age x-1
@@ -380,8 +402,8 @@ void Community::updateWithdrawnStatus() {
 
 
 void Community::mosquitoToHumanTransmission() {
-    for(unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
-        for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
+    for(int i=0; i<_infectiousMosquitoQueue.size_mp(); i++) {
+        for(int j=0; j<_infectiousMosquitoQueue[i].size_mp(); j++) {
             Mosquito* m = _infectiousMosquitoQueue[i][j];
             Location *pLoc = m->getLocation();
             if (gsl_rng_uniform(RNG)<_par->betaMP) {                      // infectious mosquito bites
@@ -411,7 +433,7 @@ void Community::mosquitoToHumanTransmission() {
                                 // NOTE: We are storing the location ID of infection, not person ID!!!
                                 //	      cerr << "Person " << p->getID() << " infected" << endl;
                                 // add to queue
-                                _exposedQueue[p->getInfectiousTime()-_nDay].push_back(p);
+                                _exposedQueue[p->getInfectiousTime()-_nDay].push_back_mp(p);
                             }
                         }
                         break;
@@ -427,8 +449,8 @@ void Community::mosquitoToHumanTransmission() {
 
 void Community::humanToMosquitoTransmission() {
     for (unsigned int loc=0; loc<_location.size(); loc++) {
-        if (!_location[loc]->getUndefined() && _isHot[_location[loc]].count(_nDay)) {
-            _isHot[_location[loc]].erase(_nDay);  // works if transmission is modeled daily
+        if (!_location[loc]->getUndefined() && _isHot[_location[loc]].count_mp(_nDay)) {
+            _isHot[_location[loc]].erase_mp(_nDay);  // works if transmission is modeled daily
             double sumviremic = 0.0;
             double sumnonviremic = 0.0;
             vector<double> sumserotype(NUM_OF_SEROTYPES,0.0);                                    // serotype fractions at location
@@ -497,31 +519,31 @@ void Community::humanToMosquitoTransmission() {
 
 void Community::_advanceTimers() {
     // advance incubation in people
-    for (unsigned int i=0; i<_exposedQueue.size()-1; i++) {
+    for (int i=0; i<_exposedQueue.size_mp()-1; i++) {
         _exposedQueue[i] = _exposedQueue[i+1];
     }
-    _exposedQueue.back().clear();
+    _exposedQueue.back_mp().clear_mp();
 
 
     // advance age of infectious mosquitoes
-    for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
+    for (int i=0; i<_infectiousMosquitoQueue.size_mp()-1; i++) {
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
     }
-    _infectiousMosquitoQueue.back().clear();
+    _infectiousMosquitoQueue.back_mp().clear_mp();
 
     // advance incubation period of exposed mosquitoes
-    for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
+    for (int mnum=0; mnum<_exposedMosquitoQueue[0].size_mp(); mnum++) {
         Mosquito *m = _exposedMosquitoQueue[0][mnum];
         // incubation over: some mosquitoes become infectious
         int daysinfectious = m->getAgeDeath() - m->getAgeInfected() - MOSQUITO_INCUBATION;
-        assert((unsigned) daysinfectious < _infectiousMosquitoQueue.size());
-        _infectiousMosquitoQueue[daysinfectious].push_back(m);
+        assert((unsigned) daysinfectious < _infectiousMosquitoQueue.size_mp());
+        _infectiousMosquitoQueue[daysinfectious].push_back_mp(m);
     }
 
-    for (unsigned int i=0; i<_exposedMosquitoQueue.size()-1; i++) {
+    for (int i=0; i<_exposedMosquitoQueue.size_mp()-1; i++) {
         _exposedMosquitoQueue[i] = _exposedMosquitoQueue[i+1];
     }
-    _exposedMosquitoQueue.back().clear();
+    _exposedMosquitoQueue.back_mp().clear_mp();
     
     return;
 }
@@ -529,14 +551,14 @@ void Community::_advanceTimers() {
 
 void Community::_modelMosquitoMovement() {
     // move mosquitoes
-    for(unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
-        for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
+    for(int i=0; i<_infectiousMosquitoQueue.size_mp(); i++) {
+        for(int j=0; j<_infectiousMosquitoQueue[i].size_mp(); j++) {
             Mosquito* m = _infectiousMosquitoQueue[i][j];
             moveMosquito(m);
         }
     }
-    for(unsigned int i=0; i<_exposedMosquitoQueue.size(); i++) {
-        for(unsigned int j=0; j<_exposedMosquitoQueue[i].size(); j++) {
+    for(int i=0; i<_exposedMosquitoQueue.size_mp(); i++) {
+        for(int j=0; j<_exposedMosquitoQueue[i].size_mp(); j++) {
             Mosquito* m = _exposedMosquitoQueue[i][j];
             moveMosquito(m);
         }

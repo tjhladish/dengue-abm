@@ -270,8 +270,8 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
         }
         dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"
                   << "newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
-        vector< vector<int> > infected =    community->getNumNewlyInfected();
-        vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+        VectorMP< VectorMP<int> > infected =    community->getNumNewlyInfected();
+        VectorMP< VectorMP<int> > symptomatic = community->getNumNewlySymptomatic();
         for (int t=0; t<par->nRunLength; t++) {
             dailyFile << t << ",";
             for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyFile << infected[i][t] << ",";
