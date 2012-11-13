@@ -209,14 +209,22 @@ bool Community::loadLocations(string szLocs,string szNet) {
 
 // infect - infects person id
 bool Community::infect(int id, Serotype serotype, int day) {
-    for (int i=0; i<_nNumPerson; i++)
-    if (_person[i].getID()==id) {
-        bool result =  _person[i].infect(-1, serotype, day, 0);
-        if (result)
-            _nNumNewlyInfected[(int) serotype][_nDay]++;
-        return result;
-        //      cerr << "inf " << i << " at "  << _person[i].getLocation(0)->getID() << endl;
+    int i = 0;
+    if (_person[id-1].getID()==id) {
+        i = id-1;
+    } else {
+        for (i=0; i<_nNumPerson; i++) {
+            if (_person[i].getID()==id) {
+                break;
+            }
+        }
     }
+
+    bool result =  _person[i].infect(-1, serotype, day, 0);
+    if (result)
+    _nNumNewlyInfected[(int) serotype][_nDay]++;
+    return result;
+    //      cerr << "inf " << i << " at "  << _person[i].getLocation(0)->getID() << endl;
     return false;
 }
 
@@ -593,4 +601,3 @@ vector<int> Community::getNumSusceptible() {
     }
     return counts;
 }
-

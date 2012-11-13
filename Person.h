@@ -31,19 +31,19 @@ class Person
         Serotype getSerotype(int infectionsago=0) {                   // last infected with
             return _eSerotype[infectionsago];
         }
-        Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
-        void setLocation(Location *p, int timeofday) { _pLocation[timeofday] = p; }
-        int getInfectedTime(int infectionsago=0) { return _nInfectedTime[infectionsago]; }
-        int getInfectedPlace(int infectionsago=0) { return _nInfectedPlace[infectionsago]; }
-        int getInfectiousTime(int infectionsago=0) { return _nInfectiousTime[infectionsago]; }
-        int getSymptomTime(int infectionsago=0) { return _nSymptomTime[infectionsago]; }
-        int getRecoveryTime(int infectionsago=0) { return _nRecoveryTime[infectionsago]; }
+        inline Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
+        inline void setLocation(Location *p, int timeofday) { _pLocation[timeofday] = p; }
+        inline int getInfectedTime(int infectionsago=0) { return _nInfectedTime[infectionsago]; }
+        inline int getInfectedPlace(int infectionsago=0) { return _nInfectedPlace[infectionsago]; }
+        inline int getInfectiousTime(int infectionsago=0) { return _nInfectiousTime[infectionsago]; }
+        inline int getSymptomTime(int infectionsago=0) { return _nSymptomTime[infectionsago]; }
+        inline int getRecoveryTime(int infectionsago=0) { return _nRecoveryTime[infectionsago]; }
         bool isWithdrawn(int time);                                   // at home sick?
-        int getWithdrawnTime(int infectionsago=0) {                   // first day at home sick?
+        inline int getWithdrawnTime(int infectionsago=0) {                   // first day at home sick?
             return _nWithdrawnTime[infectionsago];
         }
-        int getInfectedByID(int infectionsago=0) { return _nInfectedByID[infectionsago]; }
-        int getNumInfections() { return _nNumInfections; }
+        inline int getInfectedByID(int infectionsago=0) { return _nInfectedByID[infectionsago]; }
+        inline int getNumInfections() { return _nNumInfections; }
 
         bool infect(int sourceid, Serotype serotype, int time, int sourceloc);
         bool isViremic(int time);
