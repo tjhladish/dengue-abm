@@ -13,14 +13,16 @@
 
 using namespace dengue::standard;
 
-int Location::_nNextID = 0;
+int Location::_nNextSerial = 0;
 //int Location::_nDefaultMosquitoCapacity;
 
 Location::Location()
     : _person(STEPS_PER_DAY, vector<Person*>(0) ) {
-    _nID = _nNextID++;
+    _serial = _nNextSerial++;
+    _ID = 0;
     _nBaseMosquitoCapacity = 0;
     _bUndefined = false;
+    _coord = make_pair(0.0, 0.0);
 }
 
 

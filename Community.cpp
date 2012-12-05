@@ -156,29 +156,42 @@ bool Community::loadLocations(string szLocs,string szNet) {
         cerr << "ERROR: " << _szLocationFilename << " not found." << endl;
         return false;
     }
-    int maxLocationID = 0;
+    //int maxLocationID = 0;
+    _location.clear();
     while (iss) {
         char buffer[500];
         iss.getline(buffer,500);
         istringstream line(buffer);
         int locID;
-        if (line >> locID) {
-            if (locID>maxLocationID) maxLocationID = locID;
+        string locType;
+        double locX, locY;
+        _location.push_back(new Location()); // first val is a dummy, for backward compatibility
+        if (line >> locID >> locType >> locX >> locY) {
+            Location* newLoc = new Location();
+            newLoc->setID(locID);
+            newLoc->setX(locX);
+            newLoc->setY(locY);
+            newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+            _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
+            _location.push_back(newLoc);
+     //       if (locID>maxLocationID) maxLocationID = locID;
         }
     }
     iss.close();
-    maxLocationID+=1;  // we don't actually use index 0 in the location vector . . .
-    cerr << maxLocationID << " locations" << endl;
-    _location.clear();
-    _location.resize(maxLocationID);
-    for (unsigned int i=0; i<_location.size(); i++) {
+    cerr << _location.size() << " locations" << endl;
+    //maxLocationID+=1;  // we don't actually use index 0 in the location vector . . .
+    //cerr << maxLocationID << " locations" << endl;
+    //_location.clear();
+    //_location.resize(maxLocationID);
+    /*for (unsigned int i=0; i<_location.size(); i++) {
         _location[i] = new Location();
         _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
-        _isHot[_location[i]] = map<int,bool>();
-    } 
+        _isHot[_location[i]] = map<int,bool>(); // _isHot flags locations with infections
+    }*/
 
     _numLocationMosquitoCreated.clear();
-    _numLocationMosquitoCreated.resize(maxLocationID, vector<int>(MAX_RUN_TIME, 0));
+    _numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
+    //_numLocationMosquitoCreated.resize(maxLocationID, vector<int>(MAX_RUN_TIME, 0));
 
     iss.open(_szNetworkFilename.c_str());
     if (!iss) {
@@ -318,7 +331,7 @@ void Community::moveMosquito(Mosquito *m) {
             int locID;
             do {
                 locID = gsl_rng_uniform_int(RNG,_location.size());
-            } while (_location[locID]->getUndefined());
+            } while (_location[locID]->getUndefined());               // why would it be undefined?
             m->setLocation(_location[locID]);
         }                                                             // move to neighbor
         else {
