@@ -156,8 +156,16 @@ bool Community::loadLocations(string szLocs,string szNet) {
         cerr << "ERROR: " << _szLocationFilename << " not found." << endl;
         return false;
     }
-    //int maxLocationID = 0;
+    int maxLocationID = 0;
     _location.clear();
+ 
+    // This is a hack for backward compatibility.  Indices should start at zero.
+    Location* dummy = new Location();
+    dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+    _isHot[dummy] = map<int,bool>();
+    _location.push_back(dummy); // first val is a dummy, for backward compatibility
+    // End of hack
+
     while (iss) {
         char buffer[500];
         iss.getline(buffer,500);
@@ -165,8 +173,11 @@ bool Community::loadLocations(string szLocs,string szNet) {
         int locID;
         string locType;
         double locX, locY;
-        _location.push_back(new Location()); // first val is a dummy, for backward compatibility
         if (line >> locID >> locType >> locX >> locY) {
+            if (locID != _location.size()) {
+                cerr << "WARNING: Location ID's must be sequential integers" << endl;
+                return false;
+            }
             Location* newLoc = new Location();
             newLoc->setID(locID);
             newLoc->setX(locX);
@@ -174,24 +185,13 @@ bool Community::loadLocations(string szLocs,string szNet) {
             newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
             _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
             _location.push_back(newLoc);
-     //       if (locID>maxLocationID) maxLocationID = locID;
         }
     }
     iss.close();
     cerr << _location.size() << " locations" << endl;
-    //maxLocationID+=1;  // we don't actually use index 0 in the location vector . . .
-    //cerr << maxLocationID << " locations" << endl;
-    //_location.clear();
-    //_location.resize(maxLocationID);
-    /*for (unsigned int i=0; i<_location.size(); i++) {
-        _location[i] = new Location();
-        _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
-        _isHot[_location[i]] = map<int,bool>(); // _isHot flags locations with infections
-    }*/
 
     _numLocationMosquitoCreated.clear();
     _numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
-    //_numLocationMosquitoCreated.resize(maxLocationID, vector<int>(MAX_RUN_TIME, 0));
 
     iss.open(_szNetworkFilename.c_str());
     if (!iss) {

@@ -11,6 +11,7 @@ class Location {
         Location();
         virtual ~Location();
         void setID(int id) { _ID = id; }
+        //int getID() { return _serial; } //////////////// FIX!!!!!!!
         int getID() { return _ID; }
         int getSerial() { return _serial; }
         void addPerson(Person *p, int t);
