@@ -54,12 +54,10 @@ Community::~Community() {
 }
 
 
-bool Community::loadPopulation(string szPop,string szImm) {
-    _szPopulationFilename = szPop;
-    _szImmunityFilename = szImm;
-    ifstream iss(_szPopulationFilename.c_str());
+bool Community::loadPopulation(string populationFilename, string immunityFilename, string swapFilename) {
+    ifstream iss(populationFilename.c_str());
     if (!iss) {
-        cerr << "ERROR: " << _szPopulationFilename << " not found." << endl;
+        cerr << "ERROR: " << populationFilename << " not found." << endl;
         return false;
     }
     // count lines
@@ -70,7 +68,7 @@ bool Community::loadPopulation(string szPop,string szImm) {
         maxPerson++;
     }
     iss.close();
-    iss.open(_szPopulationFilename.c_str());
+    iss.open(populationFilename.c_str());
     _nNumPerson=0;
     _person = new Person[maxPerson];
     int agecounts[MAX_PERSON_AGE];
@@ -104,10 +102,10 @@ bool Community::loadPopulation(string szPop,string szImm) {
     }
     iss.close();
 
-    if (_szImmunityFilename.length()>0) {
-        ifstream immiss(_szImmunityFilename.c_str());
+    if (immunityFilename.length()>0) {
+        ifstream immiss(immunityFilename.c_str());
         if (!immiss) {
-            cerr << "ERROR: " << _szImmunityFilename << " not found." << endl;
+            cerr << "ERROR: " << immunityFilename << " not found." << endl;
             return false;
         }
         char buffer[500];
@@ -144,16 +142,33 @@ bool Community::loadPopulation(string szPop,string szImm) {
         _personAgeCohort[age].push_back(_person + i);
         _nPersonAgeCohortSizes[age]++;
     }
+
+    iss.open(swapFilename.c_str());
+    if (!iss) {
+        cerr << "ERROR: " << swapFilename << " not found." << endl;
+        return false;
+    }
+    while (iss) {
+        char buffer[500];
+        iss.getline(buffer,500);
+        istringstream line(buffer);
+        int id1, id2;
+        double prob;
+        if (line >> id1 >> id2 >> prob) {
+            Person* person = getPersonByID(id1);
+            person->appendToSwapProbabilities(make_pair(id2, prob));
+        }
+    }
+    iss.close();
+
     return true;
 }
 
 
-bool Community::loadLocations(string szLocs,string szNet) {
-    _szLocationFilename = szLocs;
-    _szNetworkFilename = szNet;
-    ifstream iss(_szLocationFilename.c_str());
+bool Community::loadLocations(string locationFilename,string networkFilename) {
+    ifstream iss(locationFilename.c_str());
     if (!iss) {
-        cerr << "ERROR: " << _szLocationFilename << " not found." << endl;
+        cerr << "ERROR: " << locationFilename << " not found." << endl;
         return false;
     }
     _location.clear();
@@ -192,9 +207,9 @@ bool Community::loadLocations(string szLocs,string szNet) {
     _numLocationMosquitoCreated.clear();
     _numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
 
-    iss.open(_szNetworkFilename.c_str());
+    iss.open(networkFilename.c_str());
     if (!iss) {
-        cerr << "ERROR: " << _szNetworkFilename << " not found." << endl;
+        cerr << "ERROR: " << networkFilename << " not found." << endl;
         return false;
     }
     while (iss) {
@@ -219,8 +234,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
 }
 
 
-// infect - infects person id
-bool Community::infect(int id, Serotype serotype, int day) {
+Person* Community::getPersonByID(int id) {
     int i = 0;
     if (_person[id-1].getID()==id) {
         i = id-1;
@@ -231,12 +245,19 @@ bool Community::infect(int id, Serotype serotype, int day) {
             }
         }
     }
+    return &_person[i];
+}
 
-    bool result =  _person[i].infect(-1, serotype, day, 0);
+
+// infect - infects person id
+bool Community::infect(int id, Serotype serotype, int day) {
+    Person* person = getPersonByID(id);
+
+    bool result =  person->infect(-1, serotype, day, 0);
     if (result)
     _nNumNewlyInfected[(int) serotype][_nDay]++;
     return result;
-    //      cerr << "inf " << i << " at "  << _person[i].getLocation(0)->getID() << endl;
+    //      cerr << "inf " << i << " at "  << person.getLocation(0)->getID() << endl;
     return false;
 }
 
@@ -378,7 +399,7 @@ void Community::swapImmuneStates() {
     //    cerr << "swap!" << endl;
     // big annual swap!
     // For people of age x, copy immune status from people of age x-1
-    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
+/*    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
         //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
         int age1 = age-1;
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
@@ -396,7 +417,37 @@ void Community::swapImmuneStates() {
                 }
             }
         }
+    }*/
+
+    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
+        //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
+        //int age1 = age-1;
+        for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+            Person *p = _personAgeCohort[age][pnum];
+            assert(p!=NULL);
+            double r = gsl_rng_uniform(RNG);
+            const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
+            int n;
+            for (n = 0; n < (signed) swap_probs.size(); n++) {
+                if (r < swap_probs[n].second) {
+                    break;
+                } else {
+                    r -= swap_probs[n].second;
+                }
+            }
+            p->copyImmunity(getPersonByID(swap_probs[n].first)); 
+
+            // update map of locations with infectious people
+            if (p->getRecoveryTime() > _nDay) {
+                for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
+                    for (int t=0; t<STEPS_PER_DAY; t++) {
+                        flagInfectedLocation(p->getLocation(t), d);
+                    }
+                }
+            }
+        }
     }
+
     // For people of age 0, reset immunity
     for (int pnum=0; pnum<_nPersonAgeCohortSizes[0]; pnum++) {
         Person *p = _personAgeCohort[0][pnum];

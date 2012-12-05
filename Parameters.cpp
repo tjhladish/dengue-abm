@@ -22,6 +22,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         szPeopleFile = "";
         szYearlyPeopleFile = "";
         szDailyFile = "";
+        szSwapProbFile = "swap_probabilities.txt";
         nDaysImmune = 365;
         nSizeVaccinate = 0;                                 // number of parts in phased vaccination
         nSizePrevaccinateAge = 0;
@@ -200,6 +201,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     szDailyFile = argv[i+1];
                     i++;
                 }
+                else if (strcmp(argv[i], "-probfile")==0) {
+                    szSwapProbFile = argv[i+1];
+                    i++;
+                }
                 else {
                     std::cerr << "Unknown option: " << argv[i] << std::endl;
                     exit(-1);
@@ -210,6 +215,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         std::cerr << "immunity file = " << szImmunityFile << std::endl;
         std::cerr << "location file = " << szLocationFile << std::endl;
         std::cerr << "network file = " << szNetworkFile << std::endl;
+        std::cerr << "swap probabilities file = " << szSwapProbFile << std::endl;
         std::cerr << "runlength = " << nRunLength << std::endl;
         if (nRunLength>MAX_RUN_TIME) {
             std::cerr << "ERROR: runlength is too long: " << nRunLength << std::endl;

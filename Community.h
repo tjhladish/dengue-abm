@@ -15,7 +15,7 @@ class Community
     public:
         Community(const Parameters* parameters);
         virtual ~Community();
-        bool loadPopulation(std::string szPop,std::string szImm);
+        bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
         int getNumPerson() { return _nNumPerson; }
         Person *getPerson(int n) { return _person+n; }
@@ -23,6 +23,7 @@ class Community
         int getNumSymptomatic(int day);
         std::vector<int> getNumSusceptible();
         void populate(Person **parray, int targetpop);
+        Person* getPersonByID(int id);
         bool infect(int id, Serotype serotype, int day);
         int addMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() {                                                // what day is it?
@@ -53,10 +54,10 @@ class Community
 
     protected:
         static const Parameters* _par;
-        std::string _szPopulationFilename;                            // population data filename
-        std::string _szImmunityFilename;                              // immune status data filename
-        std::string _szLocationFilename;                              // location filename
-        std::string _szNetworkFilename;                               // location network filename
+        //std::string _szPopulationFilename;                            // population data filename
+        //std::string _szImmunityFilename;                              // immune status data filename
+        //std::string _szLocationFilename;                              // location filename
+        //std::string _szNetworkFilename;                               // location network filename
         Person *_person;                                              // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
         int _nPersonAgeCohortSizes[MAX_PERSON_AGE];                   // size of each age cohort

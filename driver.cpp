@@ -43,20 +43,18 @@ int main(int argc, char *argv[]) {
  
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
-    if (!community->loadLocations(par->szLocationFile.c_str(),par->szNetworkFile.c_str())) {
+
+    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile)) {
         cerr << "Could not load locations" << endl;
         exit(-1);
     }
-    if (!community->loadPopulation(par->szPopulationFile.c_str(),par->szImmunityFile.c_str())) {
+
+    if (!community->loadPopulation(par->szPopulationFile, par->szImmunityFile, par->szSwapProbFile)) {
         cerr << "Could not load population" << endl;
         exit(-1);
     }
 
     Person::setPar(par);
-    //Person::setVESs(par->fVESs);
-    //Person::setVEI(par->fVEI);
-    //Person::setVEP(par->fVEP);
-    //Person::setDaysImmune(par->nDaysImmune);
     cerr << community->getNumPerson() << " people" << endl;
 
     if (!par->bSecondaryTransmission) {

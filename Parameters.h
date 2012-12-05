@@ -158,6 +158,7 @@ public:
     std::string szPeopleFile;
     std::string szYearlyPeopleFile;
     std::string szDailyFile;
+    std::string szSwapProbFile;
     int nDaysImmune;
     int nSizeVaccinate;
     int nVaccinateYear[500];                                // when to vaccinate

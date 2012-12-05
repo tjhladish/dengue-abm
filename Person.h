@@ -25,6 +25,8 @@ class Person
         void setImmunity(Serotype serotype) { _nImmunity[(int) serotype] = 1; }
         void copyImmunity(const Person *p);
         void resetImmunity();
+        void appendToSwapProbabilities(std::pair<int, double> p) { _swap_probabilities.push_back(p); }
+        std::vector<std::pair<int, double> > getSwapProbabilities() { return _swap_probabilities; }
 
         bool isSusceptible(Serotype serotype);                        // is susceptible to serotype (and is alive)
         int getInfectionParity();                                     // is immune to n serotypes
@@ -76,6 +78,7 @@ class Person
         bool _bDead;                                                  // is dead
         std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype exposure
         bool _bVaccinated;                                            // has been vaccinated
+        std::vector<std::pair<int,double> > _swap_probabilities;      // list of the nearest people one year younger, with distances
 
         // _nNumInfections counts the number of infections, up to MAXHISTORY infections.
         // arrays that use this index store the most recent infection at index 0 and data from n years ago at index n
