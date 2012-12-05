@@ -156,7 +156,6 @@ bool Community::loadLocations(string szLocs,string szNet) {
         cerr << "ERROR: " << _szLocationFilename << " not found." << endl;
         return false;
     }
-    int maxLocationID = 0;
     _location.clear();
  
     // This is a hack for backward compatibility.  Indices should start at zero.
@@ -174,7 +173,7 @@ bool Community::loadLocations(string szLocs,string szNet) {
         string locType;
         double locX, locY;
         if (line >> locID >> locType >> locX >> locY) {
-            if (locID != _location.size()) {
+            if (locID != (signed) _location.size()) {
                 cerr << "WARNING: Location ID's must be sequential integers" << endl;
                 return false;
             }
@@ -327,7 +326,35 @@ Mosquito *Community::getExposedMosquito(int n) {
 void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
-        if (r<_par->fMosquitoTeleport) {                               // teleport
+            Location *pLoc = m->getLocation();
+            double x1 = pLoc->getX();
+            double y1 = pLoc->getY();
+
+            int k = pLoc->getNumNeighbors();
+            vector<double> distances(k,0);
+            double sum_dist = 0.0;
+            for (int i=0; i<k; i++) {
+                Location* loc2 = pLoc->getNeighbor(i);
+                double x2 = loc2->getX();
+                double y2 = loc2->getY();
+                double d = sqrt(pow(x1-x2,2) + pow(y1-y2,2));
+                sum_dist += d;
+                distances[i] = d;
+            }
+            double r2 = gsl_rng_uniform(RNG);
+            int n = k-1;
+            for (int i=0; i<k; i++) {
+                distances[i] /= sum_dist;
+                if ( r2 < distances[i] ) {
+                    n = i; 
+                    break;
+                } else {
+                    r2 -= distances[i];
+                }
+            }
+            m->setLocation(pLoc->getNeighbor(n));
+            
+/*        if (r<_par->fMosquitoTeleport) {                               // teleport
             int locID;
             do {
                 locID = gsl_rng_uniform_int(RNG,_location.size());
@@ -340,7 +367,7 @@ void Community::moveMosquito(Mosquito *m) {
                 int n = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
                 m->setLocation(pLoc->getNeighbor(n));
             }
-        }
+        }*/
     }
 }
 
