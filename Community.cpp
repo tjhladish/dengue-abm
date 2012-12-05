@@ -157,28 +157,41 @@ bool Community::loadLocations(string szLocs,string szNet) {
         return false;
     }
     int maxLocationID = 0;
+    _location.clear();
+ 
+    // This is a hack for backward compatibility.  Indices should start at zero.
+    Location* dummy = new Location();
+    dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+    _isHot[dummy] = map<int,bool>();
+    _location.push_back(dummy); // first val is a dummy, for backward compatibility
+    // End of hack
+
     while (iss) {
         char buffer[500];
         iss.getline(buffer,500);
         istringstream line(buffer);
         int locID;
-        if (line >> locID) {
-            if (locID>maxLocationID) maxLocationID = locID;
+        string locType;
+        double locX, locY;
+        if (line >> locID >> locType >> locX >> locY) {
+            if (locID != _location.size()) {
+                cerr << "WARNING: Location ID's must be sequential integers" << endl;
+                return false;
+            }
+            Location* newLoc = new Location();
+            newLoc->setID(locID);
+            newLoc->setX(locX);
+            newLoc->setY(locY);
+            newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+            _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
+            _location.push_back(newLoc);
         }
     }
     iss.close();
-    maxLocationID+=1;  // we don't actually use index 0 in the location vector . . .
-    cerr << maxLocationID << " locations" << endl;
-    _location.clear();
-    _location.resize(maxLocationID);
-    for (unsigned int i=0; i<_location.size(); i++) {
-        _location[i] = new Location();
-        _location[i]->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
-        _isHot[_location[i]] = map<int,bool>();
-    } 
+    cerr << _location.size() << " locations" << endl;
 
     _numLocationMosquitoCreated.clear();
-    _numLocationMosquitoCreated.resize(maxLocationID, vector<int>(MAX_RUN_TIME, 0));
+    _numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
 
     iss.open(_szNetworkFilename.c_str());
     if (!iss) {
@@ -318,7 +331,7 @@ void Community::moveMosquito(Mosquito *m) {
             int locID;
             do {
                 locID = gsl_rng_uniform_int(RNG,_location.size());
-            } while (_location[locID]->getUndefined());
+            } while (_location[locID]->getUndefined());               // why would it be undefined?
             m->setLocation(_location[locID]);
         }                                                             // move to neighbor
         else {

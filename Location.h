@@ -10,7 +10,10 @@ class Location {
     public:
         Location();
         virtual ~Location();
-        int getID() { return _nID; }
+        void setID(int id) { _ID = id; }
+        //int getID() { return _serial; } //////////////// FIX!!!!!!!
+        int getID() { return _ID; }
+        int getSerial() { return _serial; }
         void addPerson(Person *p, int t);
         bool removePerson(Person *p, int t);
         int getNumPerson(int timeofday) { return _person[timeofday].size(); } 
@@ -22,16 +25,24 @@ class Location {
         void setUndefined() { _bUndefined=true; }
         bool getUndefined() { return _bUndefined; }
         inline Person* getPerson(int idx, int timeofday) { return _person[timeofday][idx]; }
+        void setCoordinates(std::pair<double, double> c) { _coord = c; }
+        std::pair<double, double> getCoordinates() { return _coord; }
+        void setX(double x) { _coord.first = x; }
+        void setY(double y) { _coord.second = y; }
+        double getX() { return _coord.first; }
+        double getY() { return _coord.second; }
 
         //static void setDefaultMosquitoCapacity(int x) { _nDefaultMosquitoCapacity = x; }
 
     protected:
-        int _nID;                                                     // unique identifier
+        int _ID;                                                     // original identifier in location file
+        int _serial;                                                  // unique identifier assigned on construction
         std::vector< std::vector<Person*> > _person;                  // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
         std::vector<Location*> _neighbors;
         bool _bUndefined;
-        static int _nNextID;                                          // unique ID to assign to the next Location allocated
+        static int _nNextSerial;                                          // unique ID to assign to the next Location allocated
+        std::pair<double, double> _coord;                                  // (x,y) coordinates for location
         //static int _nDefaultMosquitoCapacity;
 };
 #endif

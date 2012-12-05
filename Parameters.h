@@ -106,6 +106,8 @@ namespace dengue {
         using std::string;
         using std::vector;
         using std::map;
+        using std::pair;
+        using std::make_pair;
         using std::ifstream;
         using std::istringstream;
         using std::ofstream;
