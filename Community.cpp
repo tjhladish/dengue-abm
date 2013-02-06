@@ -353,18 +353,25 @@ Mosquito *Community::getExposedMosquito(int n) {
 void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
+        if (r<_par->fMosquitoTeleport) {                               // teleport
+            int locID;
+            do {
+                locID = gsl_rng_uniform_int(RNG,_location.size());
+            } while (_location[locID]->getUndefined());               // why would it be undefined?
+            m->setLocation(_location[locID]);
+        } else {                                                            // move to neighbor
             Location *pLoc = m->getLocation();
             double x1 = pLoc->getX();
             double y1 = pLoc->getY();
 
             int degree = pLoc->getNumNeighbors();
-
-            vector<double> weights;
-            double sum_weights = 0.0;
+            int neighbor=0; // neighbor is an index
 
             if (_par->szMosquitoMoveModel == "weighted") {
+                vector<double> weights(degree, 0);
+                double sum_weights = 0.0;
+
                 // Prefer nearby neighbors
-                weights.resize(degree,0);
                 // Calculate distance-based weights to select each of the degree neighbors
                 for (int i=0; i<degree; i++) {
                     Location* loc2 = pLoc->getNeighbor(i);
@@ -375,39 +382,26 @@ void Community::moveMosquito(Mosquito *m) {
                     sum_weights += w;
                     weights[i] = w;
                 }
+                double r2 = gsl_rng_uniform(RNG);
+                neighbor = degree-1; // neighbor is (still) an index
+                for (int i=0; i<degree; i++) {
+                    weights[i] /= sum_weights; // normalize prob
+                    if ( r2 < weights[i] ) {
+                        neighbor = i; 
+                        break;
+                    } else {
+                        r2 -= weights[i];
+                    }
+                }
             } else {
                 // Ignore actual distances
-                weights.resize(degree,1);
-                sum_weights = degree;
-            }
-
-            double r2 = gsl_rng_uniform(RNG);
-            int neighbor = degree-1; // neighbor is an index
-            for (int i=0; i<degree; i++) {
-                weights[i] /= sum_weights; // normalize prob
-                if ( r2 < weights[i] ) {
-                    neighbor = i; 
-                    break;
-                } else {
-                    r2 -= weights[i];
+                if (degree>0) {
+                    neighbor = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
                 }
             }
+
             m->setLocation(pLoc->getNeighbor(neighbor));
-            
-/*        if (r<_par->fMosquitoTeleport) {                               // teleport
-            int locID;
-            do {
-                locID = gsl_rng_uniform_int(RNG,_location.size());
-            } while (_location[locID]->getUndefined());               // why would it be undefined?
-            m->setLocation(_location[locID]);
-        }                                                             // move to neighbor
-        else {
-            Location *pLoc = m->getLocation();
-            if (pLoc->getNumNeighbors()>0) {
-                int n = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
-                m->setLocation(pLoc->getNeighbor(n));
-            }
-        }*/
+        }    
     }
 }
 
