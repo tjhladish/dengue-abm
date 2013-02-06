@@ -73,7 +73,6 @@ Community* build_community(const Parameters* par) {
         }
     }
     
-
     //for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
     //    par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
     //}

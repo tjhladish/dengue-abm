@@ -7,6 +7,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         betaPM = 0.2;
         betaMP = 0.1;
         fMosquitoMove = 0.2;
+        szMosquitoMoveModel = "weighted";
         fMosquitoTeleport = 0.01;
         fVEI = 0.0;
         fVEP = 0.0;
@@ -22,7 +23,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         szPeopleFile = "";
         szYearlyPeopleFile = "";
         szDailyFile = "";
-        szSwapProbFile = "swap_probabilities.txt";
+        szSwapProbFile = "";
         nDaysImmune = 365;
         nSizeVaccinate = 0;                                 // number of parts in phased vaccination
         nSizePrevaccinateAge = 0;
@@ -89,6 +90,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else if (strcmp(argv[i], "-mosquitomove")==0) {
                     fMosquitoMove = strtod(argv[i+1],end);
+                    i++;
+                }
+                else if (strcmp(argv[i], "-mosquitomovemodel")==0) {
+                    szMosquitoMoveModel = argv[i+1];
                     i++;
                 }
                 else if (strcmp(argv[i], "-mosquitoteleport")==0) {
@@ -240,6 +245,12 @@ void Parameters::readParameters(int argc, char *argv[]) {
             std::cerr << " " << fSecondaryScaling[i];
         std::cerr << std::endl;
         std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
+        std::cerr << "mosquito move model = " << szMosquitoMoveModel << std::endl;
+        if ( szMosquitoMoveModel != "uniform" and szMosquitoMoveModel != "weighted" ) {
+            std::cerr << "ERROR: invalid mosquito movement model requested:" << std::endl;
+            std::cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << std::endl;
+            exit(-1);
+        }
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
         if (nSizeMosquitoMultipliers>0) {

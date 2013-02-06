@@ -134,6 +134,7 @@ public:
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
+    std::string szMosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
     double fVEI;
     double fVEP;
