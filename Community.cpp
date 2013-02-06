@@ -351,29 +351,33 @@ void Community::moveMosquito(Mosquito *m) {
             double x1 = pLoc->getX();
             double y1 = pLoc->getY();
 
-            int k = pLoc->getNumNeighbors();
-            vector<double> distances(k,0);
-            double sum_dist = 0.0;
-            for (int i=0; i<k; i++) {
+            int degree = pLoc->getNumNeighbors();
+
+            vector<double> weights(degree,0);
+            double sum_weights = 0.0;
+
+            // Calculate distance-based weights to select each of the degree neighbors
+            for (int i=0; i<degree; i++) {
                 Location* loc2 = pLoc->getNeighbor(i);
                 double x2 = loc2->getX();
                 double y2 = loc2->getY();
-                double d = sqrt(pow(x1-x2,2) + pow(y1-y2,2));
-                sum_dist += d;
-                distances[i] = d;
+                double distance_squared = pow(x1-x2,2) + pow(y1-y2,2);
+                double w = 1.0 / distance_squared;
+                sum_weights += w;
+                weights[i] = w;
             }
             double r2 = gsl_rng_uniform(RNG);
-            int n = k-1;
-            for (int i=0; i<k; i++) {
-                distances[i] /= sum_dist;
-                if ( r2 < distances[i] ) {
-                    n = i; 
+            int neighbor = degree-1; // neighbor is an index
+            for (int i=0; i<degree; i++) {
+                weights[i] /= sum_weights; // normalize prob
+                if ( r2 < weights[i] ) {
+                    neighbor = i; 
                     break;
                 } else {
-                    r2 -= distances[i];
+                    r2 -= weights[i];
                 }
             }
-            m->setLocation(pLoc->getNeighbor(n));
+            m->setLocation(pLoc->getNeighbor(neighbor));
             
 /*        if (r<_par->fMosquitoTeleport) {                               // teleport
             int locID;
