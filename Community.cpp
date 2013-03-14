@@ -289,6 +289,8 @@ void Community::vaccinate(double f, int age) {
                 _person[i].vaccinate();
     }
     else {
+        if (age>MAX_PERSON_AGE)
+            age=MAX_PERSON_AGE;
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);

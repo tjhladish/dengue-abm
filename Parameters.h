@@ -12,7 +12,7 @@
 #include <gsl/gsl_rng.h>
 
 static const int VERSION_NUMBER_MAJOR = 1;
-static const int VERSION_NUMBER_MINOR = 0;
+static const int VERSION_NUMBER_MINOR = 1;
 
 enum Serotype {
     SEROTYPE_1,

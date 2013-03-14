@@ -15,7 +15,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
 	bVaccineLeaky = false;
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
-	eMosquitoDistribution = EXPONENTIAL;
+	eMosquitoDistribution = UNIFORM;
         nSizeMosquitoMultipliers = 0;
         bSecondaryTransmission = true;
         szPopulationFile = "population-64.txt";
@@ -107,10 +107,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     i++;
                 }
                 else if (strcmp(argv[i], "-mosquitodistribution")==0) {
-		  i++;
-		  if (strcmp(argv[i], "uniform")==0)
+		  if (strcmp(argv[i+1], "uniform")==0)
 		    eMosquitoDistribution = UNIFORM;
-		  else if (strcmp(argv[i], "exponential")==0)
+		  else if (strcmp(argv[i+1], "exponential")==0)
 		    eMosquitoDistribution = EXPONENTIAL;
 		  else {
 		    std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
@@ -270,6 +269,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
         }
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
+	if (eMosquitoDistribution==UNIFORM)
+	  std::cerr << "mosquito capacity distribution is uniform" << std::endl;
+	else if (eMosquitoDistribution==EXPONENTIAL)
+	  std::cerr << "mosquito capacity distribution is exponential" << std::endl;
         if (nSizeMosquitoMultipliers>0) {
             std::cerr << "mosquito seasonal multipliers (days,mult) =";
             for (int j=0; j<nSizeMosquitoMultipliers; j++)
@@ -298,6 +301,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
             exit(-1);
         }
         std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
+
+	if (bVaccineLeaky)
+	  std::cerr << "VE_S is leaky" << std::endl;
+	else
+	  std::cerr << "VE_S is all-or-none" << std::endl;
 
         if (szPeopleFile.length()>0) {
             std::cerr << "people output file = " << szPeopleFile << std::endl;
