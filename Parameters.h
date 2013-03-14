@@ -23,6 +23,12 @@ enum Serotype {
     NULL_SEROTYPE      // Make sure this is last
 };
 
+enum MosquitoDistribution {
+    UNIFORM,
+    EXPONENTIAL,
+    NUM_OF_DISTRIBUTIONS
+};
+
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
 static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
@@ -140,12 +146,14 @@ public:
     double fVEP;
     std::vector<double> fVESs;
     double fPreVaccinateFraction;
+    bool bVaccineLeaky; // if false, vaccine is all-or-none
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     int nDailyExposed[NUM_OF_SEROTYPES];                    // serotypes
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;                  //
     int nDefaultMosquitoCapacity;
+    MosquitoDistribution eMosquitoDistribution;
     double fMosquitoMultipliers[54];                        // number of mosquitoes per week (up to 53), conforming to a 365-day cycle
     double nMosquitoMultiplierDays[54];                     // when to change the mosquito population
     double nMosquitoMultiplierCumulativeDays[54];           // when to change the mosquito population

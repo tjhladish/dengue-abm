@@ -34,12 +34,14 @@ Command-line options:
   -betamp [x]: the probability that a person is infected when bitten by infectious mosquito
   -mosquitomove [p]: daily probability of mosquito movement to an adjacent location
   -mosquitoteleport [p]: daily probability of mosquito "teleportation" (to anywhere in the synthetic population)
-  -mosquitocapacity [n]: number of mosquitoes per location (sadly, all locations have the same number)
+  -mosquitocapacity [n]: mean number of mosquitoes per location
+  -mosquitodistribution [s]: distribution of mosquitos per location. Set to "uniform" for all locations to have the same number of mosquitoes or "exponential" for the number to be exponentially distributed.
   -mosquitomultipliers [n] [d] [f] [d] [f]...: relative number of mosquitoes for seasonality. the first argument is the number of pairs of numbers coming up. each pair consists of an integer that specifies a number of days followed by a floating point number that is a multiplier for the mosquito capacity to set the number of mosquitoes per location for this number of days. the number of days should sum to 365, unless you are trying to be funny and make dengue season fall out of sync with the calendar year.
   -daysimmune: number of days after recovery that a person has perfect cross-protective immunity to all other serotypes
   -VES [n]: reduction in susceptibility of vaccinees, assuming all-or-none protection (0.0-1.0)
   -VEI [n]: reduction in infectiousness of vaccinees (0.0-1.0)
   -VEP [n]: reduction in probability of becoming ill upon infection of vaccinees (0.0-1.0)
+  -vaccineleaky: Setting this flag makes VES leaky. Default is all-or-none.
   -prevaccinate [f]: fraction of the population to pre-vaccinate
   -prevaccinateage [n] [a1] [a2] [f] [a1] [a2] [f]...: prevaccinate by age group. the first argument is the number of age groups, followed by triplets specifying the groups. fraction [f] of those who are ages [a1] to [a2] (in years) are pre-vaccinated.
   -nosecondary: no secondary transmission allowed. this is used for R0 estimation

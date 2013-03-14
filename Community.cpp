@@ -171,7 +171,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 }
 
 
-bool Community::loadLocations(string locationFilename,string networkFilename) {
+bool Community::loadLocations(string locationFilename,string networkFilename,const gsl_rng *pRNG) {
     ifstream iss(locationFilename.c_str());
     if (!iss) {
         cerr << "ERROR: " << locationFilename << " not found." << endl;
@@ -202,7 +202,17 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
             newLoc->setID(locID);
             newLoc->setX(locX);
             newLoc->setY(locY);
-            newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+	    if (_par->eMosquitoDistribution==UNIFORM) {
+	      // uniform distribution of mosquitoes -dlc
+	      newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+	    } else if (_par->eMosquitoDistribution==EXPONENTIAL) {
+	      // exponential distribution of mosquitoes -dlc
+	      newLoc->setBaseMosquitoCapacity(gsl_ran_exponential(pRNG, _par->nDefaultMosquitoCapacity));
+	    } else {
+	      cerr << "ERROR: Invalid mosquito distribution" << endl;
+	      return false;
+	    }
+ 
             _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
             _location.push_back(newLoc);
         }

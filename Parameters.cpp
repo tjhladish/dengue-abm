@@ -12,8 +12,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fVEI = 0.0;
         fVEP = 0.0;
         fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
+	bVaccineLeaky = false;
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
+	eMosquitoDistribution = EXPONENTIAL;
         nSizeMosquitoMultipliers = 0;
         bSecondaryTransmission = true;
         szPopulationFile = "population-64.txt";
@@ -104,6 +106,18 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     nDefaultMosquitoCapacity = strtol(argv[i+1],end,10);
                     i++;
                 }
+                else if (strcmp(argv[i], "-mosquitodistribution")==0) {
+		  i++;
+		  if (strcmp(argv[i], "uniform")==0)
+		    eMosquitoDistribution = UNIFORM;
+		  else if (strcmp(argv[i], "exponential")==0)
+		    eMosquitoDistribution = EXPONENTIAL;
+		  else {
+		    std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
+		    exit(-1);
+		  }
+		  i++;
+                }
                 else if (strcmp(argv[i], "-mosquitomultipliers")==0) {
                     nSizeMosquitoMultipliers = strtol(argv[i+1],end,10);
                     i++;
@@ -158,6 +172,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 else if (strcmp(argv[i], "-VEP")==0 || strcmp(argv[i], "-vep")==0) {
                     fVEP = strtod(argv[i+1],end);
                     i++;
+                }
+		else if (strcmp(argv[i], "-vaccineleaky")==0) { // -dlc
+		  bVaccineLeaky=true;
                 }
                 else if (strcmp(argv[i], "-prevaccinate")==0) {
                     fPreVaccinateFraction = strtod(argv[i+1],end);

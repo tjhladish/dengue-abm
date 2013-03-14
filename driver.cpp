@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
 
-    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile)) {
+    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile, RNG)) {
         cerr << "Could not load locations" << endl;
         exit(-1);
     }
