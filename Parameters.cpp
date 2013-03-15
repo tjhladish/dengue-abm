@@ -12,10 +12,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fVEI = 0.0;
         fVEP = 0.0;
         fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
-	bVaccineLeaky = false;
+        bVaccineLeaky = false;
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
-	eMosquitoDistribution = UNIFORM;
+        eMosquitoDistribution = CONSTANT;
         nSizeMosquitoMultipliers = 0;
         bSecondaryTransmission = true;
         szPopulationFile = "population-64.txt";
@@ -107,8 +107,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     i++;
                 }
                 else if (strcmp(argv[i], "-mosquitodistribution")==0) {
-		  if (strcmp(argv[i+1], "uniform")==0)
-		    eMosquitoDistribution = UNIFORM;
+		  if (strcmp(argv[i+1], "constant")==0)
+		    eMosquitoDistribution = CONSTANT;
 		  else if (strcmp(argv[i+1], "exponential")==0)
 		    eMosquitoDistribution = EXPONENTIAL;
 		  else {
@@ -269,8 +269,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
         }
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-	if (eMosquitoDistribution==UNIFORM)
-	  std::cerr << "mosquito capacity distribution is uniform" << std::endl;
+	if (eMosquitoDistribution==CONSTANT)
+	  std::cerr << "mosquito capacity distribution is constant" << std::endl;
 	else if (eMosquitoDistribution==EXPONENTIAL)
 	  std::cerr << "mosquito capacity distribution is exponential" << std::endl;
         if (nSizeMosquitoMultipliers>0) {

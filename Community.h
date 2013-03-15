@@ -16,7 +16,7 @@ class Community
         Community(const Parameters* parameters);
         virtual ~Community();
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
-        bool loadLocations(std::string szLocs,std::string szNet,const gsl_rng *pRNG);
+        bool loadLocations(std::string szLocs,std::string szNet);
         int getNumPerson() { return _nNumPerson; }
         Person *getPerson(int n) { return _person+n; }
         int getNumInfected(int day);

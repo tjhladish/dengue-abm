@@ -24,7 +24,7 @@ enum Serotype {
 };
 
 enum MosquitoDistribution {
-    UNIFORM,
+    CONSTANT,
     EXPONENTIAL,
     NUM_OF_DISTRIBUTIONS
 };
