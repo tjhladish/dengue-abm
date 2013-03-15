@@ -251,6 +251,8 @@ bool Community::loadLocations(string locationFilename,string networkFilename,con
 
 
 Person* Community::getPersonByID(int id) {
+    // This assumes that IDs start at 1, and tries to guess
+    // that person with ID id is in position id-1
     int i = 0;
     if (_person[id-1].getID()==id) {
         i = id-1;
