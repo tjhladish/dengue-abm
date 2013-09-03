@@ -12,7 +12,7 @@
 #include <gsl/gsl_rng.h>
 
 static const int VERSION_NUMBER_MAJOR = 1;
-static const int VERSION_NUMBER_MINOR = 0;
+static const int VERSION_NUMBER_MINOR = 1;
 
 enum Serotype {
     SEROTYPE_1,
@@ -21,6 +21,12 @@ enum Serotype {
     SEROTYPE_4,
     NUM_OF_SEROTYPES,  // Make sure this is second to last
     NULL_SEROTYPE      // Make sure this is last
+};
+
+enum MosquitoDistribution {
+    CONSTANT,
+    EXPONENTIAL,
+    NUM_OF_DISTRIBUTIONS
 };
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
@@ -134,17 +140,20 @@ public:
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
+    std::string szMosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
     double fVEI;
     double fVEP;
     std::vector<double> fVESs;
     double fPreVaccinateFraction;
+    bool bVaccineLeaky; // if false, vaccine is all-or-none
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     int nDailyExposed[NUM_OF_SEROTYPES];                    // serotypes
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;                  //
     int nDefaultMosquitoCapacity;
+    MosquitoDistribution eMosquitoDistribution;
     double fMosquitoMultipliers[54];                        // number of mosquitoes per week (up to 53), conforming to a 365-day cycle
     double nMosquitoMultiplierDays[54];                     // when to change the mosquito population
     double nMosquitoMultiplierCumulativeDays[54];           // when to change the mosquito population

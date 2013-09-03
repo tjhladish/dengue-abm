@@ -79,6 +79,7 @@ class Community
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         static std::map< Location*, std::map<int, bool> > _isHot;
+        bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 
         void expandExposedQueues();
         void expandMosquitoQueues();

@@ -73,7 +73,6 @@ Community* build_community(const Parameters* par) {
         }
     }
     
-
     //for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
     //    par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
     //}
@@ -160,10 +159,14 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         if (par->nDailyExposed[0]>0 || par->nDailyExposed[1]>0 || par->nDailyExposed[2]>0 || par->nDailyExposed[3]>0) {
             int count = 0;
             int numperson = community->getNumPerson();
-            for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++)
-                for (int i=0; i<par->nDailyExposed[serotype]; i++)
-                    if (community->infect(gsl_rng_uniform_int(RNG, numperson),(Serotype) serotype,t))
+            for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+                for (int i=0; i<par->nDailyExposed[serotype]; i++) {
+                    // gsl_rng_uniform_int returns on [0, numperson-1]
+                    int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
+                    if (community->infect(transmit_to_id, (Serotype) serotype, t))
                         count++;
+                }
+            }
         }
 
         // mosquito population seasonality?

@@ -8,6 +8,7 @@ SHELL    = /bin/sh
 CFLAGS   = -Wall -pedantic 
 #OPTI     = -p
 OPTI     = -O3
+#OPTI     = -O2
 #OPTI     = -g
 LDFLAGS	= 
 INCLUDES	= 

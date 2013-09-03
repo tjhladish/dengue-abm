@@ -7,12 +7,15 @@ void Parameters::readParameters(int argc, char *argv[]) {
         betaPM = 0.2;
         betaMP = 0.1;
         fMosquitoMove = 0.2;
+        szMosquitoMoveModel = "weighted";
         fMosquitoTeleport = 0.01;
         fVEI = 0.0;
         fVEP = 0.0;
         fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
+        bVaccineLeaky = false;
         fPreVaccinateFraction = 0.0;
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
+        eMosquitoDistribution = CONSTANT;
         nSizeMosquitoMultipliers = 0;
         bSecondaryTransmission = true;
         szPopulationFile = "population-64.txt";
@@ -22,7 +25,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         szPeopleFile = "";
         szYearlyPeopleFile = "";
         szDailyFile = "";
-        szSwapProbFile = "swap_probabilities.txt";
+        szSwapProbFile = "";
         nDaysImmune = 365;
         nSizeVaccinate = 0;                                 // number of parts in phased vaccination
         nSizePrevaccinateAge = 0;
@@ -91,6 +94,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     fMosquitoMove = strtod(argv[i+1],end);
                     i++;
                 }
+                else if (strcmp(argv[i], "-mosquitomovemodel")==0) {
+                    szMosquitoMoveModel = argv[i+1];
+                    i++;
+                }
                 else if (strcmp(argv[i], "-mosquitoteleport")==0) {
                     fMosquitoTeleport = strtod(argv[i+1],end);
                     i++;
@@ -98,6 +105,17 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 else if (strcmp(argv[i], "-mosquitocapacity")==0) {
                     nDefaultMosquitoCapacity = strtol(argv[i+1],end,10);
                     i++;
+                }
+                else if (strcmp(argv[i], "-mosquitodistribution")==0) {
+		  if (strcmp(argv[i+1], "constant")==0)
+		    eMosquitoDistribution = CONSTANT;
+		  else if (strcmp(argv[i+1], "exponential")==0)
+		    eMosquitoDistribution = EXPONENTIAL;
+		  else {
+		    std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
+		    exit(-1);
+		  }
+		  i++;
                 }
                 else if (strcmp(argv[i], "-mosquitomultipliers")==0) {
                     nSizeMosquitoMultipliers = strtol(argv[i+1],end,10);
@@ -153,6 +171,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 else if (strcmp(argv[i], "-VEP")==0 || strcmp(argv[i], "-vep")==0) {
                     fVEP = strtod(argv[i+1],end);
                     i++;
+                }
+		else if (strcmp(argv[i], "-vaccineleaky")==0) { // -dlc
+		  bVaccineLeaky=true;
                 }
                 else if (strcmp(argv[i], "-prevaccinate")==0) {
                     fPreVaccinateFraction = strtod(argv[i+1],end);
@@ -240,8 +261,18 @@ void Parameters::readParameters(int argc, char *argv[]) {
             std::cerr << " " << fSecondaryScaling[i];
         std::cerr << std::endl;
         std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
+        std::cerr << "mosquito move model = " << szMosquitoMoveModel << std::endl;
+        if ( szMosquitoMoveModel != "uniform" and szMosquitoMoveModel != "weighted" ) {
+            std::cerr << "ERROR: invalid mosquito movement model requested:" << std::endl;
+            std::cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << std::endl;
+            exit(-1);
+        }
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
+	if (eMosquitoDistribution==CONSTANT)
+	  std::cerr << "mosquito capacity distribution is constant" << std::endl;
+	else if (eMosquitoDistribution==EXPONENTIAL)
+	  std::cerr << "mosquito capacity distribution is exponential" << std::endl;
         if (nSizeMosquitoMultipliers>0) {
             std::cerr << "mosquito seasonal multipliers (days,mult) =";
             for (int j=0; j<nSizeMosquitoMultipliers; j++)
@@ -270,6 +301,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
             exit(-1);
         }
         std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
+
+	if (bVaccineLeaky)
+	  std::cerr << "VE_S is leaky" << std::endl;
+	else
+	  std::cerr << "VE_S is all-or-none" << std::endl;
 
         if (szPeopleFile.length()>0) {
             std::cerr << "people output file = " << szPeopleFile << std::endl;

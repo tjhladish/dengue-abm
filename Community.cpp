@@ -38,6 +38,7 @@ Community::Community(const Parameters* parameters) :
     _fMosquitoCapacityMultiplier = 1.0;
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
+    _uniformSwap = true;
 }
 
 
@@ -143,23 +144,28 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         _nPersonAgeCohortSizes[age]++;
     }
 
-    iss.open(swapFilename.c_str());
-    if (!iss) {
-        cerr << "ERROR: " << swapFilename << " not found." << endl;
-        return false;
-    }
-    while (iss) {
-        char buffer[500];
-        iss.getline(buffer,500);
-        istringstream line(buffer);
-        int id1, id2;
-        double prob;
-        if (line >> id1 >> id2 >> prob) {
-            Person* person = getPersonByID(id1);
-            person->appendToSwapProbabilities(make_pair(id2, prob));
+    if (swapFilename == "") {
+        _uniformSwap = true;
+    } else {
+        iss.open(swapFilename.c_str());
+        if (!iss) {
+            cerr << "ERROR: " << swapFilename << " not found." << endl;
+            return false;
         }
+        while (iss) {
+            char buffer[500];
+            iss.getline(buffer,500);
+            istringstream line(buffer);
+            int id1, id2;
+            double prob;
+            if (line >> id1 >> id2 >> prob) {
+                Person* person = getPersonByID(id1);
+                person->appendToSwapProbabilities(make_pair(id2, prob));
+            }
+        }
+        iss.close();
+        _uniformSwap = false;
     }
-    iss.close();
 
     return true;
 }
@@ -196,7 +202,19 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
             newLoc->setID(locID);
             newLoc->setX(locX);
             newLoc->setY(locY);
-            newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+            if (_par->eMosquitoDistribution==CONSTANT) {
+                // all houses have same number of mosquitoes
+                newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+            } else if (_par->eMosquitoDistribution==EXPONENTIAL) {
+                // exponential distribution of mosquitoes -dlc
+                // gsl takes the 1/lambda (== the expected value) as the parameter for the exp RNG
+                newLoc->setBaseMosquitoCapacity(gsl_ran_exponential(RNG, _par->nDefaultMosquitoCapacity));
+            } else {
+                cerr << "ERROR: Invalid mosquito distribution: " << _par->eMosquitoDistribution << endl;
+                cerr << "       Valid distributions include CONSTANT and EXPONENTIAL" << endl;
+                return false;
+            }
+
             _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
             _location.push_back(newLoc);
         }
@@ -235,6 +253,8 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
 
 
 Person* Community::getPersonByID(int id) {
+    // This assumes that IDs start at 1, and tries to guess
+    // that person with ID id is in position id-1
     int i = 0;
     if (_person[id-1].getID()==id) {
         i = id-1;
@@ -273,6 +293,8 @@ void Community::vaccinate(double f, int age) {
                 _person[i].vaccinate();
     }
     else {
+        if (age>MAX_PERSON_AGE)
+            age=MAX_PERSON_AGE;
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
@@ -347,48 +369,55 @@ Mosquito *Community::getExposedMosquito(int n) {
 void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
-            Location *pLoc = m->getLocation();
-            double x1 = pLoc->getX();
-            double y1 = pLoc->getY();
-
-            int k = pLoc->getNumNeighbors();
-            vector<double> distances(k,0);
-            double sum_dist = 0.0;
-            for (int i=0; i<k; i++) {
-                Location* loc2 = pLoc->getNeighbor(i);
-                double x2 = loc2->getX();
-                double y2 = loc2->getY();
-                double d = sqrt(pow(x1-x2,2) + pow(y1-y2,2));
-                sum_dist += d;
-                distances[i] = d;
-            }
-            double r2 = gsl_rng_uniform(RNG);
-            int n = k-1;
-            for (int i=0; i<k; i++) {
-                distances[i] /= sum_dist;
-                if ( r2 < distances[i] ) {
-                    n = i; 
-                    break;
-                } else {
-                    r2 -= distances[i];
-                }
-            }
-            m->setLocation(pLoc->getNeighbor(n));
-            
-/*        if (r<_par->fMosquitoTeleport) {                               // teleport
+        if (r<_par->fMosquitoTeleport) {                               // teleport
             int locID;
             do {
                 locID = gsl_rng_uniform_int(RNG,_location.size());
             } while (_location[locID]->getUndefined());               // why would it be undefined?
             m->setLocation(_location[locID]);
-        }                                                             // move to neighbor
-        else {
+        } else {                                                            // move to neighbor
             Location *pLoc = m->getLocation();
-            if (pLoc->getNumNeighbors()>0) {
-                int n = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
-                m->setLocation(pLoc->getNeighbor(n));
+            double x1 = pLoc->getX();
+            double y1 = pLoc->getY();
+
+            int degree = pLoc->getNumNeighbors();
+            int neighbor=0; // neighbor is an index
+
+            if (_par->szMosquitoMoveModel == "weighted") {
+                vector<double> weights(degree, 0);
+                double sum_weights = 0.0;
+
+                // Prefer nearby neighbors
+                // Calculate distance-based weights to select each of the degree neighbors
+                for (int i=0; i<degree; i++) {
+                    Location* loc2 = pLoc->getNeighbor(i);
+                    double x2 = loc2->getX();
+                    double y2 = loc2->getY();
+                    double distance_squared = pow(x1-x2,2) + pow(y1-y2,2);
+                    double w = 1.0 / distance_squared;
+                    sum_weights += w;
+                    weights[i] = w;
+                }
+                double r2 = gsl_rng_uniform(RNG);
+                neighbor = degree-1; // neighbor is (still) an index
+                for (int i=0; i<degree; i++) {
+                    weights[i] /= sum_weights; // normalize prob
+                    if ( r2 < weights[i] ) {
+                        neighbor = i; 
+                        break;
+                    } else {
+                        r2 -= weights[i];
+                    }
+                }
+            } else {
+                // Ignore actual distances
+                if (degree>0) {
+                    neighbor = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
+                }
             }
-        }*/
+
+            m->setLocation(pLoc->getNeighbor(neighbor));
+        }    
     }
 }
 
@@ -396,11 +425,9 @@ void Community::moveMosquito(Mosquito *m) {
 void Community::swapImmuneStates() {
     map< Location*, map<int,bool> >::iterator it;
     for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
-    //    cerr << "swap!" << endl;
-    // big annual swap!
+
     // For people of age x, copy immune status from people of age x-1
 /*    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
-        //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
         int age1 = age-1;
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
@@ -420,22 +447,27 @@ void Community::swapImmuneStates() {
     }*/
 
     for (int age=MAX_PERSON_AGE-1; age>0; age--) {
-        //      cerr << "age " << age << ", " << _nPersonAgeCohortSizes[age] << " people" << endl;
-        //int age1 = age-1;
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
-            double r = gsl_rng_uniform(RNG);
-            const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
-            int n;
-            for (n = 0; n < (signed) swap_probs.size(); n++) {
-                if (r < swap_probs[n].second) {
-                    break;
-                } else {
-                    r -= swap_probs[n].second;
+            if (_uniformSwap == true) {
+                // For people of age x, copy immune status from people of age x-1
+                int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age-1]);
+                p->copyImmunity(_personAgeCohort[age-1][r]);
+            } else {
+                // Same as above, but use weighted sampling based on swap probs from file
+                double r = gsl_rng_uniform(RNG);
+                const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
+                int n;
+                for (n = 0; n < (signed) swap_probs.size(); n++) {
+                    if (r < swap_probs[n].second) {
+                        break;
+                    } else {
+                        r -= swap_probs[n].second;
+                    }
                 }
+                p->copyImmunity(getPersonByID(swap_probs[n].first)); 
             }
-            p->copyImmunity(getPersonByID(swap_probs[n].first)); 
 
             // update map of locations with infectious people
             if (p->getRecoveryTime() > _nDay) {

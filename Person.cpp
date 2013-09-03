@@ -124,7 +124,10 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     //assert(serotype>=1 && serotype<=4);
     if (!isSusceptible(serotype) ||                                   // already infected by serotype
         _nRecoveryTime[0]+_par->nDaysImmune>time ||                        // cross-serotype protection
-        getInfectionParity()>=maxinfectionparity)                     // already infected max number of times
+        getInfectionParity()>=maxinfectionparity ||                     // already infected max number of times
+	(isVaccinated() && 
+	 _par->bVaccineLeaky==true &&
+	 gsl_rng_uniform(RNG)<_par->fVESs[serotype])) // protected by leaky vaccine
         return false;
     pushInfectionHistory();
 
@@ -222,9 +225,11 @@ bool Person::vaccinate() {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
-        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+	if (_par->bVaccineLeaky==false) { // all-or-none VE_S protection
+	  for (int i=0; i<NUM_OF_SEROTYPES; i++) {
             if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
-        }
+	  }
+	}
         return true;
     } else {
         return false;
