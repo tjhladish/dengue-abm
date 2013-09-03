@@ -1,0 +1,25 @@
+Define classes
+ - household base class 
+ - census_household derived class
+ - pseudo_household derived class
+
+Import census data
+ - map<municipality, size>
+
+Import IPUMS data
+ - //household struct {household_id, size, probability, vector<people>}
+ - map<municipality, vector<households)> >
+ - map<household_id, size>
+ - verify/normalize probabilities
+
+Import GIS data
+ - vector<pair(lat, long)>
+ - map<municipality, vector<pixel_probabilities> >
+ - verify/normalize probabilities
+
+expected num households = municipaltiy census population / average IPUMS household size
+While the expected number of households > sampled number of households for municipality:
+ - select a household using IPUMS household weights
+ - select a pixel using municipality weights, with replacement (simple weighted sampling)
+ - select lat, long coordinantes uniformly within the pixel
+ - store in map<municipality, vector<pseudo_household> >
