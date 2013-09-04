@@ -4,6 +4,8 @@ from ipums_xml_parser import *
 from xml.dom import minidom
 from sys import exit
 from collections import defaultdict
+from random import random
+from sys import exit
 
 class Census:
     def __init__(self):
@@ -73,6 +75,18 @@ class Ipums:
             for hh in Ipums.households_by_muni[m]:
                 hh.normed_wt = float(hh.data[wt_idx]) / total_wt
 
+    def sample_households(self, m):
+        rand = random()
+        chosen_hh = Ipums.households_by_muni[m][0]
+        for hh in Ipums.households_by_muni[m]:
+            if rand < hh.normed_wt:
+                chosen_hh = hh
+                break
+            else:
+                rand -= hh.normed_wt
+        return chosen_hh
+
+
 def import_census(filename):
     census = Census()
     for line in codecs.open(filename, encoding='ISO-8859-1'):
@@ -92,7 +106,7 @@ def import_ipums_data(filename):
     ctr = -1
     for line in file(filename):
         ctr += 1
-        if ctr % 10000 == 0:
+        if ctr % 50000 == 0:
             print "parsed", ctr, "IPUMS records"
         if len(header) == 0: # we're looking at the first line/header
             header = [field.strip('"') for field in line.strip().split(',')]
@@ -127,14 +141,19 @@ def import_ipums_data(filename):
 
 
 class Pixel:
-    def __init__(self, _lat, _long, _lum, _muni_num, _muni_name):
-        self.lat       = _lat
+    width = 0 # pixels are square, so height == width
+    def __init__(self, _long, _lat, _lum, _muni_num, _muni_name):
         self.long      = _long
+        self.lat       = _lat
         self.lum       = _lum
         self.muni_num  = _muni_num
         self.muni_name = _muni_name
-        self.weight    = 0
+        self.normed_wt = 0
 
+    def locate_hh(self):
+        x = self.long - Pixel.width/2.0 + Pixel.width*random()
+        y = self.lat  - Pixel.width/2.0 + Pixel.width*random()
+        return x, y
 
 class Municipality_Weights:
     # lookup municipality number used in gis data using other keys
@@ -144,11 +163,12 @@ class Municipality_Weights:
     lookup_by_ipums_num  = dict()
 
     def __init__(self):
-        self.pixels_by_muni = dict() # key is gis muni num, value is list of Pixels
+        self.pixels_by_muni = defaultdict(list) # key is gis muni num, value is list of Pixels
+        #self.pixels_by_muni = dict() # key is gis muni num, value is list of Pixels
 
     def insert_pixel(self, px):
-        if px.muni_num not in self.pixels_by_muni:
-            self.pixels_by_muni[px.muni_num] = list()
+       # if px.muni_num not in self.pixels_by_muni:
+       #     self.pixels_by_muni[px.muni_num] = list()
 
         self.pixels_by_muni[px.muni_num].append(px)
 
@@ -165,6 +185,7 @@ class Municipality_Weights:
             Municipality_Weights.lookup_by_ipums_name[ipums_name]    = gis_num
             Municipality_Weights.lookup_by_ipums_num[ipums_num]      = gis_num
 
+
     def normalize_pixel_weights(self):
         for gis_num in self.pixels_by_muni.keys():
             muni_total_luminosity = 0
@@ -175,12 +196,25 @@ class Municipality_Weights:
                 px.weight = px.lum / muni_total_luminosity
 
 
+    def sample_pixels(self, m):
+        rand = random()
+        chosen_px = self.pixels_by_muni[m][0]
+        for px in self.pixels_by_muni[m]:
+            if rand < px.normed_wt:
+                chosen_px = px 
+                break
+            else:
+                rand -= px.normed_wt
+        return chosen_px
+
+
+
 def import_nighttime_light_data(filename):
     muni_wt = Municipality_Weights()
     for line in file(filename):
-        _lat, _long, _lum, _muni_num, _muni_name = line.strip().split('\t')
-        _lat, _long, _lum = map(float, [_lat, _long, _lum])  
-        px = Pixel(_lat, _long, _lum, _muni_num, _muni_name)
+        _long, _lat, _lum, _muni_num, _muni_name = line.strip().split('\t')
+        _long, _lat, _lum = map(float, [_long, _lat, _lum])  
+        px = Pixel(_long, _lat, _lum, _muni_num, _muni_name)
         muni_wt.insert_pixel(px)
     
     muni_wt.normalize_pixel_weights()
@@ -194,21 +228,34 @@ census = import_census("./raw_data/mexico_census/iter_31TXT.txt")
 # Import categorical information about the IPUMS data
 IPUMS_XML_Parser("./raw_data/ipums/ipumsi_00005.xml")
 ipums_lookup = IPUMS_XML_Parser.data
-print sorted(ipums_lookup['MUNIMX'])
+#print sorted(ipums_lookup['MUNIMX'])
 
 # ipums_data is a 2D dictionary with the column name as the first key and the categorical values as the second key
 # The returned value is what that maps to, e.g. ipums_data['SEX']['2'] maps to 'Female'
 ipums_data = import_ipums_data("./raw_data/ipums/ipumsi_00005.csv")
+age_field = Ipums_Person.fields.index('AGE')
+sex_field = Ipums_Person.fields.index('SEX')
 
 # Import nighttime light data
 # Luminosity values are given for pixel centered on the given coordinates
 # Pixel height and width is expected to be 0.00416667 degrees
-pixel_width = 0.00416667
-print "Warning: assuming square pixels with height and width ==", pixel_width, "degrees"
+Pixel.width = 0.00416667
+print "Warning: assuming square pixels with height and width ==", Pixel.width, "degrees"
 muni_weights = import_nighttime_light_data('./raw_data/all_yucatan_pixels.out')
 muni_weights.define_muni_lookups('./raw_data/muni_lookup')
 
 size_idx = Ipums_Household.fields.index('PERSONS') # PERSONS is household size
+
+hh_output_file = file('locations-yucatan.txt','w')
+hh_output_file.write('id type x y\n')
+pop_output_file = file('population-yucatan.txt','w')
+pop_output_file.write('pid hid age sex gridx gridy workid\n')
+
+# person ID counter.  Previous model uses IDs that start at 1; not sure whether that's necessary
+pid = 1
+hid = 1
+
+# For each municipality
 for m in sorted(Municipality_Weights.lookup_by_ipums_num.keys()):
     # Get expected number of households
     expected_hh_size = 0
@@ -217,5 +264,31 @@ for m in sorted(Municipality_Weights.lookup_by_ipums_num.keys()):
         # should be weighted more heavily.
         expected_hh_size += int(hh.data[size_idx]) * hh.normed_wt
     muni_pop = census.get(m[2:]) # municipality numbers don't include the state prefix in the census
-    expected_num_hh = muni_pop / expected_hh_size
-    print m, ipums_lookup['MUNIMX'][unicode(m)], expected_hh_size, muni_pop, expected_num_hh
+    expected_num_hh = int(round(muni_pop / expected_hh_size))
+    #print m, ipums_lookup['MUNIMX'][unicode(m)], expected_hh_size, muni_pop, expected_num_hh
+
+    # Locate each household
+    for i in range(expected_num_hh):
+        # Sample IPUMS households (weighted by IPUMS authors)
+        hh = ipums_data.sample_households(m)
+
+        # Sample pixels (weighted by luminosity)
+        px = muni_weights.sample_pixels(Municipality_Weights.lookup_by_ipums_num[m])
+
+        # Sample lat-long uniformly within pixel
+        x, y = px.locate_hh()
+        print x, y
+        
+        # Report household & people data
+        hh_output_file.write(' '.join(map(str,[hid,'house',x,y])) + '\n')
+        for person in hh.people:
+            pop_output_file.write(' '.join(map(str,[pid, hid, person.data[age_field], person.data[sex_field], 0, 0, -1])) + '\n')
+            pid += 1
+        
+        hid += 1
+
+        if i > 20:
+            hh_output_file.close()
+            pop_output_file.close()
+            exit()
+
