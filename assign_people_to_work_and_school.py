@@ -34,7 +34,7 @@ def haversine(lon1, lat1, lon2, lat2):
     dlat = lat2 - lat1 
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
     c = 2 * asin(sqrt(a)) 
-    km = 6367 * c
+    km = 6371 * c
     return km 
 
 
@@ -77,6 +77,51 @@ def binary_search(val_list, val, _lt, _gt, _eq, label, bound):
             return imin
         if bound == 'upper':
             return imin + 1
+
+def get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed):
+    #print "searching for schools:", loc_type
+    commute_range = -1
+    positions_found = 0
+    nearby_places = [] # by index in workplaces_and_schools
+    if loc_type == 'w':
+        pos_type = 'workers'
+    else:
+        pos_type = 'students'
+    while (len(nearby_places) < num_loc_needed) or (positions_found <= 0):
+        nearby_places = []
+        commute_range += 1
+        #print "\n\nEnvelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
+        for x_val in range(pxi-commute_range, pxi+commute_range+1):
+            pos_xmin = binary_search(workplaces_and_schools, x_val, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'lower')
+            pos_xmax = binary_search(workplaces_and_schools, x_val+1, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'upper')
+            if pos_xmin == pos_xmax:
+                continue
+
+            pos_ymin = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi-commute_range, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'lower')
+            pos_ymax = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi+commute_range+1, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'upper')
+            
+            for i,w in enumerate(workplaces_and_schools[pos_xmin:pos_xmax][pos_ymin:pos_ymax]):
+                raw_idx = pos_xmin + pos_ymin + i
+                nearby_places.append(raw_idx)
+                if pos_type == 'students':
+                    positions_found += 1
+                else:
+                    positions_found += w[pos_type]
+
+        #print "local positions:", positions_found            
+        #print "workplaces found:", len(nearby_places) 
+    # print "Envelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
+    return nearby_places, positions_found
+
+def select_nearest_school(px, py, nearby_places, workplaces_and_schools):
+    closest_school, min_dist = nearby_places[0], () # () evaluates to greater than any number
+    for idx in nearby_places:
+        s = workplaces_and_schools[idx]
+        d = haversine(px, py, s['x'], s['y'])
+        if d < min_dist:
+            min_dist = d
+            closest_school = idx
+    return closest_school, min_dist
 
 def x_to_col_num(x):
     return int(round((x - min_x_center)/pixel_size))
@@ -196,30 +241,8 @@ for line in file('population-yucatan.txt'):
     day_loc_ctr[day_loc] += 1
     #pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc }
     # it doesn't seem like we're actually using all of these, and this program uses a lot of RAM
-    pop[p[0]] = {'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc }
+    pop[p[0]] = {'hid':hid, 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc, 'workid':-1}
     pop_ids.append(p[0])
-
-# normalize school sizes
-student_fraction = float(student_teacher_ratio) / (student_teacher_ratio + 1)
-total_raw_students = total_raw_size['s'] * student_fraction
-enrollment_rescaling_factor = day_loc_ctr['s'] / total_raw_students
-total_teachers = 0
-
-for place in workplaces_and_schools:
-    if place['type'] == 's':
-        currently_supported_students = place['raw_size'] * student_fraction
-        required_enrollment = currently_supported_students * enrollment_rescaling_factor
-        place['students'] = required_enrollment
-        place['workers']  = required_enrollment / student_teacher_ratio
-        total_teachers += place['workers']
-
-# normalize workplace sizes
-total_jobs_still_needed = day_loc_ctr['w'] - total_teachers
-employment_rescaling_factor = float(total_jobs_still_needed) / total_raw_size['w']
-for place in workplaces_and_schools:
-    if place['type'] == 'w':
-        place['workers'] = place['raw_size'] * employment_rescaling_factor 
-        place['students'] = 0
 
 print "Population size:", len(pop)
 print
@@ -233,48 +256,69 @@ print "Student:Teacher ratio (WHO):", student_teacher_ratio
 
 shuffle(pop_ids)    # UNCOMMENT AFTER DEBUGGING
 
+# send kids to nearest school
+# needs to happen first so we know how many teachers are needed
+students_allocated = 0
 for pid in pop_ids:
-    if pop[pid]['day_loc'] == 'h':
-        # I think we ultimately need to output their daytime location -- T0DO
+    loc_type = pop[pid]['day_loc']
+    if loc_type != 's':
         continue
+    num_loc_needed = 1
 
     px, py = pop[pid]['x'], pop[pid]['y']
     pxi, pyi = x_to_col_num(px), y_to_row_num(py)
-    pxi, pyi = 352, 342  # DELETE AFTER DEBUGGING
-    commute_range = -1
-    nearby_workplaces = [] # by index in workplaces_and_schools
-    positions_found = 0
-    
-    print "Person at", pxi, pyi
-    while (len(nearby_workplaces) < workplace_neighborhood) or (positions_found <= 0):
-        nearby_workplaces = []
-        commute_range += 1
-        print "\n\nEnvelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
-        for x_val in range(pxi-commute_range, pxi+commute_range+1):
-            pos_xmin = binary_search(workplaces_and_schools, x_val, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'lower')
-            pos_xmax = binary_search(workplaces_and_schools, x_val+1, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'upper')
-            print "looking at x_val, pos_xmin, pos_xmax:", x_val, pos_xmin, pos_xmax
-            if pos_xmin == pos_xmax:
-                print "\tx val not matched: continuing"
-                continue
 
-            #print "Person loc:", pxi, pyi, workplaces_and_schools[pos_xmin]['xi'], workplaces_and_schools[pos_xmax]['xi']
-            pos_ymin = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi-commute_range, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'lower')
-            pos_ymax = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi+commute_range+1, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'upper')
-            
-            #print "looking at x_val, pos_xmin, pos_xmax, (workplace in range):", x_val, pos_xmin, pos_xmax, '(', len(workplaces_and_schools[pos_xmin:pos_xmax][pos_ymin:pos_ymax]), ')'
-            #print "looking at x_val, pos_xmin, pos_xmax, pos_ymin, pos_ymax:", x_val, pos_xmin, pos_xmax, pos_ymin, pos_ymax 
-            pixel_wp_ct = defaultdict(int)
-            for i,w in enumerate(workplaces_and_schools[pos_xmin:pos_xmax][pos_ymin:pos_ymax]):
-                pixel_wp_ct[w['yi']] += 1
-                raw_idx = pos_xmin + pos_ymin + i
-                nearby_workplaces.append(raw_idx)
-                positions_found += w['workers']
-                #print "workplace found (raw_idx, xi, yi, workers):", raw_idx, w['xi'], w['yi'], w['workers']
+    nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
+    school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools)
+    # 'school' is an index in the workplaces_and_schools list; needs to be increased
+    # by the number of households before output
+    pop[pid]['workid'] = school 
+    students_allocated += 1
+    if students_allocated % 1000 == 0:
+        print "students sent to school:", students_allocated
+    #print px, py, school, distance
 
-            #for y_val in range(pyi-commute_range, pyi+commute_range+1):
-            #    print "x, y, places found:", x_val, y_val, pixel_wp_ct[y_val]
-        print "local positions:", positions_found            
-        print "workplaces found:", len(nearby_workplaces) 
+# normalize school sizes
+'''
+student_fraction = float(student_teacher_ratio) / (student_teacher_ratio + 1)
+total_raw_students = total_raw_size['s'] * student_fraction
+enrollment_rescaling_factor = day_loc_ctr['s'] / total_raw_students
+total_teachers = 0
+
+for place in workplaces_and_schools:
+    if place['type'] == 's':
+        currently_supported_students = place['raw_size'] * student_fraction
+        required_enrollment = currently_supported_students * enrollment_rescaling_factor
+        place['students'] = required_enrollment
+        place['workers']  = required_enrollment / student_teacher_ratio
+        total_teachers += place['workers']
+'''
+
+exit()
+
+# normalize workplace sizes
+total_jobs_still_needed = day_loc_ctr['w'] - total_teachers
+employment_rescaling_factor = float(total_jobs_still_needed) / total_raw_size['w']
+for place in workplaces_and_schools:
+    if place['type'] == 'w':
+        place['workers'] = place['raw_size'] * employment_rescaling_factor 
+        place['students'] = 0
+
+
+
+for pid in pop_ids[:10000]:
+    loc_type = pop[pid]['day_loc']
+    if loc_type == 'h':
+        # I think we ultimately need to output their daytime location -- T0DO
+        continue
+    elif loc_type == 'w':
+        num_loc_needed = 1000
+    elif loc_type == 's':
+        num_loc_needed = 1
+
+    px, py = pop[pid]['x'], pop[pid]['y']
+    pxi, pyi = x_to_col_num(px), y_to_row_num(py)
+
+    nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
+    print len(nearby_places), positions_found 
     
-    exit()
