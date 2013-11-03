@@ -151,6 +151,8 @@ class Pixel:
         self.normed_wt = 0
 
     def locate_hh(self):
+#        x = self.long
+#        y = self.lat
         x = self.long - Pixel.width/2.0 + Pixel.width*random()
         y = self.lat  - Pixel.width/2.0 + Pixel.width*random()
         return x, y
@@ -187,19 +189,22 @@ class Municipality_Weights:
 
 
     def normalize_pixel_weights(self):
+#        print "normalizing px weights"
         for gis_num in self.pixels_by_muni.keys():
             muni_total_luminosity = 0
             for px in self.pixels_by_muni[gis_num]:
                 muni_total_luminosity += px.lum
             # normalize pixels
             for px in self.pixels_by_muni[gis_num]:
-                px.weight = px.lum / muni_total_luminosity
+                px.normed_wt = px.lum / muni_total_luminosity
 
 
     def sample_pixels(self, m):
+#        print "sampling"
         rand = random()
         chosen_px = self.pixels_by_muni[m][0]
         for px in self.pixels_by_muni[m]:
+#            print rand, px.normed_wt
             if rand < px.normed_wt:
                 chosen_px = px 
                 break
@@ -209,11 +214,18 @@ class Municipality_Weights:
 
 
 
-def import_nighttime_light_data(filename):
+def import_nighttime_light_data(filename, luminosity_threshold):
     muni_wt = Municipality_Weights()
     for line in file(filename):
         _long, _lat, _lum, _muni_num, _muni_name = line.strip().split('\t')
         _long, _lat, _lum = map(float, [_long, _lat, _lum])  
+        
+        # Subtract off the natural albedo of the surface
+        if _lum < luminosity_threshold:
+            _lum = 0
+        else:
+            _lum -= luminosity_threshold
+
         px = Pixel(_long, _lat, _lum, _muni_num, _muni_name)
         muni_wt.insert_pixel(px)
     
@@ -235,21 +247,26 @@ ipums_lookup = IPUMS_XML_Parser.data
 ipums_data = import_ipums_data("./raw_data/ipums/ipumsi_00005.csv")
 age_field = Ipums_Person.fields.index('AGE')
 sex_field = Ipums_Person.fields.index('SEX')
+pernum_field = Ipums_Person.fields.index('PERNUM')
+empstatd_field = Ipums_Person.fields.index('EMPSTATD')
 
 # Import nighttime light data
 # Luminosity values are given for pixel centered on the given coordinates
 # Pixel height and width is expected to be 0.00416667 degrees
 Pixel.width = 0.00416667
 print "Warning: assuming square pixels with height and width ==", Pixel.width, "degrees"
-muni_weights = import_nighttime_light_data('./raw_data/all_yucatan_pixels.out')
+
+luminosity_threshold = 0.16 # Anything dimmer than this is likely not a "light"
+
+muni_weights = import_nighttime_light_data('./raw_data/all_yucatan_pixels.out', luminosity_threshold)
 muni_weights.define_muni_lookups('./raw_data/muni_lookup')
 
 size_idx = Ipums_Household.fields.index('PERSONS') # PERSONS is household size
 
 hh_output_file = file('locations-yucatan.txt','w')
-hh_output_file.write('id type x y\n')
+hh_output_file.write('id type x y x_ctr y_ctr\n')
 pop_output_file = file('population-yucatan.txt','w')
-pop_output_file.write('pid hid age sex gridx gridy workid\n')
+pop_output_file.write('pid hid age sex gridx gridy workid hh_serial pernum empstatd\n')
 
 # person ID counter.  Previous model uses IDs that start at 1; not sure whether that's necessary
 pid = 1
@@ -265,10 +282,12 @@ for m in sorted(Municipality_Weights.lookup_by_ipums_num.keys()):
         expected_hh_size += int(hh.data[size_idx]) * hh.normed_wt
     muni_pop = census.get(m[2:]) # municipality numbers don't include the state prefix in the census
     expected_num_hh = int(round(muni_pop / expected_hh_size))
-    #print m, ipums_lookup['MUNIMX'][unicode(m)], expected_hh_size, muni_pop, expected_num_hh
+    print m, ipums_lookup['MUNIMX'][unicode(m)], expected_hh_size, muni_pop, expected_num_hh
 
     # Locate each household
     for i in range(expected_num_hh):
+        if i % 10000 == 0:
+            print '\t' + str(i)
         # Sample IPUMS households (weighted by IPUMS authors)
         hh = ipums_data.sample_households(m)
 
@@ -277,18 +296,18 @@ for m in sorted(Municipality_Weights.lookup_by_ipums_num.keys()):
 
         # Sample lat-long uniformly within pixel
         x, y = px.locate_hh()
-        print x, y
+        #print x, y
         
         # Report household & people data
-        hh_output_file.write(' '.join(map(str,[hid,'house',x,y])) + '\n')
-        for person in hh.people:
-            pop_output_file.write(' '.join(map(str,[pid, hid, person.data[age_field], person.data[sex_field], 0, 0, -1])) + '\n')
+        hh_output_file.write(' '.join(map(str,[hid,'house',x,y,px.long,px.lat])) + '\n')
+        # for each person in the household . . .
+        for p in hh.people:
+            field_vals = [pid, hid, p.data[age_field], p.data[sex_field], 0, 0, -1, hh.serial, p.data[pernum_field], p.data[empstatd_field]]
+            field_vals = map(str,field_vals)
+            pop_output_file.write(' '.join(field_vals) + '\n')
             pid += 1
         
         hid += 1
 
-        if i > 20:
-            hh_output_file.close()
-            pop_output_file.close()
-            exit()
-
+hh_output_file.close()
+pop_output_file.close()

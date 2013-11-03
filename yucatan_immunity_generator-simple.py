@@ -2,7 +2,7 @@
 from random import random
 
 # Reported DF + DHF cases, 1997-2011 (inclusive)
-# Values are estimated from Fig. 1 of Hector's baseline studies manuscript
+# Values are estimated from Fig. 1 of Hectors baseline studies manuscript
 # http://arohatgi.info/WebPlotDigitizer/ was used to extract values
 
 cases = [4220,	#1979
