@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from math import radians, cos, sin, asin, sqrt
-from random import shuffle
+from random import random, shuffle
 from collections import defaultdict
 from sys import exit
 
@@ -114,13 +114,14 @@ def get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed
     return nearby_places, positions_found
 
 def select_nearest_school(px, py, nearby_places, workplaces_and_schools):
-    closest_school, min_dist = nearby_places[0], () # () evaluates to greater than any number
+    # nearby_places is a list of indeces for workplaces_and_schools
+    closest_school, min_dist = workplaces_and_schools[nearby_places[0]], () # () evaluates to greater than any number
     for idx in nearby_places:
         s = workplaces_and_schools[idx]
         d = haversine(px, py, s['x'], s['y'])
         if d < min_dist:
             min_dist = d
-            closest_school = idx
+            closest_school = s
     return closest_school, min_dist
 
 def x_to_col_num(x):
@@ -160,165 +161,204 @@ def dict_val_eq(A,b,label):
     else:
         return False
 
+def import_households(filename, hh_loc):
+    header = True
+    print "reading household locations"
 
+    # At this point, only includes houses
+    for line in file('locations-yucatan.txt'):
+        '''
+        id type x y x_ctr y_ctr
+        1 house -89.6910220003 20.7015302009 -89.69159442 20.69995656
+        2 house -89.700145483 20.6641877526 -89.69992776 20.66245653
+        3 house -89.758249035 20.6954360352 -89.75826114 20.69578989
+        4 house -89.6974011142 20.6551249287 -89.69576109 20.65412319
+        '''
+
+        if header:
+            header = False
+            continue
+
+        p = line.split()
+        if p[1] != 'house':
+            print 'Expecting only houses in the location file at this point.  Found:', line
+            exit()
+        hh_loc[int(p[0])] = {'x':float(p[2]), 'y':float(p[3])}
+    return
+
+
+def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_loc_id):
+    header = True
+    print "reading workplaces & schools"
+    loc_id = current_max_loc_id + 1
+    total_raw_workers = 0
+    for line in file(filename):
+        '''
+        W 1 -89.6264173747 20.9599660422
+        W 2 -89.6116996054 20.964832419
+        W 1 -89.6428676041 20.9771890368
+        W 2 -89.6405575542 20.9678584161
+        W 1 -89.6255278043 20.9746128005
+        '''
+
+        if header:
+            header = False
+            continue
+
+        p = line.split()
+        w = {'workid':loc_id, 'type':p[0].lower(), 'x':float(p[2]), 'y':float(p[3]), 'workers':0, 'students':0}
+        if w['type'] == 'w':
+            w['raw_workers'] = int(p[1])
+            total_raw_workers += w['raw_workers']
+        else:
+            w['raw_workers'] = 0
+            
+        w['xi'] = x_to_col_num(w['x'])
+        w['yi'] = y_to_row_num(w['y'])
+        workplaces_and_schools.append(w)
+        loc_id += 1
+        
+    workplaces_and_schools.sort(cmp=xy_cmp)
+    return total_raw_workers
+
+def import_population(filename, pop, pop_ids, day_loc_ctr, fo):
+    print "reading population"
+    header = True
+    i = -1 
+    for line in file('population-yucatan.txt'):
+        i += 1
+        #if i % 10000 == 0:
+        #    print i
+        '''
+        pid hid age sex gridx gridy workid hh_serial pernum empstatd
+        1 1 31 1 0 0 -1 2748179000 1 110
+        2 1 29 2 0 0 -1 2748179000 2 110
+        3 1 10 2 0 0 -1 2748179000 3 0
+        4 2 32 1 0 0 -1 2748114000 1 110
+        '''
+        if header:
+            fo.write(line)
+            header = False
+            continue
+
+        p = line.split()
+        hid = int(p[1])
+        age = int(p[2])
+        day_loc = lookup_location_code(age, p[9])
+        day_loc_ctr[day_loc] += 1
+        # pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc }
+        # it doesn't seem like we're actually using all of these, and this program uses a lot of RAM
+        pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc, 'workid':-1}
+        pop_ids.append(p[0])
+
+    print "Population size:", len(pop)
+    print
+    print "Total number of workers (IPUMS):", day_loc_ctr['w']
+    print "Total number of students (IPUMS):", day_loc_ctr['s']
+    print "Total number of homebodies (IPUMS):", day_loc_ctr['h']
+    print
+    return
+
+def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers):
+    students_allocated = 0
+    for pid in pop_ids:
+        loc_type = pop[pid]['day_loc']
+        if loc_type != 's':
+            continue
+        num_loc_needed = 1
+
+        px, py = pop[pid]['x'], pop[pid]['y']
+        pxi, pyi = x_to_col_num(px), y_to_row_num(py)
+
+        nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
+        school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools)
+        # 'school' is an element in the workplaces_and_schools list
+        pop[pid]['workid'] = school['workid'] 
+        school['students'] += 1
+        school['raw_workers'] += 1.0/student_teacher_ratio
+        total_raw_workers     += 1.0/student_teacher_ratio
+        students_allocated += 1
+        if students_allocated % 1000 == 0:
+            print "students sent to school:", students_allocated
+        #print px, py, school, distance
+    return total_raw_workers
+
+def choose_workplace(px, py, nearby_places, workplaces_and_schools):
+    raw_weights = [0.0 for i in range(len(nearby_places))]
+    for i, raw_idx in enumerate(nearby_places):
+        w = workplaces_and_schools[raw_idx]
+        dist = haversine(px, py, w['x'], w['y'])
+        size = w['workers']
+        raw_weights[i] = size / dist**2
+
+    # normalize weights
+    probs = []
+    total = sum(raw_weights)
+    for wt in raw_weights:
+        probs.append(wt/total)
+    
+    r = random()
+    for i,p in enumerate(probs):
+        if r < p:
+            return workplaces_and_schools[nearby_places[i]]
+        r -= p
+
+    return workplaces_and_schools[nearby_places[-1]]
+
+
+# Import household location data
 hh_loc = dict()
-header = True
-print "reading locations"
+import_households('locations-yucatan.txt', hh_loc)
 
-# At this point, only includes houses
-for line in file('locations-yucatan.txt'):
-    '''
-    id type x y x_ctr y_ctr
-    1 house -89.6910220003 20.7015302009 -89.69159442 20.69995656
-    2 house -89.700145483 20.6641877526 -89.69992776 20.66245653
-    3 house -89.758249035 20.6954360352 -89.75826114 20.69578989
-    4 house -89.6974011142 20.6551249287 -89.69576109 20.65412319
-    '''
+# Import workplace and school location data
+#
+# We are using workplace size (# employees) as a weight, but ignoring
+# school size data currently, as we feel it is more realistic to send
+# students to the nearest school.
+workplaces_and_schools = []
+max_loc_id = max(hh_loc.keys())
+total_raw_workers = import_workplaces_and_schools('schools_and_workplaces.out', workplaces_and_schools, max_loc_id)
 
-    if header:
-        header = False
-        continue
-
-    p = line.split()
-    hh_loc[p[0]] = {'x':float(p[2]), 'y':float(p[3])}
-
+# Filehandle for file we're going to write
 fo = file('population-yucatan_final.txt','w')
 
-total_raw_size = {'w':0, 's':0}
-
-header = True
-workplaces_and_schools = []
-print "reading workplaces & schools"
-for line in file('schools_and_workplaces.out'):
-    '''
-    W 1 -89.6264173747 20.9599660422
-    W 2 -89.6116996054 20.964832419
-    W 1 -89.6428676041 20.9771890368
-    W 2 -89.6405575542 20.9678584161
-    W 1 -89.6255278043 20.9746128005
-    '''
-
-    if header:
-        header = False
-        continue
-
-    p = line.split()
-    w = {'type':p[0].lower(), 'raw_size':int(p[1]), 'x':float(p[2]), 'y':float(p[3]), 'workers':0, 'students':0}
-    total_raw_size[w['type']] += w['raw_size']
-    w['xi'] = x_to_col_num(w['x'])
-    w['yi'] = y_to_row_num(w['y'])
-    workplaces_and_schools.append(w)
-    
-workplaces_and_schools.sort(cmp=xy_cmp)
-
-day_loc_ctr = {'h':0, 'w':0, 's':0} # home/work/school
-pop_ids = []
+# Import population data
 pop = dict()
-i = -1 
+pop_ids = []
+day_loc_ctr = {'h':0, 'w':0, 's':0} # home / work / school
+import_population('population-yucatan.txt', pop, pop_ids, day_loc_ctr, fo)
 
-print "reading population"
-header = True
-for line in file('population-yucatan.txt'):
-    i += 1
-    #if i % 10000 == 0:
-    #    print i
-    '''
-    pid hid age sex gridx gridy workid hh_serial pernum empstatd
-    1 1 31 1 0 0 -1 2748179000 1 110
-    2 1 29 2 0 0 -1 2748179000 2 110
-    3 1 10 2 0 0 -1 2748179000 3 0
-    4 2 32 1 0 0 -1 2748114000 1 110
-    '''
-    if header:
-        fo.write(line)
-        header = False
-        continue
+print "Total number of non-teacher jobs (DENUE):", total_raw_workers
+print "Student:Teacher ratio (World Bank):", student_teacher_ratio
+print "Total number of needed teachers:", day_loc_ctr['s']/student_teacher_ratio
+print "Total raw number of jobs (DENUE + needed teachers):", total_raw_workers + day_loc_ctr['s']/student_teacher_ratio
 
-    p = line.split()
-    hid = p[1]
-    age = int(p[2])
-    day_loc = lookup_location_code(age, p[9])
-    day_loc_ctr[day_loc] += 1
-    #pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc }
-    # it doesn't seem like we're actually using all of these, and this program uses a lot of RAM
-    pop[p[0]] = {'hid':hid, 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc, 'workid':-1}
-    pop_ids.append(p[0])
+shuffle(pop_ids)
 
-print "Population size:", len(pop)
-print
-print "Total number of workers (IPUMS):", day_loc_ctr['w']
-print "Total number of students (IPUMS):", day_loc_ctr['s']
-print "Total number of homebodies (IPUMS):", day_loc_ctr['h']
-print
-print "Total number of non-teacher jobs (DENUE):", total_raw_size['w']
-print "Total number of student + teacher positions (Min. of Ed.):", total_raw_size['s']
-print "Student:Teacher ratio (WHO):", student_teacher_ratio
-
-shuffle(pop_ids)    # UNCOMMENT AFTER DEBUGGING
-
-# send kids to nearest school
-# needs to happen first so we know how many teachers are needed
-students_allocated = 0
-for pid in pop_ids:
-    loc_type = pop[pid]['day_loc']
-    if loc_type != 's':
-        continue
-    num_loc_needed = 1
-
-    px, py = pop[pid]['x'], pop[pid]['y']
-    pxi, pyi = x_to_col_num(px), y_to_row_num(py)
-
-    nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
-    school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools)
-    # 'school' is an index in the workplaces_and_schools list; needs to be increased
-    # by the number of households before output
-    pop[pid]['workid'] = school 
-    students_allocated += 1
-    if students_allocated % 1000 == 0:
-        print "students sent to school:", students_allocated
-    #print px, py, school, distance
-
-# normalize school sizes
-'''
-student_fraction = float(student_teacher_ratio) / (student_teacher_ratio + 1)
-total_raw_students = total_raw_size['s'] * student_fraction
-enrollment_rescaling_factor = day_loc_ctr['s'] / total_raw_students
-total_teachers = 0
-
-for place in workplaces_and_schools:
-    if place['type'] == 's':
-        currently_supported_students = place['raw_size'] * student_fraction
-        required_enrollment = currently_supported_students * enrollment_rescaling_factor
-        place['students'] = required_enrollment
-        place['workers']  = required_enrollment / student_teacher_ratio
-        total_teachers += place['workers']
-'''
-
-exit()
+# Send kids to nearest school
+# Needs to happen first so we know how many teachers are needed
+#total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers)
 
 # normalize workplace sizes
-total_jobs_still_needed = day_loc_ctr['w'] - total_teachers
-employment_rescaling_factor = float(total_jobs_still_needed) / total_raw_size['w']
+employment_rescaling_factor = day_loc_ctr['w'] / float(total_raw_workers)
 for place in workplaces_and_schools:
-    if place['type'] == 'w':
-        place['workers'] = place['raw_size'] * employment_rescaling_factor 
-        place['students'] = 0
+    place['workers'] = place['raw_workers'] * employment_rescaling_factor 
 
-
-
-for pid in pop_ids[:10000]:
+#for pid in pop_ids:
+for pid in pop_ids[:1000]:
     loc_type = pop[pid]['day_loc']
     if loc_type == 'h':
         # I think we ultimately need to output their daytime location -- T0DO
         continue
-    elif loc_type == 'w':
-        num_loc_needed = 1000
     elif loc_type == 's':
-        num_loc_needed = 1
+        continue
+    elif loc_type == 'w':
+        px, py = pop[pid]['x'], pop[pid]['y']
+        pxi, pyi = x_to_col_num(px), y_to_row_num(py)
 
-    px, py = pop[pid]['x'], pop[pid]['y']
-    pxi, pyi = x_to_col_num(px), y_to_row_num(py)
-
-    nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
-    print len(nearby_places), positions_found 
-    
+        nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood)
+        #print len(nearby_places), positions_found 
+        workplace = choose_workplace(px, py, nearby_places, workplaces_and_schools)
+        workplace['workers'] -= 1 # remove one available job
+        pop[pid]['workid'] = workplace['workid'] # assign worker
+        #fo.write(' '.join([])) 
