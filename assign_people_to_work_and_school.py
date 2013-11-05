@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from math import radians, cos, sin, asin, sqrt
 from random import random, shuffle
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from sys import exit
 
 pixel_size = 0.00416667
@@ -21,6 +21,10 @@ school_codes = [111, 330]
 child_code   = 0 # Used, inexplicably, for children 0-11
 school_age   = 5 # children under this stay home
 
+# This is an optimization to cut down RAM by >50% and maintain
+# speed by using lists with an index lookup rather than a dictionary
+# to represent each person
+field_idx = dict(zip('hid age sex x y workid hh_serial pernum day_loc'.split(), range(9)))
 
 def haversine(lon1, lat1, lon2, lat2):
     '''
@@ -221,7 +225,7 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
     workplaces_and_schools.sort(cmp=xy_cmp)
     return total_raw_workers
 
-def import_population(filename, pop, pop_ids, day_loc_ctr, fo):
+def import_population(filename, pop, pop_ids, day_loc_ctr):
     print "reading population"
     header = True
     i = -1 
@@ -237,18 +241,19 @@ def import_population(filename, pop, pop_ids, day_loc_ctr, fo):
         4 2 32 1 0 0 -1 2748114000 1 110
         '''
         if header:
-            fo.write(line)
+#            fo.write(line)
             header = False
             continue
 
-        p = line.split()
-        hid = int(p[1])
-        age = int(p[2])
+        p = map(int, line.split())
+
+        hid = p[1]
+        age = p[2]
         day_loc = lookup_location_code(age, p[9])
         day_loc_ctr[day_loc] += 1
-        # pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc }
-        # it doesn't seem like we're actually using all of these, and this program uses a lot of RAM
-        pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc, 'workid':-1}
+        #           hid, age, sex, x, y, workid, hh_serial, pernum, day_loc
+        pop[p[0]] = p[1:4] + [hh_loc[hid]['x'], hh_loc[hid]['y'], -1, p[7], p[8], day_loc]
+        #pop[p[0]] = {'hid':hid, 'age':age, 'sex':p[3], 'x':hh_loc[hid]['x'], 'y':hh_loc[hid]['y'], 'day_loc':day_loc, 'workid':-1}
         pop_ids.append(p[0])
 
     print "Population size:", len(pop)
@@ -262,23 +267,23 @@ def import_population(filename, pop, pop_ids, day_loc_ctr, fo):
 def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers):
     students_allocated = 0
     for pid in pop_ids:
-        loc_type = pop[pid]['day_loc']
+        loc_type = pop[pid][field_idx['day_loc']]
         if loc_type != 's':
             continue
         num_loc_needed = 1
 
-        px, py = pop[pid]['x'], pop[pid]['y']
+        px, py = pop[pid][field_idx['x']], pop[pid][field_idx['y']]
         pxi, pyi = x_to_col_num(px), y_to_row_num(py)
 
         nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
         school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools)
         # 'school' is an element in the workplaces_and_schools list
-        pop[pid]['workid'] = school['workid'] 
+        pop[pid][field_idx['workid']] = school['workid'] 
         school['students'] += 1
         school['raw_workers'] += 1.0/student_teacher_ratio
         total_raw_workers     += 1.0/student_teacher_ratio
         students_allocated += 1
-        if students_allocated % 1000 == 0:
+        if students_allocated % 10000 == 0:
             print "students sent to school:", students_allocated
         #print px, py, school, distance
     return total_raw_workers
@@ -319,14 +324,11 @@ workplaces_and_schools = []
 max_loc_id = max(hh_loc.keys())
 total_raw_workers = import_workplaces_and_schools('schools_and_workplaces.out', workplaces_and_schools, max_loc_id)
 
-# Filehandle for file we're going to write
-fo = file('population-yucatan_final.txt','w')
-
 # Import population data
-pop = dict()
+pop = OrderedDict()
 pop_ids = []
 day_loc_ctr = {'h':0, 'w':0, 's':0} # home / work / school
-import_population('population-yucatan.txt', pop, pop_ids, day_loc_ctr, fo)
+import_population('population-yucatan.txt', pop, pop_ids, day_loc_ctr)
 
 print "Total number of non-teacher jobs (DENUE):", total_raw_workers
 print "Student:Teacher ratio (World Bank):", student_teacher_ratio
@@ -337,28 +339,56 @@ shuffle(pop_ids)
 
 # Send kids to nearest school
 # Needs to happen first so we know how many teachers are needed
-#total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers)
+total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers)
+#from time import sleep
+#print "sleeping for 5 seconds"
+#sleep(5)
 
 # normalize workplace sizes
 employment_rescaling_factor = day_loc_ctr['w'] / float(total_raw_workers)
 for place in workplaces_and_schools:
     place['workers'] = place['raw_workers'] * employment_rescaling_factor 
 
+# Filehandle for file we're going to write
+fo = file('population-yucatan_final.txt','w')
+fo.write('pid hid age sex hh_serial pernum workid\n')
+
+ctr = 0 
 #for pid in pop_ids:
-for pid in pop_ids[:1000]:
-    loc_type = pop[pid]['day_loc']
+for pid in pop.keys():
+    person = pop[pid]
+    #print person
+    #print field_idx['day_loc']
+    loc_type = person[field_idx['day_loc']]
     if loc_type == 'h':
-        # I think we ultimately need to output their daytime location -- T0DO
-        continue
-    elif loc_type == 's':
-        continue
+        person[field_idx['workid']] = person[field_idx['hid']] # person stays home
     elif loc_type == 'w':
-        px, py = pop[pid]['x'], pop[pid]['y']
+        px, py = person[field_idx['x']], person[field_idx['y']]
         pxi, pyi = x_to_col_num(px), y_to_row_num(py)
 
         nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood)
         #print len(nearby_places), positions_found 
         workplace = choose_workplace(px, py, nearby_places, workplaces_and_schools)
         workplace['workers'] -= 1 # remove one available job
-        pop[pid]['workid'] = workplace['workid'] # assign worker
-        #fo.write(' '.join([])) 
+        person[field_idx['workid']] = workplace['workid'] # assign worker
+
+    fo.write(' '.join(map(str,[
+                       pid, 
+                       person[field_idx['hid']],  
+                       person[field_idx['age']],  
+                       person[field_idx['sex']], 
+                       person[field_idx['hh_serial']],
+                       person[field_idx['pernum']],
+                       person[field_idx['workid']],
+                      ])) + '\n') 
+    ctr += 1
+    if ctr % 1000 == 0:
+        print "placed", ctr, "people"
+    '''
+    pid hid age sex hh_serial pernum workid 
+    1 1 31 1 0 0 -1 2748179000 1 110
+    2 1 29 2 0 0 -1 2748179000 2 110
+    3 1 10 2 0 0 -1 2748179000 3 0
+    4 2 32 1 0 0 -1 2748114000 1 110
+    '''
+fo.close()
