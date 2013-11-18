@@ -10,8 +10,7 @@ class Person;
 class Mosquito;
 class Location;
 
-class Community
-{
+class Community {
     public:
         Community(const Parameters* parameters);
         virtual ~Community();

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-locfile  = 'locations-yucatan.txt'
+locfile  = 'locations-yucatan_final.txt'
 edgefile = 'tmp_yucatan.1.edge'
 distfile = 'neighbor_distances.out'
 new_edgefile = 'yucatan.edgelist'

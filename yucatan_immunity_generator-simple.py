@@ -75,14 +75,14 @@ serotype_wt = [ [1.00,	0.00,	0.00,	0.00],   # 1979 # Fig. 1
 
 #print cases
    
-EXPANSION_FACTOR = 50
+EXPANSION_FACTOR = 12 
 
 # read in population data
 pop = []
 header = True
 
 print "Reading in population . . . "
-for line in file('population-yucatan.txt'):
+for line in file('population-yucatan_final.txt'):
     if header:
         header = False
         continue
@@ -142,7 +142,7 @@ for ya in range(len(YEARS),0,-1):
 
 print "\t\t\tDone."
 print "Writing to disk . . ."
-fo = open('immunity-yucatan.txt', 'w')
+fo = open('immunity-yucatan_prelim.txt', 'w')
 #fo.write('pid imm1 imm2 imm3 imm4\n')
 fo.write('pid age imm1 imm2 imm3 imm4\n')
 for person in pop:

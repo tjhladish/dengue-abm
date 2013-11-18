@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from subprocess import call
 
-location_file = 'locations-yucatan.txt'
+location_file = 'locations-yucatan_final.txt'
 
 header = True
 nodes = list()
