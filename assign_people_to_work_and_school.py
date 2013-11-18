@@ -230,6 +230,10 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
     return total_raw_workers, workplace_lookup
 
 def import_population(filename, pop, pop_ids, day_loc_ctr):
+    ''' This function imports a preliminary version of the population file
+    that doesn't have people assigned to workplaces yet (perhaps among
+    other things.'''
+
     print "reading population"
     header = True
     i = -1 
@@ -343,7 +347,7 @@ shuffle(pop_ids)
 
 # Send kids to nearest school
 # Needs to happen first so we know how many teachers are needed
-#total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup)
+total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup)
 
 # normalize workplace sizes
 employment_rescaling_factor = day_loc_ctr['w'] / float(total_raw_workers)
@@ -351,19 +355,22 @@ for place in workplaces_and_schools:
     place['workers'] = place['raw_workers'] * employment_rescaling_factor 
 
 # Filehandle for file we're going to write
-fo = file('population-yucatan_final.txt','w')
+fo = file('population-yucatan_no_copy.txt','w')
 fo.write('pid hid age sex hh_serial pernum workid\n')
 
+# Make a copy so we can delete places from the original data structure as they fill up
 W_AND_S_COPY = deepcopy(workplaces_and_schools)
 ctr = 0 
-#for pid in pop_ids:
+
+# For each person
 for pid in pop.keys():
     person = pop[pid]
-    #print person
-    #print field_idx['day_loc']
     loc_type = person[field_idx['day_loc']]
+    # Have them stay at home if they don't work or go to school
     if loc_type == 'h':
         person[field_idx['workid']] = person[field_idx['hid']] # person stays home
+    # If they work, probabilistically choose a workplace based on where they live
+    # and how many positions are available at each workplace
     elif loc_type == 'w':
         px, py = person[field_idx['x']], person[field_idx['y']]
         pxi, pyi = x_to_col_num(px), y_to_row_num(py)
@@ -372,10 +379,17 @@ for pid in pop.keys():
         #print len(nearby_places), positions_found 
         workplace = choose_workplace(px, py, nearby_places, W_AND_S_COPY, workplace_lookup)
         workplace['workers'] -= 1 # remove one available job
+        # If the selected workplace no longer has openings,
+        # remove it from the list, so we don't have to consider it again
         if workplace['workers'] <= 0:
-            del workplaces_and_schools[workplace_lookup[workplace['workid']]]
+            for i,v in enumerate(workplaces_and_schools):
+                if v['workid'] == workplace['workid']:
+                    del workplaces_and_schools[i]
+                    break
         person[field_idx['workid']] = workplace['workid'] # assign worker
 
+    # Students already have the "workid" (prob should be called day_loc_id to avoid
+    # confusion), so we don't have to do much for them, just output their info
     fo.write(' '.join(map(str,[
                        pid, 
                        person[field_idx['hid']],  
