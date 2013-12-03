@@ -80,9 +80,19 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         iss.getline(buffer,500);
         istringstream line(buffer);
         int id, age, house, work;
-        int temp1, temp2;
-        string gender;
-        if (line >> id >> house >> age >> gender >> temp1 >> temp2 >> work) {
+        string hh_serial;
+        int pernum;
+        int gender;
+        /*
+        pid hid age sex hh_serial pernum workid
+        1 1 31 1 2748179000 1 442670
+        2 1 29 2 2748179000 2 395324
+        3 1 10 2 2748179000 3 468423
+        4 2 32 1 2748114000 1 397104
+        5 2 30 2 2748114000 2 396166
+        */
+        //cerr << "hi" << buffer << endl;
+        if (line >> id >> house >> age >> gender >> hh_serial >> pernum >> work) {
             _person[_nNumPerson].setAge(age);
             _person[_nNumPerson].setHomeID(house);
             _person[_nNumPerson].setLocation(_location[house], 0);
