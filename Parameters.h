@@ -35,7 +35,7 @@ static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days 
 static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
 // from Person.h
-static const int MAX_PERSON_AGE = 95;                         // maximum age-1 for a person
+static const int MAX_PERSON_AGE = 101;                         // maximum age-1 for a person
 static const int MAX_INCUBATION = 9;                          // max incubation period in days
 static const int MAX_HISTORY = 50;                            // length of exposure history in years
 
@@ -87,7 +87,7 @@ static const double SYMPTOMATIC_BY_AGE[MAX_PERSON_AGE] = {
     0.8522954,0.8522954,0.8522954,0.8522954,0.8522954,
     0.9600798,0.9600798,0.9600798,0.9600798,0.9600798,
     0.9600798,0.9600798,0.9600798,0.9600798,0.9600798,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
 //2005 Thai mortality data by age from Porapakkham 2010
