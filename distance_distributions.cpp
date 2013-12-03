@@ -17,10 +17,11 @@ class comp {
         }
 };
 
+const int MAX_AGE = 100;
 
 vector<Location*> locations;
 vector<Person*> people;
-vector< vector<Person*> > people_by_age(100, vector<Person*>(0));
+vector< vector<Person*> > people_by_age(MAX_AGE + 1, vector<Person*>(0));
 
 /*'''
 tjhladish@capybara:~/work/dengue$ head population-bangphae.txt 
@@ -34,6 +35,15 @@ pid hid age sex gridx gridy workid
 7 2 12 M 1 1 54505
 8 3 39 M 1 1 55557
 9 3 35 F 1 1 56035
+
+tjhladish@roc:~/work/dengue$ head population-yucatan.txt 
+pid hid age sex hh_serial pernum workid
+1 1 31 1 2748179000 1 442670
+2 1 29 2 2748179000 2 395324
+3 1 10 2 2748179000 3 468423
+4 2 32 1 2748114000 1 397104
+5 2 30 2 2748114000 2 396166
+
 '''*/
 bool loadPopulation(string popFilename) {
     ifstream iss(popFilename.c_str());
@@ -45,9 +55,10 @@ bool loadPopulation(string popFilename) {
         char buffer[500];
         iss.getline(buffer,500);
         istringstream line(buffer);
-        int id, age, hid;
-        string sex;
-        if (line >> id >> hid >> age >> sex) {
+        int id, age, hid, sex, pernum;
+        long int workid;
+        string hh_serial;
+        if (line >> id >> hid >> age >> sex >> hh_serial >> pernum >> workid) {
             Person* peep = new Person();
             peep->id = id;
             peep->loc = locations[hid-1];
@@ -109,11 +120,11 @@ double euclidean(Person* p1, Person* p2) {
 
 
 int main() { 
-    loadLocations("locations-bangphae.txt");
-    loadPopulation("population-bangphae.txt");
+    loadLocations("locations-yucatan.txt");
+    loadPopulation("population-yucatan.txt");
 
-    const int NUM_PEOPLE = 207591;
-    const int NUM_NEIGHBORS = 100;
+    const int NUM_PEOPLE = 1819497;
+    const int NUM_NEIGHBORS = 10;
 
     int** pid_mat = new int*[NUM_PEOPLE];
     for(int i = 0; i < NUM_PEOPLE; ++i) pid_mat[i] = new int[NUM_NEIGHBORS];
@@ -121,7 +132,7 @@ int main() {
     float** dist_mat = new float*[NUM_PEOPLE];
     for(int i = 0; i < NUM_PEOPLE; ++i)dist_mat[i] = new float[NUM_NEIGHBORS];
     
-    #pragma omp parallel for num_threads(6)
+    #pragma omp parallel for num_threads(10)
     for(int i=0; i < people.size();i++ ) {
         Person* p1 = people[i];
         if(!p1 || p1->age<1) continue;
@@ -147,11 +158,12 @@ int main() {
             pid_mat[p1->id - 1][j] = -1;
         }
     }
-    //for(int i=0; i < NUM_PEOPLE;i++ ) {
-    //    for (int j = 0; j<NUM_NEIGHBORS; j++) {
-    //        printf("%d %d %f\n", i+1, pid_mat[i][j], dist_mat[i][j]);
-    //    }
-    //}
+
+    for(int i=0; i < NUM_PEOPLE;i++ ) {
+        for (int j = 0; j<NUM_NEIGHBORS; j++) {
+            printf("%d %d %f\n", i+1, pid_mat[i][j], dist_mat[i][j]);
+        }
+    }
     return 0;
 }
 
