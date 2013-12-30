@@ -40,6 +40,7 @@ class Person
         inline int getInfectiousTime(int infectionsago=0) { return _nInfectiousTime[infectionsago]; }
         inline int getSymptomTime(int infectionsago=0) { return _nSymptomTime[infectionsago]; }
         inline int getRecoveryTime(int infectionsago=0) { return _nRecoveryTime[infectionsago]; }
+        inline void setRecoveryTime(int time, int infectionsago=0) { _nRecoveryTime[infectionsago]=time; }
         bool isWithdrawn(int time);                                   // at home sick?
         inline int getWithdrawnTime(int infectionsago=0) {                   // first day at home sick?
             return _nWithdrawnTime[infectionsago];
