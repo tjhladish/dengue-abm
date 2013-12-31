@@ -1,6 +1,19 @@
 #!/usr/bin/python
-#from heapq import heappush
 from sys import exit
+ 
+'''
+This python code has been rewritten as C++.  That version should be used,
+although this may provide useful snippets for new scripts.
+
+Functionality:
+Determine, for everyone in the synthetic population over 0 years old, which 
+of the individuals who are one year younger are closest.
+
+Also, based on simple euclidean distance, calculate the relative probability
+of inheriting the immune status from each of those people based on a simple
+gravity model.
+'''
+
 '''
 tjhladish@capybara:~/work/dengue$ head locations-bangphae.txt 
 id type x y
@@ -25,6 +38,7 @@ pid hid age sex gridx gridy workid
 8 3 39 M 1 1 55557
 9 3 35 F 1 1 56035
 '''
+
 locations = dict()
 people = dict()
 people_by_age = [[] for i in range(100)]

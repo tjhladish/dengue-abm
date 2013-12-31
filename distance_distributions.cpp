@@ -4,6 +4,20 @@
 #include <vector>
 #include <queue>
 #include <math.h>
+
+/******************************************************************************
+
+    This program reads in a population file and a locations file, and calc-
+    ulates the distances to NUM_NEIGHBORS nearest people who are 1 year
+    younger in the synthetic population.  PIDs for those neighbors are also
+    reported.
+    
+    It is intended to be used to calculate immunity swap probabilities, so
+    that spatial structure can be maintained between years in the simulator.
+
+******************************************************************************/
+
+
 using namespace std;
 
 struct Location { double x; double y; };
@@ -64,7 +78,6 @@ bool loadPopulation(string popFilename) {
             peep->loc = locations[hid-1];
             peep->age = age;
             peep->sex = sex;
-            //if (people.size() != id - 1) cerr << "something is screwed up with person ID's and indexing\n";
             people.push_back(peep);
             people_by_age[age].push_back(people[id-1]);
         }
@@ -74,21 +87,22 @@ bool loadPopulation(string popFilename) {
     return true;
 }
 
-/*
-tjhladish@capybara:~/work/dengue$ head locations-bangphae.txt 
-id type x y
-1 house 0.849513080669567 0.304251517867669
-2 house 0.00842146878130734 0.657222841167822
-3 house 0.369299583602697 0.349579052301124
-4 house 0.460470566991717 0.277130988193676
-5 house 0.0256796989124268 0.712766533251852
-6 house 0.431369476253167 0.20579392160289
-7 house 0.355606281897053 0.540817143395543
-8 house 0.996641094330698 0.151982805691659
-9 house 0.327530618291348 0.324621923966333
-*/
 
 bool loadLocations(string locFilename) {
+    /*
+    Expected structure of locations file:
+    tjhladish@capybara:~/work/dengue$ head locations-bangphae.txt 
+    id type x y
+    1 house 0.849513080669567 0.304251517867669
+    2 house 0.00842146878130734 0.657222841167822
+    3 house 0.369299583602697 0.349579052301124
+    4 house 0.460470566991717 0.277130988193676
+    5 house 0.0256796989124268 0.712766533251852
+    6 house 0.431369476253167 0.20579392160289
+    7 house 0.355606281897053 0.540817143395543
+    8 house 0.996641094330698 0.151982805691659
+    9 house 0.327530618291348 0.324621923966333
+    */
     ifstream iss(locFilename.c_str());
     if (!iss) {
         cerr << "ERROR: " << locFilename << " not found." << endl;
@@ -120,25 +134,35 @@ double euclidean(Person* p1, Person* p2) {
 
 
 int main() { 
+    const int NUM_PEOPLE = 1819497;
+    const int NUM_NEIGHBORS = 10;     // Number of nearest neighbors to report for swap file
+
     loadLocations("locations-yucatan.txt");
     loadPopulation("population-yucatan.txt");
 
-    const int NUM_PEOPLE = 1819497;
-    const int NUM_NEIGHBORS = 10;
+    assert (people.size == NUM_PEOPLE);
 
+    // Initialize matrix to hold pids of nearest neighbors
     int** pid_mat = new int*[NUM_PEOPLE];
     for(int i = 0; i < NUM_PEOPLE; ++i) pid_mat[i] = new int[NUM_NEIGHBORS];
  
+    // Initialize matrix to hold distances of nearest neighbors
     float** dist_mat = new float*[NUM_PEOPLE];
     for(int i = 0; i < NUM_PEOPLE; ++i)dist_mat[i] = new float[NUM_NEIGHBORS];
     
-    #pragma omp parallel for num_threads(10)
-    for(int i=0; i < people.size();i++ ) {
+    #pragma omp parallel for num_threads(10) // change num_threads based on available cores
+    // For each person in the population
+    for(int i = 0; i < people.size(); i++) {
         Person* p1 = people[i];
+        // If they're at least 1 year old
         if(!p1 || p1->age<1) continue;
 
+        // Calculate the euclidean distances from this person to all individuals
+        // who are one year younger.  Store than in a priority queue sorted
+        // by distance, closest first.
+        // TODO: Should use great circle distance, not simple euclidean
         priority_queue<Distance, vector<Distance>, comp > distances;
-        for(int j=0; j <people_by_age[p1->age-1].size();j++ ) {
+        for(int j = 0; j < people_by_age[p1->age-1].size(); j++) {
             Person* p2 = people_by_age[p1->age-1][j];
             
             Distance dist;
@@ -146,19 +170,25 @@ int main() {
             dist.id   = p2->id;
             distances.push(dist);
         }
+
+        // Take the first NUM_NEIGHBORS people in the distances queue, and store
+        // their information in the pid and distance matricies
         int j = 0;
         for (j = 0; j<NUM_NEIGHBORS && !distances.empty(); j++) {
             Distance dist = distances.top(); distances.pop();
             dist_mat[p1->id - 1][j] = dist.dist;
             pid_mat[p1->id - 1][j] = dist.id;
-        //    printf("%d %d %f\n", p1->id, dist.id, dist.dist);
         }
+        
+        // In case fewer than NUM_NEIGHBORS people exist in the population who are
+        // one year younger, fill with dummy values.
         while (j++<NUM_NEIGHBORS) {
             dist_mat[p1->id - 1][j] = -1;
             pid_mat[p1->id - 1][j] = -1;
         }
     }
 
+    // Output each person's pid, the neighbor's pid, and the distance to them
     for(int i=0; i < NUM_PEOPLE;i++ ) {
         for (int j = 0; j<NUM_NEIGHBORS; j++) {
             printf("%d %d %f\n", i+1, pid_mat[i][j], dist_mat[i][j]);
@@ -166,17 +196,3 @@ int main() {
     }
     return 0;
 }
-
-        
-/*        
-for pid1 in people.keys():
-    dists = list()
-    age = people[pid1]['age']
-    if age >= 1:
-        for pid2 in people_by_age[age - 1]: # people 1 year younger
-            pair = (euclidean(pid1, pid2), pid2) 
-            dists.append(pair)
-        dists = sorted(dists, key=lambda pair: pair[0])
-        for close_person in dists[:100]:
-            print pid1, close_person[1], close_person[0]
-*/            
