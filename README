@@ -33,6 +33,7 @@ Command-line options:
   -betapm [x]: the probability that a mosquito is infected when biting an infectious person
   -betamp [x]: the probability that a person is infected when bitten by infectious mosquito
   -mosquitomove [p]: daily probability of mosquito movement to an adjacent location
+  -mosquitomovemodel [s]: mosquitoes move to any neighbor with equal probability if "uniform" or weighted by inverse distance squared if "weighted"
   -mosquitoteleport [p]: daily probability of mosquito "teleportation" (to anywhere in the synthetic population)
   -mosquitocapacity [n]: mean number of mosquitoes per location
   -mosquitodistribution [s]: distribution of mosquitos per location. Set to "constant" for all locations to have the same number of mosquitoes or "exponential" for the number to be exponentially distributed.
@@ -50,6 +51,7 @@ Command-line options:
   -immfile [filename]: location of the input file that contains the prior immunity information for the synthetic population
   -locfile [filename]: location of the input file that contains the locations for the model (i.e., houses, classrooms, workplaces)
   -netfile [filename]: location of the input file that lists every pair of adjacent locations corresponding to the information in "locfile"
+  -probfile [filename]: location of the (optional) input file that contains information for swapping immune statuses at the end of each year
   -peoplefile [filename]: specifies the name of the output file that will contain the information for every infection in a simulation run
   -yearlypeoplefile [filename]: specifies the filename prefix of the output file that will contain the information for every infection each year in a simulation run. the output filenames will have the year and ".csv" appended (e.g., filename5.csv)
   -dailyfile [filename]: specifies the name of the output file that will contain the number of people infected and symptomatic each day by serotype
