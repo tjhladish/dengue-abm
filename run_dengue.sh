@@ -2,11 +2,11 @@
 for ((SEED = 5500; SEED<5510; SEED++))
 do
 ./model -randomseed $SEED \
-        -locfile locations-yucatan.txt \
-        -netfile network-yucatan.txt \
-        -popfile population-yucatan.txt \
-        -immfile immunity-yucatan.txt \
-        -probfile swap_probabilities-yucatan.txt \
+        -locfile ./pop-yucatan/locations-yucatan.txt \
+        -netfile ./pop-yucatan/network-yucatan.txt \
+        -popfile ./pop-yucatan/population-yucatan.txt \
+        -immfile ./pop-yucatan/immunity-yucatan.txt \
+        -probfile ./pop-yucatan/swap_probabilities-yucatan.txt \
         -mosquitomove 0.15 \
         -mosquitomovemodel weighted \
         -mosquitoteleport 0.0 \
