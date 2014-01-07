@@ -38,6 +38,7 @@ Command-line options:
   -mosquitocapacity [n]: mean number of mosquitoes per location
   -mosquitodistribution [s]: distribution of mosquitos per location. Set to "constant" for all locations to have the same number of mosquitoes or "exponential" for the number to be exponentially distributed.
   -mosquitomultipliers [n] [d] [f] [d] [f]...: relative number of mosquitoes for seasonality. the first argument is the number of pairs of numbers coming up. each pair consists of an integer that specifies a number of days followed by a floating point number that is a multiplier for the mosquito capacity to set the number of mosquitoes per location for this number of days. the number of days should sum to 365, unless you are trying to be funny and make dengue season fall out of sync with the calendar year.
+  -externalincubations [n] [d1] [d2] [d3] [d4]...: external incubation periods. the first argument is the number of pairs of numbers coming up. each pair consists of an integer that specifies a number of days followed by an integer that is the external incubation period for this number of days. the number of days should sum to 365.
   -daysimmune: number of days after recovery that a person has perfect cross-protective immunity to all other serotypes
   -VES [n]: reduction in susceptibility of vaccinees, assuming all-or-none protection (0.0-1.0)
   -VEI [n]: reduction in infectiousness of vaccinees (0.0-1.0)
