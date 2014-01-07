@@ -38,6 +38,8 @@ class Community {
             _fMosquitoCapacityMultiplier = f;
         }
         double getMosquitoMultiplier() { return _fMosquitoCapacityMultiplier; }
+	void setExternalIncubation(double n) { assert(n<MAX_MOSQUITO_INCUBATION); _nExternalIncubation=n; }
+	int getExternalIncubation() { return _nExternalIncubation; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(double f, int age=-1);
@@ -75,6 +77,7 @@ class Community {
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
+	int _nExternalIncubation;                                     // external incubation period in days
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         static std::map< Location*, std::map<int, bool> > _isHot;
