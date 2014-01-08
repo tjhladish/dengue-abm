@@ -17,6 +17,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
         eMosquitoDistribution = CONSTANT;
         nSizeMosquitoMultipliers = 0;
+        nSizeExternalIncubation = 0;
         bSecondaryTransmission = true;
         szPopulationFile = "population-64.txt";
         szImmunityFile = "";
@@ -119,6 +120,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else if (strcmp(argv[i], "-mosquitomultipliers")==0) {
                     nSizeMosquitoMultipliers = strtol(argv[i+1],end,10);
+		    assert(nSizeMosquitoMultipliers<54);
                     i++;
                     nMosquitoMultiplierCumulativeDays[0] = 0;
                     for (int j=0; j<nSizeMosquitoMultipliers; j++) {
@@ -128,6 +130,22 @@ void Parameters::readParameters(int argc, char *argv[]) {
                         i++;
                         fMosquitoMultipliers[j] = strtod(argv[i+1],end);
                         i++;
+                    }
+                }
+                else if (strcmp(argv[i], "-externalincubations")==0) {
+                    nSizeExternalIncubation = strtol(argv[i+1],end,10);
+		    assert(nSizeExternalIncubation<54);
+                    i++;
+                    nExternalIncubationCumulativeDays[0] = 0;
+                    for (int j=0; j<nSizeExternalIncubation; j++) {
+		      nExternalIncubationDays[j] = strtol(argv[i+1],end,10);
+		      nExternalIncubationCumulativeDays[j+1] =
+			nExternalIncubationCumulativeDays[j]+nExternalIncubationDays[j];
+		      i++;
+		      nExternalIncubation[j] = strtol(argv[i+1],end,10);
+		      assert(nExternalIncubation[j]<MAX_MOSQUITO_INCUBATION);
+		      assert(nExternalIncubation[j]>0);
+		      i++;
                     }
                 }
                 else if (strcmp(argv[i], "-vaccinatephased")==0) {
@@ -277,6 +295,12 @@ void Parameters::readParameters(int argc, char *argv[]) {
             std::cerr << "mosquito seasonal multipliers (days,mult) =";
             for (int j=0; j<nSizeMosquitoMultipliers; j++)
                 std::cerr << " (" << nMosquitoMultiplierDays[j] << "," << fMosquitoMultipliers[j] << ")";
+            std::cerr << std::endl;
+        }
+        if (nSizeExternalIncubation>0) {
+            std::cerr << "external incubation periods (days,EIP) =";
+            for (int j=0; j<nSizeExternalIncubation; j++)
+                std::cerr << " (" << nExternalIncubationDays[j] << "," << nExternalIncubation[j] << ")";
             std::cerr << std::endl;
         }
         std::cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << std::endl;

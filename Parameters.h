@@ -12,7 +12,7 @@
 #include <gsl/gsl_rng.h>
 
 static const int VERSION_NUMBER_MAJOR = 1;
-static const int VERSION_NUMBER_MINOR = 1;
+static const int VERSION_NUMBER_MINOR = 3;
 
 enum Serotype {
     SEROTYPE_1,
@@ -46,7 +46,7 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
-static const int MOSQUITO_INCUBATION = 11;                    // number of days for mosquito incubation (extrinsic incubation period)
+static const int MAX_MOSQUITO_INCUBATION = 25;                    // number of days for mosquito incubation (extrinsic incubation period)
 static const int MAX_RUN_TIME = 7400;                         // maximum number of simulation days (+ extra for mosquito lifetime)
 static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
@@ -154,10 +154,14 @@ public:
     std::vector<double> fSecondaryScaling;                  //
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
-    double fMosquitoMultipliers[54];                        // number of mosquitoes per week (up to 53), conforming to a 365-day cycle
+    double fMosquitoMultipliers[54];                        // seasonal multipliers for mosquito population (up to 53), conforming to a 365-day cycle
     double nMosquitoMultiplierDays[54];                     // when to change the mosquito population
     double nMosquitoMultiplierCumulativeDays[54];           // when to change the mosquito population
     int nSizeMosquitoMultipliers;
+    double nExternalIncubation[54];                         // seasonal external incubation period in days (up to 53)
+    double nExternalIncubationDays[54];                     // when to change the external incubation period
+    double nExternalIncubationCumulativeDays[54];           // when to change the external incubation period
+    int nSizeExternalIncubation;
     bool bSecondaryTransmission;
     std::string szPopulationFile;
     std::string szImmunityFile;

@@ -142,6 +142,7 @@ void write_people_file(const Parameters* par, Community* community, int time) {
 
 void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextMosquitoMultiplier = 0;
+    int nNextExternalIncubation = 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn" << endl;
     for (int t=0; t<par->nRunLength; t++) {
         // phased vaccination
@@ -173,6 +174,10 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         if (par->nSizeMosquitoMultipliers>0 && (t%365)==par->nMosquitoMultiplierCumulativeDays[nNextMosquitoMultiplier]) {
             community->setMosquitoMultiplier(par->fMosquitoMultipliers[nNextMosquitoMultiplier]);
             nNextMosquitoMultiplier = (nNextMosquitoMultiplier+1)%par->nSizeMosquitoMultipliers;
+        }
+        if (par->nSizeExternalIncubation>0 && (t%365)==par->nExternalIncubationCumulativeDays[nNextExternalIncubation]) {
+            community->setExternalIncubation(par->nExternalIncubation[nNextExternalIncubation]);
+            nNextExternalIncubation = (nNextExternalIncubation+1)%par->nSizeExternalIncubation;
         }
 
         if (par->bSecondaryTransmission) {

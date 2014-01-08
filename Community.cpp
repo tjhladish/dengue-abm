@@ -26,8 +26,8 @@ map< Location*, map<int, bool> > Community::_isHot;
 // Community
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
-    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE-MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
-    _exposedMosquitoQueue(MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
+    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
+    _exposedMosquitoQueue(MAX_MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
     {
@@ -36,6 +36,7 @@ Community::Community(const Parameters* parameters) :
     _nNumPerson = 0;
     _person = NULL;
     _fMosquitoCapacityMultiplier = 1.0;
+    _nExternalIncubation = 11; // default external incubation period of 11 days (Nishiura & Halstead 2007)
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
@@ -321,9 +322,10 @@ void Community::vaccinate(double f, int age) {
 
 // returns number of days mosquito has left to live
 int Community::addMosquito(Location *p, Serotype serotype, int nInfectedByID) {
-    Mosquito *m = new Mosquito(p, serotype, nInfectedByID);
+    int eip = getExternalIncubation();
+    Mosquito *m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
-    int daysinfectious = daysleft - MOSQUITO_INCUBATION;
+    int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
         delete m;
         return daysleft;                                              // dies before infectious
@@ -331,7 +333,8 @@ int Community::addMosquito(Location *p, Serotype serotype, int nInfectedByID) {
 
     //on the latest possible day
     // add mosquito to latency queue
-    _exposedMosquitoQueue.back().push_back(m); 
+    //    _exposedMosquitoQueue.back().push_back(m);
+    _exposedMosquitoQueue[eip-1].push_back(m);
     return daysleft;
 }
 
@@ -647,7 +650,6 @@ void Community::_advanceTimers() {
     }
     _exposedQueue.back().clear();
 
-
     // advance age of infectious mosquitoes
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
@@ -658,7 +660,7 @@ void Community::_advanceTimers() {
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
         Mosquito *m = _exposedMosquitoQueue[0][mnum];
         // incubation over: some mosquitoes become infectious
-        int daysinfectious = m->getAgeDeath() - m->getAgeInfected() - MOSQUITO_INCUBATION;
+        int daysinfectious = m->getAgeDeath() - m->getAgeInfectious(); // - MOSQUITO_INCUBATION;
         assert((unsigned) daysinfectious < _infectiousMosquitoQueue.size());
         _infectiousMosquitoQueue[daysinfectious].push_back(m);
     }
