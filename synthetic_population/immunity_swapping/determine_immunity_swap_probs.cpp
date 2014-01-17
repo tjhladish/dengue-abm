@@ -3,7 +3,8 @@
 #include <sstream>
 #include <vector>
 #include <queue>
-#include <math.h>
+#include <cmath>
+#include <assert.h>
 
 /******************************************************************************
 
@@ -59,6 +60,38 @@ pid hid age sex hh_serial pernum workid
 5 2 30 2 2748114000 2 396166
 
 '''*/
+
+double radians(double deg) {
+    // M_PIl is the long double PI from cmath
+    return M_PIl * deg / 180.0;
+}
+
+
+double haversine(double lon1, double lat1, double lon2, double lat2) {
+    /* 
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    */
+    // convert decimal degrees to radians 
+    lon1 = radians(lon1);
+    lat1 = radians(lat1);
+    lon2 = radians(lon2);
+    lat2 = radians(lat2);
+    // haversine formula 
+    double dlon = lon2 - lon1;
+    double dlat = lat2 - lat1;
+    double a = pow(sin(dlat/2),2) + cos(lat1) * cos(lat2) * pow(sin(dlon/2),2);
+    double c = 2 * asin(sqrt(a));
+    double km = 6371 * c;
+    return km;
+}
+
+
+double haversine(Person* p1, Person* p2) {
+    return haversine(p1->loc->x, p1->loc->y, p2->loc->x, p2->loc->y);
+}
+
+
 bool loadPopulation(string popFilename) {
     ifstream iss(popFilename.c_str());
     if (!iss) {
@@ -128,19 +161,26 @@ bool loadLocations(string locFilename) {
     return true;
 }
 
-double euclidean(Person* p1, Person* p2) {
-    return sqrt(pow(p1->loc->x - p2->loc->x, 2) + pow(p1->loc->y - p2->loc->y,2));
-}
 
+int main(int argc, char** argv) { 
 
-int main() { 
+    if (argc != 3) {
+        cerr << "\n\tUsage: ./generate_swap_file <locations_file> <population_file>\n\n";
+        return -5;
+    }
+
+    string locations_filename  = argv[1];
+    string population_filename = argv[2];
+
     const int NUM_PEOPLE = 1819497;
-    const int NUM_NEIGHBORS = 10;     // Number of nearest neighbors to report for swap file
+    cerr << "Using a population size of " << NUM_PEOPLE << endl;
+    const int NUM_NEIGHBORS = 10;           // Number of nearest neighbors to report for swap file
+    const double MIN_DISPLACEMENT = 0.005;  // Distance (in km) to use between people who live in the same house
 
-    loadLocations("locations-yucatan.txt");
-    loadPopulation("population-yucatan.txt");
+    loadLocations(locations_filename);
+    loadPopulation(population_filename);
 
-    assert (people.size == NUM_PEOPLE);
+    assert (people.size() == NUM_PEOPLE);
 
     // Initialize matrix to hold pids of nearest neighbors
     int** pid_mat = new int*[NUM_PEOPLE];
@@ -148,11 +188,16 @@ int main() {
  
     // Initialize matrix to hold distances of nearest neighbors
     float** dist_mat = new float*[NUM_PEOPLE];
-    for(int i = 0; i < NUM_PEOPLE; ++i)dist_mat[i] = new float[NUM_NEIGHBORS];
+    for(int i = 0; i < NUM_PEOPLE; ++i) dist_mat[i] = new float[NUM_NEIGHBORS];
     
+    // Initialize matrix to hold probabilities of selecting each nearest neighbor
+    float** prob_mat = new float*[NUM_PEOPLE];
+    for(int i = 0; i < NUM_PEOPLE; ++i) prob_mat[i] = new float[NUM_NEIGHBORS];
+
     #pragma omp parallel for num_threads(10) // change num_threads based on available cores
     // For each person in the population
     for(int i = 0; i < people.size(); i++) {
+        if (i % 1000 == 0) cerr << i << endl;
         Person* p1 = people[i];
         // If they're at least 1 year old
         if(!p1 || p1->age<1) continue;
@@ -166,7 +211,7 @@ int main() {
             Person* p2 = people_by_age[p1->age-1][j];
             
             Distance dist;
-            dist.dist = euclidean(p1, p2 );
+            dist.dist = haversine(p1, p2 );
             dist.id   = p2->id;
             distances.push(dist);
         }
@@ -174,24 +219,40 @@ int main() {
         // Take the first NUM_NEIGHBORS people in the distances queue, and store
         // their information in the pid and distance matricies
         int j = 0;
-        for (j = 0; j<NUM_NEIGHBORS && !distances.empty(); j++) {
+        double weight_total = 0.0;
+        int p1_idx = p1->id - 1;
+
+        for (j = 0; j<NUM_NEIGHBORS && !distances.empty(); ++j) {
             Distance dist = distances.top(); distances.pop();
-            dist_mat[p1->id - 1][j] = dist.dist;
-            pid_mat[p1->id - 1][j] = dist.id;
+            if (dist.dist <= MIN_DISPLACEMENT) {
+                // fprintf(stderr, "Setting displacement of %f to %f km\n", dist.dist, MIN_DISPLACEMENT);
+                dist.dist = 0.005;
+            }
+            double weight = 1.0 / pow(dist.dist, 2);
+            weight_total += weight;
+            prob_mat[p1_idx][j] = weight;
+            dist_mat[p1_idx][j] = dist.dist;
+            pid_mat[p1_idx][j] = dist.id;
+        }
+    
+        // normalize probabilities
+        for (int k = 0; k<j; ++k) {
+            prob_mat[p1_idx][k] /= weight_total; 
         }
         
         // In case fewer than NUM_NEIGHBORS people exist in the population who are
         // one year younger, fill with dummy values.
         while (j++<NUM_NEIGHBORS) {
-            dist_mat[p1->id - 1][j] = -1;
-            pid_mat[p1->id - 1][j] = -1;
+            prob_mat[p1_idx][j] = -1;
+            dist_mat[p1_idx][j] = -1;
+            pid_mat[p1_idx][j] = -1;
         }
     }
 
     // Output each person's pid, the neighbor's pid, and the distance to them
     for(int i=0; i < NUM_PEOPLE;i++ ) {
         for (int j = 0; j<NUM_NEIGHBORS; j++) {
-            printf("%d %d %f\n", i+1, pid_mat[i][j], dist_mat[i][j]);
+            printf("%d %d %f %f\n", i+1, pid_mat[i][j], prob_mat[i][j], dist_mat[i][j]);
         }
     }
     return 0;
