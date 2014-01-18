@@ -1,10 +1,11 @@
 #!/usr/bin/python
-from random import random
+from random import random, shuffle, sample, choice, randint
 from collections import OrderedDict
+from sys import exit
+from copy import deepcopy
 
 NUM_SEROTYPES = 4
-census = OrderedDict() # Will be 2D (year, age) OrderedDict containing (absolute) number of people in each age group in each year.
-            # Last bin may be aggregated, i.e 85+ for everyone 85 and over.
+MAX_CENSUS_AGE = 85 # used if a census age group has only a minimum value, e.g. '85+'
 
 # Reported DF + DHF cases, 1997-2011 (inclusive)
 # Values are estimated from Fig. 1 of Hector's baseline studies manuscript
@@ -78,12 +79,24 @@ serotype_wt = [ [1.00,	0.00,	0.00,	0.00],   # 1979 # Fig. 1
                 [0.59,	0.41,	0.00,	0.00],   # 2010 # Fig. 4
                 [0.32,	0.68,	0.00,	0.00] ]  # 2011 # Fig. 4
 
+def sample_serotype(wts):
+    r = random()
+    for i, w in enumerate(wts):
+        if r < w:
+            return i
+        else:
+            r -= w
+    return len(wts) - 1
+
 def import_census_data(filename):
     '''
 year 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85+
 1970 26222 25943 25663 25384 25105 24825 24546 24267 23433 22599 21765 20931 20098 19254 18411 17568 16725 15882 15239 14597 13955 13312 12670 12185 11700 11215 10730 10245 9827 9410 8993 8575 8158 8105 8051 7998 7945 7892 7529 7165 6802 6438 6075 5889 5702 5516 5330 5144 4864 4584 4305 4025 3746 3632 3519 3406 3293 3179 3120 3061 3002 2943 2884 2749 2613 2478 2343 2208 2073 1938 1804 1669 1534 1386 1238 1090 942 794 749 704 659 614 569 523 478 2623
 1971 26661 26406 26150 25895 25639 25384 25128 24873 24070 23267 22464 21662 20859 20030 19201 18372 17542 16713 16041 15369 14697 14025 13353 12844 12335 11826 11317 10808 10377 9946 9514 9083 8652 8576 8499 8423 8346 8270 7888 7507 7125 6743 6361 6167 5972 5777 5583 5388 5102 4817 4531 4245 3960 3836 3712 3588 3464 3340 3274 3209 3143 3078 3012 2869 2727 2584 2441 2298 2158 2018 1878 1738 1598 1449 1300 1151 1002 852 803 754 705 656 607 558 509 2804
     '''
+    census = OrderedDict() # Will be 2D (year, age) OrderedDict containing (absolute) number 
+                           # of people in each age group in each year.
+                           # Last bin may be aggregated, i.e 85+ for everyone 85 and over.
     ages = []
     for line in file(filename):
         p = line.strip().split()
@@ -95,12 +108,14 @@ year 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 2
             counts = map(int, p[1:])
             #print year, counts
             census[year] = OrderedDict(zip(ages, counts))
+    return census
 
 
 has_immunity = lambda s: int(s>0)
 
 
 def recently_infected(states):
+    # "recently infected" means in the last one or two years
     if 1 in states or 2 in states:
         return True
     else:
@@ -108,18 +123,160 @@ def recently_infected(states):
 
 
 def age_immunity(pop):
-    for i in range(len(pop)):
-        for s in range(NUM_SEROTYPES):
-            if pop[i]['state'][s] == 1 or pop[i]['state'][s] == 2:
-               pop[i]['state'][s] += 1
+    #print "Before aging:"
+    #z = 0
+    #for i in range(len(pop[10])):
+    #    if sum(pop[10][i]) > 0:
+    #        print i, pop[10][i]
+    #        z += 1
+    #        if z == 10:
+    #            break
+
+    for age in range(len(pop)):
+        for i in range(len(pop[age])):
+            #if sum(pop[age][i]) > 0:
+            #    print "\nBefore aging:"
+            #    print i, age, pop[age][i], id(pop[age][i]) 
+            for s in range(NUM_SEROTYPES):
+                if pop[age][i][s] >= 1:
+                   pop[age][i][s] += 1
+            #if sum(pop[age][i]) > 0:
+            #    print "After aging:"
+            #    print i, age, pop[age][i], id(pop[age][i]) 
+
     return pop
 
 
-#print cases
-   
-EXPANSION_FACTOR = 1
+def age_str_to_int(age_str):
+    try:
+        age = int(age_str)
+    except ValueError:
+        age = MAX_CENSUS_AGE
+    return age
 
-import_census_data('interpolated_ages-yucatan.out')
+
+def initialize_full_population(census, first_year):
+    full_pop = [[] for i in range(MAX_CENSUS_AGE + 1)]
+    for age_str in census[first_year]:
+        age = age_str_to_int(age_str)
+        for i in range(census[first_year][age_str]):
+            full_pop[age].append([0,0,0,0])
+        #print first_year, age, census[first_year][age_str]
+    return full_pop
+
+def age_full_population(census, full_pop, new_year):
+    '''
+    "Age" the population by sampling from younger age classes as necessary to make up
+    the census numbers for the new year, e.g. if there are ten 30-year-olds in 1980,
+    and we need eight 31-year-olds in 1981, we will randomly select 8 of the 10.  If
+    we need MORE than the number available, we will sample with replacement to get the
+    required number.
+
+    Age 0 individuals are special because they don't have a younger age class to
+    inherit from.  MAX_CENSUS_AGE individuals are likely special because they may be
+    in a binned age class with no specified upper bound.  This is tricky because 85+
+    individuals in 1980 who survive to 1981 are still 85+, but some of the age 84
+    individuals from 1980 have joined their ranks.  Because of this, for the eldest
+    age class we sample from the two eldest groups.  This does not account for
+    differing mortality rates among the group, but since it's a relatively small
+    fraction of the population that is likely to have relatively homogenous immunity
+    (due to their long exposure to epidemics), this assumption is probably not
+    consequential.
+
+    Note: This will fail if there is a year with 0 individuals in an age class other
+    than the last.
+    '''
+    full_pop = age_immunity(full_pop)
+    new_pop = []
+    age_keys = census[new_year].keys()
+    age_keys.reverse() # census is an OrderedDict
+    for age_str in age_keys: # going from oldest to youngest
+        age = age_str_to_int(age_str)
+        if age == 0:
+            # nothing to inherit for infants
+            full_pop[age] = [[0,0,0,0] for i in range(census[new_year][age_str])]
+            continue
+        sampling_pop = full_pop[age - 1]
+        if age == MAX_CENSUS_AGE: # We are assuming here that the last age class is a multi-year bin, eg. 85+
+            sampling_pop += full_pop[MAX_CENSUS_AGE]
+
+        if len(sampling_pop) >= census[new_year][age_str]:
+            full_pop[age] = sample(sampling_pop, census[new_year][age_str])
+        else:
+            #print "year, age, sample size, census size: ", new_year, age, len(sampling_pop), census[new_year][age_str]
+            full_pop[age] = [deepcopy(choice(sampling_pop)) for i in xrange(census[new_year][age_str])]
+
+    return full_pop
+   
+EXPANSION_FACTOR = 36
+
+NOW   = 2012
+YEARS = range(1979,2012)
+first_year = YEARS[0]
+
+census = import_census_data('interpolated_ages-yucatan.out')
+
+full_pop = initialize_full_population(census, first_year)
+
+# year number, 1979 = 0
+year = 0 
+
+kids_in_1987 = 0 # in the 8-14 range
+# should be ~ 60% of the population
+seropositive_kids_in_1987 = 0
+
+for ya in range(len(YEARS),0,-1):
+    if year > 0:
+        full_pop = age_full_population(census, full_pop, YEARS[year])  # delete after debugging
+    num_of_infections = cases[year] * EXPANSION_FACTOR
+    pop_size_by_age = [len(full_pop[age]) for age in range(len(full_pop))]
+    pop_size = sum(pop_size_by_age)
+    print "year, years ago, pop, cases, infections"
+    print YEARS[year], ya, pop_size, cases[year], num_of_infections
+    print "expected serotype distribution: ", serotype_wt[year]
+    serotype_tally = [0 for i in range(NUM_SEROTYPES)]
+    for i in range(num_of_infections):
+        s = sample_serotype(serotype_wt[year])
+        infection_occurred = False
+        while not infection_occurred: 
+            test = randint(0, pop_size - 1) # randint includes endpoints
+            age = 0
+            while test >= pop_size_by_age[age]:
+                test -= pop_size_by_age[age]
+                age += 1
+            #if sum(full_pop[age][test]) > 0:
+            #    print "age, state: ", age, full_pop[age][test]
+            if full_pop[age][test][s] == 0 and not recently_infected(full_pop[age][test]):
+                # infect test person
+                full_pop[age][test][s] = 1
+                serotype_tally[s] += 1
+                infection_occurred = True
+
+    print "actual serotype counts: ", serotype_tally
+    if num_of_infections > 0:
+        print "actual serotype frequency: ", [float(c)/sum(serotype_tally) for c in serotype_tally]
+    else:
+        print "actual serotype frequency: [NA, NA, NA, NA]"
+    
+    if YEARS[year] == 1987:
+        for age in range(8, 15):
+            for kid in full_pop[age]:
+                kids_in_1987 += 1.0
+                seropos = sum(kid)
+                if seropos > 0:
+                    seropositive_kids_in_1987 += 1.0
+        print 'Number of kids 8-14 in 1987:', kids_in_1987
+        print 'Number of seropositive kids 8-14 in 1987:', seropositive_kids_in_1987
+        print 'Fraction seropositive:', seropositive_kids_in_1987/kids_in_1987
+        print 'Empirical fraction seropositive: ~0.6'
+        print 'Expansion factor:', 0.6/(seropositive_kids_in_1987/kids_in_1987)
+
+        exit()
+    year += 1
+    print
+
+print "\t\t\tDone."
+
 # read in population data
 pop = []
 header = True
@@ -132,63 +289,6 @@ for line in file('../../pop-yucatan/population-yucatan_final.txt'):
     p = line.split()
     pop.append({'pid':p[0], 'age':int(p[2]), 'state':[0,0,0,0]})
 
-print "\t\t\tDone.\nFiltering by age . . . "
-N     = len(pop)
-NOW   = 2012
-YEARS = range(1979,2012)
-
-surviving_N = [[] for i in range(len(YEARS))] # number of people alive today who were also alive each year in 1979-2011
-
-# years ago, starting in 1979
-i = -1
-
-kids_in_1987 = 0 # in the 8-14 range
-# should be ~ 60% of the population
-seropositive_kids_in_1987 = 0
-
-for ya in range(len(YEARS),0,-1):
-    i += 1
-    pop = age_immunity(pop)
-    for idx in range(len(pop)):
-        person = pop[idx]
-        if person['age'] >= ya:
-            surviving_N[i].append(idx)
-    surviving_N_i = len(surviving_N[i])
-    total_N_i = sum(census[YEARS[i]].values()) 
-
-    expected_num_of_cases = round(cases[i]*float(surviving_N_i)/total_N_i)
-    expected_num_of_infections = expected_num_of_cases * EXPANSION_FACTOR
-    print "year, years ago, total_pop, surviving_pop, total_cases, surviving_cases"
-    print YEARS[i], ya, total_N_i, surviving_N_i, cases[i], expected_num_of_cases
-    for s in range(4):
-        print "\t" + str(s+1) + ":", serotype_wt[i][s] * expected_num_of_cases
-        if serotype_wt[i][s] == 0.0:
-            continue
-        vulnerable_people = []
-        for idx in surviving_N[i]:
-            if pop[idx]['state'][s] == 0 and not recently_infected(pop[idx]['state']):
-                vulnerable_people.append(idx)
-        print "\t\tvulnerable ct:", len(vulnerable_people)
-        hazard = expected_num_of_infections/len(vulnerable_people)
-        for idx in vulnerable_people:
-            if random() < hazard:
-                pop[idx]['state'][s] = 1
-    
-    if YEARS[i] == 1987:
-        for idx in surviving_N[i]:
-            if pop[idx]['age']-ya >= 8 and pop[idx]['age']-ya <= 14:
-                kids_in_1987 += 1.0
-                seropos = sum(pop[idx]['state'])
-                if seropos > 0:
-                    seropositive_kids_in_1987 += 1.0
-        print 'Number of kids 8-14 in 1987:', kids_in_1987
-        print 'Number of seropositive kids 8-14 in 1987:', seropositive_kids_in_1987
-        print 'Fraction seropositive:', seropositive_kids_in_1987/kids_in_1987
-        print 'Empirical fraction seropositive: ~0.6'
-        print 'Expansion factor:', 0.6/(seropositive_kids_in_1987/kids_in_1987)
-
-
-print "\t\t\tDone."
 print "Writing to disk . . ."
 fo = open('immunity-yucatan.txt', 'w')
 #fo.write('pid imm1 imm2 imm3 imm4\n')
