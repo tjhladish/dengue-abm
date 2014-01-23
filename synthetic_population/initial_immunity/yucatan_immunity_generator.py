@@ -271,32 +271,34 @@ for ya in range(len(YEARS),0,-1):
         print 'Empirical fraction seropositive: ~0.6'
         print 'Expansion factor:', 0.6/(seropositive_kids_in_1987/kids_in_1987)
 
-        exit()
     year += 1
     print
 
+#for age in range(len(full_pop)):
+#    for person in full_pop[age]:
+#        print age, ' '.join(map(str, person))
+#
+#exit()
 print "\t\t\tDone."
 
 # read in population data
-pop = []
 header = True
+fo = open('immunity-yucatan.txt', 'w')
+fo.write('pid age imm1 imm2 imm3 imm4\n')
 
-print "Reading in population . . . "
+print "Building immunity file . . . "
 for line in file('../../pop-yucatan/population-yucatan_final.txt'):
     if header:
         header = False
         continue
     p = line.split()
-    pop.append({'pid':p[0], 'age':int(p[2]), 'state':[0,0,0,0]})
-
-print "Writing to disk . . ."
-fo = open('immunity-yucatan.txt', 'w')
-#fo.write('pid imm1 imm2 imm3 imm4\n')
-fo.write('pid age imm1 imm2 imm3 imm4\n')
-for person in pop:
-    #fo.write(' '.join([person['pid']] + person['state']) + '\n')
-    states = [str(has_immunity(i)) for i in person['state']]
-    fo.write(' '.join([person['pid'], str(person['age'])] + states) + '\n')
+    pid = p[0]
+    age = p[2]
+    
+    age_int = int(age)
+    age_int = age_int if age_int <= MAX_CENSUS_AGE else MAX_CENSUS_AGE
+    states = choice(full_pop[age_int])
+    fo.write(' '.join([pid, age] + map(str,states)) + '\n')
 
 fo.close()
 
