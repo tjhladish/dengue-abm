@@ -35,7 +35,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         for (int i=0; i<NUM_OF_SEROTYPES; i++) {
             nInitialExposed[i]=0;
             nInitialInfected[i]=0;
-            nDailyExposed[i]=0;
+            nDailyExposed[i]=0.0;
         }
         fPrimaryPathogenicity.clear();
         fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
@@ -70,7 +70,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else if (strcmp(argv[i], "-dailyexposed")==0) {
                     for (int j=0; j<NUM_OF_SEROTYPES; j++)
-                        nDailyExposed[j]=strtol(argv[i+1+j],end,10);
+                        nDailyExposed[j]=strtod(argv[i+1+j],end);
                     i+=NUM_OF_SEROTYPES;
                 }
                 else if (strcmp(argv[i], "-primarypathogenicity")==0) {

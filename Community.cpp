@@ -289,11 +289,8 @@ bool Community::infect(int id, Serotype serotype, int day) {
     Person* person = getPersonByID(id);
 
     bool result =  person->infect(-1, serotype, day, 0);
-    if (result)
-    _nNumNewlyInfected[(int) serotype][_nDay]++;
+    if (result) _nNumNewlyInfected[(int) serotype][_nDay]++;
     return result;
-    //      cerr << "inf " << i << " at "  << person.getLocation(0)->getID() << endl;
-    return false;
 }
 
 

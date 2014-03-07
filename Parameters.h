@@ -148,7 +148,7 @@ public:
     double fPreVaccinateFraction;
     bool bVaccineLeaky; // if false, vaccine is all-or-none
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
-    int nDailyExposed[NUM_OF_SEROTYPES];                    // serotypes
+    float nDailyExposed[NUM_OF_SEROTYPES];                  // serotypes
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;                  //
