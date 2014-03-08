@@ -108,19 +108,19 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     i++;
                 }
                 else if (strcmp(argv[i], "-mosquitodistribution")==0) {
-		  if (strcmp(argv[i+1], "constant")==0)
-		    eMosquitoDistribution = CONSTANT;
-		  else if (strcmp(argv[i+1], "exponential")==0)
-		    eMosquitoDistribution = EXPONENTIAL;
-		  else {
-		    std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
-		    exit(-1);
-		  }
-		  i++;
+                    if (strcmp(argv[i+1], "constant")==0)
+                        eMosquitoDistribution = CONSTANT;
+                    else if (strcmp(argv[i+1], "exponential")==0)
+                        eMosquitoDistribution = EXPONENTIAL;
+                    else {
+                        std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
+                        exit(-1);
+                    }
+                    i++;
                 }
                 else if (strcmp(argv[i], "-mosquitomultipliers")==0) {
                     nSizeMosquitoMultipliers = strtol(argv[i+1],end,10);
-		    assert(nSizeMosquitoMultipliers<54);
+                    assert(nSizeMosquitoMultipliers<54);
                     i++;
                     nMosquitoMultiplierCumulativeDays[0] = 0;
                     for (int j=0; j<nSizeMosquitoMultipliers; j++) {
@@ -134,18 +134,18 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else if (strcmp(argv[i], "-externalincubations")==0) {
                     nSizeExternalIncubation = strtol(argv[i+1],end,10);
-		    assert(nSizeExternalIncubation<54);
+                    assert(nSizeExternalIncubation<54);
                     i++;
                     nExternalIncubationCumulativeDays[0] = 0;
                     for (int j=0; j<nSizeExternalIncubation; j++) {
-		      nExternalIncubationDays[j] = strtol(argv[i+1],end,10);
-		      nExternalIncubationCumulativeDays[j+1] =
-			nExternalIncubationCumulativeDays[j]+nExternalIncubationDays[j];
-		      i++;
-		      nExternalIncubation[j] = strtol(argv[i+1],end,10);
-		      assert(nExternalIncubation[j]<MAX_MOSQUITO_INCUBATION);
-		      assert(nExternalIncubation[j]>0);
-		      i++;
+                        nExternalIncubationDays[j] = strtol(argv[i+1],end,10);
+                        nExternalIncubationCumulativeDays[j+1] =
+                            nExternalIncubationCumulativeDays[j]+nExternalIncubationDays[j];
+                        i++;
+                        nExternalIncubation[j] = strtol(argv[i+1],end,10);
+                        assert(nExternalIncubation[j]<MAX_MOSQUITO_INCUBATION);
+                        assert(nExternalIncubation[j]>0);
+                        i++;
                     }
                 }
                 else if (strcmp(argv[i], "-vaccinatephased")==0) {
@@ -287,6 +287,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
         }
         std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
         std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
+        std::cerr << "number of daily exposures =";
+        for (int i=0; i<NUM_OF_SEROTYPES; i++)
+            std::cerr << " " << nDailyExposed[i];
+        std::cerr << std::endl;
 	if (eMosquitoDistribution==CONSTANT)
 	  std::cerr << "mosquito capacity distribution is constant" << std::endl;
 	else if (eMosquitoDistribution==EXPONENTIAL)
