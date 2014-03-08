@@ -473,7 +473,7 @@ void Community::swapImmuneStates() {
                 double r = gsl_rng_uniform(RNG);
                 const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
                 int n;
-                for (n = 0; n < (signed) swap_probs.size(); n++) {
+                for (n = 0; n < (signed) swap_probs.size() - 1; n++) {
                     if (r < swap_probs[n].second) {
                         break;
                     } else {
