@@ -300,9 +300,11 @@ void Community::vaccinate(double f, int age) {
     if (f<=0.0)
         return;
     if (age<0) {                                                      // vaccinate everyone
-        for (int i=0; i<_nNumPerson; i++)
-            if (gsl_rng_uniform(RNG)<f)
+        for (int i=0; i<_nNumPerson; i++) {
+            if (gsl_rng_uniform(RNG)<f) {
                 _person[i].vaccinate();
+            }
+        }
     }
     else {
         if (age>MAX_PERSON_AGE)
@@ -310,8 +312,9 @@ void Community::vaccinate(double f, int age) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
-            if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f)
+            if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
                 p->vaccinate();
+            }
         }
     }
 }
@@ -414,15 +417,16 @@ void Community::moveMosquito(Mosquito *m) {
                 }
                 double r2 = gsl_rng_uniform(RNG);
                 neighbor = degree-1; // neighbor is (still) an index
-                for (int i=0; i<degree; i++) {
-                    weights[i] /= sum_weights; // normalize prob
-                    if ( r2 < weights[i] ) {
-                        neighbor = i; 
+                int idx;
+                for ( idx = 0; idx < degree - 1; idx++ ) {
+                    weights[idx] /= sum_weights; // normalize prob
+                    if ( r2 < weights[idx] ) {
                         break;
                     } else {
-                        r2 -= weights[i];
+                        r2 -= weights[idx];
                     }
                 }
+                neighbor = idx; 
             } else {
                 // Ignore actual distances
                 if (degree>0) {
@@ -441,25 +445,6 @@ void Community::swapImmuneStates() {
     for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
 
     // For people of age x, copy immune status from people of age x-1
-/*    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
-        int age1 = age-1;
-        for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-            Person *p = _personAgeCohort[age][pnum];
-            assert(p!=NULL);
-            int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age1]);
-            p->copyImmunity(_personAgeCohort[age1][r]);
-
-            // update map of locations with infectious people
-            if (p->getRecoveryTime() > _nDay) {
-                for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
-                    for (int t=0; t<STEPS_PER_DAY; t++) {
-                        flagInfectedLocation(p->getLocation(t), d);
-                    }
-                }
-            }
-        }
-    }*/
-
     for (int age=MAX_PERSON_AGE-1; age>0; age--) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             Person *p = _personAgeCohort[age][pnum];
@@ -480,7 +465,8 @@ void Community::swapImmuneStates() {
                         r -= swap_probs[n].second;
                     }
                 }
-                p->copyImmunity(getPersonByID(swap_probs[n].first)); 
+                const int id = swap_probs[n].first;
+                p->copyImmunity(getPersonByID(id)); 
             }
 
             // update map of locations with infectious people
@@ -534,34 +520,34 @@ void Community::mosquitoToHumanTransmission() {
                 // take sum of people in the location, weighting by time of day
                 double exposuretime[STEPS_PER_DAY];
                 double totalExposureTime = 0;
-                for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
-                    exposuretime[timeofday] = pLoc->getNumPerson(timeofday) * DAILY_BITING_PDF[timeofday];
-                    totalExposureTime += exposuretime[timeofday];
+                for (int t=0; t<STEPS_PER_DAY; t++) {
+                    exposuretime[t] = pLoc->getNumPerson(t) * DAILY_BITING_PDF[t];
+                    totalExposureTime += exposuretime[t];
                 }
-                double r = gsl_rng_uniform(RNG) * totalExposureTime;
-                for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
-                    if (r<exposuretime[timeofday]) {
-                        // bite at this time of day
-                        int idx = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
-                        Person *p = pLoc->getPerson(idx, timeofday);
-//                        cerr << " infect person " << idx << "/" << pLoc->getNumPerson(timeofday) 
-//                            << "  " << p->getID() << " with " << m->getSerotype() << " from " << m->getID() << endl;
-                        Serotype serotype = m->getSerotype();
-                        if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
-                            _nNumNewlyInfected[(int) serotype][_nDay]++;
-                            if (_bNoSecondaryTransmission) {
-                                p->kill(_nDay);                       // kill secondary cases so they do not transmit
-                            }
-                            else {
-                                // NOTE: We are storing the location ID of infection, not person ID!!!
-                                //	      cerr << "Person " << p->getID() << " infected" << endl;
-                                // add to queue
-                                _exposedQueue[p->getInfectiousTime()-_nDay].push_back(p);
-                            }
+                if ( totalExposureTime > 0 ) {
+                    double r = gsl_rng_uniform(RNG) * totalExposureTime;
+                    int timeofday;
+                    for (timeofday=0; timeofday<STEPS_PER_DAY - 1; timeofday++) {
+                        if (r<exposuretime[timeofday]) {
+                            // bite at this time of day
+                            break;
                         }
-                        break;
+                        r -= exposuretime[timeofday];
                     }
-                    r -= exposuretime[timeofday];
+                    int idx = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
+                    Person *p = pLoc->getPerson(idx, timeofday);
+                    Serotype serotype = m->getSerotype();
+                    if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
+                        _nNumNewlyInfected[(int) serotype][_nDay]++;
+                        if (_bNoSecondaryTransmission) {
+                            p->kill(_nDay);                       // kill secondary cases so they do not transmit
+                        }
+                        else {
+                            // NOTE: We are storing the location ID of infection, not person ID!!!
+                            // add to queue
+                            _exposedQueue[p->getInfectiousTime()-_nDay].push_back(p);
+                        }
+                    }
                 }
             }
         }
