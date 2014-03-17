@@ -178,6 +178,14 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 }
 
 
+bool Person::isNewlyInfected(int time) {
+    if (time==_nInfectedTime[0])
+        return true;
+    else
+        return false;
+}
+
+
 bool Person::isInfected(int time) {
     if (time>=_nInfectedTime[0] && time<_nRecoveryTime[0])
         return true;

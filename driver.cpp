@@ -143,7 +143,7 @@ void write_people_file(const Parameters* par, Community* community, int time) {
 void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextMosquitoMultiplier = 0;
     int nNextExternalIncubation = 0;
-    if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn" << endl;
+    if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
         // phased vaccination
         if ((t%365)==0) {
@@ -166,11 +166,12 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                 for (int i=0; i<num_exposed; i++) {
                     // gsl_rng_uniform_int returns on [0, numperson-1]
                     int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
-                    if (community->infect(transmit_to_id, (Serotype) serotype, t))
+                    if (community->infect(transmit_to_id, (Serotype) serotype, t)) {
                         count++;
+                    }
                 }
             }
-            cerr << "day,intros: " << t << " " << count << endl;
+            //cerr << "day,intros: " << t << " " << count << endl;
         }
 
         // mosquito population seasonality?
@@ -198,7 +199,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             // print out infected people
             for (int i=community->getNumPerson()-1; i>=0; i--) {
                 Person *p = community->getPerson(i);
-                if (p->isInfected(t))
+                if (p->isInfected(t)) {
                     // home location
                     cout << t 
                          << ",p,"
@@ -206,8 +207,9 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                          << p->getLocation(0)->getID() << "," 
                          << 1 + (int) p->getSerotype() << "," 
                          << (p->isSymptomatic(t)?1:0) << "," 
-                         << (p->isWithdrawn(t)?1:0) << endl;
-                // printing out the home location of each infected person is not useful, but we don't keep track of where they get infected
+                         << (p->isWithdrawn(t)?1:0) << ","
+                         << (p->isNewlyInfected(t)?1:0) << endl;
+                }
             }
         }
         write_people_file(par, community, t);
