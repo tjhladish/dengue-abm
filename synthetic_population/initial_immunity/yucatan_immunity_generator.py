@@ -287,10 +287,14 @@ fo = open('immunity-yucatan.txt', 'w')
 fo.write('pid age imm1 imm2 imm3 imm4\n')
 
 print "Building immunity file . . . "
+counter = 0
 for line in file('../../pop-yucatan/population-yucatan_final.txt'):
     if header:
         header = False
         continue
+    if counter % 10000 == 0:
+        print counter
+    counter += 1
     p = line.split()
     pid = p[0]
     age = p[2]
