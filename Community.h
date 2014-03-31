@@ -55,19 +55,11 @@ class Community {
 
     protected:
         static const Parameters* _par;
-        //std::string _szPopulationFilename;                            // population data filename
-        //std::string _szImmunityFilename;                              // immune status data filename
-        //std::string _szLocationFilename;                              // location filename
-        //std::string _szNetworkFilename;                               // location network filename
         Person *_person;                                              // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
         int _nPersonAgeCohortSizes[MAX_PERSON_AGE];                   // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
         std::vector<Location*> _location;                             // the array index is equal to the ID
-       // std::vector< std::vector<int> > _numLocationMosquitoCreated;  // number of instantiated mosquitoes at 
-                                                                      // this location at time t.  the first 
-                                                                      // array index is equal to the location ID,
-                                                                      // the second to the day
         std::vector< std::vector<Person*> > _exposedQueue;            // queue of people with n days of latency left
         std::vector< std::vector<Mosquito*> > _infectiousMosquitoQueue;  // queue of infectious mosquitoes with n days
                                                                          // left to live
