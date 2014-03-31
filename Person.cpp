@@ -174,6 +174,17 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 }
 
 
+bool Person::isNewlyInfected(int time) {
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (time == infection->infectedTime) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool Person::isInfected(int time) {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();

@@ -32,7 +32,7 @@ class Community {
         void updateWithdrawnStatus(); 
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
-        void tick();                                                  // simulate one day
+        void tick(int day);                                                  // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
         void setMosquitoMultiplier(double f) {                        // seasonality multiplier for number of mosquitoes
             _fMosquitoCapacityMultiplier = f;

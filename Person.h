@@ -93,6 +93,7 @@ class Person
         bool isDead() { return _bDead; }
         bool naturalDeath(int t);                                     // die of old age check?
 
+        bool isNewlyInfected(int time);                               // became infected today?
         bool isInfected(int time);                                    // is currently infected
         bool isSymptomatic(int time);                                 // has symptoms
         bool isVaccinated() {                                         // has been vaccinated

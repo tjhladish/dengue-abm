@@ -142,8 +142,10 @@ void write_people_file(const Parameters* par, Community* community, int time) {
 void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextMosquitoMultiplier = 0;
     int nNextExternalIncubation = 0;
-    if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn" << endl;
+    if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
+        if (t%100==0) cerr << "Time " << t << endl;
+
         // phased vaccination
         if ((t%365)==0) {
             int year = (int)(t/365);
@@ -183,17 +185,19 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         }
 
         int daily_infection_ctr = 0;
+        community->tick(t);
+
         if (par->bSecondaryTransmission) {
             // print out infectious mosquitoes
             for (int i=community->getNumInfectiousMosquitoes()-1; i>=0; i--) {
                 Mosquito *p = community->getInfectiousMosquito(i);
-                cout << t << ",mi," << p->getID() << "," << p->getLocation()->getID() << "," << "," << endl;
+                cout << t << ",mi," << p->getID() << "," << p->getLocation()->getID() << "," << "," << "," << endl;
             }
             // print out exposed mosquitoes
             for (int i=community->getNumExposedMosquitoes()-1; i>=0; i--) {
                 Mosquito *p = community->getExposedMosquito(i);
                 // "current" location
-                cout << t << ",me," << p->getID() << "," << p->getLocation()->getID() << "," << 1 + (int) p->getSerotype() << "," << "," << endl;
+                cout << t << ",me," << p->getID() << "," << p->getLocation()->getID() << "," << 1 + (int) p->getSerotype() << "," << "," << "," << endl;
             }
             // print out infected people
             for (int i=community->getNumPerson()-1; i>=0; i--) {
@@ -207,16 +211,14 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                          << p->getLocation(0)->getID() << "," 
                          << 1 + (int) p->getSerotype() << "," 
                          << (p->isSymptomatic(t)?1:0) << "," 
-                         << (p->isWithdrawn(t)?1:0) << endl;
-                // printing out the home location of each infected person is not useful, but we don't keep track of where they get infected
+                         << (p->isWithdrawn(t)?1:0) << ","
+                         << (p->isNewlyInfected(t)?1:0) << endl;
                 }
             }
         }
         write_people_file(par, community, t);
         cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_infection_ctr << endl;
 
-        if (t%100==0) cerr << "Time " << t << endl;
-        community->tick();
     }
     return;
 }
