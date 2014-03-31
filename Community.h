@@ -24,7 +24,7 @@ class Community {
         void populate(Person **parray, int targetpop);
         Person* getPersonByID(int id);
         bool infect(int id, Serotype serotype, int day);
-        int addMosquito(Location *p, Serotype serotype, int nInfectedByID);
+        int attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() {                                                // what day is it?
             return _nDay;
         }
@@ -64,7 +64,7 @@ class Community {
         int _nPersonAgeCohortSizes[MAX_PERSON_AGE];                   // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
         std::vector<Location*> _location;                             // the array index is equal to the ID
-        std::vector< std::vector<int> > _numLocationMosquitoCreated;  // number of instantiated mosquitoes at 
+       // std::vector< std::vector<int> > _numLocationMosquitoCreated;  // number of instantiated mosquitoes at 
                                                                       // this location at time t.  the first 
                                                                       // array index is equal to the location ID,
                                                                       // the second to the day
@@ -77,7 +77,7 @@ class Community {
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-	int _nExternalIncubation;                                     // external incubation period in days
+        int _nExternalIncubation;                                     // external incubation period in days
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         static std::map< Location*, std::map<int, bool> > _isHot;

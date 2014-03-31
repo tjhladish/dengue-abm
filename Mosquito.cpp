@@ -44,4 +44,5 @@ Mosquito::Mosquito(Location *p, Serotype serotype, int nInfectedAtID, int nExter
 
 
 Mosquito::~Mosquito() {
+    _pLocation->removeInfectedMosquito();
 }

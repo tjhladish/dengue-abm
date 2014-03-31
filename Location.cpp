@@ -21,6 +21,7 @@ Location::Location()
     _serial = _nNextSerial++;
     _ID = 0;
     _nBaseMosquitoCapacity = 0;
+    _currentInfectedMosquitoes = 0;
     _bUndefined = false;
     _coord = make_pair(0.0, 0.0);
 }

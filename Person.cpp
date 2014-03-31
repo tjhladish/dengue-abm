@@ -28,9 +28,6 @@ Person::Person() {
     _nLifespan = -1;
     _nHomeID = -1;
     _nWorkID = -1;
-    //_nImmunity = 0;
-    _nNumInfections = -1;
-    pushInfectionHistory();
     for(int i=0; i<STEPS_PER_DAY; i++) _pLocation[i] = NULL;
     _bDead = false;
     _bVaccinated = false;
@@ -39,27 +36,20 @@ Person::Person() {
 
 
 Person::~Person() {
+    clearInfectionHistory();
 }
 
-
-void Person::pushInfectionHistory() {
-    _nNumInfections++;
-    assert(_nNumInfections<MAX_HISTORY);
-    for (int i=_nNumInfections; i>0; i--) {
-        _nInfectedByID[i] = _nInfectedByID[i-1];
-        _nInfectedPlace[i] = _nInfectedPlace[i-1];
-        _nInfectedTime[i] = _nInfectedTime[i-1];
-        _nInfectiousTime[i] = _nInfectiousTime[i-1];
-        _nSymptomTime[i] = _nSymptomTime[i-1];
-        _nWithdrawnTime[i] = _nWithdrawnTime[i-1];
-        _nRecoveryTime[i] = _nRecoveryTime[i-1];
-        _eSerotype[i] = _eSerotype[i-1];
+void Person::clearInfectionHistory() {
+    for (unsigned int i = 0; i < infectionHistory.size(); i++) {
+        delete infectionHistory[i];
     }
-    _eSerotype[0] = NULL_SEROTYPE; 
-    _nInfectedByID[0] = -1;
-    _nInfectedPlace[0] = -1;
-    _nInfectedTime[0] = _nInfectiousTime[0] = _nSymptomTime[0] = _nRecoveryTime[0] = -100000;
-    _nWithdrawnTime[0] = 10000;
+    infectionHistory.clear();
+}
+
+Infection& Person::initializeNewInfection() {
+    Infection* infection = new Infection();
+    infectionHistory.push_back(infection);
+    return *infection;
 }
 
 
@@ -68,32 +58,17 @@ void Person::copyImmunity(const Person *p) {
     assert(p!=NULL);
     _nImmunity = p->_nImmunity;
     _bVaccinated = p->_bVaccinated;
-    _nNumInfections = p->_nNumInfections;
-    for (int i=0; i<=_nNumInfections; i++) {
-        _nInfectedByID[i] = p->_nInfectedByID[i];
-        _nInfectedPlace[i] = p->_nInfectedPlace[i];
-        _nInfectedTime[i] = p->_nInfectedTime[i];
-        _nInfectiousTime[i] = p->_nInfectiousTime[i];
-        _nSymptomTime[i] = p->_nSymptomTime[i];
-        _nWithdrawnTime[i] = p->_nWithdrawnTime[i];
-        _nRecoveryTime[i] = p->_nRecoveryTime[i];
-        _eSerotype[i] = p->_eSerotype[i];
+    infectionHistory.resize( p->infectionHistory.size() );
+    for (int i=0; i < p->getNumInfections(); i++) {
+        infectionHistory[i] = p->infectionHistory[i];
     }
-
-/*    for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
-        for (int t=0; t<STEPS_PER_DAY; t++) {
-            Community::unflagInfectedLocation(p->_pLocation[t], d);
-            Community::flagInfectedLocation(_pLocation[t], d);
-        }
-    }*/
 }
 
 
 // resetImmunity - reset immune status (infants)
 void Person::resetImmunity() {
     _nImmunity.reset();
-    _nNumInfections = -1;
-    pushInfectionHistory();
+    clearInfectionHistory();
     _bVaccinated = false;
     _bCase = false;
 }
@@ -113,62 +88,83 @@ void Person::kill(int time) {
 }
 
 
+bool Person::isInfectable(Serotype serotype, int time) {
+    bool infectable = true;
+    const int maxinfectionparity    = _par->nMaxInfectionParity;
+    if (!isSusceptible(serotype)) {
+        // immune to this serotype
+        infectable = false;                                   
+    } else if (getNumInfections() > 0 and infectionHistory.back()->recoveryTime + _par->nDaysImmune > time) {
+        // cross-serotype protection from last infection
+        infectable = false;
+    } else if (getInfectionParity() >= maxinfectionparity) {
+        // already infected max number of times
+        infectable = false;
+    } else if (isVaccinated() && _par->bVaccineLeaky==true && gsl_rng_uniform(RNG) < _par->fVESs[serotype]) { 
+        // protected by leaky vaccine
+        // TODO - verify that this is the right way to handle vaccine immunity, e.g. non-leaky vaccines are not protective?
+        // Or is that being handled by a different conditional
+        infectable = false; 
+    }
+    return infectable;
+}
+
+
 // infect - infect this individual
 // primary symptomatic is a scaling factor for pathogenicity of primary infections.
-// secondaryscaling * primarysymptomatic is the scaling factor for pathogenicity of secondary infections.
+// secondary_scaling * primarysymptomatic is the scaling factor for pathogenicity of secondary infections.
 // returns true if infection occurs
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
-    double primarysymptomatic = _par->fPrimaryPathogenicity[(int) serotype];
-    double secondaryscaling = _par->fSecondaryScaling[(int) serotype];
-    int maxinfectionparity = _par->nMaxInfectionParity;
-    //assert(serotype>=1 && serotype<=4);
-    if (!isSusceptible(serotype) ||                                   // already infected by serotype
-        _nRecoveryTime[0]+_par->nDaysImmune>time ||                        // cross-serotype protection
-        getInfectionParity()>=maxinfectionparity ||                     // already infected max number of times
-	(isVaccinated() && 
-	 _par->bVaccineLeaky==true &&
-	 gsl_rng_uniform(RNG)<_par->fVESs[serotype])) // protected by leaky vaccine
+    // Bail now if this person can not become infected
+    if (not isInfectable(serotype, time)) {
         return false;
-    pushInfectionHistory();
-
-    _nInfectedTime[0] = time;
-
-    double r = gsl_rng_uniform(RNG);
-    _nInfectiousTime[0] = 0;
-    while (_nInfectiousTime[0]<MAX_INCUBATION && INCUBATION_DISTRIBUTION[_nInfectiousTime[0]]<r)
-        _nInfectiousTime[0]++;
-    //    cerr << "symp " << _nSymptomTime << "," << r << endl;
-    _nInfectiousTime[0] += time;
-    if (_nImmunity.any()) {
-        _nRecoveryTime[0] = _nInfectiousTime[0]+INFECTIOUS_PERIOD_SEC;        // should draw from distribution!!!!!!
-    } else {
-        _nRecoveryTime[0] = _nInfectiousTime[0]+INFECTIOUS_PERIOD_PRI;        // should draw from distribution!!!!!!
     }
-    _nInfectedByID[0] = sourceid;
-    _nInfectedPlace[0] = sourceloc;
-    _eSerotype[0] = serotype;
 
-    if (primarysymptomatic>0.0 &&
-        gsl_rng_uniform(RNG)<primarysymptomatic*SYMPTOMATIC_BY_AGE[_nAge] * (isVaccinated()?(1.0-_par->fVEP):1.0) *
-    (_nImmunity.any()?secondaryscaling:1.0)) {                            // scale for primary or secondary infection
-        _nSymptomTime[0] = _nInfectiousTime[0] + 1;                   // symptomatic one day before infectious
+    Infection& infection = initializeNewInfection(); // Create a new infection record
+
+    infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
+    infection.serotype      = serotype;
+    infection.infectedTime  = time;
+    infection.infectedPlace = sourceloc;
+
+    // When do they become infectious?
+    infection.infectiousTime = 0;
+    double r = gsl_rng_uniform(RNG);
+    while (infection.infectiousTime < MAX_INCUBATION && INCUBATION_DISTRIBUTION[infection.infectiousTime] < r) {
+        infection.infectiousTime++;
+    }
+    infection.infectiousTime += time;
+
+    if (_nImmunity.any()) {
+        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_SEC;        // should draw from distribution!!!!!!
+    } else {
+        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;        // should draw from distribution!!!!!!
+    }
+
+    // Determine if this person withdraws (stops going to work/school)
+    const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
+    const double secondary_scaling     = _par->fSecondaryScaling[(int) serotype];
+    const double vaccine_protection    = isVaccinated()   ? _par->fVEP       : 0.0;   // reduced symptoms due to vaccine
+    const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
+
+    const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - vaccine_protection) * secondary_symptomatic;
+
+    if (gsl_rng_uniform(RNG) < symptomatic_probability) {
+        infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
         double r = gsl_rng_uniform(RNG);
-        for (int i=0; i<_nRecoveryTime[0] - _nInfectiousTime[0]; i++) {
+        const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
+        for (int i=0; i<symptomatic_duration; i++) {
             if (r < 1-pow(0.5,1+i) ) {
-                _nWithdrawnTime[0] = _nSymptomTime[0];                // withdraws (FIX THIS?)
+                infection.withdrawnTime = infection.symptomTime + i;                // withdraws
+                break;
             }
         }
-        if (_nRecoveryTime[0]<_nWithdrawnTime[0])
-            _nWithdrawnTime[0] = 100000;
         _bCase = true;
     }
-    else {
-        _nSymptomTime[0] = -10000;
-    }
-    _nImmunity[(int) serotype] = 1;
-    //  cerr << _nAge << "," << serotype << ": " <<  primarysymptomatic << "," << secondaryscaling << "," << SYMPTOMATIC_BY_AGE[_nAge] <<  " ; " << _nSymptomTime[0] << endl;
 
-    for (int d=_nInfectiousTime[0]; d<_nRecoveryTime[0]; d++) {
+    _nImmunity[(int) serotype] = 1;
+
+    for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
         for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
@@ -179,34 +175,46 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 
 
 bool Person::isInfected(int time) {
-    if (time>=_nInfectedTime[0] && time<_nRecoveryTime[0])
-        return true;
-    else
-        return false;
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (time >= infection->infectedTime and time < infection->recoveryTime) {
+            return true;
+        }
+    }
+    return false;
 }
 
 
 bool Person::isViremic(int time) {
-    if (time>=_nInfectiousTime[0] && time<_nRecoveryTime[0] && !_bDead )
-        return true;
-    else
-        return false;
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (time >= infection->infectiousTime and time < infection->recoveryTime and not _bDead) {
+            return true;
+        }
+    }
+    return false;
 }
 
 
 bool Person::isSymptomatic(int time) {
-    if (!_bDead && time>=_nSymptomTime[0] && time<_nRecoveryTime[0])
-        return true;
-    else
-        return false;
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
+            return true;
+        }
+    }
+    return false;
 }
 
 
 bool Person::isWithdrawn(int time) {
-    if (!_bDead && time>=_nWithdrawnTime[0] && time<_nRecoveryTime[0])
-        return true;
-    else
-        return false;
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (time >= infection->withdrawnTime and time < infection->recoveryTime and not _bDead) {
+            return true;
+        }
+    }
+    return false;
 }
 
 

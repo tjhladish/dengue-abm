@@ -48,7 +48,6 @@ Community* build_community(const Parameters* par) {
         cerr << "Could not load locations" << endl;
         exit(-1);
     }
-
     if (!community->loadPopulation(par->szPopulationFile, par->szImmunityFile, par->szSwapProbFile)) {
         cerr << "Could not load population" << endl;
         exit(-1);
@@ -157,8 +156,8 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         }
 
         // seed epidemic
+        int intro_count = 0;
         {
-            int count = 0;
             int numperson = community->getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
                 if (par->nDailyExposed[serotype] <= 0) continue;
@@ -166,11 +165,11 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                 for (int i=0; i<num_exposed; i++) {
                     // gsl_rng_uniform_int returns on [0, numperson-1]
                     int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
-                    if (community->infect(transmit_to_id, (Serotype) serotype, t))
-                        count++;
+                    if (community->infect(transmit_to_id, (Serotype) serotype, t)) {
+                        intro_count++;
+                    }
                 }
             }
-            cerr << "day,intros: " << t << " " << count << endl;
         }
 
         // mosquito population seasonality?
@@ -183,6 +182,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             nNextExternalIncubation = (nNextExternalIncubation+1)%par->nSizeExternalIncubation;
         }
 
+        int daily_infection_ctr = 0;
         if (par->bSecondaryTransmission) {
             // print out infectious mosquitoes
             for (int i=community->getNumInfectiousMosquitoes()-1; i>=0; i--) {
@@ -198,7 +198,8 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             // print out infected people
             for (int i=community->getNumPerson()-1; i>=0; i--) {
                 Person *p = community->getPerson(i);
-                if (p->isInfected(t))
+                if (p->isInfected(t)) {
+                    daily_infection_ctr++;
                     // home location
                     cout << t 
                          << ",p,"
@@ -208,9 +209,11 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                          << (p->isSymptomatic(t)?1:0) << "," 
                          << (p->isWithdrawn(t)?1:0) << endl;
                 // printing out the home location of each infected person is not useful, but we don't keep track of where they get infected
+                }
             }
         }
         write_people_file(par, community, t);
+        cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_infection_ctr << endl;
 
         if (t%100==0) cerr << "Time " << t << endl;
         community->tick();

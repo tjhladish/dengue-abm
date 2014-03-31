@@ -5,8 +5,11 @@
 #ifndef __MOSQUITO_H
 #define __MOSQUITO_H
 #include "Parameters.h"
+#include "Location.h" 
 
 class Location;
+//Location::removeInfectedMosquito();
+//Location::addInfectedMosquito();
 
 class Mosquito
 {
@@ -17,6 +20,7 @@ class Mosquito
         int getID() { return _nID; }
         Location *getLocation() { return _pLocation; }
         void setLocation(Location *p) { _pLocation = p; }
+        void updateLocation(Location *p) { _pLocation->removeInfectedMosquito(); setLocation(p); _pLocation->addInfectedMosquito(); }
         Location *getOriginLocation() { return _pOriginLocation; }
         int getAgeInfected() { return _nAgeInfected; }
         int getAgeInfectious() { return _nAgeInfectious; }
