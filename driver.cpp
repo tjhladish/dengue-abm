@@ -145,6 +145,8 @@ void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextExternalIncubation = 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
+        if (t%100==0) cerr << "Time " << t << endl;
+
         // phased vaccination
         if ((t%365)==0) {
             int year = (int)(t/365);
@@ -184,17 +186,19 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             nNextExternalIncubation = (nNextExternalIncubation+1)%par->nSizeExternalIncubation;
         }
 
+        community->tick(t);
+
         if (par->bSecondaryTransmission) {
             // print out infectious mosquitoes
             for (int i=community->getNumInfectiousMosquitoes()-1; i>=0; i--) {
                 Mosquito *p = community->getInfectiousMosquito(i);
-                cout << t << ",mi," << p->getID() << "," << p->getLocation()->getID() << "," << "," << endl;
+                cout << t << ",mi," << p->getID() << "," << p->getLocation()->getID() << "," << "," << "," << endl;
             }
             // print out exposed mosquitoes
             for (int i=community->getNumExposedMosquitoes()-1; i>=0; i--) {
                 Mosquito *p = community->getExposedMosquito(i);
                 // "current" location
-                cout << t << ",me," << p->getID() << "," << p->getLocation()->getID() << "," << 1 + (int) p->getSerotype() << "," << "," << endl;
+                cout << t << ",me," << p->getID() << "," << p->getLocation()->getID() << "," << 1 + (int) p->getSerotype() << "," << "," << "," << endl;
             }
             // print out infected people
             for (int i=community->getNumPerson()-1; i>=0; i--) {
@@ -214,8 +218,6 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         }
         write_people_file(par, community, t);
 
-        if (t%100==0) cerr << "Time " << t << endl;
-        community->tick();
     }
     return;
 }

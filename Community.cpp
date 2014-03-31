@@ -675,9 +675,10 @@ void Community::_modelMosquitoMovement() {
 }
 
 
-void Community::tick() {
+void Community::tick(int day) {
+    _nDay = day;
     assert(_nDay<MAX_RUN_TIME);
-    if (_nDay%365==364) { swapImmuneStates(); }                       // randomize and advance immune states
+    if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
     updateWithdrawnStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 
@@ -685,8 +686,6 @@ void Community::tick() {
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
-
-    _nDay++;
     return;
 }
 
