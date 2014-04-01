@@ -24,18 +24,15 @@ class Infection {
         serotype = NULL_SEROTYPE;
     };
 
-    Infection* operator=(const Infection* o) {
-        if (this != o) {
-            infectedByID   = o->infectedByID;
-            infectedPlace  = o->infectedPlace;
-            infectedTime   = o->infectedTime;
-            infectiousTime = o->infectiousTime;
-            symptomTime    = o->symptomTime;
-            recoveryTime   = o->recoveryTime;
-            withdrawnTime  = o->withdrawnTime;
-            serotype       = o->serotype;
-        }
-        return this;
+    Infection(const Infection* o) {
+        infectedByID   = o->infectedByID;
+        infectedPlace  = o->infectedPlace;
+        infectedTime   = o->infectedTime;
+        infectiousTime = o->infectiousTime;
+        symptomTime    = o->symptomTime;
+        recoveryTime   = o->recoveryTime;
+        withdrawnTime  = o->withdrawnTime;
+        serotype       = o->serotype;
     }
 
     int infectedByID;                               // who infected this person

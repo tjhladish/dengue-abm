@@ -58,9 +58,9 @@ void Person::copyImmunity(const Person *p) {
     assert(p!=NULL);
     _nImmunity = p->_nImmunity;
     _bVaccinated = p->_bVaccinated;
-    infectionHistory.resize( p->infectionHistory.size() );
+    clearInfectionHistory();
     for (int i=0; i < p->getNumInfections(); i++) {
-        infectionHistory[i] = p->infectionHistory[i];
+        infectionHistory.push_back( new Infection(p->infectionHistory[i]) );
     }
 }
 
