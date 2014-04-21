@@ -9,8 +9,8 @@ CFLAGS   = -Wall -pedantic
 #OPTI     = -p
 OPTI     = -O2
 #OPTI     = -g
-LDFLAGS	= 
-INCLUDES	= 
+LDFLAGS	= 	  -L $(HPC_GSL_LIB)
+INCLUDES	= -I $(HPC_GSL_INC)
 LIBS	= -lm -lgsl -lgslcblas
 DEFINES = -DVERBOSE 
 
@@ -18,6 +18,9 @@ default: model
 
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
 	$(CCLINKER) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+
+mpi_model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o 
+	$(CCLINKER) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cpp Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<
