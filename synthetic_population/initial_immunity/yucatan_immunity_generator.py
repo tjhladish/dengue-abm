@@ -3,48 +3,53 @@ from random import random, shuffle, sample, choice, randint
 from collections import OrderedDict
 from sys import exit
 from copy import deepcopy
+from sys import argv, exit
+
+if len(argv) != 3:
+    print "\n\tUsage: ./yucatan_immunity_generator.py <expansion_factor> <last_year>" 
+    print "\tNB: <last_year> is the last year of data to include when simulating immunity.\n"
+    exit()
 
 NUM_SEROTYPES = 4
 MAX_CENSUS_AGE = 85 # used if a census age group has only a minimum value, e.g. '85+'
 
 # Reported DF + DHF cases, 1997-2011 (inclusive)
-# Values are estimated from Fig. 1 of Hector's baseline studies manuscript
-# http://arohatgi.info/WebPlotDigitizer/ was used to extract values
 
-cases = [4220,	#1979
-         4690,	#1980
-         3360,	#1981
-         1400,	#1982
-          630,	#1983
-         5490,	#1984
-          190,	#1985
-            0,	#1986
-            0,	#1987
-          330,	#1988
-            0,	#1989
-            0,	#1990
-          330,	#1991
-            0,	#1992
-           20,	#1993
-          650,	#1994
-           50,	#1995
-          610,	#1996
-         5530,	#1997
-           20,	#1998
-           30,	#1999
+cases = [4234,	#1979
+         4672,	#1980
+         3377,	#1981
+         1412,	#1982
+          643,	#1983
+         5495,	#1984
+          193,	#1985
+           34,	#1986
+           15,	#1987
+          356,	#1988
+            2,	#1989
+            8,	#1990
+          352,	#1991
+           22,	#1992
+           29,	#1993
+          680,	#1994
+           69,	#1995
+          650,	#1996
+         5529,	#1997
+           36,	#1998
+           43,	#1999
             0,	#2000
-          280,	#2001
-          930,	#2002
-            0,	#2003
-           50,	#2004
-          160,	#2005
-          590,	#2006
-         1840,	#2007
-          700,	#2008
-         3220,	#2009
-         2520,	#2010
-         6140]	#2011
-
+          287,	#2001
+          946,	#2002
+           26,	#2003
+           57,	#2004
+          162,	#2005
+          627,	#2006
+         1861,	#2007
+          721,	#2008
+         3212,	#2009
+         2517,	#2010
+         6132,	#2011
+         5705]	#2012
+ 
 serotype_wt = [ [1.00,	0.00,	0.00,	0.00],   # 1979 # Fig. 1
                 [1.00,	0.00,	0.00,	0.00],   # 1980 # Fig. 1
                 [1.00,	0.00,	0.00,	0.00],   # 1981 # Fig. 1
@@ -67,17 +72,17 @@ serotype_wt = [ [1.00,	0.00,	0.00,	0.00],   # 1979 # Fig. 1
                 [0.09,	0.00,	0.87,	0.04],   # 1998 # extrapolated
                 [0.09,	0.00,	0.87,	0.04],   # 1999 # extrapolated
                 [0.09,	0.00,	0.87,	0.04],   # 2000 # extrapolated
-                [0.00,	0.61,	0.39,	0.00],   # 2001 # Fig. 4
+                [0.00,	0.60,	0.40,	0.00],   # 2001 # Fig. 4
                 [0.04,	0.96,	0.00,	0.00],   # 2002 # Fig. 4
                 [0.04,	0.96,	0.00,	0.00],   # 2003 # extrapolated
                 [0.04,	0.96,	0.00,	0.00],   # 2004 # extrapolated
                 [0.11,	0.89,	0.00,	0.00],   # 2005 # Fig. 4
-                [0.27,	0.54,	0.19,	0.00],   # 2006 # Fig. 4
-                [0.91,	0.03,	0.04,	0.02],   # 2007 # Fig. 4
+                [0.27,	0.55,	0.18,	0.00],   # 2006 # Fig. 4
+                [0.90,	0.04,	0.04,	0.02],   # 2007 # Fig. 4
                 [0.85,	0.15,	0.00,	0.00],   # 2008 # Fig. 4
-                [0.45,	0.55,	0.00,	0.00],   # 2009 # Fig. 4
+                [0.46,	0.54,	0.00,	0.00],   # 2009 # Fig. 4
                 [0.59,	0.41,	0.00,	0.00],   # 2010 # Fig. 4
-                [0.32,	0.68,	0.00,	0.00] ]  # 2011 # Fig. 4
+                [0.34,	0.66,	0.00,	0.00] ]  # 2011 # Fig. 4
 
 def sample_serotype(wts):
     r = random()
@@ -208,10 +213,10 @@ def age_full_population(census, full_pop, new_year):
 
     return full_pop
    
-EXPANSION_FACTOR = 36
+EXPANSION_FACTOR = int(argv[1])
+LAST_YEAR = int(argv[2])
 
-NOW   = 2012
-YEARS = range(1979,2012)
+YEARS = range(1979,LAST_YEAR + 1)
 first_year = YEARS[0]
 
 census = import_census_data('interpolated_ages-yucatan.out')
@@ -231,8 +236,8 @@ for ya in range(len(YEARS),0,-1):
     num_of_infections = cases[year] * EXPANSION_FACTOR
     pop_size_by_age = [len(full_pop[age]) for age in range(len(full_pop))]
     pop_size = sum(pop_size_by_age)
-    print "year, years ago, pop, cases, infections"
-    print YEARS[year], ya, pop_size, cases[year], num_of_infections
+    print "year, years ago, pop, cases, infections, expansion factor"
+    print YEARS[year], ya, pop_size, cases[year], num_of_infections, EXPANSION_FACTOR
     print "expected serotype distribution: ", serotype_wt[year]
     serotype_tally = [0 for i in range(NUM_SEROTYPES)]
     for i in range(num_of_infections):
@@ -283,16 +288,17 @@ print "\t\t\tDone."
 
 # read in population data
 header = True
-fo = open('immunity-yucatan.txt', 'w')
+fo = open('/work/01856/thladish/initial_immunity/' + str(EXPANSION_FACTOR) + '.txt', 'w')
+#fo = open(str(EXPANSION_FACTOR) + '.txt', 'w')
 fo.write('pid age imm1 imm2 imm3 imm4\n')
 
 print "Building immunity file . . . "
 counter = 0
-for line in file('../../pop-yucatan/population-yucatan_final.txt'):
+for line in file('../../pop-yucatan/population-yucatan.txt'):
     if header:
         header = False
         continue
-    if counter % 10000 == 0:
+    if counter % 100000 == 0:
         print counter
     counter += 1
     p = line.split()
