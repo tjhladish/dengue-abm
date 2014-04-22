@@ -112,7 +112,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community) {
     int nNextExternalIncubation = 0;
     int epi_ctr = 0;
     for (int t=0; t<par->nRunLength; t++) {
-        if (t%10==0) cerr << "Time " << t << " epi_size " << epi_ctr << endl;
+        //if (t%10==0) cerr << "Time " << t << " epi_size " << epi_ctr << endl;
         if ((t-100)%365==0) {
             if (t > 365) {
                 epi_sizes.push_back(epi_ctr);
