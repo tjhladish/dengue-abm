@@ -1,26 +1,21 @@
-### make changes accordingly ###
-CC       = gcc
 CPP      = g++
-CLINKER  = gcc
-CCLINKER = g++
+#CPP      = icc
 MAKE     = make --no-print-directory
 SHELL    = /bin/sh
 CFLAGS   = -Wall -pedantic 
-#OPTI     = -p
 OPTI     = -O2
-#OPTI     = -g
-LDFLAGS	= 	  -L $(HPC_GSL_LIB)
-INCLUDES	= -I $(HPC_GSL_INC)
-LIBS	= -lm -lgsl -lgslcblas
-DEFINES = -DVERBOSE 
+LDFLAGS	 = -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)
+INCLUDES = -I $(HPC_GSL_INC) $(TACC_GSL_INC)
+LIBS     = -lm -lgsl -lgslcblas
+DEFINES  = -DVERBOSE 
 
 default: model
 
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
-	$(CCLINKER) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 mpi_model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o 
-	$(CCLINKER) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CPP) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cpp Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<
