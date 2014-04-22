@@ -1,18 +1,17 @@
 #!/usr/bin/perl
 use strict;
 
-my ($EF, $mos_move, $mos_cap, $daily_exp, $beta, $mp, $pm) = @ARGV;
+my ($EF, $mos_move, $mos_cap, $daily_exp, $betamp, $betapm) = @ARGV;
 
-my $betamp = $beta * $mp;
-my $betapm = $beta * $pm;
+my $dengue_dir = "\$HOME/dengue";
+my $imm_dir = "\$WORK/initial_immunity";
 
-
-my $command = "./model -randomseed 5500 \\
--locfile ./pop-yucatan/locations-yucatan.txt \\
--netfile ./pop-yucatan/network-yucatan.txt \\
--popfile ./pop-yucatan/population-yucatan.txt \\
--immfile ./pop-yucatan/immunity-yucatan/$EF.txt \\
--probfile ./pop-yucatan/swap_probabilities-yucatan.txt \\
+my $command = "$dengue_dir/mpi_model -randomseed 5500 \\
+-locfile $dengue_dir/pop-yucatan/locations-yucatan.txt \\
+-netfile $dengue_dir/pop-yucatan/network-yucatan.txt \\
+-popfile $dengue_dir/pop-yucatan/population-yucatan.txt \\
+-immfile $imm_dir/$EF.txt \\
+-probfile $dengue_dir/pop-yucatan/swap_probabilities-yucatan.txt \\
 -mosquitomove $mos_move \\
 -mosquitomovemodel weighted \\
 -mosquitoteleport 0.0 \\
@@ -23,16 +22,17 @@ my $command = "./model -randomseed 5500 \\
 -secondaryscaling 1.0 1.0 1.0 1.0 \\
 -mosquitocapacity $mos_cap \\
 -daysimmune 730 \\
--runlength 470 \\
--dailyexposed $daily_exp $daily_exp $daily_exp $daily_exp \\
+-runlength 4500 \\
+-dailyexposed $daily_exp $daily_exp $daily_exp 0.0 \\
 -ves 0.7\n";
 
-print $command;
+#print $command; # debugging
 
 #./run_dengue.py 3 3.25 10 10
 #<mean_epi_size> <sd_epi_size> <max_epi_size> <prob_epidemic>
 #
 #close(STDERR);
 
-my $output = `$command`;
-print "output: $output";
+my $output_str = `$command`;
+my @output = split(' ', $output_str);
+print $output[0]/$EF, ' ', $output[1]/$EF, ' ', $output[2]/$EF;
