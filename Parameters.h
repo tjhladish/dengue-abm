@@ -182,6 +182,7 @@ public:
     int nPrevaccinateAgeMax[100];
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
+    double expansionFactor;
 };
 
 #endif

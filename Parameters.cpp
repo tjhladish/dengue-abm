@@ -31,6 +31,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
         nSizeVaccinate = 0;                                 // number of parts in phased vaccination
         nSizePrevaccinateAge = 0;
         nMaxInfectionParity = NUM_OF_SEROTYPES;
+        expansionFactor = 1;
 
         for (int i=0; i<NUM_OF_SEROTYPES; i++) {
             nInitialExposed[i]=0;
@@ -89,6 +90,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else if (strcmp(argv[i], "-betamp")==0) {
                     betaMP = strtod(argv[i+1],end);
+                    i++;
+                }
+                else if (strcmp(argv[i], "-expansionfactor")==0) {
+                    expansionFactor = strtod(argv[i+1],end);
                     i++;
                 }
                 else if (strcmp(argv[i], "-mosquitomove")==0) {

@@ -36,9 +36,21 @@ int main(int argc, char *argv[]) {
     vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
     vector<int> epi_sizes = simulate_epidemic(par, community);
-    cout << mean(epi_sizes) << " " << stdev(epi_sizes) << " " << max_element(epi_sizes) << endl;
+
+    const double ef = par->expansionFactor;
+    vector<double> x(epi_sizes.size());
+    vector<double> y(epi_sizes.size());
+    // convert infections to cases
+    for (unsigned int i = 0; i < epi_sizes.size(); i++) { 
+        y[i] = ((double) epi_sizes[i])/ef; 
+        x[i] = i+1.0;
+    }
+
+    Fit* fit = lin_reg(x, y);
+    cout << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
+         << fit->m << " " << fit->b << " " << fit->rsq << endl;
     write_output(par, community, initial_susceptibles);
-    
+   
     return 0;
 }
  

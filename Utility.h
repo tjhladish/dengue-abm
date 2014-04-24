@@ -13,6 +13,13 @@
 
 using namespace std;
 
+class Fit {
+    public:
+        double m;
+        double b;
+        double rsq;
+};
+
 template <typename T> inline T sum(vector<T> list) { T sum=0; for (unsigned int i=0; i<list.size(); i++) sum += list[i]; return sum;}
 template <typename T> inline double mean(vector<T> list) { return (double) sum(list) / list.size(); }
 
@@ -162,7 +169,40 @@ inline void cout_vector(vector<T> & my_vector, string sep = " ") {
     cout << my_vector.back();
 }
 
-
 inline double string2double(const std::string& s){ std::istringstream i(s); double x = 0; i >> x; return x; }
 
+Fit* lin_reg(const std::vector<double> &x, const std::vector<double> &y) {
+    assert( x.size() == y.size() );
+    Fit* fit = new Fit();
+    const int n = x.size();
+    double sumx = 0.0;                        /* sum of x                      */
+    double sumx2 = 0.0;                       /* sum of x**2                   */
+    double sumxy = 0.0;                       /* sum of x * y                  */
+    double sumy = 0.0;                        /* sum of y                      */
+    double sumy2 = 0.0;                       /* sum of y**2                   */
+
+    for (int i=0; i<n; i++)   { 
+        sumx  += x[i];       
+        sumx2 += pow(x[i],2);  
+        sumxy += x[i] * y[i];
+        sumy  += y[i];      
+        sumy2 += pow(y[i],2); 
+    } 
+
+    double denom = n * sumx2 - pow(sumx,2);
+    if (denom == 0) {
+        // singular matrix. can't solve the problem.
+        fit->m   = 0;
+        fit->b   = 0;
+        fit->rsq = 0;
+        return fit;
+    }
+
+    fit->m = (n * sumxy  -  sumx * sumy) / denom;
+    fit->b = (sumy * sumx2  -  sumx * sumxy) / denom;
+    // compute correlation coeff
+    fit->rsq = pow((sumxy - sumx * sumy / n) / sqrt((sumx2 - pow(sumx,2)/n) * (sumy2 - pow(sumy,2)/n)),2);
+
+    return fit; 
+}
 #endif
