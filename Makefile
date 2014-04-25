@@ -1,5 +1,5 @@
-CPP      = g++
-#CPP      = icc
+#CPP      = g++
+CPP      = icc
 MAKE     = make --no-print-directory
 SHELL    = /bin/sh
 CFLAGS   = -Wall -pedantic 

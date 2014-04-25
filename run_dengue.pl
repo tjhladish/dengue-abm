@@ -3,14 +3,13 @@ use strict;
 
 my ($EF, $mos_move, $daily_exp, $betamp, $betapm) = @ARGV;
 
-my $dengue_dir = "\$HOME/dengue";
-my $imm_dir = "\$WORK/initial_immunity";
+my $dengue_dir = "/scratch/lfs/thladish/dengue";
 
 my $command = "$dengue_dir/mpi_model -randomseed 5500 \\
 -locfile $dengue_dir/pop-yucatan/locations-yucatan.txt \\
 -netfile $dengue_dir/pop-yucatan/network-yucatan.txt \\
 -popfile $dengue_dir/pop-yucatan/population-yucatan.txt \\
--immfile $imm_dir/$EF.txt \\
+-immfile $dengue_dir/pop-yucatan/immunity/$EF.txt \\
 -expansionfactor $EF \\
 -probfile $dengue_dir/pop-yucatan/swap_probabilities-yucatan.txt \\
 -mosquitomove $mos_move \\
@@ -33,6 +32,7 @@ my $command = "$dengue_dir/mpi_model -randomseed 5500 \\
 #<mean_epi_size> <sd_epi_size> <max_epi_size>
 #
 
-close(STDERR);
-my $output_str = `$command`;
-print $output_str;
+#close(STDERR);
+#my $output_str = `$command`;
+exec $command;
+#print $output_str;
