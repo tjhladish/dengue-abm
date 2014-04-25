@@ -238,7 +238,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         }
     }
     iss.close();
-    cerr << _location.size() << " locations" << endl;
+    //cerr << _location.size() << " locations" << endl;
 
     //_numLocationMosquitoCreated.clear();
     //_numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
