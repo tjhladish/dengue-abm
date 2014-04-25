@@ -31,8 +31,6 @@ my $command = "$dengue_dir/mpi_model -randomseed 5500 \\
 
 #./run_dengue.py 3 3.25 10 10
 #<mean_epi_size> <sd_epi_size> <max_epi_size>
-#
 
-close(STDERR);
 my $output_str = `$command`;
 print $output_str;
