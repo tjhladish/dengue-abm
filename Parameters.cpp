@@ -45,8 +45,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
         fSecondaryScaling.clear();
         fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 
-        std::cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << std::endl;
-        std::cerr << "written by Dennis Chao and Thomas Hladish in 2012" << std::endl;
+        //std::cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << std::endl;
+        //std::cerr << "written by Dennis Chao and Thomas Hladish in 2012" << std::endl;
 
         if (argc>1) {
             for (int i=1; i<argc; i++) {
@@ -251,106 +251,112 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 }
                 else {
                     std::cerr << "Unknown option: " << argv[i] << std::endl;
+                    std::cerr << "Check arguments and formatting." << std::endl;
                     exit(-1);
                 }
             }
         }
-        std::cerr << "population file = " << szPopulationFile << std::endl;
-        std::cerr << "immunity file = " << szImmunityFile << std::endl;
-        std::cerr << "location file = " << szLocationFile << std::endl;
-        std::cerr << "network file = " << szNetworkFile << std::endl;
-        std::cerr << "swap probabilities file = " << szSwapProbFile << std::endl;
-        std::cerr << "runlength = " << nRunLength << std::endl;
+        //std::cerr << "population file = " << szPopulationFile << std::endl;
+        //std::cerr << "immunity file = " << szImmunityFile << std::endl;
+        //std::cerr << "location file = " << szLocationFile << std::endl;
+        //std::cerr << "network file = " << szNetworkFile << std::endl;
+        //std::cerr << "swap probabilities file = " << szSwapProbFile << std::endl;
+        //std::cerr << "runlength = " << nRunLength << std::endl;
         if (nRunLength>MAX_RUN_TIME) {
             std::cerr << "ERROR: runlength is too long: " << nRunLength << std::endl;
-            std::cerr << " change Community.h and recompile." << std::endl;
+            std::cerr << " change Parameters.h and recompile." << std::endl;
             exit(-1);
         }
         if (nRunLength==365) {
-            std::cerr << "ERROR: you probably want runlength to be 364, not 365" << std::endl;
-            exit(-1);
+            //std::cerr << "WARNING: you probably want runlength to be 364, not 365" << std::endl;
         }
-        std::cerr << "random seed = " << randomseed << std::endl;
-        std::cerr << "beta_PM = " << betaPM << std::endl;
-        std::cerr << "beta_MP = " << betaMP << std::endl;
-        std::cerr << "days of complete cross protection = " << nDaysImmune << std::endl;
-        std::cerr << "maximum infection parity = " << nMaxInfectionParity << std::endl;
-        std::cerr << "pathogenicity of primary infection =";
-        for (int i=0; i<NUM_OF_SEROTYPES; i++)
-            std::cerr << " " << fPrimaryPathogenicity[i];
-        std::cerr << std::endl;
-        std::cerr << "pathogenicity scaling for secondary infection =";
-        for (int i=0; i<NUM_OF_SEROTYPES; i++)
-            std::cerr << " " << fSecondaryScaling[i];
-        std::cerr << std::endl;
-        std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
-        std::cerr << "mosquito move model = " << szMosquitoMoveModel << std::endl;
+        //std::cerr << "random seed = " << randomseed << std::endl;
+        //std::cerr << "beta_PM = " << betaPM << std::endl;
+        //std::cerr << "beta_MP = " << betaMP << std::endl;
+        //std::cerr << "days of complete cross protection = " << nDaysImmune << std::endl;
+        //std::cerr << "maximum infection parity = " << nMaxInfectionParity << std::endl;
+        //std::cerr << "pathogenicity of primary infection =";
+        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+            //std::cerr << " " << fPrimaryPathogenicity[i];
+        }
+        //std::cerr << std::endl;
+        //std::cerr << "pathogenicity scaling for secondary infection =";
+        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+            //std::cerr << " " << fSecondaryScaling[i];
+        }
+        //std::cerr << std::endl;
+        //std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
+        //std::cerr << "mosquito move model = " << szMosquitoMoveModel << std::endl;
         if ( szMosquitoMoveModel != "uniform" and szMosquitoMoveModel != "weighted" ) {
             std::cerr << "ERROR: invalid mosquito movement model requested:" << std::endl;
             std::cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << std::endl;
             exit(-1);
         }
-        std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
-        std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-        std::cerr << "number of daily exposures =";
-        for (int i=0; i<NUM_OF_SEROTYPES; i++)
-            std::cerr << " " << nDailyExposed[i];
-        std::cerr << std::endl;
-	if (eMosquitoDistribution==CONSTANT)
-	  std::cerr << "mosquito capacity distribution is constant" << std::endl;
-	else if (eMosquitoDistribution==EXPONENTIAL)
-	  std::cerr << "mosquito capacity distribution is exponential" << std::endl;
+        //std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
+        //std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
+        //std::cerr << "number of daily exposures =";
+        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+            //std::cerr << " " << nDailyExposed[i];
+        }
+        //std::cerr << std::endl;
+	if (eMosquitoDistribution==CONSTANT) {
+	  //std::cerr << "mosquito capacity distribution is constant" << std::endl;
+	} else if (eMosquitoDistribution==EXPONENTIAL)
+	  //std::cerr << "mosquito capacity distribution is exponential" << std::endl;
         if (nSizeMosquitoMultipliers>0) {
-            std::cerr << "mosquito seasonal multipliers (days,mult) =";
-            for (int j=0; j<nSizeMosquitoMultipliers; j++)
-                std::cerr << " (" << nMosquitoMultiplierDays[j] << "," << fMosquitoMultipliers[j] << ")";
-            std::cerr << std::endl;
+            //std::cerr << "mosquito seasonal multipliers (days,mult) =";
+            for (int j=0; j<nSizeMosquitoMultipliers; j++) {
+                //std::cerr << " (" << nMosquitoMultiplierDays[j] << "," << fMosquitoMultipliers[j] << ")";
+            }
+            //std::cerr << std::endl;
         }
         if (nSizeExternalIncubation>0) {
-            std::cerr << "external incubation periods (days,EIP) =";
-            for (int j=0; j<nSizeExternalIncubation; j++)
-                std::cerr << " (" << nExternalIncubationDays[j] << "," << nExternalIncubation[j] << ")";
-            std::cerr << std::endl;
-        }
-        std::cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << std::endl;
-        if (nSizeVaccinate>0) {
-            std::cerr << "Phased vaccinate (year, age, frac) = ";
-            for (int j=0; j<nSizeVaccinate; j++) {
-                std::cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
+            //std::cerr << "external incubation periods (days,EIP) =";
+            for (int j=0; j<nSizeExternalIncubation; j++) {
+                //std::cerr << " (" << nExternalIncubationDays[j] << "," << nExternalIncubation[j] << ")";
             }
-            std::cerr << std::endl;
+            //std::cerr << std::endl;
+        }
+        //std::cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << std::endl;
+        if (nSizeVaccinate>0) {
+            //std::cerr << "Phased vaccinate (year, age, frac) = ";
+            for (int j=0; j<nSizeVaccinate; j++) {
+                //std::cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
+            }
+            //std::cerr << std::endl;
         }
         if (nSizePrevaccinateAge>0) {
-            std::cerr << "Pre-vaccinate by age (min, max, frac) = ";
+            //std::cerr << "Pre-vaccinate by age (min, max, frac) = ";
             for (int j=0; j<nSizePrevaccinateAge; j++) {
-                std::cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
+                //std::cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
             }
-            std::cerr << std::endl;
+            //std::cerr << std::endl;
         }
-        std::cerr << "VE_I = " << fVEI << std::endl;
-        std::cerr << "VE_P = " << fVEP << std::endl;
+        //std::cerr << "VE_I = " << fVEI << std::endl;
+        //std::cerr << "VE_P = " << fVEP << std::endl;
         if (fVEI>1.0 || fVEP>1.0) {
             std::cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << std::endl;
             exit(-1);
         }
-        std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
+        //std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
 
-	if (bVaccineLeaky)
-	  std::cerr << "VE_S is leaky" << std::endl;
-	else
-	  std::cerr << "VE_S is all-or-none" << std::endl;
+	if (bVaccineLeaky) {
+	  //std::cerr << "VE_S is leaky" << std::endl;
+	} else {
+	  //std::cerr << "VE_S is all-or-none" << std::endl;
+    }
 
-        if (szPeopleFile.length()>0) {
-            std::cerr << "people output file = " << szPeopleFile << std::endl;
-        } else {
-            std::cerr << "no people output file" << std::endl;
-        }
-        if (szYearlyPeopleFile.length()>0) {
-            std::cerr << "yearly people output file = " << szYearlyPeopleFile << std::endl;
-        }
-        if (szDailyFile.length()>0) {
-            std::cerr << "daily output file = " << szDailyFile << std::endl;
-        } else {
-            std::cerr << "no daily output file" << std::endl;
-        }
+    if (szPeopleFile.length()>0) {
+        //std::cerr << "people output file = " << szPeopleFile << std::endl;
+    } else {
+        //std::cerr << "no people output file" << std::endl;
+    }
+    if (szYearlyPeopleFile.length()>0) {
+        //std::cerr << "yearly people output file = " << szYearlyPeopleFile << std::endl;
+    }
+    if (szDailyFile.length()>0) {
+        //std::cerr << "daily output file = " << szDailyFile << std::endl;
+    } else {
+        //std::cerr << "no daily output file" << std::endl;
+    }
 }

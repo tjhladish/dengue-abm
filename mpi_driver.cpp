@@ -31,7 +31,6 @@ int main(int argc, char *argv[]) {
     const Parameters* par = new Parameters(argc, argv);
 
     gsl_rng_set(RNG, par->randomseed);
-
     Community* community = build_community(par);
     vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
@@ -67,7 +66,7 @@ Community* build_community(const Parameters* par) {
     }
 
     Person::setPar(par);
-    cerr << community->getNumPerson() << " people" << endl;
+    //cerr << community->getNumPerson() << " people" << endl;
 
     if (!par->bSecondaryTransmission) {
         community->setNoSecondaryTransmission();
