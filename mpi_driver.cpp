@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <assert.h>
+#include <time.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include "Parameters.h"
@@ -28,6 +29,13 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community);
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 
 int main(int argc, char *argv[]) {
+    time_t start ,end;
+    time (&start);
+
+    srand(time(NULL));
+    int proccess_id = rand();
+    fprintf(stderr, "%dbegin\n", proccess_id);
+
     const Parameters* par = new Parameters(argc, argv);
 
     gsl_rng_set(RNG, par->randomseed);
@@ -46,8 +54,29 @@ int main(int argc, char *argv[]) {
     }
 
     Fit* fit = lin_reg(x, y);
+    
+    time (&end);
+    double dif = difftime (end,start);
+
+    stringstream ss;
+    // wallclock time (seconds)
+    ss << proccess_id << "end " << dif << " ";
+    // parameters
+    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
+       << par->betaMP << " " << par->betaPM << " ";
+    // metrics
+    ss << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
+       << fit->m << " " << fit->b << " " << fit->rsq;
+
+    ss << endl;
+    string output = ss.str();
+    fprintf(stderr, output.c_str());
+    
+    // metrics to stdout
     cout << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
-         << fit->m << " " << fit->b << " " << fit->rsq << endl;
+       << fit->m << " " << fit->b << " " << fit->rsq;
+
+
     write_output(par, community, initial_susceptibles);
    
     return 0;

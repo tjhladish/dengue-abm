@@ -11,6 +11,8 @@ DEFINES  = -DVERBOSE
 
 default: model
 
+all_mpi: mpi_model
+
 model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
 	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
 
