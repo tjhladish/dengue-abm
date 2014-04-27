@@ -102,8 +102,6 @@ static const double SYMPTOMATIC_BY_AGE[MAX_PERSON_AGE] = {
 //    0.0287,0.0287,0.0287,0.0287,0.0287,0.0457,0.0457,0.0457,0.0457,0.0457,
 //    0.0767,0.0767,0.0767,0.0767,0.0767,0.1434,0.1434,0.1434,0.1434,0.1434};
 
-
-
 namespace dengue {
     namespace standard {
         using std::cout;
@@ -129,11 +127,12 @@ namespace dengue {
 class Parameters {
 public:
 
-    Parameters(int argc, char *argv[]) {
-        readParameters(argc,argv);
-    }
+    Parameters() { define_defaults(); }
+    Parameters(int argc, char *argv[]) { define_defaults(); readParameters(argc, argv); }
 
+    void define_defaults();
     void readParameters(int argc, char *argv[]);
+    void validate_parameters();
 
     int randomseed;
     int nRunLength;
