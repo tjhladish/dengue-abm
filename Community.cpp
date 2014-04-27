@@ -40,6 +40,7 @@ Community::Community(const Parameters* parameters) :
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
+    for (int a = 0; a<MAX_PERSON_AGE; a++) _nPersonAgeCohortSizes[a] = 0;
 }
 
 
@@ -156,6 +157,8 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         _personAgeCohort[age].push_back(_person + i);
         _nPersonAgeCohortSizes[age]++;
     }
+
+    //cerr << "cohort sizes: " << _nPersonAgeCohortSizes[0] << " " << _nPersonAgeCohortSizes[25] << " " << _nPersonAgeCohortSizes[75] << " " <<    _nPersonAgeCohortSizes[100] << endl;
 
     if (swapFilename == "") {
         _uniformSwap = true;
@@ -449,6 +452,7 @@ void Community::swapImmuneStates() {
     // For people of age x, copy immune status from people of age x-1
     for (int age=MAX_PERSON_AGE-1; age>0; age--) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+            //cerr << "age " << age << ": " << pnum << " of " << _nPersonAgeCohortSizes[age] << endl;
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
             if (_uniformSwap == true) {
