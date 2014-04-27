@@ -640,11 +640,15 @@ void Community::_advanceTimers() {
     // advance age of infectious mosquitoes
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
+#ifndef __INTEL_COMPILER
         _infectiousMosquitoQueue[i].shrink_to_fit();
+#endif
     }
     
     _infectiousMosquitoQueue.back().clear();
+#ifndef __INTEL_COMPILER
     _infectiousMosquitoQueue.back().shrink_to_fit();
+#endif
 
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
@@ -657,10 +661,14 @@ void Community::_advanceTimers() {
 
     for (unsigned int i=0; i<_exposedMosquitoQueue.size()-1; i++) {
         _exposedMosquitoQueue[i] = _exposedMosquitoQueue[i+1];
+#ifndef __INTEL_COMPILER
         _exposedMosquitoQueue[i].shrink_to_fit();
+#endif
     }
     _exposedMosquitoQueue.back().clear();
+#ifndef __INTEL_COMPILER
     _exposedMosquitoQueue.back().shrink_to_fit();
+#endif
     return;
 }
 
