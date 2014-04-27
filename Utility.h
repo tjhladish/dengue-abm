@@ -22,6 +22,7 @@ class Fit {
 
 template <typename T> inline T sum(vector<T> list) { T sum=0; for (unsigned int i=0; i<list.size(); i++) sum += list[i]; return sum;}
 template <typename T> inline double mean(vector<T> list) { return (double) sum(list) / list.size(); }
+template <typename T> inline long double mean(vector<T> list) { return (long double) sum(list) / list.size(); }
 
 template <typename T> inline
 double median(vector<T> L) { 
@@ -128,6 +129,9 @@ double variance(vector<T> & numbers) {
 
 template <typename T>
 double stdev(vector<T> & numbers) { return sqrt( variance(numbers) ); }
+
+template <typename T>
+long double stdev(vector<T> & numbers) { return sqrt( variance(numbers) ); }
 
 template <typename T>
 inline int sign(const T& _a) { return (int)((_a)<0 ? (-1) : (1)); }
