@@ -631,17 +631,20 @@ void Community::_advanceTimers() {
     }
     _exposedQueue.back().clear();
 
+    // delete infected mosquitoes that are dying today
+    vector<Mosquito*>::iterator itr; 
+    for(itr = _infectiousMosquitoQueue.front().begin(); itr != _infectiousMosquitoQueue.front().end(); ++itr ) {
+        delete (*itr);
+    }
+
     // advance age of infectious mosquitoes
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
+        _infectiousMosquitoQueue[i].shrink_to_fit();
     }
-
-    // delete infected mosquitoes that are dying today
-    vector<Mosquito*>::iterator itr; 
-    for(itr = _infectiousMosquitoQueue.back().begin(); itr != _infectiousMosquitoQueue.back().end(); ++itr ) {
-        delete (*itr);
-    }
+    
     _infectiousMosquitoQueue.back().clear();
+    _infectiousMosquitoQueue.back().shrink_to_fit();
 
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
@@ -654,9 +657,10 @@ void Community::_advanceTimers() {
 
     for (unsigned int i=0; i<_exposedMosquitoQueue.size()-1; i++) {
         _exposedMosquitoQueue[i] = _exposedMosquitoQueue[i+1];
+        _exposedMosquitoQueue[i].shrink_to_fit();
     }
     _exposedMosquitoQueue.back().clear();
-    
+    _exposedMosquitoQueue.back().shrink_to_fit();
     return;
 }
 
