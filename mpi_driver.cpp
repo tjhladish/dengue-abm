@@ -20,6 +20,7 @@
 #include "Utility.h"
 
 using namespace dengue::standard;
+using namespace dengue::util;
 const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 
 // Predeclare local functions

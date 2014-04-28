@@ -48,16 +48,35 @@ Community::~Community() {
     if (_person)
         delete [] _person;
 
+    Person::reset_ID_counter();
+
+    for (unsigned int i = 0; i < _location.size(); i++ ) delete _location[i];
     _location.clear();
+
+    for (unsigned int i = 0; i < _exposedQueue.size(); i++ ) _exposedQueue[i].clear();
     _exposedQueue.clear();
+
+    for (unsigned int i = 0; i < _infectiousMosquitoQueue.size(); i++ ) _infectiousMosquitoQueue[i].clear();
     _infectiousMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _exposedMosquitoQueue.size(); i++ ) _exposedMosquitoQueue[i].clear();
     _exposedMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _personAgeCohort.size(); i++ ) _personAgeCohort[i].clear();
     _personAgeCohort.clear();
+    
+    for (unsigned int i = 0; i < _nNumNewlyInfected.size(); i++ ) _nNumNewlyInfected[i].clear();
+    _nNumNewlyInfected.clear();
+
+    for (unsigned int i = 0; i < _nNumNewlySymptomatic.size(); i++ ) _nNumNewlySymptomatic[i].clear();
+    _nNumNewlySymptomatic.clear();
+
 }
 
 
 bool Community::loadPopulation(string populationFilename, string immunityFilename, string swapFilename) {
     ifstream iss(populationFilename.c_str());
+
     if (!iss) {
         cerr << "ERROR: " << populationFilename << " not found." << endl;
         return false;
@@ -76,8 +95,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     _person = new Person[maxPerson];
 
     int agecounts[MAX_PERSON_AGE];
-    for (int i=0; i<MAX_PERSON_AGE; i++)
-        agecounts[i] = 0;
+    for (int i=0; i<MAX_PERSON_AGE; i++) agecounts[i] = 0;
 
     istringstream line;
     int id, age, house, work;
@@ -129,7 +147,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
             if (parts.size() >= 1 + NUM_OF_SEROTYPES) {
                 int id = parts[0];
-                for (int i=id-1; i<=id; i++) {
+                for (int i=id-1; i<=id and id < maxPerson; i++) {
                     if (_person[i].getID()==id) {
                         for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
                             if (parts[s+1]>0) {
@@ -158,8 +176,6 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         _nPersonAgeCohortSizes[age]++;
     }
 
-    //cerr << "cohort sizes: " << _nPersonAgeCohortSizes[0] << " " << _nPersonAgeCohortSizes[25] << " " << _nPersonAgeCohortSizes[75] << " " <<    _nPersonAgeCohortSizes[100] << endl;
-
     if (swapFilename == "") {
         _uniformSwap = true;
     } else {
@@ -179,7 +195,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
             if (line >> id1 >> id2 >> prob) {
                 Person* person = getPersonByID(id1);
-                person->appendToSwapProbabilities(make_pair(id2, prob));
+                if (person) person->appendToSwapProbabilities(make_pair(id2, prob));
             }
         }
         iss.close();
@@ -275,17 +291,28 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
 Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
+    //
+    if(id < 0 or id > _nNumPerson) {
+        cerr << "ERROR: failed to find person with id " << id << " max: " << _nNumPerson << endl;
+        assert(id >= 0 and id <= _nNumPerson);
+    }
+
     int i = 0;
+    Person* person = NULL;
     if (_person[id-1].getID()==id) {
         i = id-1;
+        person = &_person[i];
     } else {
         for (i=0; i<_nNumPerson; i++) {
             if (_person[i].getID()==id) {
+                person = &_person[i];
                 break;
             }
         }
     }
-    return &_person[i];
+
+    if (not person) cerr << "WARNING: failed to find person with id " << id << endl;
+    return person;
 }
 
 
@@ -695,6 +722,7 @@ void Community::tick(int day) {
     _nDay = day;
     assert(_nDay<MAX_RUN_TIME);
     if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
+
     updateWithdrawnStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 

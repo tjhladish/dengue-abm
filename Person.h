@@ -45,8 +45,7 @@ class Infection {
     Serotype serotype; 
 };
 
-class Person
-{
+class Person {
     public:
         Person();
         ~Person();
@@ -104,6 +103,8 @@ class Person
         static const double _fIncubationDistribution[MAX_INCUBATION];
 
         Infection& initializeNewInfection();
+
+        static void reset_ID_counter() { _nNextID = 1; }
 
     protected:
         int _nID;                                                     // unique identifier

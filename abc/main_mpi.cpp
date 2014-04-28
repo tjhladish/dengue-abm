@@ -7,41 +7,10 @@
 
 using namespace std;
 
-template <typename T> inline T sum(vector<T> list) { T sum=0; for (unsigned int i=0; i<list.size(); i++) sum += list[i]; return sum;}
-
-template <typename T> inline double mean(vector<T> list) { return (double) sum(list) / list.size(); }
-
-template <typename T>
-double variance(vector<T> & numbers) {
-    double x = mean(numbers);
-    double var_num = 0;
-    int N = numbers.size();
-    if (N == 1) return 0;
-    for (int i=0; i<N; i++) var_num += pow(numbers[i] - x, 2);
-    double var = var_num/(N-1);
-    return var;
-}
-
-template <typename T>
-double stdev(vector<T> & numbers) { return sqrt( variance(numbers) ); }
-
-template <typename T> inline
-T max_element(vector<T> list) {
-    T element = list[0];
-    for (unsigned int i = 0; i < list.size(); i++) {
-        element = max(element, list[i]);
-    }
-    return element;
-}
-
-
-template <typename T>
-inline std::string to_string (const T& t) {
-    std::stringstream ss;
-    ss << t;
-    return ss.str();
-}
-
+using dengue::util::to_string;
+using dengue::util::mean;
+using dengue::util::stdev;
+using dengue::util::max_element;
 
 void setup_mpi(MPI_par &m, int &argc, char **argv) {
     /* MPI variables */
@@ -63,6 +32,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     double _daily_exp = args[2];
     double _betamp    = args[3];
     double _betapm    = args[4];
+    double _nmos      = args[5];
     
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/dengue/pop-yucatan"; 
@@ -89,7 +59,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     par->fMosquitoMove = _mos_move;
     par->szMosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = 50;
+    par->nDefaultMosquitoCapacity = (int) _nmos;
     par->eMosquitoDistribution = CONSTANT;
 
     {
@@ -182,7 +152,7 @@ vector<long double> simulator(vector<long double> args) {
     ss << hex << proccess_id << "end " << dec << dif << " ";
     // parameters
     ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
-       << par->betaMP << " " << par->betaPM << " ";
+       << par->betaMP << " " << par->betaPM << " " << par->nDefaultMosquitoCapacity << " ";
     // metrics
     ss << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
        << fit->m << " " << fit->b << " " << fit->rsq << endl;
@@ -200,6 +170,8 @@ vector<long double> simulator(vector<long double> args) {
     metrics.push_back( (long double) fit->b );
     metrics.push_back( (long double) fit->rsq );
 
+    delete par;
+    delete community;
     return metrics;
 }
 
@@ -209,7 +181,7 @@ int main(int argc, char* argv[]) {
     setup_mpi(mp, argc, argv);
 
     if (argc != 2) {
-        cerr << "\n\tUsage: ./abc abc_config_file.json\n\n";
+        cerr << "\n\tUsage: ./abc_mpi abc_config_file.json\n\n";
         return 100;
     }
     
