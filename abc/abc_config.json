@@ -1,7 +1,7 @@
 {
     "smc_iterations" : 12,
     "num_samples"    : 5120,
-    "predictive_prior_fraction" : 0.1,
+    "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.2,
 
     "particle_basefilename"         : "dengue_particles-1024",
@@ -33,13 +33,20 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 0.0,
-         "par2"       : 1.0},
+         "par2"       : 0.5},
 
         {"name"       : "beta_pm",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 0.0,
-         "par2"       : 1.0}
+         "par2"       : 0.5},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "INT",
+         "par1"       : 25,
+         "par2"       : 100}
     ],
 
     "metrics" : [

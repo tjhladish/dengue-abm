@@ -24,9 +24,19 @@ libabc_no_mpi:
 libabc_mpi:  
 	$(MAKE) -C $(ABCDIR) -f Makefile all_mpi
 
+dengue_no_mpi:
+	$(MAKE) -C $(DENDIR) -f Makefile all_no_mpi
+
+dengue_mpi:
+	$(MAKE) -C $(DENDIR) -f Makefile all_mpi
+
 abc: main.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) main.cpp -o abc $(ABC_LIB) $(GSL_LIB)
 
-abc_mpi: libabc_mpi main_mpi.cpp
+abc_mpi: libabc_mpi dengue_mpi main_mpi.cpp
 	$(CC) $(CFLAGS) -D USING_MPI $(INCLUDES) main_mpi.cpp -o abc_mpi $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
+clean:
+	$(MAKE) -C $(ABCDIR) -f Makefile clean
+	$(MAKE) -C $(DENDIR) -f Makefile clean
+	rm abc abc_mpi
