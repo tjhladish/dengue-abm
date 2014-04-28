@@ -1,8 +1,8 @@
 #CPP      = g++
-CPP      = icc
+CPP      = mpicxx
 MAKE     = make --no-print-directory
 SHELL    = /bin/sh
-CFLAGS   = -Wall -pedantic 
+CFLAGS   = -Wall -pedantic -std=c++11
 OPTI     = -O2
 LDFLAGS	 = -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)
 INCLUDES = -I $(HPC_GSL_INC) $(TACC_GSL_INC)

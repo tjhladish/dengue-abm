@@ -40,6 +40,7 @@ Community::Community(const Parameters* parameters) :
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
+    for (int a = 0; a<MAX_PERSON_AGE; a++) _nPersonAgeCohortSizes[a] = 0;
 }
 
 
@@ -47,16 +48,35 @@ Community::~Community() {
     if (_person)
         delete [] _person;
 
+    Person::reset_ID_counter();
+
+    for (unsigned int i = 0; i < _location.size(); i++ ) delete _location[i];
     _location.clear();
+
+    for (unsigned int i = 0; i < _exposedQueue.size(); i++ ) _exposedQueue[i].clear();
     _exposedQueue.clear();
+
+    for (unsigned int i = 0; i < _infectiousMosquitoQueue.size(); i++ ) _infectiousMosquitoQueue[i].clear();
     _infectiousMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _exposedMosquitoQueue.size(); i++ ) _exposedMosquitoQueue[i].clear();
     _exposedMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _personAgeCohort.size(); i++ ) _personAgeCohort[i].clear();
     _personAgeCohort.clear();
+    
+    for (unsigned int i = 0; i < _nNumNewlyInfected.size(); i++ ) _nNumNewlyInfected[i].clear();
+    _nNumNewlyInfected.clear();
+
+    for (unsigned int i = 0; i < _nNumNewlySymptomatic.size(); i++ ) _nNumNewlySymptomatic[i].clear();
+    _nNumNewlySymptomatic.clear();
+
 }
 
 
 bool Community::loadPopulation(string populationFilename, string immunityFilename, string swapFilename) {
     ifstream iss(populationFilename.c_str());
+
     if (!iss) {
         cerr << "ERROR: " << populationFilename << " not found." << endl;
         return false;
@@ -75,8 +95,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     _person = new Person[maxPerson];
 
     int agecounts[MAX_PERSON_AGE];
-    for (int i=0; i<MAX_PERSON_AGE; i++)
-        agecounts[i] = 0;
+    for (int i=0; i<MAX_PERSON_AGE; i++) agecounts[i] = 0;
 
     istringstream line;
     int id, age, house, work;
@@ -128,7 +147,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
             if (parts.size() >= 1 + NUM_OF_SEROTYPES) {
                 int id = parts[0];
-                for (int i=id-1; i<=id; i++) {
+                for (int i=id-1; i<=id and id < maxPerson; i++) {
                     if (_person[i].getID()==id) {
                         for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
                             if (parts[s+1]>0) {
@@ -176,7 +195,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
             if (line >> id1 >> id2 >> prob) {
                 Person* person = getPersonByID(id1);
-                person->appendToSwapProbabilities(make_pair(id2, prob));
+                if (person) person->appendToSwapProbabilities(make_pair(id2, prob));
             }
         }
         iss.close();
@@ -272,17 +291,28 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
 Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
+    //
+    if(id < 0 or id > _nNumPerson) {
+        cerr << "ERROR: failed to find person with id " << id << " max: " << _nNumPerson << endl;
+        assert(id >= 0 and id <= _nNumPerson);
+    }
+
     int i = 0;
+    Person* person = NULL;
     if (_person[id-1].getID()==id) {
         i = id-1;
+        person = &_person[i];
     } else {
         for (i=0; i<_nNumPerson; i++) {
             if (_person[i].getID()==id) {
+                person = &_person[i];
                 break;
             }
         }
     }
-    return &_person[i];
+
+    if (not person) cerr << "WARNING: failed to find person with id " << id << endl;
+    return person;
 }
 
 
@@ -449,6 +479,7 @@ void Community::swapImmuneStates() {
     // For people of age x, copy immune status from people of age x-1
     for (int age=MAX_PERSON_AGE-1; age>0; age--) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+            //cerr << "age " << age << ": " << pnum << " of " << _nPersonAgeCohortSizes[age] << endl;
             Person *p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
             if (_uniformSwap == true) {
@@ -627,17 +658,24 @@ void Community::_advanceTimers() {
     }
     _exposedQueue.back().clear();
 
+    // delete infected mosquitoes that are dying today
+    vector<Mosquito*>::iterator itr; 
+    for(itr = _infectiousMosquitoQueue.front().begin(); itr != _infectiousMosquitoQueue.front().end(); ++itr ) {
+        delete (*itr);
+    }
+
     // advance age of infectious mosquitoes
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size()-1; i++) {
         _infectiousMosquitoQueue[i] = _infectiousMosquitoQueue[i+1];
+#ifndef __INTEL_COMPILER
+        _infectiousMosquitoQueue[i].shrink_to_fit();
+#endif
     }
-
-    // delete infected mosquitoes that are dying today
-    vector<Mosquito*>::iterator itr; 
-    for(itr = _infectiousMosquitoQueue.back().begin(); itr != _infectiousMosquitoQueue.back().end(); ++itr ) {
-        delete (*itr);
-    }
+    
     _infectiousMosquitoQueue.back().clear();
+#ifndef __INTEL_COMPILER
+    _infectiousMosquitoQueue.back().shrink_to_fit();
+#endif
 
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
@@ -650,9 +688,14 @@ void Community::_advanceTimers() {
 
     for (unsigned int i=0; i<_exposedMosquitoQueue.size()-1; i++) {
         _exposedMosquitoQueue[i] = _exposedMosquitoQueue[i+1];
+#ifndef __INTEL_COMPILER
+        _exposedMosquitoQueue[i].shrink_to_fit();
+#endif
     }
     _exposedMosquitoQueue.back().clear();
-    
+#ifndef __INTEL_COMPILER
+    _exposedMosquitoQueue.back().shrink_to_fit();
+#endif
     return;
 }
 
@@ -679,6 +722,7 @@ void Community::tick(int day) {
     _nDay = day;
     assert(_nDay<MAX_RUN_TIME);
     if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
+
     updateWithdrawnStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 
