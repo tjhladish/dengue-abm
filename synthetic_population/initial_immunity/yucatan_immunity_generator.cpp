@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <numeric>
+#include <assert.h>
 
 const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 
@@ -36,78 +37,124 @@ if len(argv) != 3:
 const int NUM_SEROTYPES = 4;
 const int MAX_CENSUS_AGE = 85;// used if a census age group has only a minimum value, e.g. '85+'
 
-
 // Reported DF + DHF cases, 1997-2011 (inclusive)
 
-vector<int> cases = {4234,	//1979
-                     4672,	//1980
-                     3377,	//1981
-                     1412,	//1982
-                      643,	//1983
-                     5495,	//1984
-                      193,	//1985
-                       34,	//1986
-                       15,	//1987
-                      356,	//1988
-                        2,	//1989
-                        8,	//1990
-                      352,	//1991
-                       22,	//1992
-                       29,	//1993
-                      680,	//1994
-                       69,	//1995
-                      650,	//1996
-                     5529,	//1997
-                       36,	//1998
-                       43,	//1999
-                        0,	//2000
-                      287,	//2001
-                      946,	//2002
-                       26,	//2003
-                       57,	//2004
-                      162,	//2005
-                      627,	//2006
-                     1861,	//2007
-                      721,	//2008
-                     3212,	//2009
-                     2517,	//2010
-                     6132,	//2011
-                     5705};	//2012
+const vector<int> CASES =                                 {4234, // 1979
+     4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
+        8,  352,   22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
+        0,  287,  946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
+     2517, 6132, 5705};                                          // 2010-2012
+
+const float FRACTION_SEROTYPED = 0.056; // based on Casos Históricos.xlsx from Hector
  
-vector< vector<double> > serotype_wt = { {1.00,	0.00,	0.00,	0.00},   // 1979 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1980 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1981 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1982 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1983 // Fig. 1
-                                        {0.50,	0.00,	0.00,	0.50},   // 1984 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1985 // Fig. 1
-                                        {0.00,	1.00,	0.00,	0.00},   // 1986 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1987 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1988 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1989 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1990 // Fig. 1
-                                        {0.50,	0.50,	0.00,	0.00},   // 1991 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1992 // Fig. 1
-                                        {1.00,	0.00,	0.00,	0.00},   // 1993 // Fig. 1
-                                        {0.33,	0.33,	0.00,	0.34},   // 1994 // Fig. 1
-                                        {0.50,	0.50,	0.00,	0.00},   // 1995 // Fig. 1
-                                        {0.25,	0.25,	0.25,	0.25},   // 1996 // Fig. 1
-                                        {0.09,	0.00,	0.87,	0.04},   // 1997 // Fig. 4
-                                        {0.09,	0.00,	0.87,	0.04},   // 1998 // extrapolated
-                                        {0.09,	0.00,	0.87,	0.04},   // 1999 // extrapolated
-                                        {0.09,	0.00,	0.87,	0.04},   // 2000 // extrapolated
-                                        {0.00,	0.60,	0.40,	0.00},   // 2001 // Fig. 4
-                                        {0.04,	0.96,	0.00,	0.00},   // 2002 // Fig. 4
-                                        {0.04,	0.96,	0.00,	0.00},   // 2003 // extrapolated
-                                        {0.04,	0.96,	0.00,	0.00},   // 2004 // extrapolated
-                                        {0.11,	0.89,	0.00,	0.00},   // 2005 // Fig. 4
-                                        {0.27,	0.55,	0.18,	0.00},   // 2006 // Fig. 4
-                                        {0.90,	0.04,	0.04,	0.02},   // 2007 // Fig. 4
-                                        {0.85,	0.15,	0.00,	0.00},   // 2008 // Fig. 4
-                                        {0.46,	0.54,	0.00,	0.00},   // 2009 // Fig. 4
-                                        {0.59,	0.41,	0.00,	0.00},   // 2010 // Fig. 4
-                                        {0.32,	0.68,	0.00,	0.00},   // 2011 // Fig. 4
-                                        {0.34,	0.66,	0.00,	0.00}};  // 2012 // Fig. 4
+const vector< vector<double> > SEROTYPE_WT = { 
+    {1.00,  0.00,  0.00,  0.00},   // 1979 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1980 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1981 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1982 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1983 // Fig. 1
+    {0.50,  0.00,  0.00,  0.50},   // 1984 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1985 // Fig. 1
+    {0.00,  1.00,  0.00,  0.00},   // 1986 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1987 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1988 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1989 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1990 // Fig. 1
+    {0.50,  0.50,  0.00,  0.00},   // 1991 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1992 // Fig. 1
+    {1.00,  0.00,  0.00,  0.00},   // 1993 // Fig. 1
+    {0.33,  0.33,  0.00,  0.34},   // 1994 // Fig. 1
+    {0.50,  0.50,  0.00,  0.00},   // 1995 // Fig. 1
+    {0.25,  0.25,  0.25,  0.25},   // 1996 // Fig. 1
+    {0.09,  0.00,  0.87,  0.04},   // 1997 // Fig. 4
+    {0.09,  0.00,  0.87,  0.04},   // 1998 // extrapolated
+    {0.09,  0.00,  0.87,  0.04},   // 1999 // extrapolated
+    {0.09,  0.00,  0.87,  0.04},   // 2000 // extrapolated
+    {0.00,  0.60,  0.40,  0.00},   // 2001 // Fig. 4
+    {0.04,  0.96,  0.00,  0.00},   // 2002 // Fig. 4
+    {0.04,  0.96,  0.00,  0.00},   // 2003 // extrapolated
+    {0.04,  0.96,  0.00,  0.00},   // 2004 // extrapolated
+    {0.11,  0.89,  0.00,  0.00},   // 2005 // Fig. 4
+    {0.27,  0.55,  0.18,  0.00},   // 2006 // Fig. 4
+    {0.90,  0.04,  0.04,  0.02},   // 2007 // Fig. 4
+    {0.85,  0.15,  0.00,  0.00},   // 2008 // Fig. 4
+    {0.46,  0.54,  0.00,  0.00},   // 2009 // Fig. 4
+    {0.59,  0.41,  0.00,  0.00},   // 2010 // Fig. 4
+    {0.32,  0.68,  0.00,  0.00},   // 2011 // Fig. 4
+    {0.34,  0.66,  0.00,  0.00}};  // 2012 // Fig. 4
+
+
+// Devroye's algorithm, as described by Kachitvichyanukul and Schmeiser (1988), 
+// "Binomial random variate generation."  I've correct two mistakes in the publication:
+// the original fails if p = 1, and the conditional for the while loop should be y <= n, 
+// rather than y < n.  The latter precludes ever drawing a deviate of n for p < 1.
+
+// Algorithm BG
+// 1. Set y <-- 0, x <-- 0, c <-- ln(1 - p).
+// 2. If c == 0, return x.
+// 3. Generate u ~ U(0, 1).
+// 4. y <-- y + floor(ln(u)/c) + 1.
+// 5. If y < n, set x <-- x + 1, and goto 3.
+// 6. Return x.
+/*
+int rand_binomial (int n, double p) {
+    if ( p == 1.0 ) {
+        return n;
+    } else if ( p == 0.0 or n == 0 ) {
+        return 0;
+    }
+
+    int y = 0; 
+    int x = 0;
+    double c = log( 1 - p ); // p can't be 0, but we've already checked that
+
+    while ( y <= n ) {
+        double u = gsl_rng_uniform(RNG);
+        y += (int) (log(u)/c) + 1;
+        if (y > n) {
+            return x;
+        }
+        x += 1;
+    }
+    return -1; // bad input was provided
+}*/
+
+
+vector<int> bootstrap_cases(const double EF) {
+    vector<int> bt_cases;
+    for (int case_ct: CASES) bt_cases.push_back( gsl_ran_binomial(RNG, 1.0/EF, (int) case_ct*EF) );
+    //for (int c: CASES) bt_cases.push_back( rand_binomial(c*EF, 1.0/EF) );
+    return bt_cases;
+}
+
+
+vector< vector<double> > bootstrap_serotypes(const vector<int>& cases) {
+    vector<vector<double> > bt_serotype_wt (SEROTYPE_WT.size(), vector<double>(NUM_SEROTYPES, 0));
+   
+    assert (cases.size() == SEROTYPE_WT.size());
+    for (unsigned int i = 0; i < SEROTYPE_WT.size(); ++i) {
+        const int num_tested = gsl_ran_binomial(RNG, FRACTION_SEROTYPED, cases[i]);
+//cerr << 1979 + i << " " << cases[i] << " " << num_tested << endl;
+        if (num_tested > 0) {
+            double p[NUM_SEROTYPES];
+            copy(SEROTYPE_WT[i].begin(), SEROTYPE_WT[i].end(), p);
+            unsigned int case_cts[NUM_SEROTYPES] = {0,0,0,0};
+            gsl_ran_multinomial(RNG, NUM_SEROTYPES, num_tested, p, case_cts);
+            for (unsigned int s = 0; s < NUM_SEROTYPES; ++s) bt_serotype_wt[i][s] = (double) case_cts[s] / num_tested;
+        } else {
+            if (i > 0) {
+                // if we determined that no cases were serotyped for this year, then assume the same serotype
+                // distribution that was simulated from the previous year
+                for (unsigned int s = 0; s < NUM_SEROTYPES; ++s) bt_serotype_wt[i][s] = bt_serotype_wt[i-1][s];
+            } else {
+                // if this is year one, so no previous data existed, just revert to the non-bootstraped data
+                for (unsigned int s = 0; s < NUM_SEROTYPES; ++s) bt_serotype_wt[i][s] = SEROTYPE_WT[i][s];
+            }
+        }
+    }
+    return bt_serotype_wt;
+}
+
 
 long seedgen(void)  {
     long s, seed, pid, seconds;
@@ -118,6 +165,7 @@ long seedgen(void)  {
     seed = abs(((s*181)*((pid-83)*359))%104729); 
     return seed;
 }
+
 
 int sample_serotype(vector<double> dist) {
     double last = 0;
@@ -137,17 +185,7 @@ int sample_serotype(vector<double> dist) {
     }
     return -1;
 }
-/*
-int sample_serotype(wts) {
-    r = random()
-    for i, w in enumerate(wts):
-        if r < w:
-            return i
-        else:
-            r -= w
-    return len(wts) - 1
-}
-*/
+
 
 struct AgeTally {
     AgeTally(string a, int t) { age=a; tally=t; }
@@ -230,7 +268,7 @@ vector< vector< vector<int> > > initialize_full_population(map<int,vector<AgeTal
         string age_str = census[first_year][i].age;
         int age = age_str_to_int(age_str);
         for (int k = 0; k < census[first_year][i].tally; ++k) {
-            full_pop[age].push_back(vector<int>(4,0));
+            full_pop[age].push_back(vector<int>(NUM_SEROTYPES,0));
         }
     }
     return full_pop;
@@ -289,7 +327,7 @@ than the last.
         int tally = extract_tally(census[new_year], age_str);
         if (age == 0) {
             // nothing to inherit for infants
-            full_pop[age] = vector< vector<int> > (tally, vector<int> (4,0));
+            full_pop[age] = vector< vector<int> > (tally, vector<int> (NUM_SEROTYPES,0));
             continue;
         }
         vector< vector<int> > sampling_pop = full_pop[age - 1];
@@ -348,23 +386,47 @@ void output_immunity_file(string filename, const vector<vector<vector<int> > >& 
 
 
 int main(int argc, char** argv) {
+    const bool bootstrap_data = true;
+    const bool write_immunity_file = false;
+
+    if (argc != 3) {
+        cerr << "\n\tUsage: ./immgen <expansion_factor> <last_year_to_simulate>\n\n";
+        exit(100);
+    }
+
     gsl_rng_set(RNG, seedgen());
-    float EXPANSION_FACTOR = atof(argv[1]);
+    const float EXPANSION_FACTOR = atof(argv[1]);
     const int FIRST_YEAR = 1979;
     const int LAST_YEAR = atoi(argv[2]);
 
     vector<int> YEARS(LAST_YEAR - FIRST_YEAR + 1);
     iota(YEARS.begin(), YEARS.end(), FIRST_YEAR);
 
-    map<int, vector<AgeTally> > census = import_census_data("interpolated_ages-yucatan.out");
+    vector<int> cases;
+    vector<vector<double>> serotype_wt;
+    
+    if (bootstrap_data) {
+        cases = bootstrap_cases(EXPANSION_FACTOR);
+        serotype_wt = bootstrap_serotypes(cases);
+    } else {
+        cases = CASES;
+        serotype_wt = SEROTYPE_WT;
+    }
 
+    /*for (unsigned int y = 0; y < SEROTYPE_WT.size(); ++y) {
+        cout << setprecision(4);
+        for ( double w: SEROTYPE_WT[y] ) cout << w << " ";
+        cout << endl;
+        for ( double w: serotype_wt[y] ) cout << w << " ";
+        cout << endl << endl;
+    }*/
+
+    map<int, vector<AgeTally> > census = import_census_data("interpolated_ages-yucatan.out");
     vector<vector<vector<int> > > full_pop = initialize_full_population(census, FIRST_YEAR);
 
     int year = 0;
-
     int kids_in_1987 = 0; // in the 8-14 range
-    // should be ~ 60% of the population
-    float seropositive_kids_in_1987 = 0;
+    float seropositive_kids_in_1987 = 0;  // looking to see ~60% of the population
 
     for (unsigned int ya = YEARS.size(); ya > 0; --ya) { 
         if (year > 0) age_full_population(census, full_pop, YEARS[year]);
@@ -418,6 +480,7 @@ int main(int argc, char** argv) {
             cout << "Fraction seropositive: " << seropositive_kids_in_1987/kids_in_1987 << endl;
             cout << "Empirical fraction seropositive: ~0.6" << endl;
             cout << "Estimated expansion factor correction: " << 0.6/(seropositive_kids_in_1987/kids_in_1987) << endl;
+            cerr << EXPANSION_FACTOR << " " << seropositive_kids_in_1987/kids_in_1987 << endl;
         }
         year++;
         cout << endl;
@@ -425,8 +488,10 @@ int main(int argc, char** argv) {
     cout << "\t\t\tDone.\n";
 
     //string immunity_filename = "/work/01856/thladish/initial_immunity/" + to_string(EXPANSION_FACTOR) + ".txt";
-    string immunity_filename = to_string(EXPANSION_FACTOR) + ".txt";
-    output_immunity_file(immunity_filename, full_pop);
+    if (write_immunity_file) {
+        string immunity_filename = to_string(EXPANSION_FACTOR) + ".txt";
+        output_immunity_file(immunity_filename, full_pop);
+    }
 
     cout << "\t\t\tDone.\n";
 
