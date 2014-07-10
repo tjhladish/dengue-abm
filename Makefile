@@ -1,5 +1,5 @@
-#CPP      = g++
-CPP      = mpicxx
+CPP      = g++
+#CPP      = mpicxx
 MAKE     = make --no-print-directory
 SHELL    = /bin/sh
 CFLAGS   = -Wall -pedantic -std=c++11

@@ -144,11 +144,11 @@ void simulate_epidemic(const Parameters* par, Community* community) {
     int nNextExternalIncubation = 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
+        int year = (int)(t/365);
         if (t%100==0) cerr << "Time " << t << endl;
 
         // phased vaccination
         if ((t%365)==0) {
-            int year = (int)(t/365);
             for (int i=0; i<par->nSizeVaccinate; i++) {
                 if (year==par->nVaccinateYear[i]) {
                     community->vaccinate(par->fVaccinateFraction[i],par->nVaccinateAge[i]);
@@ -162,8 +162,13 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         {
             int numperson = community->getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-                if (par->nDailyExposed[serotype] <= 0) continue;
-                const int num_exposed = gsl_ran_poisson(RNG, par->nDailyExposed[serotype]);
+                const int year_lookup = year % par->annualIntroductions.size();
+                const double serotype_weight = par->nDailyExposed[serotype];
+                const double annual_intros_weight = par->annualIntroductionsCoef;
+                const double intros = par->annualIntroductions[year_lookup];
+                const double expected_num_exposed = serotype_weight * annual_intros_weight * intros; 
+                if (expected_num_exposed <= 0) continue;
+                const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
                 for (int i=0; i<num_exposed; i++) {
                     // gsl_rng_uniform_int returns on [0, numperson-1]
                     int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 

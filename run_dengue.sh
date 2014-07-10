@@ -7,6 +7,8 @@ do
         -popfile ./pop-yucatan/population-yucatan.txt \
         -immfile ./pop-yucatan/immunity-yucatan.txt \
         -probfile ./pop-yucatan/swap_probabilities-yucatan.txt \
+        -annualintrosfile ./paho_cases \
+        -annualintroscoef 1e-6 \
         -mosquitomove 0.15 \
         -mosquitomovemodel weighted \
         -mosquitoteleport 0.0 \
@@ -18,9 +20,9 @@ do
         -mosquitocapacity 65 \
         -daysimmune 730 \
         -runlength 2920 \
-        -dailyexposed 1 1 1 1 \
+        -dailyexposed 1 1 1 0 \
         -ves 0.7 \
-        -yearlypeoplefile ./seed1_65mos_runs/people-output-yucatan-multiseason-randomseed$SEED-y \
-        -dailyfile ./seed1_65mos_runs/daily-output-yucatan-multiseason-randomseed$SEED.csv \
-        > ./seed1_65mos_runs/output-yucatan-multiseason-randomseed$SEED.csv
+        -yearlypeoplefile ./junk/people-output-yucatan-multiseason-randomseed$SEED-y \
+        -dailyfile ./junk/daily-output-yucatan-multiseason-randomseed$SEED.csv \
+        > ./junk/output-yucatan-multiseason-randomseed$SEED.csv
 done
