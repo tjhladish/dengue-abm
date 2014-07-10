@@ -133,6 +133,7 @@ public:
     void define_defaults();
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
+    bool loadAnnualIntroductions(std::string annualIntrosFilename);
 
     int randomseed;
     int nRunLength;
@@ -171,6 +172,9 @@ public:
     std::string szYearlyPeopleFile;
     std::string szDailyFile;
     std::string szSwapProbFile;
+    std::string annualIntroductionsFile;                  // time series of some external factor determining introduction rate
+    std::vector<double> annualIntroductions;
+    double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     int nDaysImmune;
     int nSizeVaccinate;
     int nVaccinateYear[500];                                // when to vaccinate

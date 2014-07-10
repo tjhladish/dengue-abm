@@ -1,5 +1,7 @@
 #include "Parameters.h"
 #include "Location.h"
+#include <fstream>
+#include <sstream>
 
 void Parameters::define_defaults() {
     randomseed = 5489;
@@ -27,6 +29,10 @@ void Parameters::define_defaults() {
     szYearlyPeopleFile = "";
     szDailyFile = "";
     szSwapProbFile = "";
+    annualIntroductionsFile = "";  // time series of some external factor determining introduction rate
+    annualIntroductionsCoef = 1;     // multiplier to rescale external introductions to something sensible
+    annualIntroductions.clear();
+    annualIntroductions.push_back(1.0);
     nDaysImmune = 365;
     nSizeVaccinate = 0;                                 // number of parts in phased vaccination
     nSizePrevaccinateAge = 0;
@@ -81,6 +87,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
             else if (strcmp(argv[i], "-secondaryscaling")==0) {
                 for (int j=0; j<NUM_OF_SEROTYPES; j++) fSecondaryScaling[j]=strtod(argv[i+1+j],end);
                 i+=NUM_OF_SEROTYPES;
+            }
+            else if (strcmp(argv[i], "-annualintroscoef")==0) {
+                annualIntroductionsCoef = strtod(argv[i+1],end);
+                i++;
             }
             else if (strcmp(argv[i], "-betapm")==0) {
                 betaPM = strtod(argv[i+1],end);
@@ -247,6 +257,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 szSwapProbFile = argv[i+1];
                 i++;
             }
+            else if (strcmp(argv[i], "-annualintrosfile")==0) {
+                annualIntroductionsFile = argv[i+1];
+                i++;
+            }
             else {
                 std::cerr << "Unknown option: " << argv[i] << std::endl;
                 std::cerr << "Check arguments and formatting." << std::endl;
@@ -296,7 +310,7 @@ void Parameters::validate_parameters() {
     }
     std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
     std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-    std::cerr << "number of daily exposures =";
+    std::cerr << "number of daily exposures / serotype weights =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
         std::cerr << " " << nDailyExposed[i];
     }
@@ -353,6 +367,10 @@ void Parameters::validate_parameters() {
     } else {
         std::cerr << "no people output file" << std::endl;
     }
+    if (annualIntroductionsFile.length()>0) {
+        std::cerr << "annual introductions file = " << annualIntroductionsFile << std::endl;
+        loadAnnualIntroductions(annualIntroductionsFile);
+    }
     if (szYearlyPeopleFile.length()>0) {
         std::cerr << "yearly people output file = " << szYearlyPeopleFile << std::endl;
     }
@@ -362,3 +380,30 @@ void Parameters::validate_parameters() {
         std::cerr << "no daily output file" << std::endl;
     }
 }
+
+
+bool Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
+    std::ifstream iss(annualIntrosFilename.c_str());
+    if (!iss) {
+        std::cerr << "ERROR: " << annualIntrosFilename << " not found." << std::endl;
+        return false;
+    }
+    annualIntroductions.clear();
+ 
+    char buffer[500];
+    double intros;
+    std::istringstream line(buffer);
+
+    while (iss) {
+        iss.getline(buffer,500);
+        line.clear();
+        line.str(buffer);
+        if (line >> intros) {
+            annualIntroductions.push_back(intros);
+        }
+    }
+    iss.close();
+
+    return true;
+}
+
