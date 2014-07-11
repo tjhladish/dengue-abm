@@ -260,6 +260,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
             else if (strcmp(argv[i], "-annualintrosfile")==0) {
                 annualIntroductionsFile = argv[i+1];
                 i++;
+                loadAnnualIntroductions(annualIntroductionsFile);
             }
             else {
                 std::cerr << "Unknown option: " << argv[i] << std::endl;
@@ -369,7 +370,6 @@ void Parameters::validate_parameters() {
     }
     if (annualIntroductionsFile.length()>0) {
         std::cerr << "annual introductions file = " << annualIntroductionsFile << std::endl;
-        loadAnnualIntroductions(annualIntroductionsFile);
     }
     if (szYearlyPeopleFile.length()>0) {
         std::cerr << "yearly people output file = " << szYearlyPeopleFile << std::endl;

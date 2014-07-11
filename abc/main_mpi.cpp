@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include "CCRC32.h"
 #include "Utility.h"
+#include "ImmunityGenerator.h"
 
 using namespace std;
 
@@ -27,23 +28,26 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    double _EF        = args[0];
-    double _mos_move  = args[1];
-    double _daily_exp = args[2];
-    double _betamp    = args[3];
-    double _betapm    = args[4];
-    double _nmos      = args[5];
+    double _EF       = args[0];
+    double _mos_move = args[1];
+    double _exp_coef = args[2];
+    double _betamp   = args[3];
+    double _betapm   = args[4];
+    double _nmos     = args[5];
     
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/dengue/pop-yucatan"; 
-    string WORK(std::getenv("WORK"));
-    string imm_dir = WORK + "/initial_immunity";
+//    string WORK(std::getenv("WORK"));
+//    string imm_dir = WORK + "/initial_immunity";
+    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = 5500;
     par->nRunLength = 4500;
-    par->nDailyExposed[0] = _daily_exp;
-    par->nDailyExposed[1] = _daily_exp;
-    par->nDailyExposed[2] = _daily_exp;
+    par->annualIntroductionsCoef = _exp_coef;
+
+    par->nDailyExposed[0] = 1.0; 
+    par->nDailyExposed[1] = 1.0;
+    par->nDailyExposed[2] = 1.0;
     par->nDailyExposed[3] = 0.0;
     par->fPrimaryPathogenicity[0] = 1.0;
     par->fPrimaryPathogenicity[1] = 0.25;
@@ -60,7 +64,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     par->szMosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
-    par->eMosquitoDistribution = CONSTANT;
+    par->eMosquitoDistribution = EXPONENTIAL;
 
     {
         static const int _time_periods[] = {7,7,7,7,7,7,7,7,7,7,
@@ -92,13 +96,74 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     par->fVESs.clear();
     par->fVESs.resize(4, 0.7);
 
+    par->annualIntroductions = {  400519,  // 2000 total cases in Americas, reported by PAHO
+                                  652212,  // 2001
+                                 1015420,  // 2002
+                                  517617,  // 2003
+                                  267050,  // 2004
+                                  427627,  // 2005
+                                  552141,  // 2006
+                                  900782,  // 2007
+                                  908926,  // 2008
+                                 1134001,  // 2009
+                                 1663276,  // 2010
+                                 1093252,  // 2011
+                                 1120902,  // 2012
+                                 2386836}; // 2013
+
     par->szPopulationFile = pop_dir + "/population-yucatan.txt";
-    par->szImmunityFile   = imm_dir + "/" + to_string((int) _EF) + ".txt"; // stupidest cast in the world.  what is wrong with icc?!
+    par->szImmunityFile   = "";
+    //par->szImmunityFile   = imm_dir + "/" + to_string((int) _EF) + ".txt"; // stupidest cast in the world.  what is wrong with icc?!
     par->szLocationFile   = pop_dir + "/locations-yucatan.txt";
     par->szNetworkFile    = pop_dir + "/network-yucatan.txt";
     par->szSwapProbFile   = pop_dir + "/swap_probabilities-yucatan.txt";
 
     return par;
+}
+
+// Take a list of values, return original indices sorted by value
+vector<int> ordered(vector<int> const& values) {
+
+    vector<pair<int,int> > pairs(values.size());
+    for(unsigned int pos=0; pos<values.size(); pos++) {
+        pairs[pos] = make_pair(values[pos],pos);
+    }
+
+    //bool comparator ( const mypair& l, const mypair& r) { return l.first < r.first; }
+    std::sort( pairs.rbegin(), pairs.rend() ); // sort greatest to least
+    vector<int> indices(values.size());
+    for(unsigned int i=0; i < pairs.size(); i++) indices[i] = pairs[i].second;
+
+    return indices;
+}
+
+
+void sample_immune_history(Community* community, const Parameters* par) {
+    const int last_immunity_year = 1999;
+    vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
+
+    int N = community->getNumPerson();
+    for(int i=0; i<N; i++) {
+        Person* person = community->getPerson(i);
+
+        int age = person->getAge();
+        int maxAge = MAX_CENSUS_AGE;
+
+        age = age <= maxAge ? age : maxAge;
+        int r = gsl_rng_uniform_int(RNG, full_pop[age].size());
+        vector<int> states = full_pop[age][r];
+        // we need to go through the states, greatest to least
+        // Serotype 0, 1,  2, 3   -->   1, 3, 2, 0
+        //        { 0, 12, 1, 2 } --> { 1, 3, 2, 0 }
+        vector<int> indices = ordered(states);
+        for (int serotype: indices) {
+            if (states[serotype]>0) {
+                person->setImmunity((Serotype) serotype);
+                person->initializeNewInfection();
+                person->setRecoveryTime(-365*states[serotype]); // last dengue infection was x years ago
+            }
+        }
+    }
 }
 
 unsigned int report_process_id (vector<long double> &args) {
@@ -129,7 +194,8 @@ vector<long double> simulator(vector<long double> args) {
     const Parameters* par = define_simulator_parameters(args); 
     gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
-    vector<int> initial_susceptibles = community->getNumSusceptible();
+    sample_immune_history(community, par);
+    //vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
     vector<int> epi_sizes = simulate_epidemic(par, community);
 
