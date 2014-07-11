@@ -11,7 +11,7 @@
         {"name"       : "expansion_factor",
          "short_name" : "exp_fac",
          "dist_type"  : "UNIFORM",
-         "num_type"   : "INT",
+         "num_type"   : "FLOAT",
          "par1"       : 1,
          "par2"       : 68},
 
