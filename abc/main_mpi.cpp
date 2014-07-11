@@ -39,7 +39,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     string pop_dir = HOME + "/dengue/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
-    string imm_dir = pop_dir + "/immunity";
+//    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = 5500;
     par->nRunLength = 4500;
