@@ -1,11 +1,11 @@
 {
     "smc_iterations" : 12,
-    "num_samples"    : 5120,
-    "predictive_prior_fraction" : 0.025,
-    "pls_training_fraction"     : 0.2,
+    "num_samples"    : 4000,
+    "predictive_prior_fraction" : 0.05,
+    "pls_training_fraction"     : 0.25,
 
-    "particle_basefilename"         : "dengue_particles-1024",
-    "predictive_prior_basefilename" : "dengue_predictive_prior-1024",
+    "particle_basefilename"         : "dengue_particles-200",
+    "predictive_prior_basefilename" : "dengue_predictive_prior-200",
 
     "parameters" : [
         {"name"       : "expansion_factor",
@@ -22,12 +22,12 @@
          "par1"       : 0,
          "par2"       : 1},
 
-        {"name"       : "daily_exposures",
-         "short_name" : "daily_exp",
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 0.01,
-         "par2"       : 2.0},
+         "par1"       : 0.0,
+         "par2"       : 1e-5},
 
         {"name"       : "beta_mp",
          "dist_type"  : "UNIFORM",
@@ -46,7 +46,7 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "INT",
          "par1"       : 25,
-         "par2"       : 100}
+         "par2"       : 75}
     ],
 
     "metrics" : [
