@@ -1,3 +1,4 @@
+#include "ImmunityGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -12,117 +13,14 @@
 #include <numeric>
 #include <assert.h>
 
-const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+const gsl_rng* _RNG = gsl_rng_alloc (gsl_rng_taus2);
 
 using namespace std;
-
-template <typename T> inline T sum(vector<T> list) { T sum=0; for (unsigned int i=0; i<list.size(); i++) sum += list[i]; return sum;}
-
-const double EPSILON = 10e-15;
-
-/*
-#!/usr/bin/python
-from random import random, shuffle, sample, choice, randint
-from collections import OrderedDict
-from sys import exit
-from copy import deepcopy
-from sys import argv, exit
-
-if len(argv) != 3:
-    print "\n\tUsage: ./yucatan_immunity_generator.py <expansion_factor> <last_year>" 
-    print "\tNB: <last_year> is the last year of data to include when simulating immunity.\n"
-    exit()
-*/
-
-const int NUM_SEROTYPES = 4;
-const int MAX_CENSUS_AGE = 85;// used if a census age group has only a minimum value, e.g. '85+'
-
-// Reported DF + DHF cases, 1997-2011 (inclusive)
-
-const vector<int> CASES =                                 {4234, // 1979
-     4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
-        8,  352,   22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
-        0,  287,  946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
-     2517, 6132, 5705};                                          // 2010-2012
-
-const float FRACTION_SEROTYPED = 0.056; // based on Casos Históricos.xlsx from Hector
- 
-const vector< vector<double> > SEROTYPE_WT = { 
-    {1.00,  0.00,  0.00,  0.00},   // 1979 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1980 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1981 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1982 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1983 // Fig. 1
-    {0.50,  0.00,  0.00,  0.50},   // 1984 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1985 // Fig. 1
-    {0.00,  1.00,  0.00,  0.00},   // 1986 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1987 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1988 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1989 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1990 // Fig. 1
-    {0.50,  0.50,  0.00,  0.00},   // 1991 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1992 // Fig. 1
-    {1.00,  0.00,  0.00,  0.00},   // 1993 // Fig. 1
-    {0.33,  0.33,  0.00,  0.34},   // 1994 // Fig. 1
-    {0.50,  0.50,  0.00,  0.00},   // 1995 // Fig. 1
-    {0.25,  0.25,  0.25,  0.25},   // 1996 // Fig. 1
-    {0.09,  0.00,  0.87,  0.04},   // 1997 // Fig. 4
-    {0.09,  0.00,  0.87,  0.04},   // 1998 // extrapolated
-    {0.09,  0.00,  0.87,  0.04},   // 1999 // extrapolated
-    {0.09,  0.00,  0.87,  0.04},   // 2000 // extrapolated
-    {0.00,  0.60,  0.40,  0.00},   // 2001 // Fig. 4
-    {0.04,  0.96,  0.00,  0.00},   // 2002 // Fig. 4
-    {0.04,  0.96,  0.00,  0.00},   // 2003 // extrapolated
-    {0.04,  0.96,  0.00,  0.00},   // 2004 // extrapolated
-    {0.11,  0.89,  0.00,  0.00},   // 2005 // Fig. 4
-    {0.27,  0.55,  0.18,  0.00},   // 2006 // Fig. 4
-    {0.90,  0.04,  0.04,  0.02},   // 2007 // Fig. 4
-    {0.85,  0.15,  0.00,  0.00},   // 2008 // Fig. 4
-    {0.46,  0.54,  0.00,  0.00},   // 2009 // Fig. 4
-    {0.59,  0.41,  0.00,  0.00},   // 2010 // Fig. 4
-    {0.32,  0.68,  0.00,  0.00},   // 2011 // Fig. 4
-    {0.34,  0.66,  0.00,  0.00}};  // 2012 // Fig. 4
-
-
-// Devroye's algorithm, as described by Kachitvichyanukul and Schmeiser (1988), 
-// "Binomial random variate generation."  I've correct two mistakes in the publication:
-// the original fails if p = 1, and the conditional for the while loop should be y <= n, 
-// rather than y < n.  The latter precludes ever drawing a deviate of n for p < 1.
-
-// Algorithm BG
-// 1. Set y <-- 0, x <-- 0, c <-- ln(1 - p).
-// 2. If c == 0, return x.
-// 3. Generate u ~ U(0, 1).
-// 4. y <-- y + floor(ln(u)/c) + 1.
-// 5. If y < n, set x <-- x + 1, and goto 3.
-// 6. Return x.
-/*
-int rand_binomial (int n, double p) {
-    if ( p == 1.0 ) {
-        return n;
-    } else if ( p == 0.0 or n == 0 ) {
-        return 0;
-    }
-
-    int y = 0; 
-    int x = 0;
-    double c = log( 1 - p ); // p can't be 0, but we've already checked that
-
-    while ( y <= n ) {
-        double u = gsl_rng_uniform(RNG);
-        y += (int) (log(u)/c) + 1;
-        if (y > n) {
-            return x;
-        }
-        x += 1;
-    }
-    return -1; // bad input was provided
-}*/
 
 
 vector<int> bootstrap_cases(const double EF) {
     vector<int> bt_cases;
-    for (int case_ct: CASES) bt_cases.push_back( gsl_ran_binomial(RNG, 1.0/EF, (int) case_ct*EF) );
+    for (int case_ct: CASES) bt_cases.push_back( gsl_ran_binomial(_RNG, 1.0/EF, (int) case_ct*EF) );
     //for (int c: CASES) bt_cases.push_back( rand_binomial(c*EF, 1.0/EF) );
     return bt_cases;
 }
@@ -133,13 +31,13 @@ vector< vector<double> > bootstrap_serotypes(const vector<int>& cases) {
    
     assert (cases.size() == SEROTYPE_WT.size());
     for (unsigned int i = 0; i < SEROTYPE_WT.size(); ++i) {
-        const int num_tested = gsl_ran_binomial(RNG, FRACTION_SEROTYPED, cases[i]);
+        const int num_tested = gsl_ran_binomial(_RNG, FRACTION_SEROTYPED, cases[i]);
 //cerr << 1979 + i << " " << cases[i] << " " << num_tested << endl;
         if (num_tested > 0) {
             double p[NUM_SEROTYPES];
             copy(SEROTYPE_WT[i].begin(), SEROTYPE_WT[i].end(), p);
             unsigned int case_cts[NUM_SEROTYPES] = {0,0,0,0};
-            gsl_ran_multinomial(RNG, NUM_SEROTYPES, num_tested, p, case_cts);
+            gsl_ran_multinomial(_RNG, NUM_SEROTYPES, num_tested, p, case_cts);
             for (unsigned int s = 0; s < NUM_SEROTYPES; ++s) bt_serotype_wt[i][s] = (double) case_cts[s] / num_tested;
         } else {
             if (i > 0) {
@@ -169,7 +67,7 @@ long seedgen(void)  {
 
 int sample_serotype(vector<double> dist) {
     double last = 0;
-    double rand = gsl_rng_uniform(RNG);
+    double rand = gsl_rng_uniform(_RNG);
     for (unsigned int i = 0; i < dist.size(); i++ ) {
         double current = last + dist[i];
         if ( rand <= current ) {
@@ -186,26 +84,19 @@ int sample_serotype(vector<double> dist) {
     return -1;
 }
 
+namespace util {
+    void split(const string& s, char c, vector<string>& v) {
+        string::size_type i = 0;
+        string::size_type j = s.find(c);
 
-struct AgeTally {
-    AgeTally(string a, int t) { age=a; tally=t; }
-    string age;
-    int tally;
-};
-
-
-void split(const string& s, char c, vector<string>& v) {
-    string::size_type i = 0;
-    string::size_type j = s.find(c);
-
-    while (j != string::npos) {
-        v.push_back(s.substr(i, j-i));
-        i = ++j;
-        j = s.find(c, j);
+        while (j != string::npos) {
+            v.push_back(s.substr(i, j-i));
+            i = ++j;
+            j = s.find(c, j);
+        }
+        if (j == string::npos) v.push_back(s.substr(i, s.length( )));
     }
-    if (j == string::npos) v.push_back(s.substr(i, s.length( )));
 }
-
 
 map<int,vector<AgeTally> > import_census_data(string filename) {
 /*
@@ -215,12 +106,13 @@ year 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 2
 */
     map<int, vector<AgeTally> > census;
     ifstream censusfile(filename);
+    if (!censusfile) { cerr << "ERROR: census file " << filename << " not found." << endl; exit(299); }
 
     string line; 
     vector<string> ages;
     while(getline(censusfile,line)) {
         vector<string> fields;
-        split(line, ' ', fields);
+        util::split(line, ' ', fields);
         int year;
         if (fields[0] == "year") {
             for (unsigned k = 1; k < fields.size(); k++) ages.push_back(fields[k]);
@@ -253,9 +145,6 @@ int age_str_to_int(string age_str) {
     int age;
     try {
         age = stoi(age_str);
-    //} catch (const std::invalid_argument& ia ) {
-    //} catch (const std::string& ia ) {
-    //} catch (...) {
     } catch (const std::exception &e) {
         age = MAX_CENSUS_AGE;
     }
@@ -339,7 +228,7 @@ than the last.
         } 
         vector< vector<int> > new_pop;
         for (int k = 0; k < tally; ++k) {
-            int r = gsl_rng_uniform_int(RNG, sampling_pop.size());
+            int r = gsl_rng_uniform_int(_RNG, sampling_pop.size());
             new_pop.push_back(sampling_pop[r]); 
         }
         //print "year, age, sample size, census size: ", new_year, age, len(sampling_pop), census[new_year][age_str]
@@ -373,12 +262,12 @@ void output_immunity_file(string filename, const vector<vector<vector<int> > >& 
         if(counter % 100000 == 0 ) { cerr << counter << endl; }
         counter++;
         vector<string> p;
-        split(line, ' ', p);
+        util::split(line, ' ', p);
         string pid = p[0];
         int age = stoi(p[2]);
         
         age = age <= MAX_CENSUS_AGE ? age : MAX_CENSUS_AGE;
-        int r = gsl_rng_uniform_int(RNG, full_pop[age].size());
+        int r = gsl_rng_uniform_int(_RNG, full_pop[age].size());
         vector<int> states = full_pop[age][r];
         fo << pid << " " << age << " ";
         for (int s: states) fo << s << " ";
@@ -387,14 +276,11 @@ void output_immunity_file(string filename, const vector<vector<vector<int> > >& 
     fo.close();
 }
 
-
-vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTOR, const int FIRST_YEAR) {
+vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTOR, const int LAST_YEAR) {
     const bool bootstrap_data = true;
 
-    gsl_rng_set(RNG, seedgen());
-    const float EXPANSION_FACTOR = atof(argv[1]);
+    gsl_rng_set(_RNG, seedgen());
     const int FIRST_YEAR = 1979;
-    const int LAST_YEAR = atoi(argv[2]);
 
     vector<int> YEARS(LAST_YEAR - FIRST_YEAR + 1);
     iota(YEARS.begin(), YEARS.end(), FIRST_YEAR);
@@ -431,15 +317,15 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
 
         vector<int> pop_size_by_age = tally_pop_by_age(full_pop);
         int pop_size = accumulate(pop_size_by_age.begin(), pop_size_by_age.end(), 0);
-        cout << "year, years ago, pop, cases, infections, expansion factor\n";
-        cout << YEARS[year] << " " <<  ya << " " <<  pop_size << " " <<  cases[year] << " " <<  num_of_infections << " " <<  EXPANSION_FACTOR << endl;
-        cout << "expected serotype distribution: "; for (double wt: serotype_wt[year]) cout << wt << " "; cout << endl;
+//        cout << "year, years ago, pop, cases, infections, expansion factor\n";
+//        cout << YEARS[year] << " " <<  ya << " " <<  pop_size << " " <<  cases[year] << " " <<  num_of_infections << " " <<  EXPANSION_FACTOR << endl;
+//        cout << "expected serotype distribution: "; for (double wt: serotype_wt[year]) cout << wt << " "; cout << endl;
         vector<int> serotype_tally(NUM_SEROTYPES, 0);
         for (int i = 0; i < num_of_infections; ++i) {
             int s = sample_serotype(serotype_wt[year]);
             bool infection_occurred = false;
             while (not infection_occurred) { 
-                int test = gsl_rng_uniform_int(RNG, pop_size);
+                int test = gsl_rng_uniform_int(_RNG, pop_size);
                 int age = 0;
                 while (test >= pop_size_by_age[age]) {
                     test -= pop_size_by_age[age];
@@ -453,12 +339,12 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
                 }
             }
         }
-        cout << "actual serotype counts: "; for (int t: serotype_tally) cout << t << " "; cout << endl;
+//        cout << "actual serotype counts: "; for (int t: serotype_tally) cout << t << " "; cout << endl;
         if (num_of_infections > 0) {
             const double total = (double) sum(serotype_tally);
-            cout << "actual serotype frequency: "; for(int c: serotype_tally)  cout << c/total << " "; cout << endl;
+//            cout << "actual serotype frequency: "; for(int c: serotype_tally)  cout << c/total << " "; cout << endl;
         } else {
-            cout << "actual serotype frequency: NA NA NA NA\n";
+//            cout << "actual serotype frequency: NA NA NA NA\n";
         }
         
         if (YEARS[year] == 1987) {
@@ -472,39 +358,18 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
                     }
                  }
             }
-            cout << "Number of kids 8-14 in 1987: " << kids_in_1987 << endl;
-            cout << "Number of seropositive kids 8-14 in 1987: " << seropositive_kids_in_1987 << endl;
-            cout << "Fraction seropositive: " << seropositive_kids_in_1987/kids_in_1987 << endl;
-            cout << "Empirical fraction seropositive: ~0.6" << endl;
-            cout << "Estimated expansion factor correction: " << 0.6/(seropositive_kids_in_1987/kids_in_1987) << endl;
+//            cout << "Number of kids 8-14 in 1987: " << kids_in_1987 << endl;
+//            cout << "Number of seropositive kids 8-14 in 1987: " << seropositive_kids_in_1987 << endl;
+//            cout << "Fraction seropositive: " << seropositive_kids_in_1987/kids_in_1987 << endl;
+//            cout << "Empirical fraction seropositive: ~0.6" << endl;
+//            cout << "Estimated expansion factor correction: " << 0.6/(seropositive_kids_in_1987/kids_in_1987) << endl;
             cerr << EXPANSION_FACTOR << " " << seropositive_kids_in_1987/kids_in_1987 << endl;
         }
         year++;
-        cout << endl;
+//        cout << endl;
     }
-    cout << "\t\t\tDone.\n";
+//    cout << "\t\t\tDone.\n";
     
     return full_pop;
-}
-
-
-int main(int argc, char** argv) {
-    const bool write_immunity_file = false;
-    if (argc != 3) {
-        cerr << "\n\tUsage: ./immgen <expansion_factor> <last_year_to_simulate>\n\n";
-        exit(100);
-    }
-
-    vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(argv[1], argv[2]);
-
-    //string immunity_filename = "/work/01856/thladish/initial_immunity/" + to_string(EXPANSION_FACTOR) + ".txt";
-    if (write_immunity_file) {
-        string immunity_filename = to_string(static_cast<long double>(EXPANSION_FACTOR)) + ".txt";
-        output_immunity_file(immunity_filename, full_pop);
-    }
-
-    cout << "\t\t\tDone.\n";
-
-    return 0;
 }
 
