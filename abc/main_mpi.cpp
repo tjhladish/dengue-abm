@@ -166,7 +166,7 @@ void sample_immune_history(Community* community, const Parameters* par) {
     }
 }
 
-unsigned int report_process_id (vector<long double> &args) {
+unsigned int report_process_id (vector<long double> &args, const MPI_par* mp) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -177,16 +177,22 @@ unsigned int report_process_id (vector<long double> &args) {
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
-    fprintf(stderr, "%Xbegin\n", process_id);
+    //fprintf(stderr, "%Xbegin\n", process_id);
+
+    stringstream ss;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << argstring << endl;
+    string output = ss.str();
+    fprintf(stderr, output.c_str());
+
     return process_id;
 }
 
 // wrapper for simulator
 // must take vector of doubles (ABC paramters) 
 // and return vector of doubles (ABC metrics)
-vector<long double> simulator(vector<long double> args) {
+vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // initialize bookkeeping for run
-    const unsigned int proccess_id = report_process_id(args);
+    const unsigned int process_id = report_process_id(args, mp);
     time_t start ,end;
     time (&start);
 
@@ -197,7 +203,7 @@ vector<long double> simulator(vector<long double> args) {
     sample_immune_history(community, par);
     //vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
-    vector<int> epi_sizes = simulate_epidemic(par, community);
+    vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);
     double dif = difftime (end,start);
@@ -215,7 +221,7 @@ vector<long double> simulator(vector<long double> args) {
     Fit* fit = lin_reg(x, y);
 
     stringstream ss;
-    ss << hex << proccess_id << "end " << dec << dif << " ";
+    ss << mp->mpi_rank << " end " << hex << process_id << dec << dif << " ";
     // parameters
     ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
        << par->betaMP << " " << par->betaPM << " " << par->nDefaultMosquitoCapacity << " ";

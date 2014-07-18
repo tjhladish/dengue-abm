@@ -366,7 +366,8 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
 //            cout << "Fraction seropositive: " << seropositive_kids_in_1987/kids_in_1987 << endl;
 //            cout << "Empirical fraction seropositive: ~0.6" << endl;
 //            cout << "Estimated expansion factor correction: " << 0.6/(seropositive_kids_in_1987/kids_in_1987) << endl;
-            cerr << EXPANSION_FACTOR << " " << seropositive_kids_in_1987/kids_in_1987 << endl;
+            printf("%f %f\n", EXPANSION_FACTOR, seropositive_kids_in_1987/kids_in_1987);
+            //cout << EXPANSION_FACTOR << " " << seropositive_kids_in_1987/kids_in_1987 << endl;
         }
         year++;
 //        cout << endl;
