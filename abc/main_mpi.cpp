@@ -13,6 +13,8 @@ using dengue::util::mean;
 using dengue::util::stdev;
 using dengue::util::max_element;
 
+time_t GLOBAL_START_TIME;
+
 void setup_mpi(MPI_par &m, int &argc, char **argv) {
     /* MPI variables */
     m.comm  = MPI_COMM_WORLD;
@@ -166,7 +168,7 @@ void sample_immune_history(Community* community, const Parameters* par) {
     }
 }
 
-unsigned int report_process_id (vector<long double> &args, const MPI_par* mp) {
+unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -179,8 +181,10 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp) {
     const int process_id = crc32.FullCRC(argchars, len);
     //fprintf(stderr, "%Xbegin\n", process_id);
 
+    double dif = difftime (start_time, GLOBAL_START_TIME);
+
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fprintf(stderr, output.c_str());
 
@@ -192,9 +196,9 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp) {
 // and return vector of doubles (ABC metrics)
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // initialize bookkeeping for run
-    const unsigned int process_id = report_process_id(args, mp);
     time_t start ,end;
     time (&start);
+    const unsigned int process_id = report_process_id(args, mp, start);
 
     // initialize & run simulator 
     const Parameters* par = define_simulator_parameters(args); 
@@ -221,7 +225,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     Fit* fit = lin_reg(x, y);
 
     stringstream ss;
-    ss << mp->mpi_rank << " end " << hex << process_id << dec << dif << " ";
+    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
     // parameters
     ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
        << par->betaMP << " " << par->betaPM << " " << par->nDefaultMosquitoCapacity << " ";
@@ -263,6 +267,7 @@ int main(int argc, char* argv[]) {
     AbcSmc* abc = new AbcSmc(mp);
     abc->set_simulator(simulator);
     abc->parse_config(string(argv[1]));
+    time(&GLOBAL_START_TIME);
     abc->run(RNG);
 
     MPI_Finalize();
