@@ -22,7 +22,7 @@ const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 // Predeclare local functions
 Community* build_community(const Parameters* par);
 void seed_epidemic(const Parameters* par, Community* community);
-vector<int> simulate_epidemic(const Parameters* par, Community* community);
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id);
 
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
@@ -88,16 +88,18 @@ void seed_epidemic(const Parameters* par, Community* community) {
 }
 
 
-vector<int> simulate_epidemic(const Parameters* par, Community* community) {
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
     vector<int> epi_sizes;
     int nNextMosquitoMultiplier = 0;
     int nNextExternalIncubation = 0;
     int epi_ctr = 0;
+    int daily_ctr = 0;
 
     for (int t=0; t<par->nRunLength; t++) {
-        if (t%1000==0) cerr << "Time " << t << " epi_size " << epi_ctr << endl;
-        if ((t-100)%365==0) {
-            if (t > 365) {
+        if (t%1000==0) cerr << hex << process_id << dec << " T: " << t << " daily: " << daily_ctr << " annual: " << epi_ctr << endl;
+        if (t%365==0) {
+        //if ((t-100)%365==0) {
+            if (t >= 365) {
                 epi_sizes.push_back(epi_ctr);
             }
             epi_ctr = 0;
@@ -151,6 +153,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community) {
             }
         }
         epi_ctr += daily_infection_ctr;
+        daily_ctr = daily_infection_ctr;
     }
     return epi_sizes;
 }
