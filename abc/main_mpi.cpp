@@ -45,7 +45,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
 
     par->randomseed = 5500;
     par->nRunLength = 4500;
-    par->annualIntroductionsCoef = _exp_coef;
+    par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     par->nDailyExposed[0] = 1.0; 
     par->nDailyExposed[1] = 1.0;
@@ -191,6 +191,14 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     return process_id;
 }
 
+void append_if_finite(vector<long double> &vec, double val) {
+    if (isfinite(val)) { 
+        vec.push_back((long double) val);
+    } else {
+        vec.push_back(0);
+    }
+}
+
 // wrapper for simulator
 // must take vector of doubles (ABC paramters) 
 // and return vector of doubles (ABC metrics)
@@ -227,7 +235,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
     // parameters
-    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
+    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->annualIntroductionsCoef << " "
        << par->betaMP << " " << par->betaPM << " " << par->nDefaultMosquitoCapacity << " ";
     // metrics
     ss << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
@@ -236,15 +244,13 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     string output = ss.str();
     fprintf(stderr, output.c_str());
     
-    //vector<long double> metrics = {(long double) mean(y), (long double) stdev(y), 
-    //(long double) max_element(y), (long double) fit->m, (long double) fit->b, (long double) fit->rsq};
-    vector<long double> metrics;  // I hate this compiler
-    metrics.push_back( (long double) mean(y) );
-    metrics.push_back( (long double) stdev(y) );
-    metrics.push_back( (long double) max_element(y) );
-    metrics.push_back( (long double) fit->m );
-    metrics.push_back( (long double) fit->b );
-    metrics.push_back( (long double) fit->rsq );
+    vector<long double> metrics;
+    append_if_finite(metrics, mean(y) );
+    append_if_finite(metrics, stdev(y) );
+    append_if_finite(metrics, max_element(y) );
+    append_if_finite(metrics, fit->m );
+    append_if_finite(metrics, fit->b );
+    append_if_finite(metrics, fit->rsq );
 
     delete par;
     delete community;
