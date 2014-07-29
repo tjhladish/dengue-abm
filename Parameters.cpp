@@ -14,6 +14,7 @@ void Parameters::define_defaults() {
     fVEI = 0.0;
     fVEP = 0.0;
     fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
+    fVESs_NAIVE.clear();
     bVaccineLeaky = false;
     fPreVaccinateFraction = 0.0;
     nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
@@ -195,6 +196,14 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 fVESs[3] = strtod(argv[i+4],end);
                 i+=4;
             }
+	    else if (strcmp(argv[i], "-VESsnaive")==0 || strcmp(argv[i], "-vessnaive")==0) {
+	      fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0.95);
+	      fVESs_NAIVE[0] = strtod(argv[i+1],end);
+	      fVESs_NAIVE[1] = strtod(argv[i+2],end);
+	      fVESs_NAIVE[2] = strtod(argv[i+3],end);
+	      fVESs_NAIVE[3] = strtod(argv[i+4],end);
+	      i+=4;
+	    }
             else if (strcmp(argv[i], "-VEI")==0 || strcmp(argv[i], "-vei")==0) {
                 fVEI = strtod(argv[i+1],end);
                 i++;
@@ -356,6 +365,17 @@ void Parameters::validate_parameters() {
         exit(-1);
     }
     std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
+
+    if (fVESs_NAIVE.size()==0) {
+      fVESs_NAIVE.clear();
+      fVESs_NAIVE = fVESs; // naive people have the same VE_S as non-naive
+    } else {
+      std::cerr << "VE_Ss naive = " << fVESs_NAIVE[0] << "," << fVESs_NAIVE[1] << "," << fVESs_NAIVE[2] << "," << fVESs_NAIVE[3] << std::endl;
+      if (bVaccineLeaky) {
+        std::cerr << "Leaky vaccine with different naive VE_S not implemented" << std::endl;
+	exit(-1);
+      }
+    }
 
     if (bVaccineLeaky) {
         std::cerr << "VE_S is leaky" << std::endl;

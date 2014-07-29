@@ -145,6 +145,7 @@ public:
     double fVEI;
     double fVEP;
     std::vector<double> fVESs;
+    std::vector<double> fVESs_NAIVE; // VES for initially immunologically naive people
     double fPreVaccinateFraction;
     bool bVaccineLeaky; // if false, vaccine is all-or-none
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
