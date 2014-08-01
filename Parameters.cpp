@@ -1,5 +1,6 @@
 #include "Parameters.h"
 #include "Location.h"
+#include "Utility.h"
 #include <fstream>
 #include <sstream>
 
@@ -39,11 +40,12 @@ void Parameters::define_defaults() {
     nSizePrevaccinateAge = 0;
     nMaxInfectionParity = NUM_OF_SEROTYPES;
     expansionFactor = 1;
+    nDailyExposed.push_back(std::vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
+    annualSerotypeFile = "";
 
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
         nInitialExposed[i]=0;
         nInitialInfected[i]=0;
-        nDailyExposed[i]=0.0;
     }
     fPrimaryPathogenicity.clear();
     fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
@@ -78,7 +80,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 i+=NUM_OF_SEROTYPES;
             }
             else if (strcmp(argv[i], "-dailyexposed")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[j]=strtod(argv[i+1+j],end);
+                if (annualSerotypeFile == "") {
+                    for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[i+1+j],end);
+                } else {
+                    std::cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
+                }
                 i+=NUM_OF_SEROTYPES;
             }
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
@@ -271,6 +277,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 i++;
                 loadAnnualIntroductions(annualIntroductionsFile);
             }
+            else if (strcmp(argv[i], "-annualserotypefile")==0) {
+                annualSerotypeFile = argv[i+1];
+                i++;
+                loadAnnualSerotypes(annualSerotypeFile);
+            }
             else {
                 std::cerr << "Unknown option: " << argv[i] << std::endl;
                 std::cerr << "Check arguments and formatting." << std::endl;
@@ -320,11 +331,15 @@ void Parameters::validate_parameters() {
     }
     std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
     std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-    std::cerr << "number of daily exposures / serotype weights =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        std::cerr << " " << nDailyExposed[i];
+    if (annualSerotypeFile == "") {
+        std::cerr << "number of daily exposures / serotype weights =";
+        for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+            std::cerr << " " << nDailyExposed[0][i];
+        }
+        std::cerr << std::endl;
+    } else {
+        std::cerr << "annual serotype file = " << annualSerotypeFile << std::endl;
     }
-    std::cerr << std::endl;
     if (eMosquitoDistribution==CONSTANT) {
         std::cerr << "mosquito capacity distribution is constant" << std::endl;
     } else if (eMosquitoDistribution==EXPONENTIAL)
@@ -424,6 +439,42 @@ bool Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
     }
     iss.close();
 
+    return true;
+}
+
+
+bool Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
+    std::ifstream iss(annualSerotypeFilename.c_str());
+    if (!iss) {
+        std::cerr << "ERROR: " << annualSerotypeFilename << " not found." << std::endl;
+        return false;
+    }
+
+    // get rid of anything there now
+    for (auto v: nDailyExposed) v.clear();
+    nDailyExposed.clear();
+
+    char sep = ' ';
+    std::string line;
+
+    while ( getline(iss,line) ) {
+        // expecting four serotype intro rates per line
+        // each line correspons to one year
+        std::vector<std::string> fields = dengue::util::split(line, sep);
+
+        if (fields.size() == NUM_OF_SEROTYPES) {
+            std::vector<float>row(fields.size());
+            for( unsigned int i=0; i < fields.size(); i++ ) {
+                row[i] = dengue::util::string2double(fields[i]);
+            }
+
+            nDailyExposed.push_back(row);
+        } else {
+            std::cerr << "WARNING: Found line with unexpected number of values in annual serotypes file" << std::endl;
+            std::cerr << "\tFile: " << annualSerotypeFilename << std::endl;
+            std::cerr << "\tLine: " << line << std::endl;
+        }
+    }
     return true;
 }
 

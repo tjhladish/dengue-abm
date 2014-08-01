@@ -121,10 +121,11 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
         {
             int numperson = community->getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-                const int year_lookup = year % par->annualIntroductions.size();
-                const double serotype_weight = par->nDailyExposed[serotype];
+                const int ai_year_lookup = year % par->annualIntroductions.size();
+                const double intros = par->annualIntroductions[ai_year_lookup];
+                const int de_year_lookup = year % par->nDailyExposed.size();
+                const double serotype_weight = par->nDailyExposed[de_year_lookup][serotype];
                 const double annual_intros_weight = par->annualIntroductionsCoef;
-                const double intros = par->annualIntroductions[year_lookup];
                 const double expected_num_exposed = serotype_weight * annual_intros_weight * intros; 
                 if (expected_num_exposed <= 0) continue;
                 const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);

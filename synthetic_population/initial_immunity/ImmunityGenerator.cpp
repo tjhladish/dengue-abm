@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <numeric>
 #include <assert.h>
+#include "../../Utility.h"
 
 const gsl_rng* _RNG = gsl_rng_alloc (gsl_rng_taus2);
 
@@ -83,9 +84,9 @@ int sample_serotype(vector<double> dist) {
     }
     return -1;
 }
-
+/*
 namespace util {
-    void split(const string& s, char c, vector<string>& v) {
+    //void split(const string& s, char c, vector<string>& v) {
         string::size_type i = 0;
         string::size_type j = s.find(c);
 
@@ -96,7 +97,7 @@ namespace util {
         }
         if (j == string::npos) v.push_back(s.substr(i, s.length( )));
     }
-}
+}*/
 
 map<int,vector<AgeTally> > import_census_data(string filename) {
 /*
@@ -111,8 +112,7 @@ year 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 2
     string line; 
     vector<string> ages;
     while(getline(censusfile,line)) {
-        vector<string> fields;
-        util::split(line, ' ', fields);
+        vector<string> fields = dengue::util::split(line, ' ');
         int year;
         if (fields[0] == "year") {
             for (unsigned k = 1; k < fields.size(); k++) ages.push_back(fields[k]);
@@ -261,8 +261,7 @@ void output_immunity_file(string filename, const vector<vector<vector<int> > >& 
         if(header) { header=false; continue; }
         if(counter % 100000 == 0 ) { cerr << counter << endl; }
         counter++;
-        vector<string> p;
-        util::split(line, ' ', p);
+        vector<string> p = dengue::util::split(line, ' ');
         string pid = p[0];
         int age = stoi(p[2]);
         

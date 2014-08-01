@@ -15,3 +15,6 @@ icc_immgen: main.cpp immunity_generator.cpp
 
 immgen: yucatan_immunity_generator.cpp
 	g++ $(CFLAGS) $(OPTI) yucatan_immunity_generator.cpp -o immgen -lm -lgsl -lgslcblas
+
+clean:
+	rm -f *.o 

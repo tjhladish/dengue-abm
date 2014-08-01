@@ -47,7 +47,7 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
 static const int MAX_MOSQUITO_INCUBATION = 25;                    // number of days for mosquito incubation (extrinsic incubation period)
-static const int MAX_RUN_TIME = 7400;                         // maximum number of simulation days (+ extra for mosquito lifetime)
+static const int MAX_RUN_TIME = 15000;                         // maximum number of simulation days (+ extra for mosquito lifetime)
 static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
 // from Mosquito
@@ -134,6 +134,7 @@ public:
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
     bool loadAnnualIntroductions(std::string annualIntrosFilename);
+    bool loadAnnualSerotypes(std::string annualSerotypeFilename);
 
     int randomseed;
     int nRunLength;
@@ -149,7 +150,7 @@ public:
     double fPreVaccinateFraction;
     bool bVaccineLeaky; // if false, vaccine is all-or-none
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
-    float nDailyExposed[NUM_OF_SEROTYPES];                  // serotypes
+    std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;                  //
@@ -174,6 +175,7 @@ public:
     std::string szDailyFile;
     std::string szSwapProbFile;
     std::string annualIntroductionsFile;                  // time series of some external factor determining introduction rate
+    std::string annualSerotypeFile;                  // time series of some external factor determining introduction rate
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     int nDaysImmune;
