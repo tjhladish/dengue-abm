@@ -33,10 +33,10 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     double _EF       = args[0];
     double _mos_move = args[1];
     double _exp_coef = args[2];
-    double _betamp   = args[3];
-    double _betapm   = args[4];
-    double _nmos     = args[5];
+    double _nmos     = args[3];
     
+    double _betamp   = 0.25;
+    double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/dengue/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
@@ -44,13 +44,9 @@ Parameters* define_simulator_parameters(vector<long double> args) {
 //    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = 5500;
-    par->nRunLength = 4500;
+    par->nRunLength = 34*365 + 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
-    par->nDailyExposed[0] = 1.0; 
-    par->nDailyExposed[1] = 1.0;
-    par->nDailyExposed[2] = 1.0;
-    par->nDailyExposed[3] = 0.0;
     par->fPrimaryPathogenicity[0] = 1.0;
     par->fPrimaryPathogenicity[1] = 0.25;
     par->fPrimaryPathogenicity[2] = 1.0;
@@ -94,11 +90,13 @@ Parameters* define_simulator_parameters(vector<long double> args) {
         }
     }
 
-    par->nDaysImmune = 730;
+    par->nDaysImmune = 365;
     par->fVESs.clear();
     par->fVESs.resize(4, 0.7);
 
-    par->annualIntroductions = {  400519,  // 2000 total cases in Americas, reported by PAHO
+    par->annualSerotypeFile = pop_dir + "/serotypes-yucatan.txt";
+    par->loadAnnualSerotypes(par->annualSerotypeFile);
+    /*par->annualIntroductions = {  400519,  // 2000 total cases in Americas, reported by PAHO
                                   652212,  // 2001
                                  1015420,  // 2002
                                   517617,  // 2003
@@ -111,7 +109,7 @@ Parameters* define_simulator_parameters(vector<long double> args) {
                                  1663276,  // 2010
                                  1093252,  // 2011
                                  1120902,  // 2012
-                                 2386836}; // 2013
+                                 2386836}; // 2013 */
 
     par->szPopulationFile = pop_dir + "/population-yucatan.txt";
     par->szImmunityFile   = "";
@@ -212,7 +210,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     const Parameters* par = define_simulator_parameters(args); 
     gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
-    sample_immune_history(community, par);
+    //sample_immune_history(community, par);
     //vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
     vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
@@ -222,35 +220,44 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     // calculate linear regression based on estimated reported cases
     const double ef = par->expansionFactor;
-    vector<double> x(epi_sizes.size());
-    vector<double> y(epi_sizes.size());
+//    vector<double> x(epi_sizes.size());
+//    vector<double> y(epi_sizes.size());
+    Col y(epi_sizes.size());
+    const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < epi_sizes.size(); i++) { 
-        // convert infections to cases
-        y[i] = ((double) epi_sizes[i])/ef; 
+        // convert infections to cases per 100,000
+        y[i] = ((float_type) 1e5*epi_sizes[i])/(ef*pop_size); 
         // year index, for regression
-        x[i] = i+1.0;
+ //       x[i] = i+1.0;
     }
-    Fit* fit = lin_reg(x, y);
+    //Fit* fit = lin_reg(x, y);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
     // parameters
     ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->annualIntroductionsCoef << " "
-       << par->betaMP << " " << par->betaPM << " " << par->nDefaultMosquitoCapacity << " ";
+       << par->nDefaultMosquitoCapacity << " ";
     // metrics
-    ss << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
-       << fit->m << " " << fit->b << " " << fit->rsq << endl;
+    float_type _mean             = mean(y);
+    float_type _median           = median(y);
+    float_type _stdev            = sqrt(variance(y, _mean));
+    float_type _max              = max(y);
+    float_type _skewness         = skewness(y);
+    float_type _median_crossings = median_crossings(y);
+    ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << endl;
+      
+//       << fit->m << " " << fit->b << " " << fit->rsq << endl;
 
     string output = ss.str();
     fprintf(stderr, output.c_str());
     
     vector<long double> metrics;
-    append_if_finite(metrics, mean(y) );
-    append_if_finite(metrics, stdev(y) );
-    append_if_finite(metrics, max_element(y) );
-    append_if_finite(metrics, fit->m );
-    append_if_finite(metrics, fit->b );
-    append_if_finite(metrics, fit->rsq );
+    append_if_finite(metrics, _mean);
+    append_if_finite(metrics, _median);
+    append_if_finite(metrics, _stdev);
+    append_if_finite(metrics, _max);
+    append_if_finite(metrics, _skewness);
+    append_if_finite(metrics, _median_crossings);
 
     delete par;
     delete community;
