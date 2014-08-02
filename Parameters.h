@@ -143,9 +143,9 @@ public:
     double fMosquitoMove;                                   // daily probability of mosquito migration
     std::string szMosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
-    double fVEI;
-    double fVEP;
-    std::vector<double> fVESs;
+    double fVEI;  // vaccine efficacy to reduce infectiousness
+    double fVEP;  // vaccine efficacy for pathogenicity
+    std::vector<double> fVESs; // vaccine efficacy for susceptibility (can be leaky or all-or-none)
     std::vector<double> fVESs_NAIVE; // VES for initially immunologically naive people
     double fPreVaccinateFraction;
     bool bVaccineLeaky; // if false, vaccine is all-or-none

@@ -31,6 +31,7 @@ Person::Person() {
     for(int i=0; i<STEPS_PER_DAY; i++) _pLocation[i] = NULL;
     _bDead = false;
     _bVaccinated = false;
+    _bNaiveVaccineProtection = false;
     _bCase = false;
 }
 
@@ -100,7 +101,12 @@ bool Person::isInfectable(Serotype serotype, int time) {
     } else if (getInfectionParity() >= maxinfectionparity) {
         // already infected max number of times
         infectable = false;
-    } else if (isVaccinated() && _par->bVaccineLeaky==true && gsl_rng_uniform(RNG) < _par->fVESs[serotype]) { 
+    } else if (isVaccinated() && 
+	       _par->bVaccineLeaky==true && 
+	       ((_bNaiveVaccineProtection==true && 
+		 gsl_rng_uniform(RNG)<_par->fVESs_NAIVE[serotype]) ||
+		(_bNaiveVaccineProtection==false && 
+		 gsl_rng_uniform(RNG)<_par->fVESs[serotype]))) {
         // protected by leaky vaccine
         // TODO - verify that this is the right way to handle vaccine immunity, e.g. non-leaky vaccines are not protective?
         // Or is that being handled by a different conditional

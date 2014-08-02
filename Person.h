@@ -117,6 +117,8 @@ class Person {
         bool _bDead;                                                  // is dead
         std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype exposure
         bool _bVaccinated;                                            // has been vaccinated
+        bool _bNaiveVaccineProtection; // if vaccinated, do we use the naive or non-naive VE_S?
+
         std::vector<std::pair<int,double> > _swap_probabilities;      // list of the nearest people one year younger, with distances
         std::vector<Infection*> infectionHistory;
         void clearInfectionHistory();

@@ -386,10 +386,6 @@ void Parameters::validate_parameters() {
       fVESs_NAIVE = fVESs; // naive people have the same VE_S as non-naive
     } else {
       std::cerr << "VE_Ss naive = " << fVESs_NAIVE[0] << "," << fVESs_NAIVE[1] << "," << fVESs_NAIVE[2] << "," << fVESs_NAIVE[3] << std::endl;
-      if (bVaccineLeaky) {
-        std::cerr << "Leaky vaccine with different naive VE_S not implemented" << std::endl;
-	exit(-1);
-      }
     }
 
     if (bVaccineLeaky) {
