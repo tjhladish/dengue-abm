@@ -250,6 +250,10 @@ bool Person::vaccinate() {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
+	if (isSusceptible(SEROTYPE_1) & isSusceptible(SEROTYPE_2) & isSusceptible(SEROTYPE_3) & isSusceptible(SEROTYPE_4))
+	  _bNaiveVaccineProtection = true;
+	else
+	  _bNaiveVaccineProtection = false;
 	if (_par->bVaccineLeaky==false) { // all-or-none VE_S protection
 	  if (isSusceptible(SEROTYPE_1) & isSusceptible(SEROTYPE_2) & isSusceptible(SEROTYPE_3) & isSusceptible(SEROTYPE_4)) { // naive against all serotypes
 	    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
