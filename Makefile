@@ -13,11 +13,11 @@ default: model
 
 all_mpi: mpi_model
 
-model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o 
-	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o
+	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
-mpi_model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o 
-	$(CPP) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o $(OBJS) $(LDFLAGS) $(LIBS)
+mpi_model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o
+	$(CPP) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 %.o: %.cpp Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<

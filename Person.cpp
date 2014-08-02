@@ -245,8 +245,14 @@ bool Person::vaccinate() {
         //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
 	if (_par->bVaccineLeaky==false) { // all-or-none VE_S protection
-	  for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-            if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
+	  if (isSusceptible(SEROTYPE_1) & isSusceptible(SEROTYPE_2) & isSusceptible(SEROTYPE_3) & isSusceptible(SEROTYPE_4)) { // naive against all serotypes
+	    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+	      if (gsl_rng_uniform(RNG)<_par->fVESs_NAIVE[i]) _nImmunity[i] = 1;                                // protect against serotype i
+	    }
+	  } else {
+	    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+	      if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
+	    }
 	  }
 	}
         return true;

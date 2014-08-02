@@ -7,7 +7,7 @@ do
         -popfile ./pop-yucatan/population-yucatan.txt \
         -immfile ./pop-yucatan/immunity-yucatan.txt \
         -probfile ./pop-yucatan/swap_probabilities-yucatan.txt \
-        -annualintrosfile ./paho_cases \
+        -annualintrosfile ./pop-yucatan/paho_cases \
         -annualintroscoef 1e-6 \
         -mosquitomove 0.15 \
         -mosquitomovemodel weighted \

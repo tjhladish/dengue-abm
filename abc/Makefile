@@ -1,9 +1,9 @@
 CC=mpicxx
-#CFLAGS = -g -std=c++0x
+#CFLAGS = -g -std=c++11
 CFLAGS = -O2 -std=c++11
 ABCDIR = $(HOME)/AbcSmc
 DENDIR = $(HOME)/dengue
-DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o
+DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/dengue/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
@@ -45,4 +45,4 @@ clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean
 	$(MAKE) -C $(DENDIR) -f Makefile clean
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
-	rm abc abc_mpi
+	rm -f abc abc_mpi

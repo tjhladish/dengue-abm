@@ -77,9 +77,6 @@ struct AgeTally {
     int tally;
 };
 
-
-void split(const string& s, char c, vector<string>& v);
-
 map<int,vector<AgeTally> > import_census_data(string filename);
 
 bool recently_infected(vector<int> states);

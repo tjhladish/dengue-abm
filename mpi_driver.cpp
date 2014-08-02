@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     // wallclock time (seconds)
     ss << proccess_id << "end " << dif << " ";
     // parameters
-    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0] << " "
+    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->nDailyExposed[0][0] << " "
        << par->betaMP << " " << par->betaPM << " ";
     // metrics
     ss << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
@@ -153,6 +153,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community) {
     int nNextExternalIncubation = 0;
     int epi_ctr = 0;
     for (int t=0; t<par->nRunLength; t++) {
+        int year = (int)(t/365);
         //if (t%10==0) cerr << "Time " << t << " epi_size " << epi_ctr << endl;
         if ((t-100)%365==0) {
             if (t > 365) {
@@ -177,8 +178,14 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community) {
         {
             int numperson = community->getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-                if (par->nDailyExposed[serotype] <= 0) continue;
-                const int num_exposed = gsl_ran_poisson(RNG, par->nDailyExposed[serotype]);
+                const int ai_year_lookup = year % par->annualIntroductions.size();
+                const double intros = par->annualIntroductions[ai_year_lookup];
+                const int de_year_lookup = year % par->nDailyExposed.size();
+                const double serotype_weight = par->nDailyExposed[de_year_lookup][serotype];
+                const double annual_intros_weight = par->annualIntroductionsCoef;
+                const double expected_num_exposed = serotype_weight * annual_intros_weight * intros; 
+                if (expected_num_exposed <= 0) continue;
+                const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
                 for (int i=0; i<num_exposed; i++) {
                     // gsl_rng_uniform_int returns on [0, numperson-1]
                     int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
