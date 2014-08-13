@@ -38,8 +38,8 @@ class Community {
             _fMosquitoCapacityMultiplier = f;
         }
         double getMosquitoMultiplier() { return _fMosquitoCapacityMultiplier; }
-	void setExternalIncubation(double n) { assert(n<MAX_MOSQUITO_INCUBATION); _nExternalIncubation=n; }
-	int getExternalIncubation() { return _nExternalIncubation; }
+        void setExternalIncubation(double n) { assert(n<MAX_MOSQUITO_INCUBATION); _nExternalIncubation=n; }
+        int getExternalIncubation() { return _nExternalIncubation; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(double f, int age=-1);

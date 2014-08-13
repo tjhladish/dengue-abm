@@ -93,7 +93,7 @@ bool Person::isInfectable(Serotype serotype, int time) {
     bool infectable = true;
     const int maxinfectionparity    = _par->nMaxInfectionParity;
     if (!isSusceptible(serotype)) {
-        // immune to this serotype
+        // immune to this serotype via previous infection OR non-leaky vaccine
         infectable = false;                                   
     } else if (getNumInfections() > 0 and infectionHistory.back()->recoveryTime + _par->nDaysImmune > time) {
         // cross-serotype protection from last infection
@@ -101,16 +101,20 @@ bool Person::isInfectable(Serotype serotype, int time) {
     } else if (getInfectionParity() >= maxinfectionparity) {
         // already infected max number of times
         infectable = false;
-    } else if (isVaccinated() && 
-	       _par->bVaccineLeaky==true && 
-	       ((_bNaiveVaccineProtection==true && 
-		 gsl_rng_uniform(RNG)<_par->fVESs_NAIVE[serotype]) ||
-		(_bNaiveVaccineProtection==false && 
-		 gsl_rng_uniform(RNG)<_par->fVESs[serotype]))) {
-        // protected by leaky vaccine
-        // TODO - verify that this is the right way to handle vaccine immunity, e.g. non-leaky vaccines are not protective?
-        // Or is that being handled by a different conditional
-        infectable = false; 
+    } else if (isVaccinated() && _par->bVaccineLeaky==true) {
+        // potentially protected by leaky vaccine
+        // (all-or-none vaccines are handled via isSusceptible conditional)
+        double r = gsl_rng_uniform(RNG);
+        double protectionProbability = 0;
+        // Which level of protection does this person have?
+        if (_bNaiveVaccineProtection == true) {
+            protectionProbability = _par->fVESs_NAIVE[serotype];
+        } else {
+            protectionProbability = _par->fVESs[serotype];
+        }
+        if ( r < protectionProbability ) {
+            infectable = false;
+        }
     }
     return infectable;
 }
@@ -175,7 +179,11 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
     }
-
+    if (_par->bRetroactiveMatureVaccine) {
+        // if the best vaccine-induced immunity can be acquired retroactively,
+        // upgrade this person from naive to mature
+        _bNaiveVaccineProtection = false;
+    }
     return true;
 }
 
@@ -246,25 +254,35 @@ int Person::getInfectionParity() {
 }
 
 
+bool Person::fullySusceptible() {
+    bool susceptible = true;
+    for (int s = 0; s<(int) NUM_OF_SEROTYPES; ++s) {
+        if ( not isSusceptible((Serotype) s) ) { susceptible = false; }
+    }
+    return susceptible;
+}
+
+
 bool Person::vaccinate() {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
-	if (isSusceptible(SEROTYPE_1) & isSusceptible(SEROTYPE_2) & isSusceptible(SEROTYPE_3) & isSusceptible(SEROTYPE_4))
-	  _bNaiveVaccineProtection = true;
-	else
-	  _bNaiveVaccineProtection = false;
-	if (_par->bVaccineLeaky==false) { // all-or-none VE_S protection
-	  if (isSusceptible(SEROTYPE_1) & isSusceptible(SEROTYPE_2) & isSusceptible(SEROTYPE_3) & isSusceptible(SEROTYPE_4)) { // naive against all serotypes
-	    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-	      if (gsl_rng_uniform(RNG)<_par->fVESs_NAIVE[i]) _nImmunity[i] = 1;                                // protect against serotype i
-	    }
-	  } else {
-	    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-	      if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
-	    }
-	  }
-	}
+        if ( fullySusceptible() ) {
+            _bNaiveVaccineProtection = true;
+        } else {
+            _bNaiveVaccineProtection = false;
+        }
+        if ( _par->bVaccineLeaky == false ) { // all-or-none VE_S protection
+            if ( fullySusceptible() ) { // naive against all serotypes
+                for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+                    if (gsl_rng_uniform(RNG)<_par->fVESs_NAIVE[i]) _nImmunity[i] = 1;                                // protect against serotype i
+                }
+            } else {
+                for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+                    if (gsl_rng_uniform(RNG)<_par->fVESs[i]) _nImmunity[i] = 1;                                // protect against serotype i
+                }
+            }
+        }
         return true;
     } else {
         return false;

@@ -54,6 +54,9 @@ void Parameters::define_defaults() {
     fSecondaryScaling.clear();
     fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
 
+    nVaccinateYear.clear();
+    nVaccinateAge.clear();
+    fVaccinateFraction.clear();
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
@@ -172,11 +175,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 nSizeVaccinate = strtol(argv[i+1],end,10);
                 i++;
                 for (int j=0; j<nSizeVaccinate; j++) {
-                    nVaccinateYear[j] = strtol(argv[i+1],end,10);
+                    nVaccinateYear.push_back( strtol(argv[i+1],end,10) );
                     i++;
-                    nVaccinateAge[j] = strtol(argv[i+1],end,10);
+                    nVaccinateAge.push_back( strtol(argv[i+1],end,10) );
                     i++;
-                    fVaccinateFraction[j] = strtod(argv[i+1],end);
+                    fVaccinateFraction.push_back( strtod(argv[i+1],end) );
                     i++;
                 }
             }
@@ -202,14 +205,14 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 fVESs[3] = strtod(argv[i+4],end);
                 i+=4;
             }
-	    else if (strcmp(argv[i], "-VESsnaive")==0 || strcmp(argv[i], "-vessnaive")==0) {
-	      fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0.95);
-	      fVESs_NAIVE[0] = strtod(argv[i+1],end);
-	      fVESs_NAIVE[1] = strtod(argv[i+2],end);
-	      fVESs_NAIVE[2] = strtod(argv[i+3],end);
-	      fVESs_NAIVE[3] = strtod(argv[i+4],end);
-	      i+=4;
-	    }
+            else if (strcmp(argv[i], "-VESsnaive")==0 || strcmp(argv[i], "-vessnaive")==0) {
+                fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0.95);
+                fVESs_NAIVE[0] = strtod(argv[i+1],end);
+                fVESs_NAIVE[1] = strtod(argv[i+2],end);
+                fVESs_NAIVE[2] = strtod(argv[i+3],end);
+                fVESs_NAIVE[3] = strtod(argv[i+4],end);
+                i+=4;
+            }
             else if (strcmp(argv[i], "-VEI")==0 || strcmp(argv[i], "-vei")==0) {
                 fVEI = strtod(argv[i+1],end);
                 i++;
@@ -220,6 +223,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
             }
             else if (strcmp(argv[i], "-vaccineleaky")==0) { // -dlc
                 bVaccineLeaky=true;
+            }
+            else if (strcmp(argv[i], "-retroactivematurevaccine")==0) { // -dlc
+                bRetroactiveMatureVaccine=true;
             }
             else if (strcmp(argv[i], "-prevaccinate")==0) {
                 fPreVaccinateFraction = strtod(argv[i+1],end);
@@ -384,6 +390,7 @@ void Parameters::validate_parameters() {
     if (fVESs_NAIVE.size()==0) {
       fVESs_NAIVE.clear();
       fVESs_NAIVE = fVESs; // naive people have the same VE_S as non-naive
+      std::cerr << "Vaccine protection is independent of infection history (naive == non-naive)" << std::endl;
     } else {
       std::cerr << "VE_Ss naive = " << fVESs_NAIVE[0] << "," << fVESs_NAIVE[1] << "," << fVESs_NAIVE[2] << "," << fVESs_NAIVE[3] << std::endl;
     }
@@ -392,6 +399,15 @@ void Parameters::validate_parameters() {
         std::cerr << "VE_S is leaky" << std::endl;
     } else {
         std::cerr << "VE_S is all-or-none" << std::endl;
+    }
+
+    if (bRetroactiveMatureVaccine) {
+        if (bVaccineLeaky) {
+            std::cerr << "Vaccine protection is upgraded from naive to non-naive upon infection (retroactive maturity)" << std::endl;
+        } else {
+            std::cerr << "-retroactivematurevaccine is only defined for leaky vaccines (-vaccineleaky)" << std::endl;
+            exit(-1); 
+        } 
     }
 
     if (szPeopleFile.length()>0) {

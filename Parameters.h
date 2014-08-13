@@ -149,6 +149,7 @@ public:
     std::vector<double> fVESs_NAIVE; // VES for initially immunologically naive people
     double fPreVaccinateFraction;
     bool bVaccineLeaky; // if false, vaccine is all-or-none
+    bool bRetroactiveMatureVaccine; // if true, infection causes leaky vaccine to jump from naive to mature protection
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
@@ -180,9 +181,9 @@ public:
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     int nDaysImmune;
     int nSizeVaccinate;
-    int nVaccinateYear[500];                                // when to vaccinate
-    int nVaccinateAge[500];                                 // who to vaccinate
-    double fVaccinateFraction[500];                         // fraction of age group to vaccinate
+    std::vector<int> nVaccinateYear;                                // when to vaccinate
+    std::vector<int> nVaccinateAge;                                 // whom to vaccinate
+    std::vector<double> fVaccinateFraction;                         // fraction of age group to vaccinate
     int nSizePrevaccinateAge;
     int nPrevaccinateAgeMin[100];
     int nPrevaccinateAgeMax[100];

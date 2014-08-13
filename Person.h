@@ -97,6 +97,7 @@ class Person {
         }
         bool isInfectable(Serotype serotype, int time);               // more complicated than isSusceptible
 
+        bool fullySusceptible();
         bool vaccinate();                                 // vaccinate this person
         static void setPar(const Parameters* par) { _par = par; }
 

@@ -119,7 +119,7 @@ year 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 2
             continue;
         } else if (fields.size()) {          
             year = stoi(fields[0]);
-            for(int i=1; i < fields.size(); i++ ) {  
+            for(unsigned int i=1; i < fields.size(); i++ ) {  
                 census[year].push_back( AgeTally(ages[i-1],stoi(fields[i])) );
                 //cerr << year << " " << ages[i-1] << " " << fields[i] << endl;
             }
@@ -304,7 +304,7 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
     }*/
 
     string HOME(std::getenv("HOME"));
-    string census_dir = HOME + "/dengue/synthetic_population/initial_immunity/";
+    string census_dir = HOME + "/work/dengue/synthetic_population/initial_immunity/";
 
     map<int, vector<AgeTally> > census = import_census_data(census_dir + "interpolated_ages-yucatan.out");
     vector<vector<vector<int> > > full_pop = initialize_full_population(census, FIRST_YEAR);
@@ -342,12 +342,12 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
             }
         }
 //        cout << "actual serotype counts: "; for (int t: serotype_tally) cout << t << " "; cout << endl;
-        if (num_of_infections > 0) {
-            const double total = (double) sum(serotype_tally);
+//        if (num_of_infections > 0) {
+//            const double total = (double) sum(serotype_tally);
 //            cout << "actual serotype frequency: "; for(int c: serotype_tally)  cout << c/total << " "; cout << endl;
-        } else {
+//        } else {
 //            cout << "actual serotype frequency: NA NA NA NA\n";
-        }
+//        }
         
         if (YEARS[year] == 1987) {
             for (int age = 8; age < 15; ++age) {
@@ -365,7 +365,7 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
 //            cout << "Fraction seropositive: " << seropositive_kids_in_1987/kids_in_1987 << endl;
 //            cout << "Empirical fraction seropositive: ~0.6" << endl;
 //            cout << "Estimated expansion factor correction: " << 0.6/(seropositive_kids_in_1987/kids_in_1987) << endl;
-            printf("%f %f\n", EXPANSION_FACTOR, seropositive_kids_in_1987/kids_in_1987);
+//            printf("%f %f\n", EXPANSION_FACTOR, seropositive_kids_in_1987/kids_in_1987);
             //cout << EXPANSION_FACTOR << " " << seropositive_kids_in_1987/kids_in_1987 << endl;
         }
         year++;
