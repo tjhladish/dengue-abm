@@ -26,14 +26,14 @@ time_t GLOBAL_START_TIME;
 //    MPI_Comm_rank(m.comm, &m.mpi_rank);  
 //}
 
-Parameters* define_default_parameters() {
+Parameters* define_default_parameters(const int years_simulated) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    double _EF       = 36;
+    double _EF       = 40;
     double _mos_move = 0.5;
     //double _exp_coef = 1;
-    double _nmos     = 70;
+    double _nmos     = 60;
     
     double _betamp   = 0.25;
     double _betapm   = 0.1;
@@ -44,7 +44,7 @@ Parameters* define_default_parameters() {
 //    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = 5500;
-    par->nRunLength = 20*365 + 100;
+    par->nRunLength = years_simulated*365 + 100;
     par->annualIntroductionsCoef = 1;
     par->nDailyExposed = {{1.0, 1.0, 1.0, 1.0}};
 
@@ -123,7 +123,7 @@ vector<int> ordered(vector<int> const& values) {
 
 
 void sample_immune_history(Community* community, const Parameters* par) {
-    const int last_immunity_year = 2012;
+    const int last_immunity_year = 2002;
     vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
 
     int N = community->getNumPerson();
@@ -183,7 +183,30 @@ void append_if_finite(vector<long double> &vec, double val) {
     }
 }
 
-vector<long double> simulator(const Parameters* par) {
+
+void output_symptomatic_counts(const Parameters* par, Community* community, ofstream& caseFile, string tag) {
+    vector< vector<int> > infected    = community->getNumNewlyInfected();
+    vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+    vector<int> i_tally(NUM_OF_SEROTYPES, 0);
+    vector<int> s_tally(NUM_OF_SEROTYPES, 0);
+    for (int t=0; t<par->nRunLength; t++) {
+        for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+            i_tally[s] += infected[s][t];
+            s_tally[s] += symptomatic[s][t];
+        }
+        if (t%365 == 0 and t > 0) {
+            int y = t/365;
+            caseFile << tag;
+            caseFile << y << " " << i_tally[0] << " " << i_tally[1] << " " << i_tally[2] << " " << i_tally[3] << " "
+                                  << s_tally[0] << " " << s_tally[1] << " " << s_tally[2] << " " << s_tally[3] << endl;
+            i_tally.clear(); i_tally.resize(NUM_OF_SEROTYPES, 0);
+            s_tally.clear(); s_tally.resize(NUM_OF_SEROTYPES, 0);
+        }
+    }
+}
+
+
+vector<long double> simulator(const Parameters* par, ofstream& caseFile, string tag) {
 //vector<long double> simulator(const Parameters* par, const MPI_par* mp) {
     // initialize bookkeeping for run
     // time_t start ,end;
@@ -240,7 +263,9 @@ vector<long double> simulator(const Parameters* par) {
     append_if_finite(metrics, _max);
     append_if_finite(metrics, _skewness);
     append_if_finite(metrics, _median_crossings);
-*/
+*/ 
+    output_symptomatic_counts(par, community, caseFile, tag);
+
     delete par;
     delete community;
     //return metrics;
@@ -251,15 +276,32 @@ vector<long double> simulator(const Parameters* par) {
 int main(int argc, char* argv[]) {
 //    MPI_par mp;
 //    setup_mpi(mp, argc, argv);
+
+    if (argc != 2) {
+        cerr << "Please provide an output filename\n";
+        exit(-1);
+    }
+
+    string outputFilename = argv[1];
+    ofstream caseFile;
+    caseFile.open(outputFilename);
+    if(caseFile.fail()) {
+        cerr << "ERROR: Case file '" << outputFilename << "' cannot be open for writing." << endl;
+        exit(-1);
+    }
+    caseFile << "vaccine retro catchup target year inf1 inf2 inf3 inf4 sym1 sym2 sym3 sym4" << endl;
+
     const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
     gsl_rng_set(RNG, time (NULL) * getpid()); // seed the rng using sys time and the process id
 
     time(&GLOBAL_START_TIME);
-    const int years_simulated = 20;
+    const int years_simulated = 30;
+    const int first_vaccine_year = 10; // e.g., 0 means start vaccinating in the first simulated year
     const int max_catchup_age = 46;
 
     vector<bool> vaccinate_bool = {false, true};
-    vector<bool> retro_bool = {false, true};
+    //vector<bool> retro_bool = {false, true};
+    vector<bool> retro_bool = {false};
     vector<bool> catchup_bool = {false, true};
     vector<int> target_ages = {2,6,10,14};
 
@@ -274,18 +316,21 @@ int main(int argc, char* argv[]) {
             bool retro = false;
             bool catchup = false;
             int target = -1;
-            Parameters* par = define_default_parameters(); 
-
-            cerr << vaccinate << " " << retro << " " << catchup << " " << target << " ";
+            Parameters* par = define_default_parameters(years_simulated); 
+            
+            stringstream ss;
+            ss << vaccinate << " " << retro << " " << catchup << " " << target << " ";
+            string tag = ss.str();
+            cerr << tag;
             // epi sizes in cases, not infections!
-            vector<long double> epi_sizes = simulator(par);
+            vector<long double> epi_sizes = simulator(par, caseFile, tag);
             for (auto v: epi_sizes) cerr << v << " ";
             cerr << endl;
         } else {
             for (bool retro: retro_bool) {
                 for (bool catchup: catchup_bool) {
                     for (int target: target_ages) {
-                        Parameters* par = define_default_parameters(); 
+                        Parameters* par = define_default_parameters(years_simulated); 
 
                         par->bVaccineLeaky = true;
 
@@ -297,14 +342,14 @@ int main(int argc, char* argv[]) {
 
                         if (catchup) {
                             for (int catchup_age = target + 1; catchup_age<max_catchup_age; catchup_age++) {
-                                par->nVaccinateYear.push_back(1);
+                                par->nVaccinateYear.push_back(first_vaccine_year);
                                 par->nVaccinateAge.push_back(catchup_age);
                                 par->fVaccinateFraction.push_back(0.7);
                                 par->nSizeVaccinate++;
                             }
                         } 
 
-                        for (int vacc_year = 1; vacc_year <= years_simulated; vacc_year++) {
+                        for (int vacc_year = first_vaccine_year; vacc_year < years_simulated; vacc_year++) {
                             par->nVaccinateYear.push_back(vacc_year);
                             par->nVaccinateAge.push_back(target);
                             par->fVaccinateFraction.push_back(0.7);
@@ -313,9 +358,12 @@ int main(int argc, char* argv[]) {
 
                         if (retro) par->bRetroactiveMatureVaccine = true;
 
-                        cerr << vaccinate << " " << retro << " " << catchup << " " << target << " ";
+                        stringstream ss;
+                        ss << vaccinate << " " << retro << " " << catchup << " " << target << " ";
+                        string tag = ss.str();
+                        cerr << tag;
                         // epi sizes in cases, not infections!
-                        vector<long double> epi_sizes = simulator(par);
+                        vector<long double> epi_sizes = simulator(par, caseFile, tag);
                         for (auto v: epi_sizes) cerr << v << " ";
                         cerr << endl;
                     }
@@ -323,6 +371,7 @@ int main(int argc, char* argv[]) {
             }        
         }
     }
+    caseFile.close();
 //    MPI_Finalize();
     return 0;
 }
