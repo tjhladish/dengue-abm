@@ -1,5 +1,3 @@
-CPP      = g++
-#CPP      = mpicxx
 MAKE     = make --no-print-directory
 CFLAGS   = -Wall -pedantic -std=c++11
 OPTI     = -O2
@@ -16,7 +14,7 @@ endif
 LIBS     = -lm -lgsl -lgslcblas
 
 all_mpi: ImmunityGenerator.cpp ImmunityGenerator.h Makefile
-	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) -c ImmunityGenerator.cpp
+	mpicxx $(CFLAGS) $(OPTI) $(INCLUDES) -c ImmunityGenerator.cpp
 
 all_no_mpi: ImmunityGenerator.cpp ImmunityGenerator.h Makefile
 	g++ $(CFLAGS) $(OPTI) $(INCLUDES) -c ImmunityGenerator.cpp
