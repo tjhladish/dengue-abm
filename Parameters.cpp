@@ -206,7 +206,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 i+=4;
             }
             else if (strcmp(argv[i], "-VESsnaive")==0 || strcmp(argv[i], "-vessnaive")==0) {
-                fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0.95);
+                fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0);
                 fVESs_NAIVE[0] = strtod(argv[i+1],end);
                 fVESs_NAIVE[1] = strtod(argv[i+2],end);
                 fVESs_NAIVE[2] = strtod(argv[i+3],end);
