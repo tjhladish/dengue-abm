@@ -35,7 +35,7 @@ static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days 
 static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
 // from Person.h
-static const int MAX_PERSON_AGE = 101;                         // maximum age-1 for a person
+static const int NUM_AGE_CLASSES = 101;                       // maximum age+1 for a person
 static const int MAX_INCUBATION = 9;                          // max incubation period in days
 static const int MAX_HISTORY = 50;                            // length of exposure history in years
 
@@ -77,7 +77,7 @@ static const double MOSQUITO_AGE_DISTRIBUTION[MAX_MOSQUITO_AGE] = {
 };
 
 // for some serotypes, the fraction who are symptomatic upon primary infection
-static const double SYMPTOMATIC_BY_AGE[MAX_PERSON_AGE] = {
+static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
     0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,
     0.1017964,0.1017964,0.1017964,0.1017964,0.1017964,
     0.2774451,0.2774451,0.2774451,0.2774451,0.2774451,
@@ -91,7 +91,7 @@ static const double SYMPTOMATIC_BY_AGE[MAX_PERSON_AGE] = {
 };
 
 //2005 Thai mortality data by age from Porapakkham 2010
-//double thaimortality[MAX_PERSON_AGE] = {
+//double thaimortality[NUM_AGE_CLASSES] = {
 //    0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,
 //    0.0005,0.0005,0.0005,0.0005,0.0005,0.0007,0.0007,0.0007,0.0007,0.0007,
 //    0.0009,0.0009,0.0009,0.0009,0.0009,0.0016,0.0016,0.0016,0.0016,0.0016,

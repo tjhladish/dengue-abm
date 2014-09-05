@@ -40,7 +40,7 @@ Community::Community(const Parameters* parameters) :
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
-    for (int a = 0; a<MAX_PERSON_AGE; a++) _nPersonAgeCohortSizes[a] = 0;
+    for (int a = 0; a<NUM_AGE_CLASSES; a++) _nPersonAgeCohortSizes[a] = 0;
 }
 
 
@@ -94,8 +94,8 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     _nNumPerson=0;
     _person = new Person[maxPerson];
 
-    int agecounts[MAX_PERSON_AGE];
-    for (int i=0; i<MAX_PERSON_AGE; i++) agecounts[i] = 0;
+    int agecounts[NUM_AGE_CLASSES];
+    for (int i=0; i<NUM_AGE_CLASSES; i++) agecounts[i] = 0;
 
     istringstream line;
     int id, age, house, work;
@@ -123,7 +123,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
             _location[house]->addPerson(_person+_nNumPerson, 0);
             _location[work]->addPerson(_person+_nNumPerson, 1);
             _location[house]->addPerson(_person+_nNumPerson, 2);
-            assert(age<MAX_PERSON_AGE);
+            assert(age<NUM_AGE_CLASSES);
             agecounts[age]++;
             _nNumPerson++;
         }
@@ -167,11 +167,11 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
     // keep track of all age cohorts for aging and mortality
     _personAgeCohort.clear();
-    _personAgeCohort.resize(MAX_PERSON_AGE, vector<Person*>(0));
+    _personAgeCohort.resize(NUM_AGE_CLASSES, vector<Person*>(0));
 
     for (int i=0; i<_nNumPerson; i++) {
         int age = _person[i].getAge();
-        assert(age<MAX_PERSON_AGE);
+        assert(age<NUM_AGE_CLASSES);
         _personAgeCohort[age].push_back(_person + i);
         _nPersonAgeCohortSizes[age]++;
     }
@@ -329,23 +329,29 @@ bool Community::infect(int id, Serotype serotype, int day) {
 // vaccinate - vaccinate fraction f of the population
 // if age>=0, then vaccinate only those who are "age" years old
 void Community::vaccinate(double f, int age) {
-    if (f<=0.0)
+    // This approach to vaccination is somewhat problematic.  Age classes can be vaccinated multiple times,
+    // so the probability of an individual being vaccinated becomes 1 - (1 - f)^n, where n is the number
+    // of times an age class is specified, either explicitly or implicitly by using a negative value for age
+    if (f<=0.0) {
         return;
-    if (age<0) {                                                      // vaccinate everyone
-        for (int i=0; i<_nNumPerson; i++) {
-            if (gsl_rng_uniform(RNG)<f) {
-                _person[i].vaccinate();
+    } else {
+        if (age<0) {                                                      // vaccinate everyone
+            for (int i=0; i<_nNumPerson; i++) {
+                Person p = _person[i];
+                if (!p.isVaccinated() && gsl_rng_uniform(RNG)<f) {
+                    p.vaccinate();
+                }
             }
-        }
-    }
-    else {
-        if (age>MAX_PERSON_AGE)
-            age=MAX_PERSON_AGE;
-        for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-            Person *p = _personAgeCohort[age][pnum];
-            assert(p!=NULL);
-            if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
-                p->vaccinate();
+        } else {
+            // is the specified age a valid index?
+            if (age <= NUM_AGE_CLASSES - 1) {
+                for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+                    Person* p = _personAgeCohort[age][pnum];
+                    assert(p!=NULL);
+                    if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
+                        p->vaccinate();
+                    }
+                }
             }
         }
     }
@@ -477,7 +483,7 @@ void Community::swapImmuneStates() {
     for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
 
     // For people of age x, copy immune status from people of age x-1
-    for (int age=MAX_PERSON_AGE-1; age>0; age--) {
+    for (int age=NUM_AGE_CLASSES-1; age>0; age--) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             //cerr << "age " << age << ": " << pnum << " of " << _nPersonAgeCohortSizes[age] << endl;
             Person *p = _personAgeCohort[age][pnum];

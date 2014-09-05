@@ -57,7 +57,7 @@ class Community {
         static const Parameters* _par;
         Person *_person;                                              // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
-        int _nPersonAgeCohortSizes[MAX_PERSON_AGE];                   // size of each age cohort
+        int _nPersonAgeCohortSizes[NUM_AGE_CLASSES];                   // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
         std::vector<Location*> _location;                             // the array index is equal to the ID
         std::vector< std::vector<Person*> > _exposedQueue;            // queue of people with n days of latency left
