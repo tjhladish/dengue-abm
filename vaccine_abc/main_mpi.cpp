@@ -36,7 +36,9 @@ Parameters* define_default_parameters(const int years_simulated) {
     double _EF       = 40;
     double _mos_move = 0.5;
     //double _exp_coef = 1;
-    double _nmos     = 60;
+    double _nmos     = 50;
+    //double _nmos     = 60;
+    //double _nmos     = 80;
     
     double _betamp   = 0.25;
     double _betapm   = 0.1;
@@ -46,7 +48,7 @@ Parameters* define_default_parameters(const int years_simulated) {
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";
 
-    par->randomseed = 5500;
+//    par->randomseed = 5500;
     par->nRunLength = years_simulated*365 + 100;
     par->annualIntroductionsCoef = 1;
     par->nDailyExposed = {{1.0, 1.0, 1.0, 1.0}};
@@ -165,13 +167,10 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
-    //fprintf(stderr, "%Xbegin\n", process_id);
-
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     stringstream ss;
-    ss << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
-    //ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fprintf(stderr, output.c_str());
 
@@ -219,12 +218,8 @@ vector<long double> tally_counts(const Parameters* par, Community* community) {
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 30;
-    const int first_vaccine_year = 10; // e.g., 0 means start vaccinating in the first simulated year
-
-    cerr << "vaccine retro catchup target ";
-    for (int i = 0; i<years_simulated; i++) cerr << "y" << i << " ";
-    cerr << endl;
+    const int years_simulated = 40;
+    const int burnin = 20; // e.g., 0 means start vaccinating in the first simulated year
 
     vector<int> target_ages = {2,6,10,14};
     bool vaccine      = (bool) args[0];
@@ -240,25 +235,26 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     if (vaccine) {
         par->bVaccineLeaky = true;
 
-        par->fVESs_NAIVE.clear();
-        if (not all_mature) {
-            // if these values are not set, fVESs_NAIVE gets set to fVESs in Parameters.cpp
-            par->fVESs_NAIVE = {0.35, 0.0, 0.35, 0.35};
-        }
-
         par->fVESs.clear();
         par->fVESs = {0.7, 0.35, 0.7, 0.7};
 
+        par->fVESs_NAIVE.clear();
+        if (all_mature) {
+            par->fVESs_NAIVE = par->fVESs;
+        } else {
+            par->fVESs_NAIVE = {0.35, 0.0, 0.35, 0.35};
+        }
+
         if (catchup) {
-            for (int catchup_age = target + 1; catchup_age<max_catchup_age; catchup_age++) {
-                par->nVaccinateYear.push_back(first_vaccine_year);
+            for (int catchup_age = target + 1; catchup_age <= max_catchup_age; catchup_age++) {
+                par->nVaccinateYear.push_back(burnin);
                 par->nVaccinateAge.push_back(catchup_age);
                 par->fVaccinateFraction.push_back(0.7);
                 par->nSizeVaccinate++;
             }
         } 
 
-        for (int vacc_year = first_vaccine_year; vacc_year < years_simulated; vacc_year++) {
+        for (int vacc_year = burnin; vacc_year < years_simulated; vacc_year++) {
             par->nVaccinateYear.push_back(vacc_year);
             par->nVaccinateAge.push_back(target);
             par->fVaccinateFraction.push_back(0.7);
@@ -275,7 +271,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     const unsigned int process_id = report_process_id(args, mp, start);
 
     // initialize & run simulator 
-    gsl_rng_set(RNG, par->randomseed);
+//    gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
     sample_immune_history(community, par);
     seed_epidemic(par, community);
@@ -286,6 +282,17 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     double dif = difftime (end,start);
 
     vector<long double> metrics = tally_counts(par, community);
+
+    stringstream ss;
+    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
+
+    for (auto i: args) ss << i << " ";
+    for (auto i: metrics) ss << i << " ";
+    ss << endl;
+
+    string output = ss.str();
+    fprintf(stderr, output.c_str());
+
     /*const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < epi_sizes.size(); i++) { 
         // convert infections to cases per 1,000
@@ -307,7 +314,7 @@ int main(int argc, char* argv[]) {
         return 100;
     }
 
-    const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+//    const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
     gsl_rng_set(RNG, time (NULL) * getpid()); // seed the rng using sys time and the process id
 
     AbcSmc* abc = new AbcSmc(mp);
