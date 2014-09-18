@@ -6,6 +6,7 @@
 #include "CCRC32.h"
 #include "Utility.h"
 #include "ImmunityGenerator.h"
+#include <unordered_set>
 
 using namespace std;
 
@@ -128,6 +129,39 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
+void generate_homogeneous_immune_history(Community* community, const Parameters* par, float attack_rate) {
+    int N = community->getNumPerson();
+    for(int i=0; i<N; i++) {
+        Person* person = community->getPerson(i);
+
+        int age = person->getAge();
+        age = age <= MAX_CENSUS_AGE ? age : MAX_CENSUS_AGE;
+
+        // determine order in which person will be exposed to serotypes
+        int sero_order[NUM_OF_SEROTYPES];
+        for (i = 0; i < NUM_OF_SEROTYPES; i++) { sero_order[i] = i; }
+        gsl_ran_shuffle (RNG, sero_order, NUM_OF_SEROTYPES, sizeof (int));
+
+        // don't allow multiple infections in one year
+        unordered_set<int> infection_years;
+        for (int s=0; s<NUM_OF_SEROTYPES; ++s) {
+            Serotype serotype = (Serotype) sero_order[s];
+            // sample year of life in which infection occurred
+            // gsl_ran_geometric returns integers >= 1
+            int year = gsl_ran_geometric(RNG, attack_rate)-1;
+            // person is old enough to have been infected in 'year'
+            // AND they were not infected with a different serotype
+            // already in that year
+            if (age > year and infection_years.count(year) == 0) {
+                infection_years.insert(year);
+                person->setImmunity((Serotype) serotype);
+                person->initializeNewInfection();
+                person->setRecoveryTime(-365*(age-year)); // last dengue infection was x years ago
+            }
+        }
+    }
+}
+
 void sample_immune_history(Community* community, const Parameters* par) {
     const int last_immunity_year = 2002;
     vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
@@ -137,9 +171,8 @@ void sample_immune_history(Community* community, const Parameters* par) {
         Person* person = community->getPerson(i);
 
         int age = person->getAge();
-        int maxAge = MAX_CENSUS_AGE;
 
-        age = age <= maxAge ? age : maxAge;
+        age = age <= MAX_CENSUS_AGE ? age : MAX_CENSUS_AGE;
         int r = gsl_rng_uniform_int(RNG, full_pop[age].size());
         vector<int> states = full_pop[age][r];
         // we need to go through the states, greatest to least
@@ -273,7 +306,11 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // initialize & run simulator 
 //    gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
-    sample_immune_history(community, par);
+    //sample_immune_history(community, par); // use historical data
+    // initialize population immunity to make burn-in go faster
+    float approx_attack_rate = 0.05; // approximate probability someone will be infected in a given year
+    generate_homogeneous_immune_history(community, par, approx_attack_rate);
+
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
