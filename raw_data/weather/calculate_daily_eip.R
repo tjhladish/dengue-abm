@@ -71,17 +71,19 @@ rtemps$TMAXr[is.na(rtemps$TMAX)] = predict(reg_max, newdata=rtemps[is.na(rtemps$
 # pull out means for the four locations we have, can't remember what the match part does exactly
 # We're only really using the merida values currently
 
-pdf("Merida_min_max_temps.pdf", width=11, height=8.5)
-#png("reconstructed_merida_min_max_temperatures.png", width=1800, height=800, res=200)
-par(mfrow=c(2,1))
-par(mar=c(2.5,4,3,1))
-# merida mins + predictions from miami mins
-plot(rtemps$DATE, rtemps$TMIN, type='l', col='black', ylab="", xlab="", main="Mérida daily low temperatures")
-points(rtemps$DATE, rtemps$TMINr, type='l', col='blue')
-# merida maxes + predictions from miami maxes
-plot(rtemps$DATE, rtemps$TMAX, type='l', col='black', ylab="", xlab="", main="Mérida daily high temperatures")
-points(rtemps$DATE, rtemps$TMAXr, type='l', col='red')
-dev.off()
+min_max_plot = function() {
+  pdf("Merida_min_max_temps.pdf", width=11, height=8.5)
+  #png("reconstructed_merida_min_max_temperatures.png", width=1800, height=800, res=200)
+  par(mfrow=c(2,1))
+  par(mar=c(2.5,4,3,1))
+  # merida mins + predictions from miami mins
+  plot(rtemps$DATE, rtemps$TMIN, type='l', col='black', ylab="", xlab="", main="Mérida daily low temperatures")
+  points(rtemps$DATE, rtemps$TMINr, type='l', col='blue')
+  # merida maxes + predictions from miami maxes
+  plot(rtemps$DATE, rtemps$TMAX, type='l', col='black', ylab="", xlab="", main="Mérida daily high temperatures")
+  points(rtemps$DATE, rtemps$TMAXr, type='l', col='red')
+  dev.off()
+}
 
 # create new columns that merge the merida data and the reconstructed values
 rtemps$TMINmerged = rtemps$TMIN
@@ -107,8 +109,6 @@ smoothed_eip = function(current_day) {
   return(eip)
 }
 
-#rtemps$EIP = c()
-
 for (day in 1:dim(rtemps)[1]) { 
   rtemps[day, 'EIP'] = smoothed_eip(day) 
 }
@@ -126,4 +126,5 @@ eip_plots = function() {
   dev.off()
 }
 
-eip_plots()
+#min_max_plot()
+#eip_plots()
