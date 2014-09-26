@@ -140,8 +140,8 @@ void write_people_file(const Parameters* par, Community* community, int time) {
 }
 
 void simulate_epidemic(const Parameters* par, Community* community) {
-    int nNextMosquitoMultiplier = 0;
-    int nNextExternalIncubation = 0;
+    int nextMosquitoMultiplierIndex = 0;
+    int nextEIPindex = 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
         int year = (int)(t/365);
@@ -181,13 +181,14 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         }
 
         // mosquito population seasonality?
-        if (par->nSizeMosquitoMultipliers>0 && (t%365)==par->nMosquitoMultiplierCumulativeDays[nNextMosquitoMultiplier]) {
-            community->setMosquitoMultiplier(par->fMosquitoMultipliers[nNextMosquitoMultiplier]);
-            nNextMosquitoMultiplier = (nNextMosquitoMultiplier+1)%par->nSizeMosquitoMultipliers;
+        if (par->mosquitoMultipliers.size()>0 && (t%365)==par->mosquitoMultipliers[nextMosquitoMultiplierIndex].start) {
+            community->setMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
+            nextMosquitoMultiplierIndex = (nextMosquitoMultiplierIndex+1)%par->mosquitoMultipliers.size();
         }
-        if (par->nSizeExternalIncubation>0 && (t%365)==par->nExternalIncubationCumulativeDays[nNextExternalIncubation]) {
-            community->setExternalIncubation(par->nExternalIncubation[nNextExternalIncubation]);
-            nNextExternalIncubation = (nNextExternalIncubation+1)%par->nSizeExternalIncubation;
+// Needs to be changed -- EIP time series aren't allowed to be longer than a year here
+        if (par->extrinsicIncubationPeriods.size()>0 && (t%365)==par->extrinsicIncubationPeriods[nextEIPindex].start) {
+            community->setExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
+            nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }
 
         int daily_infection_ctr = 0;

@@ -20,8 +20,6 @@ void Parameters::define_defaults() {
     fPreVaccinateFraction = 0.0;
     nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
-    nSizeMosquitoMultipliers = 0;
-    nSizeExternalIncubation = 0;
     bSecondaryTransmission = true;
     szPopulationFile = "population-64.txt";
     szImmunityFile = "";
@@ -67,225 +65,174 @@ void Parameters::readParameters(int argc, char *argv[]) {
         for (int i=1; i<argc; i++) {
             char **end = NULL;
             if (strcmp(argv[i], "-randomseed")==0) {
-                randomseed = strtol(argv[i+1],end,10);
-                i++;
+                randomseed = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-runlength")==0) {
-                nRunLength = strtol(argv[i+1],end,10);
-                i++;
+                nRunLength = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-initialinfected")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) nInitialInfected[j]=strtol(argv[i+1+j],end,10);
-                i+=NUM_OF_SEROTYPES;
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) nInitialInfected[j]=strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-initialexposed")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) nInitialExposed[j]=strtol(argv[i+1+j],end,10);
-                i+=NUM_OF_SEROTYPES;
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) nInitialExposed[j]=strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-dailyexposed")==0) {
                 if (annualSerotypeFile == "") {
-                    for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[i+1+j],end);
+                    for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[++i],end);
                 } else {
                     std::cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
                 }
-                i+=NUM_OF_SEROTYPES;
             }
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) fPrimaryPathogenicity[j]=strtod(argv[i+1+j],end);
-                i+=NUM_OF_SEROTYPES;
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) fPrimaryPathogenicity[j]=strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-secondaryscaling")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) fSecondaryScaling[j]=strtod(argv[i+1+j],end);
-                i+=NUM_OF_SEROTYPES;
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) fSecondaryScaling[j]=strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-annualintroscoef")==0) {
-                annualIntroductionsCoef = strtod(argv[i+1],end);
-                i++;
+                annualIntroductionsCoef = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-betapm")==0) {
-                betaPM = strtod(argv[i+1],end);
-                i++;
+                betaPM = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-betamp")==0) {
-                betaMP = strtod(argv[i+1],end);
-                i++;
+                betaMP = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-expansionfactor")==0) {
-                expansionFactor = strtod(argv[i+1],end);
-                i++;
+                expansionFactor = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-mosquitomove")==0) {
-                fMosquitoMove = strtod(argv[i+1],end);
-                i++;
+                fMosquitoMove = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-mosquitomovemodel")==0) {
-                szMosquitoMoveModel = argv[i+1];
-                i++;
+                szMosquitoMoveModel = argv[++i];
             }
             else if (strcmp(argv[i], "-mosquitoteleport")==0) {
-                fMosquitoTeleport = strtod(argv[i+1],end);
-                i++;
+                fMosquitoTeleport = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-mosquitocapacity")==0) {
-                nDefaultMosquitoCapacity = strtol(argv[i+1],end,10);
-                i++;
+                nDefaultMosquitoCapacity = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-mosquitodistribution")==0) {
-                if (strcmp(argv[i+1], "constant")==0) {
+                const char* argstr = {argv[++i]};
+                if (strcmp(argstr, "constant")==0) {
                     eMosquitoDistribution = CONSTANT;
-                } else if (strcmp(argv[i+1], "exponential")==0) {
+                } else if (strcmp(argstr, "exponential")==0) {
                     eMosquitoDistribution = EXPONENTIAL;
                 } else {
                     std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
                     exit(-1);
                 }
-                i++;
             }
             else if (strcmp(argv[i], "-mosquitomultipliers")==0) {
-                nSizeMosquitoMultipliers = strtol(argv[i+1],end,10);
-                assert(nSizeMosquitoMultipliers<54);
-                i++;
-                nMosquitoMultiplierCumulativeDays[0] = 0;
-                for (int j=0; j<nSizeMosquitoMultipliers; j++) {
-                    nMosquitoMultiplierDays[j] = strtol(argv[i+1],end,10);
-                    nMosquitoMultiplierCumulativeDays[j+1] =
-                        nMosquitoMultiplierCumulativeDays[j]+nMosquitoMultiplierDays[j];
-                    i++;
-                    fMosquitoMultipliers[j] = strtod(argv[i+1],end);
-                    i++;
+                mosquitoMultipliers.clear();
+                mosquitoMultipliers.resize( strtol(argv[++i],end,10) );
+                assert(mosquitoMultipliers.size() > 0);
+                int running_sum = 0;
+                for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
+                    mosquitoMultipliers[j].start = running_sum;
+                    mosquitoMultipliers[j].duration = strtol(argv[++i],end,10);
+                    mosquitoMultipliers[j].value = strtod(argv[++i],end);
+                    running_sum += mosquitoMultipliers[j].duration;
                 }
             }
-            else if (strcmp(argv[i], "-externalincubations")==0) {
-                nSizeExternalIncubation = strtol(argv[i+1],end,10);
-                assert(nSizeExternalIncubation<54);
-                i++;
-                nExternalIncubationCumulativeDays[0] = 0;
-                for (int j=0; j<nSizeExternalIncubation; j++) {
-                    nExternalIncubationDays[j] = strtol(argv[i+1],end,10);
-                    nExternalIncubationCumulativeDays[j+1] =
-                        nExternalIncubationCumulativeDays[j]+nExternalIncubationDays[j];
-                    i++;
-                    nExternalIncubation[j] = strtol(argv[i+1],end,10);
-                    assert(nExternalIncubation[j]<MAX_MOSQUITO_INCUBATION);
-                    assert(nExternalIncubation[j]>0);
-                    i++;
+            else if (strcmp(argv[i], "-extrinsicincubations")==0) {
+                extrinsicIncubationPeriods.clear();
+                extrinsicIncubationPeriods.resize( strtol(argv[++i],end,10) );
+                assert(extrinsicIncubationPeriods.size() > 0);
+                int running_sum = 0;
+                for (unsigned int j=0; j<extrinsicIncubationPeriods.size(); j++) {
+                    extrinsicIncubationPeriods[j].start = running_sum;
+                    extrinsicIncubationPeriods[j].duration = strtol(argv[++i],end,10);
+                    extrinsicIncubationPeriods[j].value = strtod(argv[++i],end);
+                    running_sum += extrinsicIncubationPeriods[j].duration;
                 }
             }
             else if (strcmp(argv[i], "-vaccinatephased")==0) {
-                nSizeVaccinate = strtol(argv[i+1],end,10);
-                i++;
+                nSizeVaccinate = strtol(argv[++i],end,10);
                 for (int j=0; j<nSizeVaccinate; j++) {
-                    nVaccinateYear.push_back( strtol(argv[i+1],end,10) );
-                    i++;
-                    nVaccinateAge.push_back( strtol(argv[i+1],end,10) );
-                    i++;
-                    fVaccinateFraction.push_back( strtod(argv[i+1],end) );
-                    i++;
+                    nVaccinateYear.push_back( strtol(argv[++i],end,10) );
+                    nVaccinateAge.push_back( strtol(argv[++i],end,10) );
+                    fVaccinateFraction.push_back( strtod(argv[++i],end) );
                 }
             }
             else if (strcmp(argv[i], "-daysimmune")==0) {
-                nDaysImmune = strtol(argv[i+1],end,10);
-                i++;
+                nDaysImmune = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-maxinfectionparity")==0) {
-                nMaxInfectionParity = strtol(argv[i+1],end,10);
-                i++;
+                nMaxInfectionParity = strtol(argv[++i],end,10);
                 assert(nMaxInfectionParity>0 && nMaxInfectionParity<=NUM_OF_SEROTYPES);
             }
             else if (strcmp(argv[i], "-VES")==0 || strcmp(argv[i], "-ves")==0) {
                 fVESs.clear();
-                fVESs.resize(4, strtod(argv[i+1],end));
-                i++;
+                fVESs.resize(NUM_OF_SEROTYPES, strtod(argv[++i],end));
             }
             else if (strcmp(argv[i], "-VESs")==0 || strcmp(argv[i], "-vess")==0) {
+                fVESs.clear();
+                fVESs.resize(NUM_OF_SEROTYPES);
                 // different VES for each serotype
-                fVESs[0] = strtod(argv[i+1],end);
-                fVESs[1] = strtod(argv[i+2],end);
-                fVESs[2] = strtod(argv[i+3],end);
-                fVESs[3] = strtod(argv[i+4],end);
-                i+=4;
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) fVESs[j] = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-VESsnaive")==0 || strcmp(argv[i], "-vessnaive")==0) {
-                fVESs_NAIVE.clear(); fVESs_NAIVE.resize(4, 0);
-                fVESs_NAIVE[0] = strtod(argv[i+1],end);
-                fVESs_NAIVE[1] = strtod(argv[i+2],end);
-                fVESs_NAIVE[2] = strtod(argv[i+3],end);
-                fVESs_NAIVE[3] = strtod(argv[i+4],end);
-                i+=4;
+                fVESs_NAIVE.clear(); fVESs_NAIVE.resize(NUM_OF_SEROTYPES, 0);
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) fVESs_NAIVE[j] = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-VEI")==0 || strcmp(argv[i], "-vei")==0) {
-                fVEI = strtod(argv[i+1],end);
-                i++;
+                fVEI = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-VEP")==0 || strcmp(argv[i], "-vep")==0) {
-                fVEP = strtod(argv[i+1],end);
-                i++;
+                fVEP = strtod(argv[++i],end);
             }
-            else if (strcmp(argv[i], "-vaccineleaky")==0) { // -dlc
+            else if (strcmp(argv[i], "-vaccineleaky")==0) {
                 bVaccineLeaky=true;
             }
-            else if (strcmp(argv[i], "-retroactivematurevaccine")==0) { // -dlc
+            else if (strcmp(argv[i], "-retroactivematurevaccine")==0) {
                 bRetroactiveMatureVaccine=true;
             }
             else if (strcmp(argv[i], "-prevaccinate")==0) {
-                fPreVaccinateFraction = strtod(argv[i+1],end);
-                i++;
+                fPreVaccinateFraction = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-prevaccinateage")==0) {
-                nSizePrevaccinateAge = strtol(argv[i+1],end,10);
-                i++;
+                nSizePrevaccinateAge = strtol(argv[++i],end,10);
                 for (int j=0; j<nSizePrevaccinateAge; j++) {
-                    nPrevaccinateAgeMin[j] = strtol(argv[i+1],end,10);
-                    i++;
-                    nPrevaccinateAgeMax[j] = strtol(argv[i+1],end,10);
-                    i++;
-                    fPrevaccinateAgeFraction[j] = strtod(argv[i+1],end);
-                    i++;
+                    nPrevaccinateAgeMin[j] = strtol(argv[++i],end,10);
+                    nPrevaccinateAgeMax[j] = strtol(argv[++i],end,10);
+                    fPrevaccinateAgeFraction[j] = strtod(argv[++i],end);
                 }
             }
             else if (strcmp(argv[i], "-nosecondary")==0) {
                 bSecondaryTransmission = false;
             }
             else if (strcmp(argv[i], "-popfile")==0) {
-                szPopulationFile = argv[i+1];
-                i++;
+                szPopulationFile = argv[++i];
             }
             else if (strcmp(argv[i], "-immfile")==0) {
-                szImmunityFile = argv[i+1];
-                i++;
+                szImmunityFile = argv[++i];
             }
             else if (strcmp(argv[i], "-locfile")==0) {
-                szLocationFile = argv[i+1];
-                i++;
+                szLocationFile = argv[++i];
             }
             else if (strcmp(argv[i], "-netfile")==0) {
-                szNetworkFile = argv[i+1];
-                i++;
+                szNetworkFile = argv[++i];
             }
             else if (strcmp(argv[i], "-peoplefile")==0) {
-                szPeopleFile = argv[i+1];
-                i++;
+                szPeopleFile = argv[++i];
             }
             else if (strcmp(argv[i], "-yearlypeoplefile")==0) {
-                szYearlyPeopleFile = argv[i+1];
-                i++;
+                szYearlyPeopleFile = argv[++i];
             }
             else if (strcmp(argv[i], "-dailyfile")==0) {
-                szDailyFile = argv[i+1];
-                i++;
+                szDailyFile = argv[++i];
             }
             else if (strcmp(argv[i], "-probfile")==0) {
-                szSwapProbFile = argv[i+1];
-                i++;
+                szSwapProbFile = argv[++i];
             }
             else if (strcmp(argv[i], "-annualintrosfile")==0) {
-                annualIntroductionsFile = argv[i+1];
-                i++;
+                annualIntroductionsFile = argv[++i];
                 loadAnnualIntroductions(annualIntroductionsFile);
             }
             else if (strcmp(argv[i], "-annualserotypefile")==0) {
-                annualSerotypeFile = argv[i+1];
-                i++;
+                annualSerotypeFile = argv[++i];
                 loadAnnualSerotypes(annualSerotypeFile);
             }
             else {
@@ -350,17 +297,17 @@ void Parameters::validate_parameters() {
         std::cerr << "mosquito capacity distribution is constant" << std::endl;
     } else if (eMosquitoDistribution==EXPONENTIAL)
         std::cerr << "mosquito capacity distribution is exponential" << std::endl;
-        if (nSizeMosquitoMultipliers>0) {
+        if (mosquitoMultipliers.size()>0) {
             std::cerr << "mosquito seasonal multipliers (days,mult) =";
-            for (int j=0; j<nSizeMosquitoMultipliers; j++) {
-                std::cerr << " (" << nMosquitoMultiplierDays[j] << "," << fMosquitoMultipliers[j] << ")";
+            for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
+                std::cerr << " (" << mosquitoMultipliers[j].duration << "," << mosquitoMultipliers[j].value << ")";
             }
             std::cerr << std::endl;
         }
-    if (nSizeExternalIncubation>0) {
-        std::cerr << "external incubation periods (days,EIP) =";
-        for (int j=0; j<nSizeExternalIncubation; j++) {
-            std::cerr << " (" << nExternalIncubationDays[j] << "," << nExternalIncubation[j] << ")";
+    if (extrinsicIncubationPeriods.size()>0) {
+        std::cerr << "extrinsic incubation periods (days,EIP) =";
+        for (unsigned int j=0; j<extrinsicIncubationPeriods.size(); j++) {
+            std::cerr << " (" << extrinsicIncubationPeriods[j].duration << "," << extrinsicIncubationPeriods[j].value << ")";
         }
         std::cerr << std::endl;
     }

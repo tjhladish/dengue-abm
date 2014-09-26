@@ -1,14 +1,14 @@
 #ifndef __PARAMETERS_H
 #define __PARAMETERS_H
 
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
 #include <map>
-#include <iostream>
-#include <assert.h>
 #include <bitset>
+#include <assert.h>
 #include <gsl/gsl_rng.h>
 
 static const int VERSION_NUMBER_MAJOR = 1;
@@ -46,8 +46,7 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
-static const int MAX_MOSQUITO_INCUBATION = 25;                    // number of days for mosquito incubation (extrinsic incubation period)
-static const int MAX_RUN_TIME = 15000;                         // maximum number of simulation days (+ extra for mosquito lifetime)
+static const int MAX_RUN_TIME = 15000;                        // maximum number of simulation days (+ extra for mosquito lifetime)
 static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
 // from Mosquito
@@ -124,6 +123,13 @@ namespace dengue {
 }
 
 
+struct DynamicParameter {
+    int start;
+    int duration;
+    double value;
+};
+
+
 class Parameters {
 public:
 
@@ -157,14 +163,8 @@ public:
     std::vector<double> fSecondaryScaling;                  //
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
-    double fMosquitoMultipliers[54];                        // seasonal multipliers for mosquito population (up to 53), conforming to a 365-day cycle
-    double nMosquitoMultiplierDays[54];                     // when to change the mosquito population
-    double nMosquitoMultiplierCumulativeDays[54];           // when to change the mosquito population
-    int nSizeMosquitoMultipliers;
-    double nExternalIncubation[54];                         // seasonal external incubation period in days (up to 53)
-    double nExternalIncubationDays[54];                     // when to change the external incubation period
-    double nExternalIncubationCumulativeDays[54];           // when to change the external incubation period
-    int nSizeExternalIncubation;
+    std::vector<DynamicParameter> mosquitoMultipliers;
+    std::vector<DynamicParameter> extrinsicIncubationPeriods;
     bool bSecondaryTransmission;
     std::string szPopulationFile;
     std::string szImmunityFile;

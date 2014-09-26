@@ -27,7 +27,7 @@ map< Location*, map<int, bool> > Community::_isHot;
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
     _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
-    _exposedMosquitoQueue(MAX_MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
+    _exposedMosquitoQueue(parameters->extrinsicIncubationPeriods.size(), vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
     {
@@ -36,7 +36,7 @@ Community::Community(const Parameters* parameters) :
     _nNumPerson = 0;
     _person = NULL;
     _fMosquitoCapacityMultiplier = 1.0;
-    _nExternalIncubation = 11; // default external incubation period of 11 days (Nishiura & Halstead 2007)
+    _EIP = 11; // default external incubation period of 11 days (Nishiura & Halstead 2007)
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
@@ -360,7 +360,7 @@ void Community::vaccinate(double f, int age) {
 
 // returns number of days mosquito has left to live
 int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID) {
-    int eip = getExternalIncubation();
+    int eip = getExtrinsicIncubation();
     Mosquito *m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
