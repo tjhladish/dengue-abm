@@ -490,6 +490,7 @@ void Community::swapImmuneStates() {
             assert(p!=NULL);
             if (_uniformSwap == true) {
                 // For people of age x, copy immune status from people of age x-1
+                // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
                 int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age-1]);
                 p->copyImmunity(_personAgeCohort[age-1][r]);
             } else {
