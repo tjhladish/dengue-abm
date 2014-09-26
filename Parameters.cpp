@@ -40,6 +40,7 @@ void Parameters::define_defaults() {
     expansionFactor = 1;
     nDailyExposed.push_back(std::vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
     annualSerotypeFile = "";
+    dailyEIPFile = "";
 
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
         nInitialExposed[i]=0;
@@ -80,6 +81,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 if (annualSerotypeFile == "") {
                     for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[++i],end);
                 } else {
+                    // This warning doesn't get thrown if -dailyexposed comes before the -annualserotypefile
                     std::cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
                 }
             }
@@ -235,6 +237,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 annualSerotypeFile = argv[++i];
                 loadAnnualSerotypes(annualSerotypeFile);
             }
+            else if (strcmp(argv[i], "-dailyeipfile")==0) {
+                dailyEIPFile = argv[++i];
+                loadDailyEIP(dailyEIPFile);
+            }
             else {
                 std::cerr << "Unknown option: " << argv[i] << std::endl;
                 std::cerr << "Check arguments and formatting." << std::endl;
@@ -292,6 +298,9 @@ void Parameters::validate_parameters() {
         std::cerr << std::endl;
     } else {
         std::cerr << "annual serotype file = " << annualSerotypeFile << std::endl;
+    }
+    if (dailyEIPFile != "") {
+        std::cerr << "daily EIP file = " << dailyEIPFile << std::endl;
     }
     if (eMosquitoDistribution==CONSTANT) {
         std::cerr << "mosquito capacity distribution is constant" << std::endl;
@@ -431,6 +440,47 @@ bool Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
         } else {
             std::cerr << "WARNING: Found line with unexpected number of values in annual serotypes file" << std::endl;
             std::cerr << "\tFile: " << annualSerotypeFilename << std::endl;
+            std::cerr << "\tLine: " << line << std::endl;
+        }
+    }
+    return true;
+}
+
+
+bool Parameters::loadDailyEIP(std::string dailyEIPFilename) {
+    std::ifstream iss(dailyEIPFilename.c_str());
+    if (!iss) {
+        std::cerr << "ERROR: " << dailyEIPFilename << " not found." << std::endl;
+        return false;
+    }
+
+    // get rid of anything there now
+    extrinsicIncubationPeriods.clear();
+
+    char **end = NULL;
+    char sep = ' ';
+    std::string line;
+
+    const int duration = 1;
+    int start = 0;
+    double value = 0;
+    while ( getline(iss,line) ) {
+        // expecting first value on each line to be the EIP for any mosquito infected on that day
+        // other, subsequent values are permitted, but ignored
+        std::vector<std::string> fields = dengue::util::split(line, sep);
+
+        if (fields.size() >= 1) {
+            value = strtod(fields[0].c_str(), end);
+            if (value <= 0) {
+                std::cerr << "An EIP <= 0 was read from " << dailyEIPFilename << "." << std::endl;
+                std::cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << std::endl;
+                exit(113);
+            }
+            extrinsicIncubationPeriods.emplace_back(start, duration, value);
+            start += duration;
+        } else {
+            std::cerr << "WARNING: Found line with unexpected number of values in daily EIP file" << std::endl;
+            std::cerr << "\tFile: " << dailyEIPFilename << std::endl;
             std::cerr << "\tLine: " << line << std::endl;
         }
     }

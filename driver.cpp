@@ -141,7 +141,11 @@ void write_people_file(const Parameters* par, Community* community, int time) {
 
 void simulate_epidemic(const Parameters* par, Community* community) {
     int nextMosquitoMultiplierIndex = 0;
+    const int mosquitoMultiplierTotalDuration = par->mosquitoMultipliers.size() > 0 ?
+                                                par->mosquitoMultipliers.back().start + par->mosquitoMultipliers.back().duration : 0;
     int nextEIPindex = 0;
+    const int EIPtotalDuration = par->extrinsicIncubationPeriods.size() > 0 ?
+                                 par->extrinsicIncubationPeriods.back().start + par->extrinsicIncubationPeriods.back().duration : 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     for (int t=0; t<par->nRunLength; t++) {
         int year = (int)(t/365);
@@ -180,13 +184,14 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             }
         }
 
-        // mosquito population seasonality?
-        if (par->mosquitoMultipliers.size()>0 && (t%365)==par->mosquitoMultipliers[nextMosquitoMultiplierIndex].start) {
+        // should the mosquito population change?
+        if (par->mosquitoMultipliers.size()>0 && (t%mosquitoMultiplierTotalDuration)==par->mosquitoMultipliers[nextMosquitoMultiplierIndex].start) {
             community->setMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
             nextMosquitoMultiplierIndex = (nextMosquitoMultiplierIndex+1)%par->mosquitoMultipliers.size();
         }
-// Needs to be changed -- EIP time series aren't allowed to be longer than a year here
-        if (par->extrinsicIncubationPeriods.size()>0 && (t%365)==par->extrinsicIncubationPeriods[nextEIPindex].start) {
+
+        // should the EIP change?
+        if (par->extrinsicIncubationPeriods.size()>0 && (t%EIPtotalDuration)==par->extrinsicIncubationPeriods[nextEIPindex].start) {
             community->setExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
             nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }

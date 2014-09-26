@@ -124,6 +124,8 @@ namespace dengue {
 
 
 struct DynamicParameter {
+    DynamicParameter(){};
+    DynamicParameter(int s, int d, double v) : start(s), duration(d), value(v) {};
     int start;
     int duration;
     double value;
@@ -141,6 +143,7 @@ public:
     void validate_parameters();
     bool loadAnnualIntroductions(std::string annualIntrosFilename);
     bool loadAnnualSerotypes(std::string annualSerotypeFilename);
+    bool loadDailyEIP(std::string dailyEIPFilename);
 
     int randomseed;
     int nRunLength;
@@ -177,6 +180,7 @@ public:
     std::string szSwapProbFile;
     std::string annualIntroductionsFile;                  // time series of some external factor determining introduction rate
     std::string annualSerotypeFile;                  // time series of some external factor determining introduction rate
+    std::string dailyEIPFile;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     int nDaysImmune;
