@@ -141,9 +141,9 @@ public:
     void define_defaults();
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
-    bool loadAnnualIntroductions(std::string annualIntrosFilename);
-    bool loadAnnualSerotypes(std::string annualSerotypeFilename);
-    bool loadDailyEIP(std::string dailyEIPFilename);
+    void loadAnnualIntroductions(std::string annualIntrosFilename);
+    void loadAnnualSerotypes(std::string annualSerotypeFilename);
+    void loadDailyEIP(std::string dailyEIPFilename);
 
     int randomseed;
     int nRunLength;

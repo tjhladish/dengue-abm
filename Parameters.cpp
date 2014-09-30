@@ -385,11 +385,11 @@ void Parameters::validate_parameters() {
 }
 
 
-bool Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
+void Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
     std::ifstream iss(annualIntrosFilename.c_str());
     if (!iss) {
         std::cerr << "ERROR: " << annualIntrosFilename << " not found." << std::endl;
-        return false;
+        exit(114);
     }
     annualIntroductions.clear();
  
@@ -405,17 +405,17 @@ bool Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
             annualIntroductions.push_back(intros);
         }
     }
-    iss.close();
 
-    return true;
+    iss.close();
+    return;
 }
 
 
-bool Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
+void Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
     std::ifstream iss(annualSerotypeFilename.c_str());
     if (!iss) {
         std::cerr << "ERROR: " << annualSerotypeFilename << " not found." << std::endl;
-        return false;
+        exit(115);
     }
 
     // get rid of anything there now
@@ -443,15 +443,16 @@ bool Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
             std::cerr << "\tLine: " << line << std::endl;
         }
     }
-    return true;
+
+    return;
 }
 
 
-bool Parameters::loadDailyEIP(std::string dailyEIPFilename) {
+void Parameters::loadDailyEIP(std::string dailyEIPFilename) {
     std::ifstream iss(dailyEIPFilename.c_str());
     if (!iss) {
         std::cerr << "ERROR: " << dailyEIPFilename << " not found." << std::endl;
-        return false;
+        exit(116);
     }
 
     // get rid of anything there now
@@ -484,6 +485,7 @@ bool Parameters::loadDailyEIP(std::string dailyEIPFilename) {
             std::cerr << "\tLine: " << line << std::endl;
         }
     }
-    return true;
+
+    return;
 }
 
