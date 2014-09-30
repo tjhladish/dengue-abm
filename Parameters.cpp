@@ -10,7 +10,7 @@ void Parameters::define_defaults() {
     betaPM = 0.2;
     betaMP = 0.1;
     fMosquitoMove = 0.2;
-    szMosquitoMoveModel = "weighted";
+    mosquitoMoveModel = "weighted";
     fMosquitoTeleport = 0.01;
     fVEI = 0.0;
     fVEP = 0.0;
@@ -21,15 +21,15 @@ void Parameters::define_defaults() {
     nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
-    szPopulationFile = "population-64.txt";
-    szImmunityFile = "";
-    szNetworkFile = "locations-network-64.txt";
-    szLocationFile = "locations-64.txt";
-    szPeopleFile = "";
-    szYearlyPeopleFile = "";
-    szDailyFile = "";
-    szSwapProbFile = "";
-    annualIntroductionsFile = "";  // time series of some external factor determining introduction rate
+    populationFilename = "population-64.txt";
+    immunityFilename = "";
+    networkFilename = "locations-network-64.txt";
+    locationFilename = "locations-64.txt";
+    peopleOutputFilename = "";
+    yearlyPeopleOutputFilename = "";
+    dailyOutputFilename = "";
+    swapProbFilename = "";
+    annualIntroductionsFilename = "";  // time series of some external factor determining introduction rate
     annualIntroductionsCoef = 1;     // multiplier to rescale external introductions to something sensible
     annualIntroductions.clear();
     annualIntroductions.push_back(1.0);
@@ -39,8 +39,8 @@ void Parameters::define_defaults() {
     nMaxInfectionParity = NUM_OF_SEROTYPES;
     expansionFactor = 1;
     nDailyExposed.push_back(std::vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
-    annualSerotypeFile = "";
-    dailyEIPFile = "";
+    annualSerotypeFilename = "";
+    dailyEIPfilename = "";
 
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
         nInitialExposed[i]=0;
@@ -78,7 +78,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 for (int j=0; j<NUM_OF_SEROTYPES; j++) nInitialExposed[j]=strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-dailyexposed")==0) {
-                if (annualSerotypeFile == "") {
+                if (annualSerotypeFilename == "") {
                     for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[++i],end);
                 } else {
                     // This warning doesn't get thrown if -dailyexposed comes before the -annualserotypefile
@@ -107,7 +107,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 fMosquitoMove = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-mosquitomovemodel")==0) {
-                szMosquitoMoveModel = argv[++i];
+                mosquitoMoveModel = argv[++i];
             }
             else if (strcmp(argv[i], "-mosquitoteleport")==0) {
                 fMosquitoTeleport = strtod(argv[++i],end);
@@ -206,40 +206,40 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 bSecondaryTransmission = false;
             }
             else if (strcmp(argv[i], "-popfile")==0) {
-                szPopulationFile = argv[++i];
+                populationFilename = argv[++i];
             }
             else if (strcmp(argv[i], "-immfile")==0) {
-                szImmunityFile = argv[++i];
+                immunityFilename = argv[++i];
             }
             else if (strcmp(argv[i], "-locfile")==0) {
-                szLocationFile = argv[++i];
+                locationFilename = argv[++i];
             }
             else if (strcmp(argv[i], "-netfile")==0) {
-                szNetworkFile = argv[++i];
+                networkFilename = argv[++i];
             }
-            else if (strcmp(argv[i], "-peoplefile")==0) {
-                szPeopleFile = argv[++i];
+            else if (strcmp(argv[i], "-peopleoutputfile")==0) {
+                peopleOutputFilename = argv[++i];
             }
-            else if (strcmp(argv[i], "-yearlypeoplefile")==0) {
-                szYearlyPeopleFile = argv[++i];
+            else if (strcmp(argv[i], "-yearlypeopleoutputfile")==0) {
+                yearlyPeopleOutputFilename = argv[++i];
             }
-            else if (strcmp(argv[i], "-dailyfile")==0) {
-                szDailyFile = argv[++i];
+            else if (strcmp(argv[i], "-dailyoutputfile")==0) {
+                dailyOutputFilename = argv[++i];
             }
             else if (strcmp(argv[i], "-probfile")==0) {
-                szSwapProbFile = argv[++i];
+                swapProbFilename = argv[++i];
             }
             else if (strcmp(argv[i], "-annualintrosfile")==0) {
-                annualIntroductionsFile = argv[++i];
-                loadAnnualIntroductions(annualIntroductionsFile);
+                annualIntroductionsFilename = argv[++i];
+                loadAnnualIntroductions(annualIntroductionsFilename);
             }
             else if (strcmp(argv[i], "-annualserotypefile")==0) {
-                annualSerotypeFile = argv[++i];
-                loadAnnualSerotypes(annualSerotypeFile);
+                annualSerotypeFilename = argv[++i];
+                loadAnnualSerotypes(annualSerotypeFilename);
             }
             else if (strcmp(argv[i], "-dailyeipfile")==0) {
-                dailyEIPFile = argv[++i];
-                loadDailyEIP(dailyEIPFile);
+                dailyEIPfilename = argv[++i];
+                loadDailyEIP(dailyEIPfilename);
             }
             else {
                 std::cerr << "Unknown option: " << argv[i] << std::endl;
@@ -252,11 +252,11 @@ void Parameters::readParameters(int argc, char *argv[]) {
 }
 
 void Parameters::validate_parameters() {
-    std::cerr << "population file = " << szPopulationFile << std::endl;
-    std::cerr << "immunity file = " << szImmunityFile << std::endl;
-    std::cerr << "location file = " << szLocationFile << std::endl;
-    std::cerr << "network file = " << szNetworkFile << std::endl;
-    std::cerr << "swap probabilities file = " << szSwapProbFile << std::endl;
+    std::cerr << "population file = " << populationFilename << std::endl;
+    std::cerr << "immunity file = " << immunityFilename << std::endl;
+    std::cerr << "location file = " << locationFilename << std::endl;
+    std::cerr << "network file = " << networkFilename << std::endl;
+    std::cerr << "swap probabilities file = " << swapProbFilename << std::endl;
     std::cerr << "runlength = " << nRunLength << std::endl;
     if (nRunLength>MAX_RUN_TIME) {
         std::cerr << "ERROR: runlength is too long: " << nRunLength << std::endl;
@@ -282,25 +282,25 @@ void Parameters::validate_parameters() {
     }
     std::cerr << std::endl;
     std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
-    std::cerr << "mosquito move model = " << szMosquitoMoveModel << std::endl;
-    if ( szMosquitoMoveModel != "uniform" and szMosquitoMoveModel != "weighted" ) {
+    std::cerr << "mosquito move model = " << mosquitoMoveModel << std::endl;
+    if ( mosquitoMoveModel != "uniform" and mosquitoMoveModel != "weighted" ) {
         std::cerr << "ERROR: invalid mosquito movement model requested:" << std::endl;
         std::cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << std::endl;
         exit(-1);
     }
     std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
     std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
-    if (annualSerotypeFile == "") {
+    if (annualSerotypeFilename == "") {
         std::cerr << "number of daily exposures / serotype weights =";
         for (int i=0; i<NUM_OF_SEROTYPES; i++) {
             std::cerr << " " << nDailyExposed[0][i];
         }
         std::cerr << std::endl;
     } else {
-        std::cerr << "annual serotype file = " << annualSerotypeFile << std::endl;
+        std::cerr << "annual serotype file = " << annualSerotypeFilename << std::endl;
     }
-    if (dailyEIPFile != "") {
-        std::cerr << "daily EIP file = " << dailyEIPFile << std::endl;
+    if (dailyEIPfilename != "") {
+        std::cerr << "daily EIP file = " << dailyEIPfilename << std::endl;
     }
     if (eMosquitoDistribution==CONSTANT) {
         std::cerr << "mosquito capacity distribution is constant" << std::endl;
@@ -366,19 +366,19 @@ void Parameters::validate_parameters() {
         } 
     }
 
-    if (szPeopleFile.length()>0) {
-        std::cerr << "people output file = " << szPeopleFile << std::endl;
+    if (peopleOutputFilename.length()>0) {
+        std::cerr << "people output file = " << peopleOutputFilename << std::endl;
     } else {
         std::cerr << "no people output file" << std::endl;
     }
-    if (annualIntroductionsFile.length()>0) {
-        std::cerr << "annual introductions file = " << annualIntroductionsFile << std::endl;
+    if (annualIntroductionsFilename.length()>0) {
+        std::cerr << "annual introductions file = " << annualIntroductionsFilename << std::endl;
     }
-    if (szYearlyPeopleFile.length()>0) {
-        std::cerr << "yearly people output file = " << szYearlyPeopleFile << std::endl;
+    if (yearlyPeopleOutputFilename.length()>0) {
+        std::cerr << "yearly people output file = " << yearlyPeopleOutputFilename << std::endl;
     }
-    if (szDailyFile.length()>0) {
-        std::cerr << "daily output file = " << szDailyFile << std::endl;
+    if (dailyOutputFilename.length()>0) {
+        std::cerr << "daily output file = " << dailyOutputFilename << std::endl;
     } else {
         std::cerr << "no daily output file" << std::endl;
     }
@@ -448,10 +448,10 @@ void Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
 }
 
 
-void Parameters::loadDailyEIP(std::string dailyEIPFilename) {
-    std::ifstream iss(dailyEIPFilename.c_str());
+void Parameters::loadDailyEIP(std::string dailyEIPfilename) {
+    std::ifstream iss(dailyEIPfilename.c_str());
     if (!iss) {
-        std::cerr << "ERROR: " << dailyEIPFilename << " not found." << std::endl;
+        std::cerr << "ERROR: " << dailyEIPfilename << " not found." << std::endl;
         exit(116);
     }
 
@@ -473,7 +473,7 @@ void Parameters::loadDailyEIP(std::string dailyEIPFilename) {
         if (fields.size() >= 1) {
             value = strtod(fields[0].c_str(), end);
             if (value <= 0) {
-                std::cerr << "An EIP <= 0 was read from " << dailyEIPFilename << "." << std::endl;
+                std::cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << std::endl;
                 std::cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << std::endl;
                 exit(113);
             }
@@ -481,7 +481,7 @@ void Parameters::loadDailyEIP(std::string dailyEIPFilename) {
             start += duration;
         } else {
             std::cerr << "WARNING: Found line with unexpected number of values in daily EIP file" << std::endl;
-            std::cerr << "\tFile: " << dailyEIPFilename << std::endl;
+            std::cerr << "\tFile: " << dailyEIPfilename << std::endl;
             std::cerr << "\tLine: " << line << std::endl;
         }
     }

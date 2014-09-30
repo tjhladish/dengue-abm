@@ -438,7 +438,7 @@ void Community::moveMosquito(Mosquito *m) {
             int degree = pLoc->getNumNeighbors();
             int neighbor=0; // neighbor is an index
 
-            if (_par->szMosquitoMoveModel == "weighted") {
+            if (_par->mosquitoMoveModel == "weighted") {
                 vector<double> weights(degree, 0);
                 double sum_weights = 0.0;
 

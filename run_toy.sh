@@ -19,6 +19,6 @@ SEED=5500
         -runlength 365 \
         -dailyexposed 1 1 1 1 \
         -ves 0.7 \
-        -yearlypeoplefile ./toy-output/people-output-toy-multiseason-randomseed$SEED-y \
-        -dailyfile ./toy-output/daily-output-toy-multiseason-randomseed$SEED.csv \
+        -yearlypeopleoutputfile ./toy-output/people-output-toy-multiseason-randomseed$SEED-y \
+        -dailyoutputfile ./toy-output/daily-output-toy-multiseason-randomseed$SEED.csv \
         > ./toy-output/output-toy-multiseason-randomseed$SEED.csv

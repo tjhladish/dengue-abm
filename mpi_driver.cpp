@@ -86,11 +86,11 @@ int main(int argc, char *argv[]) {
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
 
-    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile)) {
+    if (!community->loadLocations(par->locationFilename, par->networkFilename)) {
         cerr << "Could not load locations" << endl;
         exit(-1);
     }
-    if (!community->loadPopulation(par->szPopulationFile, par->szImmunityFile, par->szSwapProbFile)) {
+    if (!community->loadPopulation(par->populationFilename, par->immunityFilename, par->swapProbFilename)) {
         cerr << "Could not load population" << endl;
         exit(-1);
     }
@@ -226,12 +226,12 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community) {
 
 void write_output(const Parameters* par, Community* community, vector<int> numInitialSusceptible) {
     // output daily infected/symptomatic file
-    if (par->szDailyFile.length()>0) {
-        cerr << "outputing daily infected/symptomatic information to " << par->szDailyFile << endl;
+    if (par->dailyFilename.length()>0) {
+        cerr << "outputing daily infected/symptomatic information to " << par->dailyFilename << endl;
         ofstream dailyFile;
-        dailyFile.open(par->szDailyFile.c_str());
+        dailyFile.open(par->dailyFilename.c_str());
         if(dailyFile.fail()) {
-            cerr << "ERROR: Daily file '" << par->szDailyFile << "' cannot be open for writing." << endl;
+            cerr << "ERROR: Daily file '" << par->dailyFilename << "' cannot be open for writing." << endl;
             exit(-1);
         }
         dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"

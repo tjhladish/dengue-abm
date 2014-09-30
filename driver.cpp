@@ -44,11 +44,11 @@ int main(int argc, char *argv[]) {
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
 
-    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile)) {
+    if (!community->loadLocations(par->locationFilename, par->networkFilename)) {
         cerr << "Could not load locations" << endl;
         exit(-1);
     }
-    if (!community->loadPopulation(par->szPopulationFile, par->szImmunityFile, par->szSwapProbFile)) {
+    if (!community->loadPopulation(par->populationFilename, par->immunityFilename, par->swapProbFilename)) {
         cerr << "Could not load population" << endl;
         exit(-1);
     }
@@ -107,22 +107,22 @@ void seed_epidemic(const Parameters* par, Community* community) {
 }
 
 
-void write_people_file(const Parameters* par, Community* community, int time) {
-    if (time%365==364 && par->szYearlyPeopleFile.length()>0) {
-        ofstream peopleFile;
+void write_yearly_people_file(const Parameters* par, Community* community, int time) {
+    if (time%365==364 && par->yearlyPeopleOutputFilename.length()>0) {
+        ofstream yearlyPeopleOutputFile;
         ostringstream ssFilename;
-        ssFilename << par->szYearlyPeopleFile << ((int)(time/365)) << ".csv";
+        ssFilename << par->yearlyPeopleOutputFilename << ((int)(time/365)) << ".csv";
         cerr << "outputing yearly people information to " << ssFilename.str() << endl;
-        peopleFile.open(ssFilename.str().c_str());
-        if(peopleFile.fail()) {
-            cerr << "ERROR: People file '" << par->szPeopleFile << "' cannot be open for writing." << endl;
+        yearlyPeopleOutputFile.open(ssFilename.str().c_str());
+        if(yearlyPeopleOutputFile.fail()) {
+            cerr << "ERROR: People file '" << par->yearlyPeopleOutputFilename << "' cannot be open for writing." << endl;
             exit(-1);
         }
-        peopleFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4" << endl;
+        yearlyPeopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4" << endl;
         for (int i=0; i<community->getNumPerson(); i++) {
             Person *p = community->getPerson(i);
             for (int j=p->getNumInfections()-1; j>=0; j--) {
-                peopleFile << p->getID() << "," 
+                yearlyPeopleOutputFile << p->getID() << "," 
                     << 1 + (int) p->getSerotype(j) << "," 
                     << p->getInfectedTime(j) << "," 
                     << p->getSymptomTime(j) << "," 
@@ -134,7 +134,7 @@ void write_people_file(const Parameters* par, Community* community, int time) {
                     << (p->isSusceptible(SEROTYPE_4)?0:1) << endl;
             }
         }
-        peopleFile.close();
+        yearlyPeopleOutputFile.close();
     }
     return;
 }
@@ -228,7 +228,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                 }
             }
         }
-        write_people_file(par, community, t);
+        write_yearly_people_file(par, community, t);
         cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_infection_ctr << endl;
 
     }
@@ -286,41 +286,41 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
     }
 
     // output daily infected/symptomatic file
-    if (par->szDailyFile.length()>0) {
-        cerr << "outputing daily infected/symptomatic information to " << par->szDailyFile << endl;
-        ofstream dailyFile;
-        dailyFile.open(par->szDailyFile.c_str());
-        if(dailyFile.fail()) {
-            cerr << "ERROR: Daily file '" << par->szDailyFile << "' cannot be open for writing." << endl;
+    if (par->dailyOutputFilename.length()>0) {
+        cerr << "outputing daily infected/symptomatic information to " << par->dailyOutputFilename << endl;
+        ofstream dailyOutputFile;
+        dailyOutputFile.open(par->dailyOutputFilename.c_str());
+        if(dailyOutputFile.fail()) {
+            cerr << "ERROR: Daily file '" << par->dailyOutputFilename << "' cannot be open for writing." << endl;
             exit(-1);
         }
-        dailyFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"
+        dailyOutputFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"
                   << "newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
         vector< vector<int> > infected =    community->getNumNewlyInfected();
         vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
         for (int t=0; t<par->nRunLength; t++) {
-            dailyFile << t << ",";
-            for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyFile << infected[i][t] << ",";
-            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyFile << symptomatic[i][t] << ","; 
-            dailyFile << symptomatic[NUM_OF_SEROTYPES-1][t] << endl;
+            dailyOutputFile << t << ",";
+            for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyOutputFile << infected[i][t] << ",";
+            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyOutputFile << symptomatic[i][t] << ","; 
+            dailyOutputFile << symptomatic[NUM_OF_SEROTYPES-1][t] << endl;
         }
-        dailyFile.close();
+        dailyOutputFile.close();
     }
 
     // output people file
-    if (par->szPeopleFile.length()>0) {
-        cerr << "outputing people information to " << par->szPeopleFile << endl;
-        ofstream peopleFile;
-        peopleFile.open(par->szPeopleFile.c_str());
-        if(peopleFile.fail()) {
-            cerr << "ERROR: People file '" << par->szPeopleFile << "' cannot be open for writing." << endl;
+    if (par->peopleOutputFilename.length()>0) {
+        cerr << "outputing people information to " << par->peopleOutputFilename << endl;
+        ofstream peopleOutputFile;
+        peopleOutputFile.open(par->peopleOutputFilename.c_str());
+        if(peopleOutputFile.fail()) {
+            cerr << "ERROR: People file '" << par->peopleOutputFilename << "' cannot be open for writing." << endl;
             exit(-1);
         }
-        peopleFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;
+        peopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;
         for (int i=0; i<community->getNumPerson(); i++) {
             Person *p = community->getPerson(i);
             for (int j=p->getNumInfections()-1; j>=0; j--) {
-                peopleFile << p->getID() << "," 
+                peopleOutputFile << p->getID() << "," 
                     << 1 + (int) p->getSerotype(j) << "," 
                     << p->getInfectedTime(j) << "," 
                     << p->getSymptomTime(j) << "," 
@@ -333,7 +333,7 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
                     << (p->isVaccinated()?1:0) << endl;
             }
         }
-        peopleFile.close();
+        peopleOutputFile.close();
     }
 }
 

@@ -27,11 +27,11 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
     
-    if (!community->loadLocations(par->szLocationFile, par->szNetworkFile)) {
+    if (!community->loadLocations(par->locationFilename, par->networkFilename)) {
         cerr << "ERROR: Could not load locations" << endl;
         exit(-1);
     }
-    if (!community->loadPopulation(par->szPopulationFile, par->szImmunityFile, par->szSwapProbFile)) {
+    if (!community->loadPopulation(par->populationFilename, par->immunityFilename, par->swapProbFilename)) {
         cerr << "ERROR: Could not load population" << endl;
         exit(-1);
     }

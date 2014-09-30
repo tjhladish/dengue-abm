@@ -22,7 +22,7 @@ do
         -runlength 2920 \
         -dailyexposed 1 1 1 0 \
         -ves 0.7 \
-        -yearlypeoplefile ./junk/people-output-yucatan-multiseason-randomseed$SEED-y \
-        -dailyfile ./junk/daily-output-yucatan-multiseason-randomseed$SEED.csv \
+        -yearlypeopleoutputfile ./junk/people-output-yucatan-multiseason-randomseed$SEED-y \
+        -dailyoutputfile ./junk/daily-output-yucatan-multiseason-randomseed$SEED.csv \
         > ./junk/output-yucatan-multiseason-randomseed$SEED.csv
 done

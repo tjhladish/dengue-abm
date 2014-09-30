@@ -150,44 +150,44 @@ public:
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
-    std::string szMosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
+    std::string mosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
-    double fVEI;  // vaccine efficacy to reduce infectiousness
-    double fVEP;  // vaccine efficacy for pathogenicity
-    std::vector<double> fVESs; // vaccine efficacy for susceptibility (can be leaky or all-or-none)
-    std::vector<double> fVESs_NAIVE; // VES for initially immunologically naive people
+    double fVEI;                                            // vaccine efficacy to reduce infectiousness
+    double fVEP;                                            // vaccine efficacy for pathogenicity
+    std::vector<double> fVESs;                              // vaccine efficacy for susceptibility (can be leaky or all-or-none)
+    std::vector<double> fVESs_NAIVE;                        // VES for initially immunologically naive people
     double fPreVaccinateFraction;
-    bool bVaccineLeaky; // if false, vaccine is all-or-none
-    bool bRetroactiveMatureVaccine; // if true, infection causes leaky vaccine to jump from naive to mature protection
+    bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
+    bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
-    std::vector<double> fSecondaryScaling;                  //
+    std::vector<double> fSecondaryScaling;
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
     std::vector<DynamicParameter> extrinsicIncubationPeriods;
     bool bSecondaryTransmission;
-    std::string szPopulationFile;
-    std::string szImmunityFile;
-    std::string szNetworkFile;
-    std::string szLocationFile;
+    std::string populationFilename;
+    std::string immunityFilename;
+    std::string networkFilename;
+    std::string locationFilename;
     int nNumInitialSusceptible[NUM_OF_SEROTYPES];
-    std::string szPeopleFile;
-    std::string szYearlyPeopleFile;
-    std::string szDailyFile;
-    std::string szSwapProbFile;
-    std::string annualIntroductionsFile;                  // time series of some external factor determining introduction rate
-    std::string annualSerotypeFile;                  // time series of some external factor determining introduction rate
-    std::string dailyEIPFile;
+    std::string peopleOutputFilename;
+    std::string yearlyPeopleOutputFilename;
+    std::string dailyOutputFilename;
+    std::string swapProbFilename;
+    std::string annualIntroductionsFilename;                // time series of some external factor determining introduction rate
+    std::string annualSerotypeFilename;                     // time series of some external factor determining introduction rate
+    std::string dailyEIPfilename;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     int nDaysImmune;
     int nSizeVaccinate;
-    std::vector<int> nVaccinateYear;                                // when to vaccinate
-    std::vector<int> nVaccinateAge;                                 // whom to vaccinate
-    std::vector<double> fVaccinateFraction;                         // fraction of age group to vaccinate
+    std::vector<int> nVaccinateYear;                        // when to vaccinate
+    std::vector<int> nVaccinateAge;                         // whom to vaccinate
+    std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate
     int nSizePrevaccinateAge;
     int nPrevaccinateAgeMin[100];
     int nPrevaccinateAgeMax[100];
