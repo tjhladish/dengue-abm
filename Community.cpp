@@ -27,7 +27,9 @@ map< Location*, map<int, bool> > Community::_isHot;
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
     _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
-    _exposedMosquitoQueue(parameters->extrinsicIncubationPeriods.size(), vector<Mosquito*>(0)),
+    // reserving MAX_MOSQUITO_AGE is simpler than figuring out what the maximum
+    // possible EIP is when EIP is variable
+    _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
     {
@@ -361,6 +363,9 @@ void Community::vaccinate(double f, int age) {
 // returns number of days mosquito has left to live
 int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID) {
     int eip = getExtrinsicIncubation();
+    // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
+    // Truncating also makes vector sizing more straightforward
+    eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
     Mosquito *m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
@@ -369,9 +374,7 @@ int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfecte
         return daysleft;                                              // dies before infectious
     }
 
-    //on the latest possible day
     // add mosquito to latency queue
-    //    _exposedMosquitoQueue.back().push_back(m);
     _exposedMosquitoQueue[eip-1].push_back(m);
     return daysleft;
 }
@@ -684,6 +687,7 @@ void Community::_advanceTimers() {
     _infectiousMosquitoQueue.back().shrink_to_fit();
 #endif
 
+    assert(_exposedMosquitoQueue.size() > 0);
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
         Mosquito *m = _exposedMosquitoQueue[0][mnum];
