@@ -89,6 +89,13 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
+// Fraction of days with precipitation in each month, aggregated over 1979-2013
+// Derived from NOAA data for airport in Merida
+// Jan        Feb        Mar        Apr        May        Jun
+// 0.14774282 0.10505319 0.10095012 0.07866667 0.16069057 0.63969171 
+// Jul        Aug        Sep        Oct        Nov        Dec
+// 0.77393075 0.74148297 0.82327586 0.40394089 0.24817518 0.16411683
+
 //2005 Thai mortality data by age from Porapakkham 2010
 //double thaimortality[NUM_AGE_CLASSES] = {
 //    0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,

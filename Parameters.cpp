@@ -56,6 +56,19 @@ void Parameters::define_defaults() {
     nVaccinateYear.clear();
     nVaccinateAge.clear();
     fVaccinateFraction.clear();
+
+    const std::vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
+    const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    mosquitoMultipliers.clear();
+    mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
+    int running_sum = 0;
+    for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
+        mosquitoMultipliers[j].start = running_sum;
+        mosquitoMultipliers[j].duration = DAYS_IN_MONTH[j];
+        mosquitoMultipliers[j].value = MOSQUITO_MULTIPLIER_DEFAULTS[j];
+        running_sum += DAYS_IN_MONTH[j];
+    }
+
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
