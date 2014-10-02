@@ -38,7 +38,7 @@ void Parameters::define_defaults() {
     nSizePrevaccinateAge = 0;
     nMaxInfectionParity = NUM_OF_SEROTYPES;
     expansionFactor = 1;
-    nDailyExposed.push_back(std::vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
+    nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
     annualSerotypeFilename = "";
     dailyEIPfilename = "";
 
@@ -57,8 +57,8 @@ void Parameters::define_defaults() {
     nVaccinateAge.clear();
     fVaccinateFraction.clear();
 
-    const std::vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
-    const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
+    const vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     mosquitoMultipliers.clear();
     mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
     int running_sum = 0;
@@ -72,8 +72,8 @@ void Parameters::define_defaults() {
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
-    std::cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << std::endl;
-    std::cerr << "written by Dennis Chao and Thomas Hladish in 2012-2014" << std::endl;
+    cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << endl;
+    cerr << "written by Dennis Chao and Thomas Hladish in 2012-2014" << endl;
 
     if (argc>1) {
         for (int i=1; i<argc; i++) {
@@ -95,7 +95,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                     for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[++i],end);
                 } else {
                     // This warning doesn't get thrown if -dailyexposed comes before the -annualserotypefile
-                    std::cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
+                    cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
                 }
             }
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
@@ -135,7 +135,7 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 } else if (strcmp(argstr, "exponential")==0) {
                     eMosquitoDistribution = EXPONENTIAL;
                 } else {
-                    std::cerr << "ERROR: Invalid mosquito distribution specified." << std::endl;
+                    cerr << "ERROR: Invalid mosquito distribution specified." << endl;
                     exit(-1);
                 }
             }
@@ -255,8 +255,8 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 loadDailyEIP(dailyEIPfilename);
             }
             else {
-                std::cerr << "Unknown option: " << argv[i] << std::endl;
-                std::cerr << "Check arguments and formatting." << std::endl;
+                cerr << "Unknown option: " << argv[i] << endl;
+                cerr << "Check arguments and formatting." << endl;
                 exit(-1);
             }
         }
@@ -265,150 +265,150 @@ void Parameters::readParameters(int argc, char *argv[]) {
 }
 
 void Parameters::validate_parameters() {
-    std::cerr << "population file = " << populationFilename << std::endl;
-    std::cerr << "immunity file = " << immunityFilename << std::endl;
-    std::cerr << "location file = " << locationFilename << std::endl;
-    std::cerr << "network file = " << networkFilename << std::endl;
-    std::cerr << "swap probabilities file = " << swapProbFilename << std::endl;
-    std::cerr << "runlength = " << nRunLength << std::endl;
+    cerr << "population file = " << populationFilename << endl;
+    cerr << "immunity file = " << immunityFilename << endl;
+    cerr << "location file = " << locationFilename << endl;
+    cerr << "network file = " << networkFilename << endl;
+    cerr << "swap probabilities file = " << swapProbFilename << endl;
+    cerr << "runlength = " << nRunLength << endl;
     if (nRunLength>MAX_RUN_TIME) {
-        std::cerr << "ERROR: runlength is too long: " << nRunLength << std::endl;
-        std::cerr << " change Parameters.h and recompile." << std::endl;
+        cerr << "ERROR: runlength is too long: " << nRunLength << endl;
+        cerr << " change Parameters.h and recompile." << endl;
         exit(-1);
     }
     if (nRunLength==365) {
-        std::cerr << "WARNING: you probably want runlength to be 364, not 365" << std::endl;
+        cerr << "WARNING: you probably want runlength to be 364, not 365" << endl;
     }
-    std::cerr << "random seed = " << randomseed << std::endl;
-    std::cerr << "beta_PM = " << betaPM << std::endl;
-    std::cerr << "beta_MP = " << betaMP << std::endl;
-    std::cerr << "days of complete cross protection = " << nDaysImmune << std::endl;
-    std::cerr << "maximum infection parity = " << nMaxInfectionParity << std::endl;
-    std::cerr << "pathogenicity of primary infection =";
+    cerr << "random seed = " << randomseed << endl;
+    cerr << "beta_PM = " << betaPM << endl;
+    cerr << "beta_MP = " << betaMP << endl;
+    cerr << "days of complete cross protection = " << nDaysImmune << endl;
+    cerr << "maximum infection parity = " << nMaxInfectionParity << endl;
+    cerr << "pathogenicity of primary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        std::cerr << " " << fPrimaryPathogenicity[i];
+        cerr << " " << fPrimaryPathogenicity[i];
     }
-    std::cerr << std::endl;
-    std::cerr << "pathogenicity scaling for secondary infection =";
+    cerr << endl;
+    cerr << "pathogenicity scaling for secondary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        std::cerr << " " << fSecondaryScaling[i];
+        cerr << " " << fSecondaryScaling[i];
     }
-    std::cerr << std::endl;
-    std::cerr << "mosquito move prob = " << fMosquitoMove << std::endl;
-    std::cerr << "mosquito move model = " << mosquitoMoveModel << std::endl;
+    cerr << endl;
+    cerr << "mosquito move prob = " << fMosquitoMove << endl;
+    cerr << "mosquito move model = " << mosquitoMoveModel << endl;
     if ( mosquitoMoveModel != "uniform" and mosquitoMoveModel != "weighted" ) {
-        std::cerr << "ERROR: invalid mosquito movement model requested:" << std::endl;
-        std::cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << std::endl;
+        cerr << "ERROR: invalid mosquito movement model requested:" << endl;
+        cerr << " -mosquitomovemodel may be uniform or weighted " << nRunLength << endl;
         exit(-1);
     }
-    std::cerr << "mosquito teleport prob = " << fMosquitoTeleport << std::endl;
-    std::cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << std::endl;
+    cerr << "mosquito teleport prob = " << fMosquitoTeleport << endl;
+    cerr << "default mosquito capacity per building = " << nDefaultMosquitoCapacity << endl;
     if (annualSerotypeFilename == "") {
-        std::cerr << "number of daily exposures / serotype weights =";
+        cerr << "number of daily exposures / serotype weights =";
         for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-            std::cerr << " " << nDailyExposed[0][i];
+            cerr << " " << nDailyExposed[0][i];
         }
-        std::cerr << std::endl;
+        cerr << endl;
     } else {
-        std::cerr << "annual serotype file = " << annualSerotypeFilename << std::endl;
+        cerr << "annual serotype file = " << annualSerotypeFilename << endl;
     }
     if (dailyEIPfilename != "") {
-        std::cerr << "daily EIP file = " << dailyEIPfilename << std::endl;
+        cerr << "daily EIP file = " << dailyEIPfilename << endl;
     }
     if (eMosquitoDistribution==CONSTANT) {
-        std::cerr << "mosquito capacity distribution is constant" << std::endl;
+        cerr << "mosquito capacity distribution is constant" << endl;
     } else if (eMosquitoDistribution==EXPONENTIAL)
-        std::cerr << "mosquito capacity distribution is exponential" << std::endl;
+        cerr << "mosquito capacity distribution is exponential" << endl;
         if (mosquitoMultipliers.size()>0) {
-            std::cerr << "mosquito seasonal multipliers (days,mult) =";
+            cerr << "mosquito seasonal multipliers (days,mult) =";
             for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
-                std::cerr << " (" << mosquitoMultipliers[j].duration << "," << mosquitoMultipliers[j].value << ")";
+                cerr << " (" << mosquitoMultipliers[j].duration << "," << mosquitoMultipliers[j].value << ")";
             }
-            std::cerr << std::endl;
+            cerr << endl;
         }
     if (extrinsicIncubationPeriods.size()>0) {
-        std::cerr << "extrinsic incubation periods (days,EIP) =";
+        cerr << "extrinsic incubation periods (days,EIP) =";
         for (unsigned int j=0; j<extrinsicIncubationPeriods.size(); j++) {
-            std::cerr << " (" << extrinsicIncubationPeriods[j].duration << "," << extrinsicIncubationPeriods[j].value << ")";
+            cerr << " (" << extrinsicIncubationPeriods[j].duration << "," << extrinsicIncubationPeriods[j].value << ")";
         }
-        std::cerr << std::endl;
+        cerr << endl;
     }
-    std::cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << std::endl;
+    cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << endl;
     if (nSizeVaccinate>0) {
-        std::cerr << "Phased vaccinate (year, age, frac) = ";
+        cerr << "Phased vaccinate (year, age, frac) = ";
         for (int j=0; j<nSizeVaccinate; j++) {
-            std::cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
+            cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
         }
-        std::cerr << std::endl;
+        cerr << endl;
     }
     if (nSizePrevaccinateAge>0) {
-        std::cerr << "Pre-vaccinate by age (min, max, frac) = ";
+        cerr << "Pre-vaccinate by age (min, max, frac) = ";
         for (int j=0; j<nSizePrevaccinateAge; j++) {
-            std::cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
+            cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
         }
-        std::cerr << std::endl;
+        cerr << endl;
     }
-    std::cerr << "VE_I = " << fVEI << std::endl;
-    std::cerr << "VE_P = " << fVEP << std::endl;
+    cerr << "VE_I = " << fVEI << endl;
+    cerr << "VE_P = " << fVEP << endl;
     if (fVEI>1.0 || fVEP>1.0) {
-        std::cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << std::endl;
+        cerr << "ERROR: VE_S, VE_I, and VE_P must be between 0 and 1" << endl;
         exit(-1);
     }
-    std::cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << std::endl;
+    cerr << "VE_Ss = " << fVESs[0] << "," << fVESs[1] << "," << fVESs[2] << "," << fVESs[3] << endl;
 
     if (fVESs_NAIVE.size()==0) {
       fVESs_NAIVE.clear();
       fVESs_NAIVE = fVESs; // naive people have the same VE_S as non-naive
-      std::cerr << "Vaccine protection is independent of infection history (naive == non-naive)" << std::endl;
+      cerr << "Vaccine protection is independent of infection history (naive == non-naive)" << endl;
     } else {
-      std::cerr << "VE_Ss naive = " << fVESs_NAIVE[0] << "," << fVESs_NAIVE[1] << "," << fVESs_NAIVE[2] << "," << fVESs_NAIVE[3] << std::endl;
+      cerr << "VE_Ss naive = " << fVESs_NAIVE[0] << "," << fVESs_NAIVE[1] << "," << fVESs_NAIVE[2] << "," << fVESs_NAIVE[3] << endl;
     }
 
     if (bVaccineLeaky) {
-        std::cerr << "VE_S is leaky" << std::endl;
+        cerr << "VE_S is leaky" << endl;
     } else {
-        std::cerr << "VE_S is all-or-none" << std::endl;
+        cerr << "VE_S is all-or-none" << endl;
     }
 
     if (bRetroactiveMatureVaccine) {
         if (bVaccineLeaky) {
-            std::cerr << "Vaccine protection is upgraded from naive to non-naive upon infection (retroactive maturity)" << std::endl;
+            cerr << "Vaccine protection is upgraded from naive to non-naive upon infection (retroactive maturity)" << endl;
         } else {
-            std::cerr << "-retroactivematurevaccine is only defined for leaky vaccines (-vaccineleaky)" << std::endl;
+            cerr << "-retroactivematurevaccine is only defined for leaky vaccines (-vaccineleaky)" << endl;
             exit(-1); 
         } 
     }
 
     if (peopleOutputFilename.length()>0) {
-        std::cerr << "people output file = " << peopleOutputFilename << std::endl;
+        cerr << "people output file = " << peopleOutputFilename << endl;
     } else {
-        std::cerr << "no people output file" << std::endl;
+        cerr << "no people output file" << endl;
     }
     if (annualIntroductionsFilename.length()>0) {
-        std::cerr << "annual introductions file = " << annualIntroductionsFilename << std::endl;
+        cerr << "annual introductions file = " << annualIntroductionsFilename << endl;
     }
     if (yearlyPeopleOutputFilename.length()>0) {
-        std::cerr << "yearly people output file = " << yearlyPeopleOutputFilename << std::endl;
+        cerr << "yearly people output file = " << yearlyPeopleOutputFilename << endl;
     }
     if (dailyOutputFilename.length()>0) {
-        std::cerr << "daily output file = " << dailyOutputFilename << std::endl;
+        cerr << "daily output file = " << dailyOutputFilename << endl;
     } else {
-        std::cerr << "no daily output file" << std::endl;
+        cerr << "no daily output file" << endl;
     }
 }
 
 
-void Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
-    std::ifstream iss(annualIntrosFilename.c_str());
+void Parameters::loadAnnualIntroductions(string annualIntrosFilename) {
+    ifstream iss(annualIntrosFilename.c_str());
     if (!iss) {
-        std::cerr << "ERROR: " << annualIntrosFilename << " not found." << std::endl;
+        cerr << "ERROR: " << annualIntrosFilename << " not found." << endl;
         exit(114);
     }
     annualIntroductions.clear();
  
     char buffer[500];
     double intros;
-    std::istringstream line(buffer);
+    istringstream line(buffer);
 
     while (iss) {
         iss.getline(buffer,500);
@@ -424,10 +424,10 @@ void Parameters::loadAnnualIntroductions(std::string annualIntrosFilename) {
 }
 
 
-void Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
-    std::ifstream iss(annualSerotypeFilename.c_str());
+void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
+    ifstream iss(annualSerotypeFilename.c_str());
     if (!iss) {
-        std::cerr << "ERROR: " << annualSerotypeFilename << " not found." << std::endl;
+        cerr << "ERROR: " << annualSerotypeFilename << " not found." << endl;
         exit(115);
     }
 
@@ -436,24 +436,24 @@ void Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
     nDailyExposed.clear();
 
     char sep = ' ';
-    std::string line;
+    string line;
 
     while ( getline(iss,line) ) {
         // expecting four serotype intro rates per line
         // each line correspons to one year
-        std::vector<std::string> fields = dengue::util::split(line, sep);
+        vector<string> fields = dengue::util::split(line, sep);
 
         if (fields.size() == NUM_OF_SEROTYPES) {
-            std::vector<float>row(fields.size());
+            vector<float>row(fields.size());
             for( unsigned int i=0; i < fields.size(); i++ ) {
                 row[i] = dengue::util::string2double(fields[i]);
             }
 
             nDailyExposed.push_back(row);
         } else {
-            std::cerr << "WARNING: Found line with unexpected number of values in annual serotypes file" << std::endl;
-            std::cerr << "\tFile: " << annualSerotypeFilename << std::endl;
-            std::cerr << "\tLine: " << line << std::endl;
+            cerr << "WARNING: Found line with unexpected number of values in annual serotypes file" << endl;
+            cerr << "\tFile: " << annualSerotypeFilename << endl;
+            cerr << "\tLine: " << line << endl;
         }
     }
 
@@ -461,10 +461,10 @@ void Parameters::loadAnnualSerotypes(std::string annualSerotypeFilename) {
 }
 
 
-void Parameters::loadDailyEIP(std::string dailyEIPfilename) {
-    std::ifstream iss(dailyEIPfilename.c_str());
+void Parameters::loadDailyEIP(string dailyEIPfilename) {
+    ifstream iss(dailyEIPfilename.c_str());
     if (!iss) {
-        std::cerr << "ERROR: " << dailyEIPfilename << " not found." << std::endl;
+        cerr << "ERROR: " << dailyEIPfilename << " not found." << endl;
         exit(116);
     }
 
@@ -473,7 +473,7 @@ void Parameters::loadDailyEIP(std::string dailyEIPfilename) {
 
     char **end = NULL;
     char sep = ' ';
-    std::string line;
+    string line;
 
     const int duration = 1;
     int start = 0;
@@ -481,21 +481,21 @@ void Parameters::loadDailyEIP(std::string dailyEIPfilename) {
     while ( getline(iss,line) ) {
         // expecting first value on each line to be the EIP for any mosquito infected on that day
         // other, subsequent values are permitted, but ignored
-        std::vector<std::string> fields = dengue::util::split(line, sep);
+        vector<string> fields = dengue::util::split(line, sep);
 
         if (fields.size() >= 1) {
             value = strtod(fields[0].c_str(), end);
             if (value <= 0) {
-                std::cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << std::endl;
-                std::cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << std::endl;
+                cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
+                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
                 exit(113);
             }
             extrinsicIncubationPeriods.emplace_back(start, duration, value);
             start += duration;
         } else {
-            std::cerr << "WARNING: Found line with unexpected number of values in daily EIP file" << std::endl;
-            std::cerr << "\tFile: " << dailyEIPfilename << std::endl;
-            std::cerr << "\tLine: " << line << std::endl;
+            cerr << "WARNING: Found line with unexpected number of values in daily EIP file" << endl;
+            cerr << "\tFile: " << dailyEIPfilename << endl;
+            cerr << "\tLine: " << line << endl;
         }
     }
 
