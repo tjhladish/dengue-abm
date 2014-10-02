@@ -194,7 +194,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }
 
-        int daily_infection_ctr = 0;
+        int daily_incidence = 0;
         community->tick(t);
 
         if (par->bSecondaryTransmission) {
@@ -213,7 +213,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             for (int i=community->getNumPerson()-1; i>=0; i--) {
                 Person *p = community->getPerson(i);
                 if (p->isInfected(t)) {
-                    daily_infection_ctr++;
+                    if (p->isNewlyInfected(t)) ++daily_incidence;
                     // home location
                     cout << t 
                          << ",p,"
@@ -227,7 +227,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             }
         }
         write_yearly_people_file(par, community, t);
-        cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_infection_ctr << endl;
+        cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_incidence << endl;
 
     }
     return;
