@@ -89,6 +89,12 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
+// average number of consequtive years a serotype is observed, Yucatan data, 1979-2013
+static const double MEAN_RUN_LENGTH = 3.352941;
+
+// average number of consequtive years between serotype observations, Yucatan data, 1979-2013
+static const double MEAN_GAP_LENGTH = 4.611111;
+
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
 // Jan        Feb        Mar        Apr        May        Jun
@@ -151,6 +157,8 @@ public:
     void loadAnnualIntroductions(std::string annualIntrosFilename);
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
     void loadDailyEIP(std::string dailyEIPFilename);
+    void generateAnnualSerotypes();
+    bool simulateAnnualSerotypes;
 
     int randomseed;
     int nRunLength;

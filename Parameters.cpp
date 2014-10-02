@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include <fstream>
 #include <sstream>
+#include <gsl/gsl_randist.h>
 
 void Parameters::define_defaults() {
     randomseed = 5489;
@@ -250,6 +251,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
                 annualSerotypeFilename = argv[++i];
                 loadAnnualSerotypes(annualSerotypeFilename);
             }
+            else if (strcmp(argv[i], "-simulateannualserotypes")==0) {
+                simulateAnnualSerotypes = true;
+            }
             else if (strcmp(argv[i], "-dailyeipfile")==0) {
                 dailyEIPfilename = argv[++i];
                 loadDailyEIP(dailyEIPfilename);
@@ -261,6 +265,10 @@ void Parameters::readParameters(int argc, char *argv[]) {
             }
         }
     }
+
+    gsl_rng_set(RNG, randomseed);
+    // runlength and randomseed need to be set before calling generateAnnualSerotypes()
+    if (simulateAnnualSerotypes) generateAnnualSerotypes();
     validate_parameters();
 }
 
@@ -310,7 +318,14 @@ void Parameters::validate_parameters() {
         }
         cerr << endl;
     } else {
-        cerr << "annual serotype file = " << annualSerotypeFilename << endl;
+        if (simulateAnnualSerotypes) {
+            cerr << "ERROR: -simulateannualserotypes and -annualserotypefile cannot both be used" << endl;
+        } else {
+            cerr << "annual serotype file = " << annualSerotypeFilename << endl;
+        }
+    }
+    if (simulateAnnualSerotypes) {
+        cerr << "simulating annual serotypes" << endl;
     }
     if (dailyEIPfilename != "") {
         cerr << "daily EIP file = " << dailyEIPfilename << endl;
@@ -330,6 +345,10 @@ void Parameters::validate_parameters() {
         cerr << "extrinsic incubation periods (days,EIP) =";
         for (unsigned int j=0; j<extrinsicIncubationPeriods.size(); j++) {
             cerr << " (" << extrinsicIncubationPeriods[j].duration << "," << extrinsicIncubationPeriods[j].value << ")";
+            if (j >= 12) {
+                cerr << " . . . " << endl << "\t" << extrinsicIncubationPeriods.size() - j << " more extrinsic incubation periods not displayed." << endl;
+                break;
+            }
         }
         cerr << endl;
     }
@@ -440,7 +459,7 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
 
     while ( getline(iss,line) ) {
         // expecting four serotype intro rates per line
-        // each line correspons to one year
+        // each line corresponds to one year
         vector<string> fields = dengue::util::split(line, sep);
 
         if (fields.size() == NUM_OF_SEROTYPES) {
@@ -457,6 +476,44 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
         }
     }
 
+    return;
+}
+
+
+void Parameters::generateAnnualSerotypes() {
+    enum State {GAP, RUN};
+    // get rid of anything there now
+    for (auto v: nDailyExposed) v.clear();
+    nDailyExposed.clear();
+
+    int run_length_years = (int) ceil((double) nRunLength / 365.0);
+    nDailyExposed.resize(run_length_years, vector<float>(NUM_OF_SEROTYPES));
+
+    const float p_gap = 1.0/MEAN_GAP_LENGTH;
+    const float p_run = 1.0/MEAN_RUN_LENGTH;
+    const float p_gap_start = MEAN_GAP_LENGTH/(MEAN_GAP_LENGTH + MEAN_RUN_LENGTH);
+
+    for (int s = 0; s<NUM_OF_SEROTYPES; ++s) {
+        int years_so_far = 0;
+        State state = p_gap_start > gsl_rng_uniform(RNG) ? GAP : RUN;
+        while (years_so_far < run_length_years) {
+            if (state == GAP) {
+                unsigned int gap = gsl_ran_geometric(RNG, p_gap);
+                while (gap > 0 and (unsigned) years_so_far < nDailyExposed.size()) {
+                    nDailyExposed[years_so_far++][s] = 0.0;
+                    --gap;
+                }
+                state = RUN;
+            } else {
+                unsigned int run = gsl_ran_geometric(RNG, p_run);
+                while (run > 0 and (unsigned) years_so_far < nDailyExposed.size()) {
+                    nDailyExposed[years_so_far++][s] = 1.0;
+                    --run;
+                }
+                state = GAP;
+            }
+        }
+    }
     return;
 }
 

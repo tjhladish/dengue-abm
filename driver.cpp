@@ -30,8 +30,6 @@ void write_output(const Parameters* par, Community* community, vector<int> initi
 int main(int argc, char *argv[]) {
     const Parameters* par = new Parameters(argc, argv);
 
-    gsl_rng_set(RNG, par->randomseed);
-
     Community* community = build_community(par);
     vector<int> initial_susceptibles = community->getNumSusceptible();
     seed_epidemic(par, community);
