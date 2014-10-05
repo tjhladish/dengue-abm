@@ -32,6 +32,7 @@ void Parameters::define_defaults() {
     swapProbFilename = "";
     annualIntroductionsFilename = "";  // time series of some external factor determining introduction rate
     annualIntroductionsCoef = 1;     // multiplier to rescale external introductions to something sensible
+    normalizeSerotypeIntros = false;
     annualIntroductions.clear();
     annualIntroductions.push_back(1.0);
     nDaysImmune = 365;
@@ -59,7 +60,6 @@ void Parameters::define_defaults() {
     fVaccinateFraction.clear();
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
-    const vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     mosquitoMultipliers.clear();
     mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
     int running_sum = 0;
@@ -70,6 +70,10 @@ void Parameters::define_defaults() {
         running_sum += DAYS_IN_MONTH[j];
     }
 
+    dailyOutput = false;
+    weeklyOutput = false;
+    monthlyOutput = false;
+    yearlyOutput = false;
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
@@ -254,9 +258,24 @@ void Parameters::readParameters(int argc, char *argv[]) {
             else if (strcmp(argv[i], "-simulateannualserotypes")==0) {
                 simulateAnnualSerotypes = true;
             }
+            else if (strcmp(argv[i], "-normalizeserotypeintros")==0) {
+                normalizeSerotypeIntros = true;
+            }
             else if (strcmp(argv[i], "-dailyeipfile")==0) {
                 dailyEIPfilename = argv[++i];
                 loadDailyEIP(dailyEIPfilename);
+            }
+            else if (strcmp(argv[i], "-dailyoutput")==0) {
+                dailyOutput = true;
+            }
+            else if (strcmp(argv[i], "-weeklyoutput")==0) {
+                weeklyOutput = true;
+            }
+            else if (strcmp(argv[i], "-monthlyoutput")==0) {
+                monthlyOutput = true;
+            }
+            else if (strcmp(argv[i], "-yearlyoutput")==0) {
+                yearlyOutput = true;
             }
             else {
                 cerr << "Unknown option: " << argv[i] << endl;
@@ -513,6 +532,23 @@ void Parameters::generateAnnualSerotypes() {
                 state = GAP;
             }
         }
+    }
+cerr << "Serotype runs:" << endl;
+    for (auto y: nDailyExposed) {
+        for (auto v: y)  cerr << v << " "; cerr << endl;
+    }
+    if (normalizeSerotypeIntros) {
+        for (unsigned int i = 0; i < nDailyExposed.size(); ++i) {
+            float total = accumulate(nDailyExposed[i].begin(), nDailyExposed[i].end(), 0);
+            if (total > 0) {
+                for (unsigned int s = 0; s < nDailyExposed[i].size(); ++s) nDailyExposed[i][s] /= total;
+            }
+        }
+    }
+
+cerr << "Serotype runs (normalized):" << endl;
+    for (auto y: nDailyExposed) {
+        for (auto v: y)  cerr << v << " "; cerr << endl;
     }
     return;
 }

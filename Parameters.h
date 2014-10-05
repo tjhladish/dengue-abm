@@ -31,6 +31,11 @@ enum MosquitoDistribution {
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
+static const std::vector<std::string> MONTH_NAMES = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+static const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+// December is over when day of year is 0
+static const std::vector<int> DAYS_IN_MONTH_CUM = {31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0}; 
+
 static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
 static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
@@ -198,6 +203,7 @@ public:
     std::string dailyEIPfilename;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
+    bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
     int nDaysImmune;
     int nSizeVaccinate;
     std::vector<int> nVaccinateYear;                        // when to vaccinate
@@ -209,6 +215,10 @@ public:
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
     double expansionFactor;
+    bool dailyOutput;
+    bool weeklyOutput;
+    bool monthlyOutput;
+    bool yearlyOutput;
 };
 
 #endif

@@ -145,9 +145,14 @@ void simulate_epidemic(const Parameters* par, Community* community) {
     const int EIPtotalDuration = par->extrinsicIncubationPeriods.size() > 0 ?
                                  par->extrinsicIncubationPeriods.back().start + par->extrinsicIncubationPeriods.back().duration : 0;
     if (par->bSecondaryTransmission) cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+
+    vector<int> daily_incidence(3,0); // { introductions, local transmission, total }
+    vector<int> weekly_incidence(3,0);
+    vector<int> monthly_incidence(3,0);
+    vector<int> yearly_incidence(3,0);
+    pair<int, int> current_month(0, DAYS_IN_MONTH_CUM[0]);
     for (int t=0; t<par->nRunLength; t++) {
         int year = (int)(t/365);
-        if (t%100==0) cerr << "Time " << t << endl;
 
         // phased vaccination
         if ((t%365)==0) {
@@ -160,7 +165,6 @@ void simulate_epidemic(const Parameters* par, Community* community) {
         }
 
         // seed epidemic
-        int intro_count = 0;
         {
             int numperson = community->getNumPerson();
             for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
@@ -176,7 +180,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
                     // gsl_rng_uniform_int returns on [0, numperson-1]
                     int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
                     if (community->infect(transmit_to_id, (Serotype) serotype, t)) {
-                        intro_count++;
+                        daily_incidence[0]++;
                     }
                 }
             }
@@ -194,7 +198,6 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }
 
-        int daily_incidence = 0;
         community->tick(t);
 
         if (par->bSecondaryTransmission) {
@@ -213,7 +216,7 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             for (int i=community->getNumPerson()-1; i>=0; i--) {
                 Person *p = community->getPerson(i);
                 if (p->isInfected(t)) {
-                    if (p->isNewlyInfected(t)) ++daily_incidence;
+                    if (p->isNewlyInfected(t)) ++daily_incidence[2];
                     // home location
                     cout << t 
                          << ",p,"
@@ -227,8 +230,41 @@ void simulate_epidemic(const Parameters* par, Community* community) {
             }
         }
         write_yearly_people_file(par, community, t);
-        cerr << "day,intros,incidence: " << t << " " << intro_count << " " << daily_incidence << endl;
 
+        daily_incidence[1] = daily_incidence[2] - daily_incidence[0]; // local transmission = total - introductions
+        if (par->dailyOutput) {
+            cerr << "day: " << t << " "; for (auto v: daily_incidence) cerr << v << " "; 
+            cerr << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+            //cerr << "day: " << t << " "; for (auto v: daily_incidence) cerr << v << " "; cerr << endl;
+        }
+
+        if (par->weeklyOutput) {
+            for (unsigned int i = 0; i < daily_incidence.size(); ++i) weekly_incidence[i] += daily_incidence[i];
+            if ((t+1)%7==0) {
+                cerr << "week: " << (t+1)/7 << " "; for (auto v: weekly_incidence) cerr << v << " "; cerr << endl;
+                weekly_incidence = {0,0,0};
+            }
+        }
+
+        if (par->monthlyOutput) {
+            for (unsigned int i = 0; i < daily_incidence.size(); ++i) monthly_incidence[i] += daily_incidence[i];
+            if ((t+1)%365==current_month.second) {
+                cerr << "month: " << current_month.first+1 << " "; for (auto v: monthly_incidence) cerr << v << " "; cerr << endl;
+                current_month.first = current_month.first == 11 ? 0 : current_month.first + 1; // loop DEC -> JAN
+                current_month.second = DAYS_IN_MONTH_CUM[current_month.first];
+                monthly_incidence = {0,0,0};
+            }
+        }
+
+        if (par->yearlyOutput) {
+            for (unsigned int i = 0; i < daily_incidence.size(); ++i) yearly_incidence[i] += daily_incidence[i];
+            if ((t+1)%365==0) {
+                cerr << "year: " << (t+1)/365 << " "; for (auto v: yearly_incidence) cerr << v << " "; cerr << endl;
+                yearly_incidence = {0,0,0};
+            }
+        }
+
+        daily_incidence = {0,0,0};
     }
     return;
 }
