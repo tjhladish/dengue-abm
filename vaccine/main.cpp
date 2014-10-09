@@ -60,47 +60,21 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->betaMP = _betamp;
     par->expansionFactor = _EF;
     par->fMosquitoMove = _mos_move;
-    par->szMosquitoMoveModel = "weighted";
+    par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
     par->eMosquitoDistribution = EXPONENTIAL;
-
-    {
-        static const int _time_periods[] = {7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,8};  
-        static const double _multipliers[] = {0.05,0.04,0.05,0.04,0.03,0.04,0.05,0.03,0.02,0.02,
-                                            0.03,0.03,0.05,0.04,0.05,0.04,0.06,0.07,0.08,0.09,
-                                            0.11,0.15,0.18,0.19,0.24,0.28,0.38,0.46,0.45,0.61,
-                                            0.75,0.97,0.91,1.00,0.94,0.85,0.79,0.71,0.65,0.65,
-                                            0.42,0.30,0.26,0.27,0.11,0.10,0.11,0.12,0.09,0.08,
-                                            0.04,0.07};
-        int num_periods = sizeof(_multipliers) / sizeof(_multipliers[0]);
-        //assert(_time_periods.size() == _multipliers.size());
-        par->nSizeMosquitoMultipliers = num_periods;
-        par->nMosquitoMultiplierCumulativeDays[0] = 0;
-
-        for (int j=0; j<num_periods; j++) {
-            par->nMosquitoMultiplierDays[j] = _time_periods[j];
-            par->nMosquitoMultiplierCumulativeDays[j+1] =
-                par->nMosquitoMultiplierCumulativeDays[j]+par->nMosquitoMultiplierDays[j];
-            par->fMosquitoMultipliers[j] = _multipliers[j];
-        }
-    }
 
     par->nDaysImmune = 365;
 
     //par->annualSerotypeFile = pop_dir + "/serotypes-yucatan.txt";
     //par->loadAnnualSerotypes(par->annualSerotypeFile);
 
-    par->szPopulationFile = pop_dir + "/population-yucatan.txt";
-    par->szImmunityFile   = "";
-    par->szLocationFile   = pop_dir + "/locations-yucatan.txt";
-    par->szNetworkFile    = pop_dir + "/network-yucatan.txt";
-    par->szSwapProbFile   = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->populationFilename = pop_dir + "/population-yucatan.txt";
+    par->immunityFilename   = "";
+    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
+    par->networkFilename    = pop_dir + "/network-yucatan.txt";
+    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
 
     return par;
 }
