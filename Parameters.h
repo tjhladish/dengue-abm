@@ -219,6 +219,7 @@ public:
     bool weeklyOutput;
     bool monthlyOutput;
     bool yearlyOutput;
+    bool abcVerbose;
 };
 
 #endif

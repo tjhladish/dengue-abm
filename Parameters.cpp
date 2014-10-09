@@ -277,6 +277,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
             else if (strcmp(argv[i], "-yearlyoutput")==0) {
                 yearlyOutput = true;
             }
+            else if (strcmp(argv[i], "-abcverbose")==0) {
+                abcVerbose = true;
+            }
             else {
                 cerr << "Unknown option: " << argv[i] << endl;
                 cerr << "Check arguments and formatting." << endl;
