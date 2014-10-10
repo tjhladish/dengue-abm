@@ -27,7 +27,9 @@ map< Location*, map<int, bool> > Community::_isHot;
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
     _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
-    _exposedMosquitoQueue(MAX_MOSQUITO_INCUBATION, vector<Mosquito*>(0)),
+    // reserving MAX_MOSQUITO_AGE is simpler than figuring out what the maximum
+    // possible EIP is when EIP is variable
+    _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
     {
@@ -36,7 +38,7 @@ Community::Community(const Parameters* parameters) :
     _nNumPerson = 0;
     _person = NULL;
     _fMosquitoCapacityMultiplier = 1.0;
-    _nExternalIncubation = 11; // default external incubation period of 11 days (Nishiura & Halstead 2007)
+    _EIP = 11; // default external incubation period of 11 days (Nishiura & Halstead 2007)
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
@@ -360,7 +362,10 @@ void Community::vaccinate(double f, int age) {
 
 // returns number of days mosquito has left to live
 int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID) {
-    int eip = getExternalIncubation();
+    int eip = getExtrinsicIncubation();
+    // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
+    // Truncating also makes vector sizing more straightforward
+    eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
     Mosquito *m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
@@ -369,9 +374,7 @@ int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfecte
         return daysleft;                                              // dies before infectious
     }
 
-    //on the latest possible day
     // add mosquito to latency queue
-    //    _exposedMosquitoQueue.back().push_back(m);
     _exposedMosquitoQueue[eip-1].push_back(m);
     return daysleft;
 }
@@ -438,7 +441,7 @@ void Community::moveMosquito(Mosquito *m) {
             int degree = pLoc->getNumNeighbors();
             int neighbor=0; // neighbor is an index
 
-            if (_par->szMosquitoMoveModel == "weighted") {
+            if (_par->mosquitoMoveModel == "weighted") {
                 vector<double> weights(degree, 0);
                 double sum_weights = 0.0;
 
@@ -490,6 +493,7 @@ void Community::swapImmuneStates() {
             assert(p!=NULL);
             if (_uniformSwap == true) {
                 // For people of age x, copy immune status from people of age x-1
+                // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
                 int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age-1]);
                 p->copyImmunity(_personAgeCohort[age-1][r]);
             } else {
@@ -683,6 +687,7 @@ void Community::_advanceTimers() {
     _infectiousMosquitoQueue.back().shrink_to_fit();
 #endif
 
+    assert(_exposedMosquitoQueue.size() > 0);
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
         Mosquito *m = _exposedMosquitoQueue[0][mnum];

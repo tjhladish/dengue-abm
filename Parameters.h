@@ -1,14 +1,14 @@
 #ifndef __PARAMETERS_H
 #define __PARAMETERS_H
 
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
 #include <map>
-#include <iostream>
-#include <assert.h>
 #include <bitset>
+#include <assert.h>
 #include <gsl/gsl_rng.h>
 
 static const int VERSION_NUMBER_MAJOR = 1;
@@ -31,6 +31,11 @@ enum MosquitoDistribution {
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
+static const std::vector<std::string> MONTH_NAMES = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+static const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+// December is over when day of year is 0
+static const std::vector<int> DAYS_IN_MONTH_CUM = {31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0}; 
+
 static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
 static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
 
@@ -46,8 +51,7 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
-static const int MAX_MOSQUITO_INCUBATION = 25;                    // number of days for mosquito incubation (extrinsic incubation period)
-static const int MAX_RUN_TIME = 15000;                         // maximum number of simulation days (+ extra for mosquito lifetime)
+static const int MAX_RUN_TIME = 15000;                        // maximum number of simulation days (+ extra for mosquito lifetime)
 static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
  
 // from Mosquito
@@ -90,6 +94,19 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
+// average number of consequtive years a serotype is observed, Yucatan data, 1979-2013
+static const double MEAN_RUN_LENGTH = 3.352941;
+
+// average number of consequtive years between serotype observations, Yucatan data, 1979-2013
+static const double MEAN_GAP_LENGTH = 4.611111;
+
+// Fraction of days with precipitation in each month, aggregated over 1979-2013
+// Derived from NOAA data for airport in Merida
+// Jan        Feb        Mar        Apr        May        Jun
+// 0.14774282 0.10505319 0.10095012 0.07866667 0.16069057 0.63969171 
+// Jul        Aug        Sep        Oct        Nov        Dec
+// 0.77393075 0.74148297 0.82327586 0.40394089 0.24817518 0.16411683
+
 //2005 Thai mortality data by age from Porapakkham 2010
 //double thaimortality[NUM_AGE_CLASSES] = {
 //    0.0157,0.0009,0.0009,0.0009,0.0009,0.0005,0.0005,0.0005,0.0005,0.0005,
@@ -124,6 +141,15 @@ namespace dengue {
 }
 
 
+struct DynamicParameter {
+    DynamicParameter(){};
+    DynamicParameter(int s, int d, double v) : start(s), duration(d), value(v) {};
+    int start;
+    int duration;
+    double value;
+};
+
+
 class Parameters {
 public:
 
@@ -133,63 +159,67 @@ public:
     void define_defaults();
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
-    bool loadAnnualIntroductions(std::string annualIntrosFilename);
-    bool loadAnnualSerotypes(std::string annualSerotypeFilename);
+    void loadAnnualIntroductions(std::string annualIntrosFilename);
+    void loadAnnualSerotypes(std::string annualSerotypeFilename);
+    void loadDailyEIP(std::string dailyEIPFilename);
+    void generateAnnualSerotypes();
+    bool simulateAnnualSerotypes;
 
     int randomseed;
     int nRunLength;
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
-    std::string szMosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
+    std::string mosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
-    double fVEI;  // vaccine efficacy to reduce infectiousness
-    double fVEP;  // vaccine efficacy for pathogenicity
-    std::vector<double> fVESs; // vaccine efficacy for susceptibility (can be leaky or all-or-none)
-    std::vector<double> fVESs_NAIVE; // VES for initially immunologically naive people
+    double fVEI;                                            // vaccine efficacy to reduce infectiousness
+    double fVEP;                                            // vaccine efficacy for pathogenicity
+    std::vector<double> fVESs;                              // vaccine efficacy for susceptibility (can be leaky or all-or-none)
+    std::vector<double> fVESs_NAIVE;                        // VES for initially immunologically naive people
     double fPreVaccinateFraction;
-    bool bVaccineLeaky; // if false, vaccine is all-or-none
-    bool bRetroactiveMatureVaccine; // if true, infection causes leaky vaccine to jump from naive to mature protection
+    bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
+    bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
     int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
-    std::vector<double> fSecondaryScaling;                  //
+    std::vector<double> fSecondaryScaling;
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
-    double fMosquitoMultipliers[54];                        // seasonal multipliers for mosquito population (up to 53), conforming to a 365-day cycle
-    double nMosquitoMultiplierDays[54];                     // when to change the mosquito population
-    double nMosquitoMultiplierCumulativeDays[54];           // when to change the mosquito population
-    int nSizeMosquitoMultipliers;
-    double nExternalIncubation[54];                         // seasonal external incubation period in days (up to 53)
-    double nExternalIncubationDays[54];                     // when to change the external incubation period
-    double nExternalIncubationCumulativeDays[54];           // when to change the external incubation period
-    int nSizeExternalIncubation;
+    std::vector<DynamicParameter> mosquitoMultipliers;
+    std::vector<DynamicParameter> extrinsicIncubationPeriods;
     bool bSecondaryTransmission;
-    std::string szPopulationFile;
-    std::string szImmunityFile;
-    std::string szNetworkFile;
-    std::string szLocationFile;
+    std::string populationFilename;
+    std::string immunityFilename;
+    std::string networkFilename;
+    std::string locationFilename;
     int nNumInitialSusceptible[NUM_OF_SEROTYPES];
-    std::string szPeopleFile;
-    std::string szYearlyPeopleFile;
-    std::string szDailyFile;
-    std::string szSwapProbFile;
-    std::string annualIntroductionsFile;                  // time series of some external factor determining introduction rate
-    std::string annualSerotypeFile;                  // time series of some external factor determining introduction rate
+    std::string peopleOutputFilename;
+    std::string yearlyPeopleOutputFilename;
+    std::string dailyOutputFilename;
+    std::string swapProbFilename;
+    std::string annualIntroductionsFilename;                // time series of some external factor determining introduction rate
+    std::string annualSerotypeFilename;                     // time series of some external factor determining introduction rate
+    std::string dailyEIPfilename;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
+    bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
     int nDaysImmune;
     int nSizeVaccinate;
-    std::vector<int> nVaccinateYear;                                // when to vaccinate
-    std::vector<int> nVaccinateAge;                                 // whom to vaccinate
-    std::vector<double> fVaccinateFraction;                         // fraction of age group to vaccinate
+    std::vector<int> nVaccinateYear;                        // when to vaccinate
+    std::vector<int> nVaccinateAge;                         // whom to vaccinate
+    std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate
     int nSizePrevaccinateAge;
     int nPrevaccinateAgeMin[100];
     int nPrevaccinateAgeMax[100];
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
     double expansionFactor;
+    bool dailyOutput;
+    bool weeklyOutput;
+    bool monthlyOutput;
+    bool yearlyOutput;
+    bool abcVerbose;
 };
 
 #endif
