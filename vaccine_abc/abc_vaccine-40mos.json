@@ -1,17 +1,17 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 800,
+    "num_samples"    : 1600,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "particle_basefilename"         : "vaccine_catchup_particles40-reducedFOI",
-    "predictive_prior_basefilename" : "vaccine_catchup_predictive_prior40-reducedFOI",
+    "particle_basefilename"         : "vaccine_catchup_particles40-lowFOI-altburnin",
+    "predictive_prior_basefilename" : "vaccine_catchup_predictive_prior40-lowFOI-altburnin",
 
     "parameters" : [
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 1,
+         "par1"       : 0,
          "par2"       : 1},
 
         {"name"       : "retro",
@@ -42,7 +42,13 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1}
+         "par2"       : 1},
+
+        {"name"       : "nmos",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 40,
+         "par2"       : 40}
     ],
 
     "metrics" : [
