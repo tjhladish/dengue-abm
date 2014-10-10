@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include <fstream>
 #include <sstream>
+#include <numeric>
 #include <gsl/gsl_randist.h>
 
 void Parameters::define_defaults() {
