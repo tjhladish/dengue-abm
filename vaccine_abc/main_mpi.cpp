@@ -37,9 +37,6 @@ Parameters* define_default_parameters(const int years_simulated) {
     double _EF       = 40;
     double _mos_move = 0.5;
     //double _exp_coef = 1;
-    double _nmos     = 50;
-    //double _nmos     = 60;
-    //double _nmos     = 80;
     
     double _betamp   = 0.25;
     double _betapm   = 0.1;
@@ -68,7 +65,6 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->fMosquitoMove = _mos_move;
     par->szMosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = (int) _nmos;
     par->eMosquitoDistribution = EXPONENTIAL;
 
     {
@@ -139,7 +135,7 @@ void generate_homogeneous_immune_history(Community* community, const Parameters*
 
         // determine order in which person will be exposed to serotypes
         int sero_order[NUM_OF_SEROTYPES];
-        for (i = 0; i < NUM_OF_SEROTYPES; i++) { sero_order[i] = i; }
+        for (int j = 0; j < NUM_OF_SEROTYPES; j++) { sero_order[j] = j; }
         gsl_ran_shuffle (RNG, sero_order, NUM_OF_SEROTYPES, sizeof (int));
 
         // don't allow multiple infections in one year
@@ -254,6 +250,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     const int years_simulated = 40;
     const int burnin = 20; // e.g., 0 means start vaccinating in the first simulated year
 
+    Parameters* par = define_default_parameters(years_simulated); 
+
     vector<int> target_ages = {2,6,10,14};
     bool vaccine      = (bool) args[0];
     bool retro        = (bool) args[1];
@@ -261,10 +259,20 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     int target        = target_ages[(unsigned int) args[3]];
     bool full_catchup = (bool) args[4];
     bool all_mature   = (bool) args[5];
+    par->nDefaultMosquitoCapacity = (int) args[6];
 
+    bool nonsensical_parameters = false;
+    // only run a non-vaccination campaign if all the vaccine parameters are 0
+    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > 0)) { nonsensical_parameters = true; } 
+    // can't do a full catchup (all ages) if we're not doing a catchup
+    if (full_catchup and not catchup) { nonsensical_parameters = true; }
+    if (nonsensical_parameters) {
+        vector<long double> dummy(years_simulated*NUM_OF_SEROTYPES*2, 0.0); // 2 is because both cases and infections are reported
+        delete par;
+        return dummy;
+    }
     const int max_catchup_age = full_catchup ? 100 : 46;
 
-    Parameters* par = define_default_parameters(years_simulated); 
     if (vaccine) {
         par->bVaccineLeaky = true;
 
