@@ -226,8 +226,8 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
             }
             if (par->yearlyOutput) {
                 cerr << "year: " << (t+1)/365 << " "; for (auto v: yearly_incidence) cerr << v << " "; cerr << endl;
-                yearly_incidence = {0,0,0};
             }
+            yearly_incidence = {0,0,0};
         }
 
         if (t%1000==0 and par->abcVerbose) {
