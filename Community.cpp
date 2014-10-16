@@ -31,7 +31,8 @@ Community::Community(const Parameters* parameters) :
     // possible EIP is when EIP is variable
     _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
-    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
+    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
+    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
     {
     _par = parameters;
     _nDay = 0;
@@ -72,6 +73,9 @@ Community::~Community() {
 
     for (unsigned int i = 0; i < _nNumNewlySymptomatic.size(); i++ ) _nNumNewlySymptomatic[i].clear();
     _nNumNewlySymptomatic.clear();
+
+    for (unsigned int i = 0; i < _nNumVaccinatedCases.size(); i++ ) _nNumVaccinatedCases[i].clear();
+    _nNumVaccinatedCases.clear();
 
 }
 
@@ -537,8 +541,12 @@ void Community::updateWithdrawnStatus() {
     for (int i=0; i<_nNumPerson; i++) {
         Person *p = _person+i;
         if (p->getNumInfections() == 0) continue;
-        if (p->getSymptomTime()==_nDay)                               // started showing symptoms
+        if (p->getSymptomTime()==_nDay) {                              // started showing symptoms
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
+            if (p->isVaccinated()) {
+                _nNumVaccinatedCases[(int) p->getSerotype()][_nDay]++;
+            }
+        }
         if (p->getWithdrawnTime()==_nDay) {                           // started withdrawing
             p->getLocation(0)->addPerson(p,1);                        // stays at home at mid-day
             p->getLocation(1)->removePerson(p,1);                     // does not go to work

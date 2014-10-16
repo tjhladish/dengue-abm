@@ -49,6 +49,7 @@ class Community {
         Mosquito *getExposedMosquito(int n);
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
+        std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
         static void flagInfectedLocation(Location* _pLoc, int day) { _isHot[_pLoc][day] = true; }
 
 
@@ -72,6 +73,7 @@ class Community {
         int _EIP;                                                     // extrinsic incubation period in days
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
+        std::vector< std::vector<int> > _nNumVaccinatedCases;
         static std::map< Location*, std::map<int, bool> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 
