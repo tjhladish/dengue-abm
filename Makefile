@@ -18,10 +18,11 @@ all_no_mpi: model
 model: $(OBJS) Makefile simulator.h Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o
 	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
-mpi_model: $(OBJS) Makefile Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o
+mpi_model: $(OBJS) Makefile simulator.h Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o
 	$(CPP) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
-%.o: %.cpp Parameters.h Person.h Makefile
+
+%.o: %.cpp Community.h Location.h Mosquito.h Utility.h Parameters.h Person.h Makefile
 	$(CPP) $(CFLAGS) $(OPTI) $(INCLUDES) $(DEFINES) -c $<
 
 zip: *.cpp *.h Makefile README LICENSE.txt HISTORY.txt *-bangphae.txt
