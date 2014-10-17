@@ -11,6 +11,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 using namespace std;
 
@@ -176,6 +178,30 @@ namespace dengue {
             for (unsigned int i = 0; i<my_vector.size(); i++) tabulated[my_vector[i]]++;
             return tabulated;
         }
+
+        template <typename T>  
+        vector<T> shuffle_periods(const gsl_rng* RNG, vector<T> & sequence, int period_length = 365) {  
+            vector<int> periods(sequence.size()/period_length);  
+            for (unsigned int i = 0; i<periods.size(); i++) periods[i] = i;  
+            gsl_ran_shuffle (RNG, periods.data(), periods.size(), sizeof(int));  
+         
+            vector<T> new_seq(sequence.size());  
+            for(unsigned int i=0; i<periods.size(); ++i) {  
+                for (int j = 0; j<period_length; j++) new_seq[i*period_length + j] = sequence[periods[i]*period_length + j];  
+            }  
+         
+            if (sequence.size()/period_length < ((float) sequence.size())/period_length) {  
+                int r = gsl_rng_uniform_int(RNG, 1+ceil(sequence.size()/period_length));  
+                int offset = periods.size()*period_length;  
+                for (unsigned int i = 0; i<new_seq.size() - offset; ++i) {  
+                    new_seq[offset + i] = sequence[r*period_length + i];  
+                }  
+            }  
+            return new_seq;  
+        }
+
+
+
     }
 }
 #endif
