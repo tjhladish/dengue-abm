@@ -75,6 +75,7 @@ void Parameters::define_defaults() {
     weeklyOutput = false;
     monthlyOutput = false;
     yearlyOutput = false;
+    abcVerbose = false;
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
@@ -537,22 +538,26 @@ void Parameters::generateAnnualSerotypes() {
             }
         }
     }
-cerr << "Serotype runs:" << endl;
-    for (auto y: nDailyExposed) {
-        for (auto v: y)  cerr << v << " "; cerr << endl;
+    if (not abcVerbose) {
+        cerr << "Serotype runs:" << endl;
+        for (auto y: nDailyExposed) {
+            for (auto v: y)  cerr << v << " "; cerr << endl;
+        }
     }
     if (normalizeSerotypeIntros) {
         for (unsigned int i = 0; i < nDailyExposed.size(); ++i) {
-            float total = accumulate(nDailyExposed[i].begin(), nDailyExposed[i].end(), 0);
+            float total = accumulate(nDailyExposed[i].begin(), nDailyExposed[i].end(), 0.0F);
             if (total > 0) {
                 for (unsigned int s = 0; s < nDailyExposed[i].size(); ++s) nDailyExposed[i][s] /= total;
             }
         }
     }
 
-cerr << "Serotype runs (normalized):" << endl;
-    for (auto y: nDailyExposed) {
-        for (auto v: y)  cerr << v << " "; cerr << endl;
+    if (not abcVerbose) {
+        cerr << "Serotype runs (normalized):" << endl;
+        for (auto y: nDailyExposed) {
+            for (auto v: y)  cerr << v << " "; cerr << endl;
+        }
     }
     return;
 }
