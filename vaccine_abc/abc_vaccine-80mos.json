@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "particle_basefilename"         : "vaccine_catchup_particles40-highFOI-altburnin",
-    "predictive_prior_basefilename" : "vaccine_catchup_predictive_prior40-highFOI-altburnin",
+    "particle_basefilename"         : "vaccine_particles40-highFOI-novarEIP",
+    "predictive_prior_basefilename" : "vaccine_predictive_prior40-highFOI-novarEIP",
 
     "parameters" : [
         {"name"       : "vac",

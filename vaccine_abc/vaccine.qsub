@@ -1,5 +1,5 @@
 #! /bin/sh
-#PBS -N vac40m
+#PBS -N vac80m
 #PBS -r y
 #PBS -l walltime=48:00:00
 #PBS -l nodes=10:ppn=25
@@ -10,5 +10,5 @@
 
 cd $PBS_O_WORKDIR
 module load intel/2013 openmpi gsl
-mpiexec vaccinate_abc_mpi abc_vaccine-40mos.json 2> vac_catchup40-lowFOI-altburnin.err > vac_catchup40-lowFOI-altburnin.out
+mpiexec vaccinate_abc_mpi abc_vaccine-80mos.json 2> vac_catchup40-highFOI-novarEIP.err > vac_catchup40-highFOI-novarEIP.out
 #mpiexec gdb -command=gdb.cmd abc_mpi 2> dengue-full_ts.err > dengue-full_ts.out
