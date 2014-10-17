@@ -247,7 +247,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     bool nonsensical_parameters = false;
     // only run a non-vaccination campaign if all the vaccine parameters are 0
-    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > 0)) { nonsensical_parameters = true; } 
+    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
     // can't do a full catchup (all ages) if we're not doing a catchup
     if (full_catchup and not catchup) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
