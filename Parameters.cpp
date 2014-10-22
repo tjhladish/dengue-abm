@@ -45,10 +45,11 @@ void Parameters::define_defaults() {
     annualSerotypeFilename = "";
     dailyEIPfilename = "";
 
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        nInitialExposed[i]=0;
-        nInitialInfected[i]=0;
-    }
+    nInitialExposed.clear();
+    nInitialExposed.resize(NUM_OF_SEROTYPES, 0);
+    nInitialInfected.clear();
+    nInitialInfected.resize(NUM_OF_SEROTYPES, 0);
+
     fPrimaryPathogenicity.clear();
     fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
     fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
