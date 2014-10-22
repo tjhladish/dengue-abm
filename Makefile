@@ -16,10 +16,10 @@ all_mpi: mpi_model
 all_no_mpi: model
 
 model: $(OBJS) Makefile simulator.h Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o
-	$(CPP) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CPP) $(CFLAGS) $(OPTI) -o model Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 mpi_model: $(OBJS) Makefile simulator.h Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o
-	$(CPP) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CPP) $(CFLAGS) $(OPTI) -o mpi_model Person.o Location.o Mosquito.o Community.o mpi_driver.o Parameters.o Utility.o $(OBJS) $(LDFLAGS) $(LIBS)
 
 
 %.o: %.cpp Community.h Location.h Mosquito.h Utility.h Parameters.h Person.h Makefile
