@@ -106,6 +106,10 @@ vector<int> ordered(vector<int> const& values) {
 
 
 void generate_homogeneous_immune_history(Community* community, float attack_rate) {
+    assert(attack_rate <= 1);
+    assert(attack_rate >= 0);
+    if (attack_rate == 0) return;
+
     int N = community->getNumPerson();
     for(int i=0; i<N; i++) {
         Person* person = community->getPerson(i);
@@ -128,11 +132,15 @@ void generate_homogeneous_immune_history(Community* community, float attack_rate
             // person is old enough to have been infected in 'year'
             // AND they were not infected with a different serotype
             // already in that year
-            if (age > year and infection_years.count(year) == 0) {
+            //
+            // gsl_rng_gemetric can return -1, for example if attack_rate == 0
+            if (age > year and infection_years.count(year) == 0 and year > -1) { 
                 infection_years.insert(year);
                 person->setImmunity((Serotype) serotype);
                 person->initializeNewInfection();
-                person->setRecoveryTime(-365*(age-year)); // last dengue infection was x years ago
+                // simulation should start in interepidemic period, so "historical" infections should be
+                // offset by ~6 months
+                person->setRecoveryTime(-365*(age-year)+182); // last dengue infection was x.5 years ago
             }
         }
     }
@@ -196,6 +204,7 @@ void append_if_finite(vector<long double> &vec, double val) {
 
 
 vector<long double> tally_counts(const Parameters* par, Community* community) {
+const int discard_years = 20;
 //    vector< vector<int> > infected    = community->getNumNewlyInfected();
     vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
@@ -215,13 +224,13 @@ vector<long double> tally_counts(const Parameters* par, Community* community) {
     }
     // flatten data structures into the metrics vector
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = discard_years; y<num_years; ++y) {
 //            metrics.push_back(i_tally[s][y]);
             metrics.push_back(vc_tally[s][y]);
         }
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = discard_years; y<num_years; ++y) {
             metrics.push_back(s_tally[s][y]);
         }
     }
@@ -231,8 +240,8 @@ vector<long double> tally_counts(const Parameters* par, Community* community) {
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 40;
-    const int burnin = 20; // e.g., 0 means start vaccinating in the first simulated year
+    const int years_simulated = 60;
+    const int burnin = 40; // e.g., 0 means start vaccinating in the first simulated year
 
     Parameters* par = define_default_parameters(years_simulated); 
 
@@ -255,7 +264,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
         delete par;
         return dummy;
     }
-    const int max_catchup_age = full_catchup ? 100 : 46;
+    const int max_catchup_age = full_catchup ? 100 : 46; // imperial used 50 (instead of 46)
 
     if (vaccine) {
         par->bVaccineLeaky = true;
@@ -276,7 +285,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
             for (int catchup_age = target + 1; catchup_age <= max_catchup_age; catchup_age++) {
                 par->nVaccinateYear.push_back(burnin);
                 par->nVaccinateAge.push_back(catchup_age);
-                par->fVaccinateFraction.push_back(0.7);
+                par->fVaccinateFraction.push_back(0.7);  // imperial used 0.5
                 par->nSizeVaccinate++;
             }
         } 
@@ -284,7 +293,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
         for (int vacc_year = burnin; vacc_year < years_simulated; vacc_year++) {
             par->nVaccinateYear.push_back(vacc_year);
             par->nVaccinateAge.push_back(target);
-            par->fVaccinateFraction.push_back(0.7);
+            par->fVaccinateFraction.push_back(0.7);      // imperial used 0.9
             par->nSizeVaccinate++;
         }
 
@@ -302,7 +311,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     Community* community = build_community(par);
     //sample_immune_history(community, par); // use historical data
     // initialize population immunity to make burn-in go faster
-    float approx_attack_rate = 0.05; // approximate probability someone will be infected in a given year
+    float approx_attack_rate = (float) args[7]/100.0; // approximate per-serotype probability someone will be infected in a given year
     generate_homogeneous_immune_history(community, approx_attack_rate);
 
     seed_epidemic(par, community);

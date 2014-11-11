@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "particle_basefilename"         : "vaccine_particles40-highFOI-novarEIP",
-    "predictive_prior_basefilename" : "vaccine_predictive_prior40-highFOI-novarEIP",
+    "particle_basefilename"         : "vaccine_particles-highFOI-novarEIP",
+    "predictive_prior_basefilename" : "vaccine_predictive_prior-highFOI-novarEIP",
 
     "parameters" : [
         {"name"       : "vac",
@@ -48,7 +48,13 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 80,
-         "par2"       : 80}
+         "par2"       : 80},
+
+        {"name"       : "burnin_pct",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1.5,
+         "par2"       : 1.5}
     ],
 
     "metrics" : [
