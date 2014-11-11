@@ -189,7 +189,7 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
 
     return process_id;
 }
@@ -331,7 +331,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     ss << endl;
 
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
 
     /*const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < epi_sizes.size(); i++) { 

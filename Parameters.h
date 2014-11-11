@@ -179,9 +179,9 @@ public:
     double fPreVaccinateFraction;
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
-    int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
+    std::vector<int> nInitialExposed;                       // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
-    int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
+    std::vector<int> nInitialInfected;                      // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;
     int nDefaultMosquitoCapacity;

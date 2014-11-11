@@ -1,6 +1,6 @@
 //#include "mpi.h"
 #include <unistd.h>
-#include "mpi_simulator.h"
+#include "simulator.h"
 #include <cstdlib>
 //#include "CCRC32.h"
 #include "Utility.h"

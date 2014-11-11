@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
     ss << endl;
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
     
     // metrics to stdout
     cout << mean(y) << " " << stdev(y) << " " << max_element(y) << " "
