@@ -303,11 +303,6 @@ void Parameters::validate_parameters() {
     cerr << "network file = " << networkFilename << endl;
     cerr << "swap probabilities file = " << swapProbFilename << endl;
     cerr << "runlength = " << nRunLength << endl;
-    if (nRunLength>MAX_RUN_TIME) {
-        cerr << "ERROR: runlength is too long: " << nRunLength << endl;
-        cerr << " change Parameters.h and recompile." << endl;
-        exit(-1);
-    }
     if (nRunLength==365) {
         cerr << "WARNING: you probably want runlength to be 364, not 365" << endl;
     }
