@@ -1,5 +1,3 @@
-// Community.cpp
-
 #include <cstdlib>
 #include <cstring>
 #include <climits>
@@ -23,16 +21,15 @@ using namespace dengue::standard;
 const Parameters* Community::_par;
 map< Location*, map<int, bool> > Community::_isHot;
 
-// Community
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
     _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     // reserving MAX_MOSQUITO_AGE is simpler than figuring out what the maximum
     // possible EIP is when EIP is variable
     _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
-    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
-    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME)),
-    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME))
+    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
+    _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
+    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
     {
     _par = parameters;
     _nDay = 0;
@@ -310,16 +307,12 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     iss.close();
     //cerr << _location.size() << " locations" << endl;
 
-    //_numLocationMosquitoCreated.clear();
-    //_numLocationMosquitoCreated.resize(_location.size(), vector<int>(MAX_RUN_TIME, 0));
-
     iss.open(networkFilename.c_str());
     if (!iss) {
         cerr << "ERROR: " << networkFilename << " not found." << endl;
         return false;
     }
     int locID1, locID2;
-    //istringstream line(buffer);
     while (iss) {
         iss.getline(buffer,500);
         line.clear();
@@ -342,7 +335,6 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
 Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
-    //
     if(id < 0 or id > _nNumPerson) {
         cerr << "ERROR: failed to find person with id " << id << " max: " << _nNumPerson << endl;
         assert(id >= 0 and id <= _nNumPerson);
@@ -814,13 +806,11 @@ void Community::tick(int day) {
 }*/
 
     _nDay = day;
-    assert(_nDay<MAX_RUN_TIME);
     if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
 
     updateWithdrawnStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 
-    // maybe add the occasional random infection of a person to reflect sporadic travel
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
@@ -851,7 +841,6 @@ int Community::getNumSymptomatic(int day) {
 // getNumSusceptible - counts number of susceptible residents
 vector<int> Community::getNumSusceptible() {
     vector<int> counts(NUM_OF_SEROTYPES, 0);
-    //int count=0;
     for (int i=0; i<_nNumPerson; i++) {
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
             if (_person[i].isSusceptible((Serotype) s))

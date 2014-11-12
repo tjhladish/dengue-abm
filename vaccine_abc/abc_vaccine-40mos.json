@@ -48,7 +48,13 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 40,
-         "par2"       : 40}
+         "par2"       : 40},
+
+        {"name"       : "burnin_pct",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1.5,
+         "par2"       : 1.5}
     ],
 
     "metrics" : [

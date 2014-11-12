@@ -51,8 +51,8 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
-static const int MAX_RUN_TIME = 15000;                        // maximum number of simulation days (+ extra for mosquito lifetime)
-static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
+                                                              // probability of biting at 3 different times of day (as defined in Location.h)
+static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  
  
 // from Mosquito
 static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of mosquito in days

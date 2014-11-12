@@ -1,11 +1,11 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 100,
+    "num_samples"    : 1300,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "particle_basefilename"         : "baseline_particles40-reducedFOI",
-    "predictive_prior_basefilename" : "baseline_predictive_prior40-reducedFOI",
+    "particle_basefilename"         : "particles-burnin_50mos_0.0-3.0",
+    "predictive_prior_basefilename" : "predictive_prior-burnin_50mos_0.0-3.0",
 
     "parameters" : [
         {"name"       : "vac",
@@ -42,7 +42,20 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 0}
+         "par2"       : 0},
+
+        {"name"       : "nmos",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 50,
+         "par2"       : 50},
+
+        {"name"       : "burnin_pct",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 3.0,
+         "step"       : 0.25}
     ],
 
     "metrics" : [
