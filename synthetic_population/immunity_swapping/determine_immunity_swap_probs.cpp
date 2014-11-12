@@ -102,10 +102,10 @@ bool loadPopulation(string popFilename) {
         char buffer[500];
         iss.getline(buffer,500);
         istringstream line(buffer);
-        int id, age, hid, sex, pernum;
+        int id, age, hid, pernum_ignored;
         long int workid;
-        string hh_serial;
-        if (line >> id >> hid >> age >> sex >> hh_serial >> pernum >> workid) {
+        string sex, hh_serial_ignored;
+        if (line >> id >> hid >> age >> sex >> hh_serial_ignored >> pernum_ignored >> workid) {
             Person* peep = new Person();
             peep->id = id;
             peep->loc = locations[hid-1];
@@ -172,7 +172,8 @@ int main(int argc, char** argv) {
     string locations_filename  = argv[1];
     string population_filename = argv[2];
 
-    const int NUM_PEOPLE = 1819497;
+  //const int NUM_PEOPLE = 1819497; // yucatan
+    const int NUM_PEOPLE =  207591; // bangphae 
     cerr << "Using a population size of " << NUM_PEOPLE << endl;
     const int NUM_NEIGHBORS = 10;           // Number of nearest neighbors to report for swap file
     const double MIN_DISPLACEMENT = 0.005;  // Distance (in km) to use between people who live in the same house
