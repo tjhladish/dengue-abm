@@ -38,7 +38,9 @@ Community* build_community(const Parameters* par) {
     }
 
     Person::setPar(par);
-    cerr << community->getNumPerson() << " people" << endl;
+    if (!par->abcVerbose) {
+        cerr << community->getNumPerson() << " people" << endl;
+    }
 
     if (!par->bSecondaryTransmission) {
         community->setNoSecondaryTransmission();
@@ -64,9 +66,10 @@ Community* build_community(const Parameters* par) {
 
 
 void seed_epidemic(const Parameters* par, Community* community) {
-    // epidemic may be seeded with initial exposure OR initial infection -- not sure why
+    // epidemic may be seeded with initial exposure OR initial infection 
     bool attempt_initial_infection = true;
     for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+        // Normal usage, to simulate epidemic
         if (par->nInitialExposed[serotype] > 0) {
             attempt_initial_infection = false;
             for (int i=0; i<par->nInitialExposed[serotype]; i++)
@@ -75,6 +78,7 @@ void seed_epidemic(const Parameters* par, Community* community) {
     }
     if (attempt_initial_infection) {
         for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+            // Useful for estimating R0
             if(par->nInitialInfected[serotype] > 0) {
                 int count = community->getNumInfected(0);
 
@@ -108,11 +112,11 @@ void write_yearly_people_file(const Parameters* par, Community* community, int t
                 << p->getInfectedTime(j) << "," 
                 << p->getSymptomTime(j) << "," 
                 << p->getWithdrawnTime(j) << "," 
-                << p->getRecoveryTime(j) << "," 
-                << (p->isSusceptible(SEROTYPE_1)?0:1) << "," 
-                << (p->isSusceptible(SEROTYPE_2)?0:1) << "," 
-                << (p->isSusceptible(SEROTYPE_3)?0:1) << "," 
-                << (p->isSusceptible(SEROTYPE_4)?0:1) << endl;
+                << p->getRecoveryTime(j) << ",";
+            for (int s = 0; s < NUM_OF_SEROTYPES - 1; ++s) {
+                yearlyPeopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ","; 
+            }
+                yearlyPeopleOutputFile << (p->isSusceptible((Serotype) (NUM_OF_SEROTYPES - 1))?0:1) << endl;
         }
     }
     yearlyPeopleOutputFile.close();
@@ -356,12 +360,11 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
                     << p->getInfectedTime(j) << "," 
                     << p->getSymptomTime(j) << "," 
                     << p->getWithdrawnTime(j) << "," 
-                    << p->getRecoveryTime(j) << "," 
-                    << (p->isSusceptible(SEROTYPE_1)?0:1) << "," 
-                    << (p->isSusceptible(SEROTYPE_2)?0:1) << "," 
-                    << (p->isSusceptible(SEROTYPE_3)?0:1) << "," 
-                    << (p->isSusceptible(SEROTYPE_4)?0:1) << "," 
-                    << (p->isVaccinated()?1:0) << endl;
+                    << p->getRecoveryTime(j) << ","; 
+                for (int s = 0; s < NUM_OF_SEROTYPES; ++s) {
+                    peopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ","; 
+                }
+                    peopleOutputFile << (p->isVaccinated()?1:0) << endl;
             }
         }
         peopleOutputFile.close();

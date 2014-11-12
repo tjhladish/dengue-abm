@@ -47,6 +47,51 @@ Community::Community(const Parameters* parameters) :
 }
 
 
+void Community::reset() { // used for r-zero calculations, to reset pop after a single intro
+    // reset people
+    for (int i=0; i<_nNumPerson; i++) {
+        Person *p = _person+i;
+        if (p->isWithdrawn(_nDay)) {
+            p->getLocation(1)->addPerson(p,1);                        // goes back to work
+            p->getLocation(0)->removePerson(p,1);                     // stops staying at home
+        }
+        p->resetImmunity(); // no past infections, not dead, not vaccinated
+    }
+
+    // reset locations
+    for (unsigned int i = 0; i < _location.size(); i++ ) _location[i]->clearInfectedMosquitoes();
+
+    map< Location*, map<int,bool> >::iterator it;
+    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
+
+    // clear community queues & tallies
+    for (unsigned int i = 0; i < _exposedQueue.size(); i++ ) _exposedQueue[i].clear();
+    _exposedQueue.clear();
+
+    for (unsigned int i = 0; i < _infectiousMosquitoQueue.size(); i++ ) _infectiousMosquitoQueue[i].clear();
+    _infectiousMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _exposedMosquitoQueue.size(); i++ ) _exposedMosquitoQueue[i].clear();
+    _exposedMosquitoQueue.clear();
+
+    for (unsigned int i = 0; i < _nNumNewlyInfected.size(); i++ ) _nNumNewlyInfected[i].clear();
+    _nNumNewlyInfected.clear();
+
+    for (unsigned int i = 0; i < _nNumNewlySymptomatic.size(); i++ ) _nNumNewlySymptomatic[i].clear();
+    _nNumNewlySymptomatic.clear();
+
+    for (unsigned int i = 0; i < _nNumVaccinatedCases.size(); i++ ) _nNumVaccinatedCases[i].clear();
+    _nNumVaccinatedCases.clear();
+
+    _exposedQueue.resize(MAX_INCUBATION, vector<Person*>(0));
+    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+    _nNumNewlyInfected.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
+    _nNumNewlySymptomatic.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
+    _nNumVaccinatedCases.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
+}
+
+
 Community::~Community() {
     if (_person)
         delete [] _person;
@@ -738,6 +783,36 @@ void Community::_modelMosquitoMovement() {
 
 
 void Community::tick(int day) {
+
+/*{ 
+    int w = 0;
+    int v = 0;
+    int d = 0;
+    int ni = 0;
+    int i = 0;
+    int s = 0;
+    int va = 0;
+    int in = 0;
+    int fs = 0;
+    for (int k=0; k<_nNumPerson; k++) {
+        Person* p = _person + k;
+        if ( p->isWithdrawn(day) )               w++;
+        if ( p->isViremic(day) )                 v++;
+        if ( p->isDead() )                       d++;
+
+        if ( p->isNewlyInfected(day) )          ni++;
+        if ( p->isInfected(day) )                i++; 
+        if ( p->isSymptomatic(day) )             s++;
+
+        if ( p->isVaccinated() )                va++;
+        if ( p->isInfectable(SEROTYPE_1, day) ) in++;
+        if ( p->fullySusceptible() )            fs++;
+    }
+
+    cerr << w << " " << v << " " << d << " | " << ni << " " << i << " " << s << " | " << va << " " << in << " " << fs;
+    cerr << " || " << _nNumPerson << endl;
+}*/
+
     _nDay = day;
     assert(_nDay<MAX_RUN_TIME);
     if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
