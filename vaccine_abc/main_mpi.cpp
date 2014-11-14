@@ -51,10 +51,15 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->nRunLength = years_simulated*365 + 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
-    par->fPrimaryPathogenicity[0] = 1.0;
-    par->fPrimaryPathogenicity[1] = 0.25;
-    par->fPrimaryPathogenicity[2] = 1.0;
-    par->fPrimaryPathogenicity[3] = 0.25;
+    // pathogenicity values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    par->fPrimaryPathogenicity[0] = 1.000;
+    par->fPrimaryPathogenicity[1] = 0.825;
+    par->fPrimaryPathogenicity[2] = 0.833;
+    par->fPrimaryPathogenicity[3] = 0.317;
+
     par->fSecondaryScaling[0] = 1.0;
     par->fSecondaryScaling[1] = 1.0;
     par->fSecondaryScaling[2] = 1.0;

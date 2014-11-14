@@ -52,7 +52,16 @@ void Parameters::define_defaults() {
 
     fPrimaryPathogenicity.clear();
     fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
-    if (NUM_OF_SEROTYPES > 3) fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
+    if (NUM_OF_SEROTYPES == 4) {
+        // values fitted in
+        // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+        // Normalized from Fc values in supplement table 2, available at
+        // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+        fPrimaryPathogenicity[0] = 1.000;
+        fPrimaryPathogenicity[1] = 0.825;
+        fPrimaryPathogenicity[2] = 0.833;
+        fPrimaryPathogenicity[3] = 0.317;
+    }
 
     fSecondaryScaling.clear();
     fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
