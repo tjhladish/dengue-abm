@@ -83,9 +83,9 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
     _exposedQueue.resize(MAX_INCUBATION, vector<Person*>(0));
     _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
     _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
-    _nNumNewlyInfected.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
-    _nNumNewlySymptomatic.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
-    _nNumVaccinatedCases.resize(NUM_OF_SEROTYPES, vector<int>(MAX_RUN_TIME));
+    _nNumNewlyInfected.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
+    _nNumNewlySymptomatic.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
+    _nNumVaccinatedCases.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
 }
 
 
