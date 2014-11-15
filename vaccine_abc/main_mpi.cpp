@@ -49,6 +49,7 @@ Parameters* define_default_parameters(const int years_simulated) {
 
     par->abcVerbose = true;
     par->nRunLength = years_simulated*365 + 100;
+    par->startDayOfYear = 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     // pathogenicity values fitted in
@@ -72,7 +73,7 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->fMosquitoTeleport = 0.0;
     par->eMosquitoDistribution = CONSTANT;
 
-    par->nDaysImmune = 365;
+    par->nDaysImmune = 730;
 
     par->simulateAnnualSerotypes = true;
     par->normalizeSerotypeIntros = true;
@@ -88,6 +89,8 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+
+    //par->monthlyOutput = true;
 
     return par;
 }
@@ -209,28 +212,28 @@ void append_if_finite(vector<long double> &vec, double val) {
 
 
 vector<long double> tally_counts(const Parameters* par, Community* community) {
-const int discard_years = 20;
-//    vector< vector<int> > infected    = community->getNumNewlyInfected();
+    const int discard_years = 30;
     vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+    vector< vector<int> > infected    = community->getNumNewlyInfected();
     const int num_years = (int) par->nRunLength/365;
     vector<vector<int> > vc_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
-//    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
     vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
+    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
 
     vector<long double> metrics;
     for (int t=0; t<par->nRunLength; t++) {
         const int y = t/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-//            i_tally[s][y] += infected[s][t];
             vc_tally[s][y] += vac_symptomatic[s][t];
             s_tally[s][y] += symptomatic[s][t];
+            i_tally[s][y] += infected[s][t];
         }
     }
     // flatten data structures into the metrics vector
+    // this could be tightened up using the right stride
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = discard_years; y<num_years; ++y) {
-//            metrics.push_back(i_tally[s][y]);
             metrics.push_back(vc_tally[s][y]);
         }
     }
@@ -239,14 +242,19 @@ const int discard_years = 20;
             metrics.push_back(s_tally[s][y]);
         }
     }
+    for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+        for (int y = discard_years; y<num_years; ++y) {
+            metrics.push_back(i_tally[s][y]);
+        }
+    }
     return metrics;
 }
 
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 60;
-    const int burnin = 40; // e.g., 0 means start vaccinating in the first simulated year
+    const int years_simulated = 70;
+    const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
 
     Parameters* par = define_default_parameters(years_simulated); 
 

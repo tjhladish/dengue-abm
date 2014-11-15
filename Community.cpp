@@ -806,7 +806,8 @@ void Community::tick(int day) {
 }*/
 
     _nDay = day;
-    if ((_nDay-100)%365==364) { swapImmuneStates(); }                 // randomize and advance immune states
+    if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
+                                                                      // last day of simulator year
 
     updateWithdrawnStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people

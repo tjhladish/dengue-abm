@@ -187,7 +187,13 @@ public:
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
+    int getMosquitoMultiplierTotalDuration() const { return mosquitoMultipliers.size() > 0 ?
+                                                      mosquitoMultipliers.back().start + mosquitoMultipliers.back().duration
+                                                      : 0; }
     std::vector<DynamicParameter> extrinsicIncubationPeriods;
+    int getEIPtotalDuration() const { return extrinsicIncubationPeriods.size() > 0 ?
+                                       extrinsicIncubationPeriods.back().start + extrinsicIncubationPeriods.back().duration
+                                       : 0; }
     bool bSecondaryTransmission;
     std::string populationFilename;
     std::string immunityFilename;
@@ -214,6 +220,7 @@ public:
     int nPrevaccinateAgeMax[100];
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
+    int startDayOfYear;
     double expansionFactor;
     bool dailyOutput;
     bool weeklyOutput;

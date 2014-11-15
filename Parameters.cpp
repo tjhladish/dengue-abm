@@ -81,6 +81,8 @@ void Parameters::define_defaults() {
         running_sum += DAYS_IN_MONTH[j];
     }
 
+    startDayOfYear = 1;
+
     dailyOutput = false;
     weeklyOutput = false;
     monthlyOutput = false;
@@ -190,6 +192,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
             }
             else if (strcmp(argv[i], "-daysimmune")==0) {
                 nDaysImmune = strtol(argv[++i],end,10);
+            }
+            else if (strcmp(argv[i], "-startdayofyear")==0) {
+                startDayOfYear = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-maxinfectionparity")==0) {
                 nMaxInfectionParity = strtol(argv[++i],end,10);
@@ -313,9 +318,7 @@ void Parameters::validate_parameters() {
     cerr << "network file = " << networkFilename << endl;
     cerr << "swap probabilities file = " << swapProbFilename << endl;
     cerr << "runlength = " << nRunLength << endl;
-    if (nRunLength==365) {
-        cerr << "WARNING: you probably want runlength to be 364, not 365" << endl;
-    }
+    cerr << "start day of year (1 is Jan 1st) = " << startDayOfYear << endl;
     cerr << "random seed = " << randomseed << endl;
     cerr << "beta_PM = " << betaPM << endl;
     cerr << "beta_MP = " << betaMP << endl;
