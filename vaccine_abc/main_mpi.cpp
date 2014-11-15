@@ -211,8 +211,11 @@ void append_if_finite(vector<long double> &vec, double val) {
 }
 
 
-vector<long double> tally_counts(const Parameters* par, Community* community) {
-    const int discard_years = 30;
+vector<long double> tally_counts(const Parameters* par, Community* community, const int discard_years) {
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //                                  IMPORTANT:                                           //
+    // Update dummy metrics vector in calling function if number of metrics is changed here! //
+    ///////////////////////////////////////////////////////////////////////////////////////////
     vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
     vector< vector<int> > infected    = community->getNumNewlyInfected();
@@ -255,6 +258,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     const int years_simulated = 70;
     const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
+    const int discard_years = 30; // initial years of burn-in not to report
 
     Parameters* par = define_default_parameters(years_simulated); 
 
@@ -273,7 +277,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // can't do a full catchup (all ages) if we're not doing a catchup
     if (full_catchup and not catchup) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
-        vector<long double> dummy(years_simulated*NUM_OF_SEROTYPES*2, 0.0); // 2 is because both cases and infections are reported
+        // 3 is because vaccinated cases, total cases, and infections are reported
+        vector<long double> dummy((years_simulated-discard_years)*NUM_OF_SEROTYPES*3, 0.0);
         delete par;
         return dummy;
     }
@@ -334,7 +339,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     time (&end);
     double dif = difftime (end,start);
 
-    vector<long double> metrics = tally_counts(par, community);
+    vector<long double> metrics = tally_counts(par, community, discard_years);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

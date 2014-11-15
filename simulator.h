@@ -274,6 +274,11 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
         // handle several things that happen yearly
         for (unsigned int i = 0; i < daily_incidence.size(); ++i) yearly_incidence[i] += daily_incidence[i];
+
+        if ((t+1)%365==0 and par->abcVerbose) {
+            cout << hex << process_id << dec << " T: " << t << " daily: " << daily_incidence[2] << " annual: " << yearly_incidence[2] << endl;
+        }
+
         if ((t+1)%365 == 0) {
             epi_sizes.push_back(yearly_incidence[2]);
             if (par->yearlyPeopleOutputFilename.length() > 0) {
@@ -283,11 +288,6 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                 cerr << "year: " << (t+1)/365 << " "; for (auto v: yearly_incidence) cerr << v << " "; cerr << endl;
             }
             yearly_incidence = {0,0,0};
-        }
-
-        //if (t%1000==0 and par->abcVerbose) {
-        if ((t+1)%365==0 and par->abcVerbose) {
-            cout << hex << process_id << dec << " T: " << t << " daily: " << daily_incidence[2] << " annual: " << yearly_incidence[2] << endl;
         }
 
         daily_incidence = {0,0,0};
