@@ -48,7 +48,7 @@ Parameters* define_default_parameters(const int years_simulated) {
 //    string imm_dir = pop_dir + "/immunity";
 
     par->abcVerbose = true;
-    par->nRunLength = years_simulated*365 + 100;
+    par->nRunLength = years_simulated*365;
     par->startDayOfYear = 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
@@ -90,7 +90,7 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
 
-    //par->monthlyOutput = true;
+    //par->dailyOutput = true;
 
     return par;
 }
@@ -256,9 +256,9 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 70;
+    const int years_simulated = 50;
     const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
-    const int discard_years = 30; // initial years of burn-in not to report
+    const int discard_years = 10; // initial years of burn-in not to report
 
     Parameters* par = define_default_parameters(years_simulated); 
 
@@ -334,6 +334,29 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
+
+{
+    stringstream ss_filename;
+    ss_filename << "immunity." << mp->mpi_rank;
+    string filename = ss_filename.str();
+    ofstream file;
+    file.open(filename);
+    file << "pid age imm1 imm2 imm3 imm4\n";
+    for (int i = 0; i<community->getNumPerson(); ++i) {
+        Person* p = community->getPerson(i);
+        vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; 1 means last year, 2 means 2 years ago ...
+        for (int k = 0; k<p->getNumInfections(); ++k) {
+            int s = (int) p->getSerotype(k);
+            // how many years ago did this person get infected?  within last 365 days = 1 year ago
+            infection_history[s] = 1 + (int) (par->nRunLength - p->getInfectedTime(k))/365;
+        }
+        file << p->getID() << " " << p->getAge() << " ";
+        for (auto sero: infection_history) file << sero << " ";
+        file << endl;
+    }
+    file.close();
+}
+
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);
