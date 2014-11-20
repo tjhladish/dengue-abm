@@ -6,7 +6,7 @@ DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
-INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
+INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC .
 
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp   
 GSL_LIB = -lm -L$$TACC_GSL_LIB/ -L$$HPC_GSL_LIB/ -lgsl -lgslcblas

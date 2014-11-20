@@ -201,7 +201,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
                             if (parts[s+1]>0) {
                                 _person[i].setImmunity((Serotype) s);
                                 _person[i].initializeNewInfection();
-                                _person[i].setRecoveryTime(-365*parts[s+1]); // last dengue infection was x years ago
+                                _person[i].setRecoveryTime(-365*parts[s+1]+182); // last dengue infection was x years ago
                             }
                         }
                         break;
