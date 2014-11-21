@@ -2,10 +2,10 @@
     "smc_iterations" : 12,
     "num_samples"    : 5000,
     "predictive_prior_fraction" : 0.05,
-    "pls_training_fraction"     : 0.25,
+    "pls_training_fraction"     : 0.5,
 
-    "particle_basefilename"         : "dengue_particles-full_ts",
-    "predictive_prior_basefilename" : "dengue_predictive_prior-full_ts",
+    "particle_basefilename"         : "dengue_particles-varEIP",
+    "predictive_prior_basefilename" : "dengue_predictive_prior-varEIP",
     "resume_directory"              : "/scratch/lfs/thladish/AbcSmc/examples/",
 
     "parameters" : [
@@ -13,8 +13,8 @@
          "short_name" : "exp_fac",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 1,
-         "par2"       : 60},
+         "par1"       : 20,
+         "par2"       : 50},
 
         {"name"       : "mosquito_movement",
          "short_name" : "mos_mov",
@@ -28,14 +28,20 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : -3,
-         "par2"       : 3},
+         "par2"       : 1},
 
         {"name"       : "mosquito_density",
          "short_name" : "num_mos",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 25,
-         "par2"       : 75}
+         "par2"       : 100},
+
+        {"name"       : "beta",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.1,
+         "par2"       : 0.2}
     ],
 
     "metrics" : [

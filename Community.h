@@ -49,15 +49,17 @@ class Community {
         Mosquito *getExposedMosquito(int n);
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
+        std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
         static void flagInfectedLocation(Location* _pLoc, int day) { _isHot[_pLoc][day] = true; }
 
+        void reset();                                                 // reset the state of the community; experimental! 
 
 
     protected:
         static const Parameters* _par;
         Person *_person;                                              // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
-        int _nPersonAgeCohortSizes[NUM_AGE_CLASSES];                   // size of each age cohort
+        int _nPersonAgeCohortSizes[NUM_AGE_CLASSES];                  // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
         std::vector<Location*> _location;                             // the array index is equal to the ID
         std::vector< std::vector<Person*> > _exposedQueue;            // queue of people with n days of latency left
@@ -72,6 +74,7 @@ class Community {
         int _EIP;                                                     // extrinsic incubation period in days
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
+        std::vector< std::vector<int> > _nNumVaccinatedCases;
         static std::map< Location*, std::map<int, bool> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 

@@ -1,6 +1,6 @@
 #include "mpi.h"
 #include "AbcSmc.h"
-#include "mpi_simulator.h"
+#include "simulator.h"
 #include <cstdlib>
 #include "CCRC32.h"
 #include "Utility.h"
@@ -35,15 +35,18 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     double _exp_coef = args[2];
     double _nmos     = args[3];
     
-    double _betamp   = 0.25;
-    double _betapm   = 0.1;
+    double _betamp   = args[4]; // mp and pm and not separately
+    double _betapm   = args[4]; // identifiable, so they're the same
+    //double _betamp   = 0.25;
+    //double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";
 
-    par->randomseed = 5500;
+    //par->randomseed = 5500;
+    par->abcVerbose = true;
     par->nRunLength = 34*365 + 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
@@ -59,43 +62,20 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     par->betaMP = _betamp;
     par->expansionFactor = _EF;
     par->fMosquitoMove = _mos_move;
-    par->szMosquitoMoveModel = "weighted";
+    par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
-    par->eMosquitoDistribution = EXPONENTIAL;
-
-    {
-        static const int _time_periods[] = {7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,7,7,7,7,7,7,7,7,7,
-                                          7,8};  
-        static const double _multipliers[] = {0.05,0.04,0.05,0.04,0.03,0.04,0.05,0.03,0.02,0.02,
-                                            0.03,0.03,0.05,0.04,0.05,0.04,0.06,0.07,0.08,0.09,
-                                            0.11,0.15,0.18,0.19,0.24,0.28,0.38,0.46,0.45,0.61,
-                                            0.75,0.97,0.91,1.00,0.94,0.85,0.79,0.71,0.65,0.65,
-                                            0.42,0.30,0.26,0.27,0.11,0.10,0.11,0.12,0.09,0.08,
-                                            0.04,0.07};
-        int num_periods = sizeof(_multipliers) / sizeof(_multipliers[0]);
-        //assert(_time_periods.size() == _multipliers.size());
-        par->nSizeMosquitoMultipliers = num_periods;
-        par->nMosquitoMultiplierCumulativeDays[0] = 0;
-
-        for (unsigned int j=0; j<num_periods; j++) {
-            par->nMosquitoMultiplierDays[j] = _time_periods[j];
-            par->nMosquitoMultiplierCumulativeDays[j+1] =
-                par->nMosquitoMultiplierCumulativeDays[j]+par->nMosquitoMultiplierDays[j];
-            par->fMosquitoMultipliers[j] = _multipliers[j];
-        }
-    }
+    par->eMosquitoDistribution = CONSTANT;
 
     par->nDaysImmune = 365;
     par->fVESs.clear();
     par->fVESs.resize(4, 0.7);
 
-    par->annualSerotypeFile = pop_dir + "/serotypes-yucatan.txt";
-    par->loadAnnualSerotypes(par->annualSerotypeFile);
+    par->simulateAnnualSerotypes = true;
+    par->normalizeSerotypeIntros = true;
+    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    //par->annualSerotypeFilename = pop_dir + "/serotypes-yucatan.txt";
+    //par->loadAnnualSerotypes(par->annualSerotypeFilename);
     /*par->annualIntroductions = {  400519,  // 2000 total cases in Americas, reported by PAHO
                                   652212,  // 2001
                                  1015420,  // 2002
@@ -111,13 +91,14 @@ Parameters* define_simulator_parameters(vector<long double> args) {
                                  1120902,  // 2012
                                  2386836}; // 2013 */
 
-    par->szPopulationFile = pop_dir + "/population-yucatan.txt";
-    par->szImmunityFile   = "";
-    //par->szImmunityFile   = imm_dir + "/" + to_string((int) _EF) + ".txt"; // stupidest cast in the world.  what is wrong with icc?!
-    par->szLocationFile   = pop_dir + "/locations-yucatan.txt";
-    par->szNetworkFile    = pop_dir + "/network-yucatan.txt";
-    par->szSwapProbFile   = pop_dir + "/swap_probabilities-yucatan.txt";
-
+    par->dailyEIPfilename   = pop_dir + "/merida_eip.out";
+    par->loadDailyEIP( par->dailyEIPfilename );
+    par->populationFilename = pop_dir + "/population-yucatan.txt";
+    par->immunityFilename   = "";
+    //par->immunityFilename   = imm_dir + "/" + to_string((int) _EF) + ".txt"; // stupidest cast in the world.  what is wrong with icc?!
+    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
+    par->networkFilename    = pop_dir + "/network-yucatan.txt";
+    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
     return par;
 }
 
@@ -208,7 +189,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     // initialize & run simulator 
     const Parameters* par = define_simulator_parameters(args); 
-    gsl_rng_set(RNG, par->randomseed);
+    //gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
     //sample_immune_history(community, par);
     //vector<int> initial_susceptibles = community->getNumSusceptible();
@@ -236,7 +217,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
     // parameters
     ss << par->expansionFactor << " " << par->fMosquitoMove << " " << par->annualIntroductionsCoef << " "
-       << par->nDefaultMosquitoCapacity << " ";
+       << par->nDefaultMosquitoCapacity << " " << par->betaMP << " ";
     // metrics
     float_type _mean             = mean(y);
     float_type _median           = median(y);
@@ -274,7 +255,7 @@ int main(int argc, char* argv[]) {
         return 100;
     }
     
-    const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+    //const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
     gsl_rng_set(RNG, time (NULL) * getpid()); // seed the rng using sys time and the process id
 
     AbcSmc* abc = new AbcSmc(mp);

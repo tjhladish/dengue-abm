@@ -30,34 +30,37 @@ void setup_mpi(MPI_par &m, int &argc, char **argv) {
 }
 
 
+
 Parameters* define_default_parameters(const int years_simulated) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    double _EF       = 40;
-    double _mos_move = 0.5;
-    //double _exp_coef = 1;
-    double _nmos     = 50;
-    //double _nmos     = 60;
-    //double _nmos     = 80;
+    double _EF       = 38;
+    double _mos_move = 0.45;
+    double _exp_coef = -0.763;
     
-    double _betamp   = 0.25;
-    double _betapm   = 0.1;
+    double _betamp   = 0.14;
+    double _betapm   = 0.14;
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";
 
-//    par->randomseed = 5500;
+    par->abcVerbose = true;
     par->nRunLength = years_simulated*365 + 100;
-    par->annualIntroductionsCoef = 1;
-    par->nDailyExposed = {{1.0, 1.0, 1.0, 1.0}};
+    par->startDayOfYear = 100;
+    par->annualIntroductionsCoef = pow(10,_exp_coef);
 
-    par->fPrimaryPathogenicity[0] = 1.0;
-    par->fPrimaryPathogenicity[1] = 0.25;
-    par->fPrimaryPathogenicity[2] = 1.0;
-    par->fPrimaryPathogenicity[3] = 0.25;
+    // pathogenicity values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    par->fPrimaryPathogenicity[0] = 1.000;
+    par->fPrimaryPathogenicity[1] = 0.825;
+    par->fPrimaryPathogenicity[2] = 0.833;
+    par->fPrimaryPathogenicity[3] = 0.317;
+
     par->fSecondaryScaling[0] = 1.0;
     par->fSecondaryScaling[1] = 1.0;
     par->fSecondaryScaling[2] = 1.0;
@@ -68,19 +71,26 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->fMosquitoMove = _mos_move;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = (int) _nmos;
-    par->eMosquitoDistribution = EXPONENTIAL;
+    par->eMosquitoDistribution = CONSTANT;
 
-    par->nDaysImmune = 365;
+    par->nDaysImmune = 730;
 
-    //par->annualSerotypeFile = pop_dir + "/serotypes-yucatan.txt";
-    //par->loadAnnualSerotypes(par->annualSerotypeFile);
+    par->simulateAnnualSerotypes = true;
+    par->normalizeSerotypeIntros = true;
+    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+
+//    par->dailyEIPfilename   = pop_dir + "/merida_eip.out";
+//    par->loadDailyEIP( par->dailyEIPfilename );
+//    int period_length = 365;
+//    par->extrinsicIncubationPeriods = shuffle_periods( RNG, par->extrinsicIncubationPeriods, period_length );
 
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+
+    //par->monthlyOutput = true;
 
     return par;
 }
@@ -103,7 +113,11 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-void generate_homogeneous_immune_history(Community* community, const Parameters* par, float attack_rate) {
+void generate_homogeneous_immune_history(Community* community, float attack_rate) {
+    assert(attack_rate <= 1);
+    assert(attack_rate >= 0);
+    if (attack_rate == 0) return;
+
     int N = community->getNumPerson();
     for(int i=0; i<N; i++) {
         Person* person = community->getPerson(i);
@@ -113,7 +127,7 @@ void generate_homogeneous_immune_history(Community* community, const Parameters*
 
         // determine order in which person will be exposed to serotypes
         int sero_order[NUM_OF_SEROTYPES];
-        for (i = 0; i < NUM_OF_SEROTYPES; i++) { sero_order[i] = i; }
+        for (int j = 0; j < NUM_OF_SEROTYPES; j++) { sero_order[j] = j; }
         gsl_ran_shuffle (RNG, sero_order, NUM_OF_SEROTYPES, sizeof (int));
 
         // don't allow multiple infections in one year
@@ -126,11 +140,15 @@ void generate_homogeneous_immune_history(Community* community, const Parameters*
             // person is old enough to have been infected in 'year'
             // AND they were not infected with a different serotype
             // already in that year
-            if (age > year and infection_years.count(year) == 0) {
+            //
+            // gsl_rng_gemetric can return -1, for example if attack_rate == 0
+            if (age > year and infection_years.count(year) == 0 and year > -1) { 
                 infection_years.insert(year);
                 person->setImmunity((Serotype) serotype);
                 person->initializeNewInfection();
-                person->setRecoveryTime(-365*(age-year)); // last dengue infection was x years ago
+                // simulation should start in interepidemic period, so "historical" infections should be
+                // offset by ~6 months
+                person->setRecoveryTime(-365*(age-year)+182); // last dengue infection was x.5 years ago
             }
         }
     }
@@ -179,7 +197,7 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
 
     return process_id;
 }
@@ -193,30 +211,43 @@ void append_if_finite(vector<long double> &vec, double val) {
 }
 
 
-vector<long double> tally_counts(const Parameters* par, Community* community) {
-    vector< vector<int> > infected    = community->getNumNewlyInfected();
+vector<long double> tally_counts(const Parameters* par, Community* community, const int discard_years) {
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    //                                  IMPORTANT:                                           //
+    // Update dummy metrics vector in calling function if number of metrics is changed here! //
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+    vector< vector<int> > infected    = community->getNumNewlyInfected();
     const int num_years = (int) par->nRunLength/365;
-    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
+    vector<vector<int> > vc_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
     vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
+    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
 
     vector<long double> metrics;
     for (int t=0; t<par->nRunLength; t++) {
         const int y = t/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            i_tally[s][y] += infected[s][t];
+            vc_tally[s][y] += vac_symptomatic[s][t];
             s_tally[s][y] += symptomatic[s][t];
+            i_tally[s][y] += infected[s][t];
         }
     }
     // flatten data structures into the metrics vector
+    // this could be tightened up using the right stride
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
-            metrics.push_back(i_tally[s][y]);
+        for (int y = discard_years; y<num_years; ++y) {
+            metrics.push_back(vc_tally[s][y]);
         }
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = discard_years; y<num_years; ++y) {
             metrics.push_back(s_tally[s][y]);
+        }
+    }
+    for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+        for (int y = discard_years; y<num_years; ++y) {
+            metrics.push_back(i_tally[s][y]);
         }
     }
     return metrics;
@@ -225,8 +256,11 @@ vector<long double> tally_counts(const Parameters* par, Community* community) {
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 40;
-    const int burnin = 20; // e.g., 0 means start vaccinating in the first simulated year
+    const int years_simulated = 70;
+    const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
+    const int discard_years = 30; // initial years of burn-in not to report
+
+    Parameters* par = define_default_parameters(years_simulated); 
 
     vector<int> target_ages = {2,6,10,14};
     bool vaccine      = (bool) args[0];
@@ -235,28 +269,41 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     int target        = target_ages[(unsigned int) args[3]];
     bool full_catchup = (bool) args[4];
     bool all_mature   = (bool) args[5];
+    par->nDefaultMosquitoCapacity = (int) args[6];
 
-    const int max_catchup_age = full_catchup ? 100 : 46;
+    bool nonsensical_parameters = false;
+    // only run a non-vaccination campaign if all the vaccine parameters are 0
+    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
+    // can't do a full catchup (all ages) if we're not doing a catchup
+    if (full_catchup and not catchup) { nonsensical_parameters = true; }
+    if (nonsensical_parameters) {
+        // 3 is because vaccinated cases, total cases, and infections are reported
+        vector<long double> dummy((years_simulated-discard_years)*NUM_OF_SEROTYPES*3, 0.0);
+        delete par;
+        return dummy;
+    }
+    const int max_catchup_age = full_catchup ? 100 : 46; // imperial used 50 (instead of 46)
 
-    Parameters* par = define_default_parameters(years_simulated); 
     if (vaccine) {
         par->bVaccineLeaky = true;
 
         par->fVESs.clear();
-        par->fVESs = {0.7, 0.35, 0.7, 0.7};
+        //par->fVESs = {0.7, 0.35, 0.7, 0.7};
+        par->fVESs = {0.6, 0.54, 0.9, 0.95};
 
         par->fVESs_NAIVE.clear();
         if (all_mature) {
             par->fVESs_NAIVE = par->fVESs;
         } else {
-            par->fVESs_NAIVE = {0.35, 0.0, 0.35, 0.35};
+            //par->fVESs_NAIVE = {0.35, 0.0, 0.35, 0.35};
+            par->fVESs_NAIVE = {0.3, 0.27, 0.45, 0.48};
         }
 
         if (catchup) {
             for (int catchup_age = target + 1; catchup_age <= max_catchup_age; catchup_age++) {
                 par->nVaccinateYear.push_back(burnin);
                 par->nVaccinateAge.push_back(catchup_age);
-                par->fVaccinateFraction.push_back(0.7);
+                par->fVaccinateFraction.push_back(0.7);  // imperial used 0.5
                 par->nSizeVaccinate++;
             }
         } 
@@ -264,7 +311,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
         for (int vacc_year = burnin; vacc_year < years_simulated; vacc_year++) {
             par->nVaccinateYear.push_back(vacc_year);
             par->nVaccinateAge.push_back(target);
-            par->fVaccinateFraction.push_back(0.7);
+            par->fVaccinateFraction.push_back(0.7);      // imperial used 0.9
             par->nSizeVaccinate++;
         }
 
@@ -282,8 +329,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     Community* community = build_community(par);
     //sample_immune_history(community, par); // use historical data
     // initialize population immunity to make burn-in go faster
-    float approx_attack_rate = 0.05; // approximate probability someone will be infected in a given year
-    generate_homogeneous_immune_history(community, par, approx_attack_rate);
+    float approx_attack_rate = (float) args[7]/100.0; // approximate per-serotype probability someone will be infected in a given year
+    generate_homogeneous_immune_history(community, approx_attack_rate);
 
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
@@ -292,7 +339,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     time (&end);
     double dif = difftime (end,start);
 
-    vector<long double> metrics = tally_counts(par, community);
+    vector<long double> metrics = tally_counts(par, community, discard_years);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
@@ -302,7 +349,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     ss << endl;
 
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
 
     /*const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < epi_sizes.size(); i++) { 

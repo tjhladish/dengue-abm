@@ -51,8 +51,8 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 
 // from Community
 static const int STEPS_PER_DAY = 3;                           // number of time steps per day
-static const int MAX_RUN_TIME = 15000;                        // maximum number of simulation days (+ extra for mosquito lifetime)
-static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  // probability of biting at 3 different times of day (as defined in Location.h)
+                                                              // probability of biting at 3 different times of day (as defined in Location.h)
+static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  
  
 // from Mosquito
 static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of mosquito in days
@@ -179,15 +179,21 @@ public:
     double fPreVaccinateFraction;
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
-    int nInitialExposed[NUM_OF_SEROTYPES];                  // serotypes
+    std::vector<int> nInitialExposed;                       // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
-    int nInitialInfected[NUM_OF_SEROTYPES];                 // serotypes
+    std::vector<int> nInitialInfected;                      // serotypes
     std::vector<double> fPrimaryPathogenicity;              // serotypes
     std::vector<double> fSecondaryScaling;
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
+    int getMosquitoMultiplierTotalDuration() const { return mosquitoMultipliers.size() > 0 ?
+                                                      mosquitoMultipliers.back().start + mosquitoMultipliers.back().duration
+                                                      : 0; }
     std::vector<DynamicParameter> extrinsicIncubationPeriods;
+    int getEIPtotalDuration() const { return extrinsicIncubationPeriods.size() > 0 ?
+                                       extrinsicIncubationPeriods.back().start + extrinsicIncubationPeriods.back().duration
+                                       : 0; }
     bool bSecondaryTransmission;
     std::string populationFilename;
     std::string immunityFilename;
@@ -214,6 +220,7 @@ public:
     int nPrevaccinateAgeMax[100];
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
+    int startDayOfYear;
     double expansionFactor;
     bool dailyOutput;
     bool weeklyOutput;

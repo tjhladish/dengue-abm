@@ -45,13 +45,23 @@ void Parameters::define_defaults() {
     annualSerotypeFilename = "";
     dailyEIPfilename = "";
 
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        nInitialExposed[i]=0;
-        nInitialInfected[i]=0;
-    }
+    nInitialExposed.clear();
+    nInitialExposed.resize(NUM_OF_SEROTYPES, 0);
+    nInitialInfected.clear();
+    nInitialInfected.resize(NUM_OF_SEROTYPES, 0);
+
     fPrimaryPathogenicity.clear();
     fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
-    fPrimaryPathogenicity[1] = fPrimaryPathogenicity[3] = 0.25;
+    if (NUM_OF_SEROTYPES == 4) {
+        // values fitted in
+        // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+        // Normalized from Fc values in supplement table 2, available at
+        // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+        fPrimaryPathogenicity[0] = 1.000;
+        fPrimaryPathogenicity[1] = 0.825;
+        fPrimaryPathogenicity[2] = 0.833;
+        fPrimaryPathogenicity[3] = 0.317;
+    }
 
     fSecondaryScaling.clear();
     fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
@@ -71,10 +81,13 @@ void Parameters::define_defaults() {
         running_sum += DAYS_IN_MONTH[j];
     }
 
+    startDayOfYear = 1;
+
     dailyOutput = false;
     weeklyOutput = false;
     monthlyOutput = false;
     yearlyOutput = false;
+    abcVerbose = false;
 }
 
 void Parameters::readParameters(int argc, char *argv[]) {
@@ -179,6 +192,9 @@ void Parameters::readParameters(int argc, char *argv[]) {
             }
             else if (strcmp(argv[i], "-daysimmune")==0) {
                 nDaysImmune = strtol(argv[++i],end,10);
+            }
+            else if (strcmp(argv[i], "-startdayofyear")==0) {
+                startDayOfYear = strtol(argv[++i],end,10);
             }
             else if (strcmp(argv[i], "-maxinfectionparity")==0) {
                 nMaxInfectionParity = strtol(argv[++i],end,10);
@@ -302,14 +318,7 @@ void Parameters::validate_parameters() {
     cerr << "network file = " << networkFilename << endl;
     cerr << "swap probabilities file = " << swapProbFilename << endl;
     cerr << "runlength = " << nRunLength << endl;
-    if (nRunLength>MAX_RUN_TIME) {
-        cerr << "ERROR: runlength is too long: " << nRunLength << endl;
-        cerr << " change Parameters.h and recompile." << endl;
-        exit(-1);
-    }
-    if (nRunLength==365) {
-        cerr << "WARNING: you probably want runlength to be 364, not 365" << endl;
-    }
+    cerr << "start day of year (1 is Jan 1st) = " << startDayOfYear << endl;
     cerr << "random seed = " << randomseed << endl;
     cerr << "beta_PM = " << betaPM << endl;
     cerr << "beta_MP = " << betaMP << endl;
@@ -537,22 +546,26 @@ void Parameters::generateAnnualSerotypes() {
             }
         }
     }
-cerr << "Serotype runs:" << endl;
-    for (auto y: nDailyExposed) {
-        for (auto v: y)  cerr << v << " "; cerr << endl;
+    if (not abcVerbose) {
+        cerr << "Serotype runs:" << endl;
+        for (auto y: nDailyExposed) {
+            for (auto v: y)  cerr << v << " "; cerr << endl;
+        }
     }
     if (normalizeSerotypeIntros) {
         for (unsigned int i = 0; i < nDailyExposed.size(); ++i) {
-            float total = accumulate(nDailyExposed[i].begin(), nDailyExposed[i].end(), 0);
+            float total = accumulate(nDailyExposed[i].begin(), nDailyExposed[i].end(), 0.0F);
             if (total > 0) {
                 for (unsigned int s = 0; s < nDailyExposed[i].size(); ++s) nDailyExposed[i][s] /= total;
             }
         }
     }
 
-cerr << "Serotype runs (normalized):" << endl;
-    for (auto y: nDailyExposed) {
-        for (auto v: y)  cerr << v << " "; cerr << endl;
+    if (not abcVerbose) {
+        cerr << "Serotype runs (normalized):" << endl;
+        for (auto y: nDailyExposed) {
+            for (auto v: y)  cerr << v << " "; cerr << endl;
+        }
     }
     return;
 }

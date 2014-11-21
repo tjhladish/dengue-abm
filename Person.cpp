@@ -71,7 +71,9 @@ void Person::resetImmunity() {
     _nImmunity.reset();
     clearInfectionHistory();
     _bVaccinated = false;
+    _bNaiveVaccineProtection = false;
     _bCase = false;
+    _bDead = false;
 }
 
 

@@ -21,6 +21,7 @@ class Location {
         int getCurrentInfectedMosquitoes() { return _currentInfectedMosquitoes; }
         void addInfectedMosquito() { _currentInfectedMosquitoes++; }
         void removeInfectedMosquito() { _currentInfectedMosquitoes--; }
+        void clearInfectedMosquitoes() { _currentInfectedMosquitoes = 0; }
         void addNeighbor(Location *p);
         int getNumNeighbors() { return _neighbors.size(); }
         Location *getNeighbor(int n) { return _neighbors[n]; }
