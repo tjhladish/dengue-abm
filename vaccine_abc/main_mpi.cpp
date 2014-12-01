@@ -86,6 +86,7 @@ Parameters* define_default_parameters(const int years_simulated) {
 
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
+    //par->immunityFilename   = pop_dir + "/immunity.1";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
@@ -144,11 +145,10 @@ void generate_homogeneous_immune_history(Community* community, float attack_rate
             // gsl_rng_gemetric can return -1, for example if attack_rate == 0
             if (age > year and infection_years.count(year) == 0 and year > -1) { 
                 infection_years.insert(year);
-                person->setImmunity((Serotype) serotype);
-                person->initializeNewInfection();
                 // simulation should start in interepidemic period, so "historical" infections should be
                 // offset by ~6 months
-                person->setRecoveryTime(-365*(age-year)+182); // last dengue infection was x.5 years ago
+                int infectionTime = -365*(age-year)+182; // last dengue infection was x.5 years ago
+                person->infect((Serotype) serotype, infectionTime);
             }
         }
     }
@@ -173,9 +173,9 @@ void sample_immune_history(Community* community, const Parameters* par) {
         vector<int> indices = ordered(states);
         for (int serotype: indices) {
             if (states[serotype]>0) {
-                person->setImmunity((Serotype) serotype);
-                person->initializeNewInfection();
-                person->setRecoveryTime(-365*states[serotype]); // last dengue infection was x years ago
+                // Ideally, simulate_immune_dynamics() would return days ago, instead of years ago,
+                // so that we could handle infection times more consistently
+                person->infect((Serotype) serotype, -365*states[serotype]+182);
             }
         }
     }
@@ -332,30 +332,10 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     float approx_attack_rate = (float) args[7]/100.0; // approximate per-serotype probability someone will be infected in a given year
     generate_homogeneous_immune_history(community, approx_attack_rate);
 
+    //write_immunity_file(par, community, 0); // year == 0
+
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
-
-{
-    stringstream ss_filename;
-    ss_filename << "immunity." << mp->mpi_rank;
-    string filename = ss_filename.str();
-    ofstream file;
-    file.open(filename);
-    file << "pid age imm1 imm2 imm3 imm4\n";
-    for (int i = 0; i<community->getNumPerson(); ++i) {
-        Person* p = community->getPerson(i);
-        vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; 1 means last year, 2 means 2 years ago ...
-        for (int k = 0; k<p->getNumInfections(); ++k) {
-            int s = (int) p->getSerotype(k);
-            // how many years ago did this person get infected?  within last 365 days = 1 year ago
-            infection_history[s] = 1 + (int) (par->nRunLength - p->getInfectedTime(k))/365;
-        }
-        file << p->getID() << " " << p->getAge() << " ";
-        for (auto sero: infection_history) file << sero << " ";
-        file << endl;
-    }
-    file.close();
-}
 
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 

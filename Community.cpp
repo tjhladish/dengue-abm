@@ -187,26 +187,40 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         int part;
         vector<int> parts;
         istringstream line;
+        int line_no = 0;
         while (immiss) {
+            line_no++;
             immiss.getline(buffer,500);
             line.clear(); 
             line.str(buffer);
             while (line >> part) parts.push_back(part);
 
-            if (parts.size() >= 1 + NUM_OF_SEROTYPES) {
-                int id = parts[0];
-                for (int i=id-1; i<=id and id < maxPerson; i++) {
-                    if (_person[i].getID()==id) {
-                        for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
-                            if (parts[s+1]>0) {
-                                _person[i].setImmunity((Serotype) s);
-                                _person[i].initializeNewInfection();
-                                _person[i].setRecoveryTime(-365*parts[s+1]); // last dengue infection was x years ago
-                            }
-                        }
-                        break;
+            if (parts.size() == 1 + NUM_OF_SEROTYPES) {
+                const int id = parts[0];
+                Person* person = getPersonByID(id);
+                for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
+                    const int infection_time = parts[1+s];
+                    if (infection_time == 0) {
+                        continue; // no infection for this serotype
+                    } else if (infection_time<0) {
+                        person->infect((Serotype) s, infection_time);
+                        //_person[i].setRecoveryTime(-365*parts[s+1]); // converstion we were using
+                    } else {
+                        cerr << "ERROR: Found positive-valued infection time in population immunity file:\n\t";
+                        cerr << "person " << person->getID() << ", serotype " << s+1 << ", time " << infection_time << "\n\n";
+                        cerr << "Infection time should be provided as a negative integer indicated how many days\n";
+                        cerr << "before the start of simulation the infection began.";
+                        exit(-359);
                     }
                 }
+            } else if (parts.size() == 0) {
+                continue; // skipping blank line, or line that doesn't start with ints
+            } else {
+                cerr << "ERROR: Unexpected number of values on one line in population immunity file.\n\t";
+                cerr << "line num, line: " << line_no << ", " << buffer << "\n\n";
+                cerr << "Expected " << 1+NUM_OF_SEROTYPES << " values (person id followed by infection time for each serotype),\n";
+                cerr << "found " << parts.size() << endl;
+                exit(-361);
             }
             parts.clear();
         }
@@ -354,7 +368,10 @@ Person* Community::getPersonByID(int id) {
         }
     }
 
-    if (not person) cerr << "WARNING: failed to find person with id " << id << endl;
+    if (not person) {
+        cerr << "ERROR: failed to find person with id " << id << endl;
+        exit(-2001);
+    }
     return person;
 }
 

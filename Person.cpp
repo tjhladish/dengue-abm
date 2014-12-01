@@ -47,8 +47,9 @@ void Person::clearInfectionHistory() {
     infectionHistory.clear();
 }
 
-Infection& Person::initializeNewInfection() {
-    Infection* infection = new Infection();
+Infection& Person::initializeNewInfection(Serotype serotype) {
+    setImmunity(serotype);
+    Infection* infection = new Infection(serotype);
     infectionHistory.push_back(infection);
     return *infection;
 }
@@ -132,10 +133,9 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         return false;
     }
 
-    Infection& infection = initializeNewInfection(); // Create a new infection record
+    Infection& infection = initializeNewInfection(serotype); // Create a new infection record
 
     infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
-    infection.serotype      = serotype;
     infection.infectedTime  = time;
     infection.infectedPlace = sourceloc;
 
@@ -156,7 +156,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Determine if this person withdraws (stops going to work/school)
     const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
     const double secondary_scaling     = _par->fSecondaryScaling[(int) serotype];
-    const double vaccine_protection    = isVaccinated()   ? _par->fVEP       : 0.0;   // reduced symptoms due to vaccine
+    const double vaccine_protection    = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
     const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
 
     const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - vaccine_protection) * secondary_symptomatic;
@@ -173,8 +173,6 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         }
         _bCase = true;
     }
-
-    _nImmunity[(int) serotype] = 1;
 
     for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
         for (int t=0; t<STEPS_PER_DAY; t++) {
