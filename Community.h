@@ -16,8 +16,8 @@ class Community {
         virtual ~Community();
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
-        int getNumPerson() { return _nNumPerson; }
-        Person *getPerson(int n) { return _person+n; }
+        int getNumPerson() const { return _nNumPerson; }
+        Person *getPerson(int n) const { return _person+n; }
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
         std::vector<int> getNumSusceptible();
