@@ -36,13 +36,13 @@ immunity_mpi:
 	$(MAKE) -C $(IMMDIR) -f Makefile all_mpi
 
 abc: main.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) main.cpp -o abc $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) main.cpp -o abc $(INCLUDES) $(ABC_LIB) $(GSL_LIB)
 
 abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
-	$(CC) $(CFLAGS) -D USING_MPI $(INCLUDES) main_mpi.cpp -o abc_mpi $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o abc_mpi $(INCLUDES) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
 vaccinate_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp 
-	$(CC) $(CFLAGS) -D USING_MPI $(INCLUDES) main_mpi.cpp -o vaccinate_abc_mpi -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o vaccinate_abc_mpi $(INCLUDES) -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean
