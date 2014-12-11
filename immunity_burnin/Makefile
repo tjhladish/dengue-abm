@@ -6,7 +6,7 @@ DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
-INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC .
+INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
 
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp   
 GSL_LIB = -lm -L$$TACC_GSL_LIB/ -L$$HPC_GSL_LIB/ -lgsl -lgslcblas
@@ -41,8 +41,8 @@ abc: main.cpp
 abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o abc_mpi $(INCLUDES) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
-vaccinate_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp 
-	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o vaccinate_abc_mpi $(INCLUDES) -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
+immunity_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp 
+	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o immunity_abc_mpi $(INCLUDES) -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

@@ -85,12 +85,13 @@ Parameters* define_default_parameters(const int years_simulated) {
 //    par->extrinsicIncubationPeriods = shuffle_periods( RNG, par->extrinsicIncubationPeriods, period_length );
 
     par->populationFilename = pop_dir + "/population-yucatan.txt";
-    par->immunityFilename   = "";
+    //par->immunityFilename   = "";
+    //par->immunityFilename   = pop_dir + "/immunity.1";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
 
-    //par->monthlyOutput = true;
+    par->monthlyOutput = true;
 
     return par;
 }
@@ -215,26 +216,26 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     //                                  IMPORTANT:                                           //
     // Update dummy metrics vector in calling function if number of metrics is changed here! //
     ///////////////////////////////////////////////////////////////////////////////////////////
-    vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
-    vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+//    vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
+//    vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
     vector< vector<int> > infected    = community->getNumNewlyInfected();
     const int num_years = (int) par->nRunLength/365;
-    vector<vector<int> > vc_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
-    vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
+//    vector<vector<int> > vc_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
+//    vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
     vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
 
     vector<long double> metrics;
     for (int t=0; t<par->nRunLength; t++) {
         const int y = t/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            vc_tally[s][y] += vac_symptomatic[s][t];
-            s_tally[s][y] += symptomatic[s][t];
+//            vc_tally[s][y] += vac_symptomatic[s][t];
+//            s_tally[s][y] += symptomatic[s][t];
             i_tally[s][y] += infected[s][t];
         }
     }
     // flatten data structures into the metrics vector
     // this could be tightened up using the right stride
-    for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+/*    for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = discard_years; y<num_years; ++y) {
             metrics.push_back(vc_tally[s][y]);
         }
@@ -243,7 +244,7 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
         for (int y = discard_years; y<num_years; ++y) {
             metrics.push_back(s_tally[s][y]);
         }
-    }
+    }*/
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = discard_years; y<num_years; ++y) {
             metrics.push_back(i_tally[s][y]);
@@ -255,9 +256,9 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 70;
-    const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
-    const int discard_years = 30; // initial years of burn-in not to report
+    const int years_simulated = 40;
+    const int burnin = 20; // e.g., 0 means start vaccinating in the first simulated year
+    const int discard_years = 0; // initial years of burn-in not to report
 
     Parameters* par = define_default_parameters(years_simulated); 
 
@@ -270,9 +271,21 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     bool all_mature   = (bool) args[5];
     par->nDefaultMosquitoCapacity = (int) args[6];
 
+    string HOME(std::getenv("HOME"));
+    string pop_dir = HOME + "/work/dengue/pop-yucatan";
+    if (par->nDefaultMosquitoCapacity == 50) { 
+        par->immunityFilename = pop_dir + "/immunity.mfoi.100yr.1";
+    } else if (par->nDefaultMosquitoCapacity == 80) {
+        par->immunityFilename = pop_dir + "/immunity.hfoi.100yr.1";
+    } else {
+        cerr << "ERROR: number of mosquitoes (" << par->nDefaultMosquitoCapacity << ") not supported" << endl;
+        cerr << "MPI Rank: " << mp->mpi_rank << endl;
+        exit(-381);
+    }
+
     bool nonsensical_parameters = false;
     // only run a non-vaccination campaign if all the vaccine parameters are 0
-    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
+    // if (not vaccine and (retro or catchup or full_catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
     // can't do a full catchup (all ages) if we're not doing a catchup
     if (full_catchup and not catchup) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
@@ -331,9 +344,21 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     float approx_attack_rate = (float) args[7]/100.0; // approximate per-serotype probability someone will be infected in a given year
     generate_homogeneous_immune_history(community, approx_attack_rate);
 
+/*{
+    stringstream ss_imm_filename;
+    ss_imm_filename << "immunity." << mp->mpi_rank << ".year0.mon0";
+    string initial_imm_filename = ss_imm_filename.str();
+    int dummy = 0;
+    write_immunity_by_age_file(par, community, dummy, initial_imm_filename);
+}*/
+
     seed_epidemic(par, community);
-    simulate_epidemic(par, community, process_id);
-    //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
+    //simulate_epidemic(par, community, process_id);
+
+    vector<int> epi_sizes = simulate_epidemic(par, community, mp->mpi_rank);
+    //vector<long double> metrics(epi_sizes.begin(), epi_sizes.end()); // convert ints to requisite doubles
+
+write_immunity_file(par, community, mp->mpi_rank);
 
     time (&end);
     double dif = difftime (end,start);

@@ -21,7 +21,19 @@ class Infection {
         recoveryTime = INT_MIN;
 
         withdrawnTime = INT_MAX;
-        serotype = NULL_SEROTYPE;
+        _serotype = NULL_SEROTYPE;
+    };
+
+    Infection(const Serotype sero) {
+        infectedByID = INT_MIN;
+        infectedPlace = INT_MIN;
+        infectedTime = INT_MIN;
+        infectiousTime = INT_MIN;
+        symptomTime = INT_MIN;
+        recoveryTime = INT_MIN;
+
+        withdrawnTime = INT_MAX;
+        _serotype = sero;
     };
 
     Infection(const Infection* o) {
@@ -32,7 +44,7 @@ class Infection {
         symptomTime    = o->symptomTime;
         recoveryTime   = o->recoveryTime;
         withdrawnTime  = o->withdrawnTime;
-        serotype       = o->serotype;
+        _serotype       = o->_serotype;
     }
 
     int infectedByID;                               // who infected this person
@@ -42,7 +54,8 @@ class Infection {
     int symptomTime;                                // when symptoms start
     int recoveryTime;                               // when recovered?
     int withdrawnTime;                              // when person withdraws to home
-    Serotype serotype; 
+    Serotype serotype() const { return _serotype; }
+    Serotype _serotype;
 };
 
 class Person {
@@ -76,13 +89,14 @@ class Person {
         inline int getSymptomTime(int infectionsago=0)    { return infectionHistory[getNumInfections() - 1 - infectionsago]->symptomTime; }
         inline int getRecoveryTime(int infectionsago=0)   { return infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime; }
         inline int getWithdrawnTime(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->withdrawnTime; }
-        inline Serotype getSerotype(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->serotype; }
+        inline Serotype getSerotype(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->serotype(); }
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time);                                   // at home sick?
         inline int getNumInfections() const { return infectionHistory.size(); }
 
         bool infect(int sourceid, Serotype serotype, int time, int sourceloc);
+        inline bool infect(Serotype serotype, int time) {return infect(INT_MIN, serotype, time, INT_MIN);}
         bool isViremic(int time);
 
         void kill(int time);
@@ -103,7 +117,7 @@ class Person {
 
         static const double _fIncubationDistribution[MAX_INCUBATION];
 
-        Infection& initializeNewInfection();
+        Infection& initializeNewInfection(Serotype serotype);
 
         static void reset_ID_counter() { _nNextID = 1; }
 
