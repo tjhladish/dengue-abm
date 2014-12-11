@@ -86,12 +86,11 @@ Parameters* define_default_parameters(const int years_simulated) {
 
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
-    //par->immunityFilename   = pop_dir + "/immunity.1";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
 
-    //par->dailyOutput = true;
+    //par->monthlyOutput = true;
 
     return par;
 }
@@ -256,9 +255,9 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
-    const int years_simulated = 50;
+    const int years_simulated = 70;
     const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
-    const int discard_years = 10; // initial years of burn-in not to report
+    const int discard_years = 30; // initial years of burn-in not to report
 
     Parameters* par = define_default_parameters(years_simulated); 
 
@@ -332,11 +331,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     float approx_attack_rate = (float) args[7]/100.0; // approximate per-serotype probability someone will be infected in a given year
     generate_homogeneous_immune_history(community, approx_attack_rate);
 
-    //write_immunity_file(par, community, 0); // year == 0
-
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
-
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);
