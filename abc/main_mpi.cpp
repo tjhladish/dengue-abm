@@ -181,6 +181,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     Community* community = build_community(par);
     //seed_epidemic(par, community);
     vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
+    vector<int>(epi_sizes.begin()+120, epi_sizes.end()).swap(epi_sizes); // throw out first 120 values
 
     time (&end);
     double dif = difftime (end,start);
