@@ -37,9 +37,9 @@ class Community {
         void setMosquitoMultiplier(double f) {                        // seasonality multiplier for number of mosquitoes
             _fMosquitoCapacityMultiplier = f;
         }
-        double getMosquitoMultiplier() { return _fMosquitoCapacityMultiplier; }
+        double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
         void setExtrinsicIncubation(int n) { _EIP = n; }
-        int getExtrinsicIncubation() { return _EIP; }
+        int getExtrinsicIncubation() const { return _EIP; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(double f, int age=-1);
