@@ -1,10 +1,12 @@
 #include "mpi.h"
+#include <unistd.h>
 #include "AbcSmc.h"
 #include "simulator.h"
 #include <cstdlib>
 #include "CCRC32.h"
 #include "Utility.h"
 #include "ImmunityGenerator.h"
+#include <unordered_set>
 
 using namespace std;
 
@@ -47,13 +49,18 @@ Parameters* define_simulator_parameters(vector<long double> args) {
 
     //par->randomseed = 5500;
     par->abcVerbose = true;
-    par->nRunLength = 34*365 + 100;
+    par->nRunLength = 155*365;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
-    par->fPrimaryPathogenicity[0] = 1.0;
-    par->fPrimaryPathogenicity[1] = 0.25;
-    par->fPrimaryPathogenicity[2] = 1.0;
-    par->fPrimaryPathogenicity[3] = 0.25;
+    // pathogenicity values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    par->fPrimaryPathogenicity[0] = 1.000;
+    par->fPrimaryPathogenicity[1] = 0.825;
+    par->fPrimaryPathogenicity[2] = 0.833;
+    par->fPrimaryPathogenicity[3] = 0.317;
+
     par->fSecondaryScaling[0] = 1.0;
     par->fSecondaryScaling[1] = 1.0;
     par->fSecondaryScaling[2] = 1.0;
@@ -65,37 +72,23 @@ Parameters* define_simulator_parameters(vector<long double> args) {
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
-    par->eMosquitoDistribution = CONSTANT;
+    par->eMosquitoDistribution = EXPONENTIAL;
 
-    par->nDaysImmune = 365;
+    par->nDaysImmune = 730;
     par->fVESs.clear();
-    par->fVESs.resize(4, 0.7);
+    par->fVESs.resize(4, 0);
 
     par->simulateAnnualSerotypes = true;
     par->normalizeSerotypeIntros = true;
     if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
-    //par->annualSerotypeFilename = pop_dir + "/serotypes-yucatan.txt";
-    //par->loadAnnualSerotypes(par->annualSerotypeFilename);
-    /*par->annualIntroductions = {  400519,  // 2000 total cases in Americas, reported by PAHO
-                                  652212,  // 2001
-                                 1015420,  // 2002
-                                  517617,  // 2003
-                                  267050,  // 2004
-                                  427627,  // 2005
-                                  552141,  // 2006
-                                  900782,  // 2007
-                                  908926,  // 2008
-                                 1134001,  // 2009
-                                 1663276,  // 2010
-                                 1093252,  // 2011
-                                 1120902,  // 2012
-                                 2386836}; // 2013 */
 
-    par->dailyEIPfilename   = pop_dir + "/merida_eip.out";
-    par->loadDailyEIP( par->dailyEIPfilename );
+    // 100 year burn-in, 20 years of no dengue, then re-introduction
+    par->annualIntroductions = vector<double>(100, 1.0);
+    par->annualIntroductions.resize(120, 0.0);
+    par->annualIntroductions.resize(155, 1.0);
+
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
-    //par->immunityFilename   = imm_dir + "/" + to_string((int) _EF) + ".txt"; // stupidest cast in the world.  what is wrong with icc?!
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
@@ -119,6 +112,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
+/*
 void sample_immune_history(Community* community, const Parameters* par) {
     const int last_immunity_year = 1999;
     vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
@@ -145,7 +139,7 @@ void sample_immune_history(Community* community, const Parameters* par) {
             }
         }
     }
-}
+}*/
 
 unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     // CCRC32 checksum based on string version of argument values
@@ -158,14 +152,12 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
-    //fprintf(stderr, "%Xbegin\n", process_id);
-
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
 
     return process_id;
 }
@@ -178,9 +170,6 @@ void append_if_finite(vector<long double> &vec, double val) {
     }
 }
 
-// wrapper for simulator
-// must take vector of doubles (ABC paramters) 
-// and return vector of doubles (ABC metrics)
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // initialize bookkeeping for run
     time_t start ,end;
@@ -189,11 +178,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 
     // initialize & run simulator 
     const Parameters* par = define_simulator_parameters(args); 
-    //gsl_rng_set(RNG, par->randomseed);
     Community* community = build_community(par);
-    //sample_immune_history(community, par);
-    //vector<int> initial_susceptibles = community->getNumSusceptible();
-    seed_epidemic(par, community);
+    //seed_epidemic(par, community);
     vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);
@@ -230,7 +216,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
 //       << fit->m << " " << fit->b << " " << fit->rsq << endl;
 
     string output = ss.str();
-    fprintf(stderr, output.c_str());
+    fputs(output.c_str(), stderr);
     
     vector<long double> metrics;
     append_if_finite(metrics, _mean);

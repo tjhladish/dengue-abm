@@ -4,9 +4,8 @@
     "predictive_prior_fraction" : 0.05,
     "pls_training_fraction"     : 0.5,
 
-    "particle_basefilename"         : "dengue_particles-varEIP",
-    "predictive_prior_basefilename" : "dengue_predictive_prior-varEIP",
-    "resume_directory"              : "/scratch/lfs/thladish/AbcSmc/examples/",
+    "particle_basefilename"         : "dengue_particles-120y",
+    "predictive_prior_basefilename" : "dengue_predictive_prior-120y",
 
     "parameters" : [
         {"name"       : "expansion_factor",
@@ -48,27 +47,27 @@
 
         {"name"      : "mean",
          "num_type"  : "FLOAT",
-         "value"     : 101.956},
+         "value"     : 121.943},
 
         {"name"      : "median",
          "num_type"  : "FLOAT",
-         "value"     : 30.6399},
+         "value"     : 33.9603},
 
         {"name"      : "stdev",
          "num_type"  : "FLOAT",
-         "value"     : 145.52},
+         "value"     : 176.722},
 
         {"name"      : "max",
          "num_type"  : "INT",
-         "value"     : 464.334},
+         "value"     : 646.692},
 
         {"name"      : "skewness",
          "num_type"  : "FLOAT",
-         "value"     : 1.31321},
+         "value"     : 1.38442},
 
         {"name"      : "median crossings",
          "short_name": "mc",
          "num_type"  : "FLOAT",
-         "value"     : 0.242424}
+         "value"     : 0.235294}
     ]
 }
