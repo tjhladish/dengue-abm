@@ -216,7 +216,7 @@ void initialize_seasonality(const Parameters* par, Community* community, int& ne
 }
 
 
-void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const int process_id) {
+void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const int process_id, vector<int>& epi_sizes) {
         // local transmission          = total                          - introductions
         periodic_incidence["daily"][1] = periodic_incidence["daily"][2] - periodic_incidence["daily"][0];
         if (par->dailyOutput) {
@@ -245,16 +245,15 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
 
         if (date.endOfYear()) {
-            if (par->abcVerbose) {
-                cout << hex << process_id << dec << " T: " << date.day() << " daily: " << periodic_incidence["daily"][2]
-                                                                         << " annual: " << periodic_incidence["yearly"][2] << endl;
-            }
-            //epi_sizes.push_back(periodic_incidence["yearly"][2]);
-            if (par->yearlyPeopleOutputFilename.length() > 0) {
-                write_yearly_people_file(par, community, date.day());
-            }
+            if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
+
+            epi_sizes.push_back(periodic_incidence["yearly"][2]);
+
+            if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
+
             if (par->yearlyOutput) {
-                cerr << "year: " << date.year() + 1 << " "; for (auto v: periodic_incidence["yearly"]) cerr << v << " "; cerr << endl;
+                cerr << "year: " << date.year() + 1 << " "; 
+                for (auto v: periodic_incidence["yearly"]) cerr << v << " "; cerr << endl;
             }
             periodic_incidence["yearly"] = {0,0,0};
         }
@@ -359,7 +358,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
             }
         }
 
-        periodic_output(par, community, periodic_incidence, date, process_id);
+        periodic_output(par, community, periodic_incidence, date, process_id, epi_sizes);
 
     }
 
