@@ -129,6 +129,7 @@ bool Person::isInfectable(Serotype serotype, int time) {
 // returns true if infection occurs
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Bail now if this person can not become infected
+    // TODO - clarify this.  why would a person not be infectable in this scope?
     if (not isInfectable(serotype, time)) {
         return false;
     }
@@ -148,9 +149,9 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     infection.infectiousTime += time;
 
     if (_nImmunity.any()) {
-        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_SEC;        // should draw from distribution!!!!!!
+        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_SEC;        // TODO - draw from distribution
     } else {
-        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;        // should draw from distribution!!!!!!
+        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;        // TODO - draw from distribution
     }
 
     // Determine if this person withdraws (stops going to work/school)

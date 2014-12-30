@@ -19,7 +19,7 @@
 using namespace dengue::standard;
 
 const Parameters* Community::_par;
-map< Location*, map<int, bool> > Community::_isHot;
+vector< unordered_set<Location*> > Community::_isHot;
 
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
@@ -41,6 +41,7 @@ Community::Community(const Parameters* parameters) :
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
     for (int a = 0; a<NUM_AGE_CLASSES; a++) _nPersonAgeCohortSizes[a] = 0;
+    _isHot.resize(_par->nRunLength);
 }
 
 
@@ -58,8 +59,7 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
     // reset locations
     for (unsigned int i = 0; i < _location.size(); i++ ) _location[i]->clearInfectedMosquitoes();
 
-    map< Location*, map<int,bool> >::iterator it;
-    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
+    for (auto e: _isHot) e.clear();
 
     // clear community queues & tallies
     for (unsigned int i = 0; i < _exposedQueue.size(); i++ ) _exposedQueue[i].clear();
@@ -94,6 +94,8 @@ Community::~Community() {
         delete [] _person;
 
     Person::reset_ID_counter();
+
+    for (unordered_set<Location*> e: _isHot) e.clear();
 
     for (unsigned int i = 0; i < _location.size(); i++ ) delete _location[i];
     _location.clear();
@@ -279,7 +281,6 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     // This is a hack for backward compatibility.  Indices should start at zero.
     Location* dummy = new Location();
     dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
-    _isHot[dummy] = map<int,bool>();
     _location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
     char buffer[500];
@@ -314,7 +315,6 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
                 return false;
             }
 
-            _isHot[newLoc] = map<int,bool>(); // _isHot flags locations with infections
             _location.push_back(newLoc);
         }
     }
@@ -497,6 +497,7 @@ void Community::moveMosquito(Mosquito *m) {
             double y1 = pLoc->getY();
 
             int degree = pLoc->getNumNeighbors();
+            if (degree == 0) return; // movement isn't possible; no neighbors exist
             int neighbor=0; // neighbor is an index
 
             if (_par->mosquitoMoveModel == "weighted") {
@@ -534,14 +535,13 @@ void Community::moveMosquito(Mosquito *m) {
             }
 
             m->updateLocation(pLoc->getNeighbor(neighbor));
-        }    
+        }
     }
 }
 
 
 void Community::swapImmuneStates() {
-    map< Location*, map<int,bool> >::iterator it;
-    for ( it=_isHot.begin() ; it != _isHot.end(); it++ ) (*it).second.clear();
+    for (auto e: _isHot) e.clear();
 
     // For people of age x, copy immune status from people of age x-1
     for (int age=NUM_AGE_CLASSES-1; age>0; age--) {
@@ -604,9 +604,7 @@ void Community::updateWithdrawnStatus() {
         if (p->getWithdrawnTime()==_nDay) {                           // started withdrawing
             p->getLocation(0)->addPerson(p,1);                        // stays at home at mid-day
             p->getLocation(1)->removePerson(p,1);                     // does not go to work
-        }
-        if (_nDay>0 &&
-            p->isWithdrawn(_nDay-1) &&
+        } else if (p->isWithdrawn(_nDay-1) &&
         p->getRecoveryTime()==_nDay) {                                // just stopped withdrawing
             p->getLocation(1)->addPerson(p,1);                        // goes back to work
             p->getLocation(0)->removePerson(p,1);                     // stops staying at home
@@ -663,62 +661,59 @@ void Community::mosquitoToHumanTransmission() {
 
 
 void Community::humanToMosquitoTransmission() {
-    for (unsigned int loc_idx=0; loc_idx<_location.size(); loc_idx++) {
-        Location* loc = _location[loc_idx];
-        if (!loc->getUndefined() && _isHot[loc].count(_nDay)) {
-            _isHot[loc].erase(_nDay);  // works if transmission is modeled daily
-            double sumviremic = 0.0;
-            double sumnonviremic = 0.0;
-            vector<double> sumserotype(NUM_OF_SEROTYPES,0.0);                                    // serotype fractions at location
+    for (Location* loc: _isHot[_nDay]) {
+        double sumviremic = 0.0;
+        double sumnonviremic = 0.0;
+        vector<double> sumserotype(NUM_OF_SEROTYPES,0.0);                                    // serotype fractions at location
 
-            // calculate fraction of people who are viremic
-            for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
-                for (int i=loc->getNumPerson(timeofday)-1; i>=0; i--) {
-                    Person *p = loc->getPerson(i, timeofday);
-                    if (p->isViremic(_nDay)) {
-                        double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
-                        int serotype = (int) p->getSerotype();
-                        if (vaceffect==1.0) {
-                            sumviremic += DAILY_BITING_PDF[timeofday];
-                            sumserotype[serotype] += DAILY_BITING_PDF[timeofday];
-                        } else {
-                            sumviremic += DAILY_BITING_PDF[timeofday]*vaceffect;
-                            sumserotype[serotype] += DAILY_BITING_PDF[timeofday]*vaceffect;
-                            // a vaccinated person is treated like a fraction of an infectious person and a fraction of a non-infectious person
-                            sumnonviremic += DAILY_BITING_PDF[timeofday]*(1.0-vaceffect);
-                        }
+        // calculate fraction of people who are viremic
+        for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
+            for (int i=loc->getNumPerson(timeofday)-1; i>=0; i--) {
+                Person *p = loc->getPerson(i, timeofday);
+                if (p->isViremic(_nDay)) {
+                    double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
+                    int serotype = (int) p->getSerotype();
+                    if (vaceffect==1.0) {
+                        sumviremic += DAILY_BITING_PDF[timeofday];
+                        sumserotype[serotype] += DAILY_BITING_PDF[timeofday];
                     } else {
-                        sumnonviremic += DAILY_BITING_PDF[timeofday];
+                        sumviremic += DAILY_BITING_PDF[timeofday]*vaceffect;
+                        sumserotype[serotype] += DAILY_BITING_PDF[timeofday]*vaceffect;
+                        // a vaccinated person is treated like a fraction of an infectious person and a fraction of a non-infectious person
+                        sumnonviremic += DAILY_BITING_PDF[timeofday]*(1.0-vaceffect);
                     }
-                }
-            }
-
-            if (sumviremic>0.0) {
-                for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-                    sumserotype[i] /= sumviremic;
-                }
-                int locid = loc->getID();                   // location ID
-                int m = int(loc->getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);  // number of mosquitoes
-                m -= loc->getCurrentInfectedMosquitoes(); // subtract off the number of already-infected mosquitos
-                if (m<0) // should never happen, but set minimum number of susceptible mosquitos to 0
-                    m=0;
-                                                                      // how many susceptible mosquitoes bite viremic hosts in this location?
-                int numbites = gsl_ran_binomial(RNG, _par->betaPM*sumviremic/(sumviremic+sumnonviremic), m);
-                while (numbites-->0) {
-                    int serotype;                                     // which serotype infects mosquito
-                    if (sumserotype[0]==1.0) {
-                        serotype = 0;
-                    } else {
-                        double r = gsl_rng_uniform(RNG);
-                        for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
-                            r -= sumserotype[serotype];
-                    }
-                    int daysleft = attemptToAddMosquito(loc, (Serotype) serotype, locid);
-                    if (daysleft > 0) loc->addInfectedMosquito();
+                } else {
+                    sumnonviremic += DAILY_BITING_PDF[timeofday];
                 }
             }
         }
+
+        if (sumviremic>0.0) {
+            for (int i=0; i<NUM_OF_SEROTYPES; i++) {
+                sumserotype[i] /= sumviremic;
+            }
+            int locid = loc->getID();                   // location ID
+            int m = int(loc->getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);  // number of mosquitoes
+            m -= loc->getCurrentInfectedMosquitoes(); // subtract off the number of already-infected mosquitos
+            if (m<0) // should never happen, but set minimum number of susceptible mosquitos to 0
+                m=0;
+                                                                  // how many susceptible mosquitoes bite viremic hosts in this location?
+            int numbites = gsl_ran_binomial(RNG, _par->betaPM*sumviremic/(sumviremic+sumnonviremic), m);
+            while (numbites-->0) {
+                int serotype;                                     // which serotype infects mosquito
+                if (sumserotype[0]==1.0) {
+                    serotype = 0;
+                } else {
+                    double r = gsl_rng_uniform(RNG);
+                    for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
+                        r -= sumserotype[serotype];
+                }
+                int daysleft = attemptToAddMosquito(loc, (Serotype) serotype, locid);
+                if (daysleft > 0) loc->addInfectedMosquito();
+            }
+        }
     }
+
     return;
 }
 

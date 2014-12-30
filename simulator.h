@@ -24,7 +24,7 @@ class Date {
     Date(const Parameters* par):_offset(par->startDayOfYear-1) {};
 
     int offset()             const { return _offset; }
-    int day()                const { return _simulation_day; }                // [0, ...]
+    inline int day()         const { return _simulation_day; }                // [0, ...]
     int julianDay()          const { return ((day() + offset()) % 365) + 1; } // [1, 365]
     int dayOfMonth()         const { return julianMonth() == 1 ?              // [1, {29,30,31}]
                                             julianDay() :

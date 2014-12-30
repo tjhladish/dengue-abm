@@ -6,6 +6,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <map>
 #include <bitset>
 #include <assert.h>
@@ -125,6 +126,7 @@ namespace dengue {
         using std::endl;
         using std::string;
         using std::vector;
+        using std::unordered_set;
         using std::map;
         using std::pair;
         using std::make_pair;

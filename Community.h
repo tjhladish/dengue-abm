@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_set>
+
 
 class Person;
 class Mosquito;
@@ -50,7 +52,7 @@ class Community {
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
-        static void flagInfectedLocation(Location* _pLoc, int day) { _isHot[_pLoc][day] = true; }
+        static void flagInfectedLocation(Location* _pLoc, int day) { if (day < _par->nRunLength) _isHot[day].insert(_pLoc); }
 
         void reset();                                                 // reset the state of the community; experimental! 
 
@@ -75,7 +77,7 @@ class Community {
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
-        static std::map< Location*, std::map<int, bool> > _isHot;
+        static std::vector<std::unordered_set<Location*> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 
         void expandExposedQueues();

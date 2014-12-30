@@ -35,6 +35,8 @@ class Location {
         double getX() { return _coord.first; }
         double getY() { return _coord.second; }
 
+        bool operator == ( const Location* other ) const { return ( ( _ID == other->_ID ) && ( _serial == other->_serial ) ); }
+
     protected:
         int _ID;                                                     // original identifier in location file
         int _serial;                                                  // unique identifier assigned on construction
