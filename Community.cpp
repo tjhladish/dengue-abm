@@ -339,9 +339,6 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     }
     iss.close();
 
-    for (unsigned int i=0; i<_location.size(); i++)
-        if (_location[i]->getNumNeighbors()<=0)
-            _location[i]->setUndefined();
     return true;
 }
 
@@ -486,10 +483,7 @@ void Community::moveMosquito(Mosquito *m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
         if (r<_par->fMosquitoTeleport) {                               // teleport
-            int locID;
-            do {
-                locID = gsl_rng_uniform_int(RNG,_location.size());
-            } while (_location[locID]->getUndefined());               // why would it be undefined?
+            int locID = gsl_rng_uniform_int(RNG,_location.size());
             m->updateLocation(_location[locID]);
         } else {                                                            // move to neighbor
             Location *pLoc = m->getLocation();

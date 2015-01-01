@@ -25,8 +25,6 @@ class Location {
         void addNeighbor(Location *p);
         int getNumNeighbors() { return _neighbors.size(); }
         Location *getNeighbor(int n) { return _neighbors[n]; }
-        void setUndefined() { _bUndefined=true; }
-        bool getUndefined() { return _bUndefined; }
         inline Person* getPerson(int idx, int timeofday) { return _person[timeofday][idx]; }
         void setCoordinates(std::pair<double, double> c) { _coord = c; }
         std::pair<double, double> getCoordinates() { return _coord; }
@@ -44,7 +42,6 @@ class Location {
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
         int _currentInfectedMosquitoes;
         std::vector<Location*> _neighbors;
-        bool _bUndefined;
         static int _nNextSerial;                                          // unique ID to assign to the next Location allocated
         std::pair<double, double> _coord;                                  // (x,y) coordinates for location
 };

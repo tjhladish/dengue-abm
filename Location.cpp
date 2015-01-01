@@ -22,7 +22,6 @@ Location::Location()
     _ID = 0;
     _nBaseMosquitoCapacity = 0;
     _currentInfectedMosquitoes = 0;
-    _bUndefined = false;
     _coord = make_pair(0.0, 0.0);
 }
 
@@ -50,8 +49,6 @@ bool Location::removePerson(Person *p, int t) {
     }
     return false;
 }
-
-
 
 
 // addNeighbor - adds location p to the location's neighbor list.
