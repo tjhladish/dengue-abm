@@ -95,7 +95,7 @@ Community::~Community() {
 
     Person::reset_ID_counter();
 
-    for (unordered_set<Location*> e: _isHot) e.clear();
+    for (auto &e: _isHot) e.clear();
 
     for (unsigned int i = 0; i < _location.size(); i++ ) delete _location[i];
     _location.clear();
@@ -568,7 +568,6 @@ void Community::swapImmuneStates() {
             if (p->getNumInfections() > 0 and p->getRecoveryTime() > _nDay) {
                 for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
                     for (int t=0; t<STEPS_PER_DAY; t++) {
-if (d == 18) cerr << "community flagging\n";
                         flagInfectedLocation(p->getLocation(t), d);
                     }
                 }
@@ -610,10 +609,8 @@ void Community::updateWithdrawnStatus() {
 
 
 void Community::flagInfectedLocation(Location* _pLoc, int day) {
-    if (day == 18) std::cerr << "Day, loc*, loc_id, num people: " << day << ", " << _pLoc << ", " << _pLoc->getID() << ", " << _pLoc->getNumPerson(0) << std::endl;
     if (day < _par->nRunLength) _isHot[day].insert(_pLoc); 
 }
-
 
 
 void Community::mosquitoToHumanTransmission() {
