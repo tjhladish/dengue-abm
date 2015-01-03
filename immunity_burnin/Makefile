@@ -41,8 +41,11 @@ abc: main.cpp
 abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o abc_mpi $(INCLUDES) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
-immunity_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp 
+immunity_burnin_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 	$(CC) $(CFLAGS) -D USING_MPI main_mpi.cpp -o immunity_abc_mpi $(INCLUDES) -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
+
+immunity_burnin155_mpi: libabc_mpi dengue_mpi main_mpi-155y-burnin.cpp
+	$(CC) $(CFLAGS) -D USING_MPI main_mpi-155y-burnin.cpp -o immunity155_abc_mpi $(INCLUDES) -L$(DENDIR) $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

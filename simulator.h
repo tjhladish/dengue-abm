@@ -20,8 +20,8 @@ using namespace dengue::util;
 
 class Date {
   public:
-    Date():_offset(0) {};
-    Date(const Parameters* par):_offset(par->startDayOfYear-1) {};
+    Date():_offset(0),_simulation_day(0) {};
+    Date(const Parameters* par):_offset(par->startDayOfYear-1),_simulation_day(0) {};
 
     int offset()             const { return _offset; }
     inline int day()         const { return _simulation_day; }                // [0, ...]

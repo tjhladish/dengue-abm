@@ -59,7 +59,7 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
     // reset locations
     for (unsigned int i = 0; i < _location.size(); i++ ) _location[i]->clearInfectedMosquitoes();
 
-    for (auto e: _isHot) e.clear();
+    for (auto &e: _isHot) e.clear();
 
     // clear community queues & tallies
     for (unsigned int i = 0; i < _exposedQueue.size(); i++ ) _exposedQueue[i].clear();
@@ -535,7 +535,7 @@ void Community::moveMosquito(Mosquito *m) {
 
 
 void Community::swapImmuneStates() {
-    for (auto e: _isHot) e.clear();
+    for (auto &e: _isHot) e.clear();
 
     // For people of age x, copy immune status from people of age x-1
     for (int age=NUM_AGE_CLASSES-1; age>0; age--) {
@@ -568,6 +568,7 @@ void Community::swapImmuneStates() {
             if (p->getNumInfections() > 0 and p->getRecoveryTime() > _nDay) {
                 for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
                     for (int t=0; t<STEPS_PER_DAY; t++) {
+if (d == 18) cerr << "community flagging\n";
                         flagInfectedLocation(p->getLocation(t), d);
                     }
                 }
@@ -606,6 +607,13 @@ void Community::updateWithdrawnStatus() {
     }
     return;
 }
+
+
+void Community::flagInfectedLocation(Location* _pLoc, int day) {
+    if (day == 18) std::cerr << "Day, loc*, loc_id, num people: " << day << ", " << _pLoc << ", " << _pLoc->getID() << ", " << _pLoc->getNumPerson(0) << std::endl;
+    if (day < _par->nRunLength) _isHot[day].insert(_pLoc); 
+}
+
 
 
 void Community::mosquitoToHumanTransmission() {
@@ -707,7 +715,7 @@ void Community::humanToMosquitoTransmission() {
             }
         }
     }
-
+    _isHot[_nDay].clear();
     return;
 }
 

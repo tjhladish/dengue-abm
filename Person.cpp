@@ -176,6 +176,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
 
     for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
+        if (d < 0) continue; // we don't need to worry about flagging locations for past infections
         for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }

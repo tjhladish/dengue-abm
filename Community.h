@@ -52,7 +52,7 @@ class Community {
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
-        static void flagInfectedLocation(Location* _pLoc, int day) { if (day < _par->nRunLength) _isHot[day].insert(_pLoc); }
+        static void flagInfectedLocation(Location* _pLoc, int day);
 
         void reset();                                                 // reset the state of the community; experimental! 
 

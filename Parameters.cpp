@@ -483,7 +483,7 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
     }
 
     // get rid of anything there now
-    for (auto v: nDailyExposed) v.clear();
+    for (auto &v: nDailyExposed) v.clear();
     nDailyExposed.clear();
 
     char sep = ' ';
@@ -515,7 +515,7 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
 void Parameters::generateAnnualSerotypes() {
     enum State {GAP, RUN};
     // get rid of anything there now
-    for (auto v: nDailyExposed) v.clear();
+    for (auto &v: nDailyExposed) v.clear();
     nDailyExposed.clear();
 
     int run_length_years = (int) ceil((double) nRunLength / 365.0);
@@ -548,7 +548,7 @@ void Parameters::generateAnnualSerotypes() {
     }
     if (not abcVerbose) {
         cerr << "Serotype runs:" << endl;
-        for (auto y: nDailyExposed) {
+        for (auto &y: nDailyExposed) {
             for (auto v: y)  cerr << v << " "; cerr << endl;
         }
     }
@@ -563,7 +563,7 @@ void Parameters::generateAnnualSerotypes() {
 
     if (not abcVerbose) {
         cerr << "Serotype runs (normalized):" << endl;
-        for (auto y: nDailyExposed) {
+        for (auto &y: nDailyExposed) {
             for (auto v: y)  cerr << v << " "; cerr << endl;
         }
     }
