@@ -95,22 +95,20 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
 };
 
 //       RUNS 1979-2014 
-// DENV1:  7  9  1  1  5  1   
-// DENV2:  1  1  6 14
-// DENV3:  4  1  2  1
+// DENV1:  7  11  1  10
+// DENV2:  1  1  6  14
+// DENV3:  2  1  2  1
 // DENV4:  1  1  2  1  3   
 //
 //       GAPS 1979-2014
-// DENV1:  1  6  2  2  1
+// DENV1:  1  4  2
 // DENV2:  7  4  2  1
-// DENV3: 17  1  4  5  1
+// DENV3: 17  3  4  5  1
 // DENV4:  5  9  1  9  4
 
-// average number of consequtive years a serotype is observed, Yucatan data, 1979-2013
-static const double MEAN_RUN_LENGTH = 3.26;
-
-// average number of consequtive years between serotype observations, Yucatan data, 1979-2013
-static const double MEAN_GAP_LENGTH = 4.32;
+// fitted using ABC to Yucatan serotype data, 1979-2014
+static const std::vector<double> MEAN_RUN_LENGTH = { 13.03, 8.99, 1.90, 2.17 };
+static const std::vector<double> MEAN_GAP_LENGTH = { 3.33, 6.36, 11.10, 9.43 };
 
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
