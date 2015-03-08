@@ -176,7 +176,7 @@ public:
     void generateAnnualSerotypes();
     bool simulateAnnualSerotypes;
 
-    int randomseed;
+    unsigned long int randomseed;
     int nRunLength;
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)

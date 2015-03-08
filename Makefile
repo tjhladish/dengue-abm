@@ -1,19 +1,20 @@
-#CPP      = g++
-CPP      = mpicxx
-MAKE     = make --no-print-directory
-SHELL    = /bin/sh
-CFLAGS   = -Wall -pedantic -std=c++11
-#OPTI     = -g
-OPTI     = -O2
-LDFLAGS	 = -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)
-INCLUDES = -I $(HPC_GSL_INC) $(TACC_GSL_INC)
-LIBS     = -lm -lgsl -lgslcblas
-DEFINES  = -DVERBOSE 
+DEFAULT_CPP = g++
+CPP      	= mpicxx
+MAKE     	= make --no-print-directory
+SHELL    	= /bin/sh
+CFLAGS   	= -Wall -pedantic -std=c++11
+#OPTI     	= -g
+OPTI     	= -O2
+LDFLAGS	 	= -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)
+INCLUDES 	= -I $(HPC_GSL_INC) $(TACC_GSL_INC)
+LIBS     	= -lm -lgsl -lgslcblas
+DEFINES  	= -DVERBOSE 
 
 default: model
 
 all_mpi: mpi_model
 
+all_no_mpi: CPP=$(DEFAULT_CPP)
 all_no_mpi: model
 
 model: $(OBJS) Makefile simulator.h Person.o Location.o Mosquito.o Community.o driver.o Parameters.o Utility.o

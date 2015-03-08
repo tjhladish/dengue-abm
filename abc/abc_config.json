@@ -1,11 +1,12 @@
 {
-    "smc_iterations" : 12,
+    "smc_iterations" : 10,
     "num_samples"    : 5000,
     "predictive_prior_fraction" : 0.05,
     "pls_training_fraction"     : 0.5,
 
     "particle_basefilename"         : "dengue_particles-120y",
     "predictive_prior_basefilename" : "dengue_predictive_prior-120y",
+    "database_filename"             : "dengue.sqlite",
 
     "parameters" : [
         {"name"       : "expansion_factor",
@@ -44,7 +45,6 @@
     ],
 
     "metrics" : [
-
         {"name"      : "mean",
          "num_type"  : "FLOAT",
          "value"     : 121.943},
@@ -68,6 +68,11 @@
         {"name"      : "median crossings",
          "short_name": "mc",
          "num_type"  : "FLOAT",
-         "value"     : 0.235294}
+         "value"     : 0.235294},
+
+        {"name"      : "seroprevalence",
+         "short_name": "sp",
+         "num_type"  : "FLOAT",
+         "value"     : 0.6}
     ]
 }

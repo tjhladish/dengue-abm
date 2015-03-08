@@ -170,6 +170,13 @@ void append_if_finite(vector<long double> &vec, double val) {
     }
 }
 
+vector<int> read_pop_ids (string filename) {
+    ifstream is(filename);
+    istream_iterator<double> start(is), end;
+    vector<int> ids(start, end);
+    return ids;
+}
+
 vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     // initialize bookkeeping for run
     time_t start ,end;
@@ -180,7 +187,9 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     const Parameters* par = define_simulator_parameters(args); 
     Community* community = build_community(par);
     //seed_epidemic(par, community);
-    vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
+    double seropos_87 = 0.0;
+    vector<int> serotested_ids = read_pop_ids("8-14_merida_ids.txt");
+    vector<int> epi_sizes = simulate_epidemic(par, community, process_id, serotested_ids, seropos_87);
     vector<int>(epi_sizes.begin()+120, epi_sizes.end()).swap(epi_sizes); // throw out first 120 values
 
     time (&end);
@@ -212,7 +221,8 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     float_type _max              = max(y);
     float_type _skewness         = skewness(y);
     float_type _median_crossings = median_crossings(y);
-    ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << endl;
+    float_type _seropos          = seropos_87;
+    ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << " " << _seropos << endl;
       
 //       << fit->m << " " << fit->b << " " << fit->rsq << endl;
 
@@ -226,6 +236,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     append_if_finite(metrics, _max);
     append_if_finite(metrics, _skewness);
     append_if_finite(metrics, _median_crossings);
+    append_if_finite(metrics, _seropos);
 
     delete par;
     delete community;

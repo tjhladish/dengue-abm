@@ -261,8 +261,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         periodic_incidence["daily"] = {0,0,0};
 }
 
-
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids, double &seropos_87) {
+    assert(serotested_ids.size() > 0);
     vector<int> epi_sizes;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
@@ -282,6 +282,15 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
+        if ( date.endOfYear() and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
+                                                         // for a 155 year simulation starting on day 100
+            // calculate seroprevalence among 8-14 year old merida residents
+            for (int id: serotested_ids) {
+                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+                seropos_87 += seropos;
+            }
+            seropos_87 /= serotested_ids.size();
+        } 
         //date.print();
 
         // phased vaccination
@@ -364,6 +373,13 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     //write_daily_buffer(daily_output_buffer, process_id);
     return epi_sizes;
+}
+
+
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
+    vector<int> dummy1 (1,1);
+    double dummy2 = 0.0;
+    return simulate_epidemic(par, community, process_id, dummy1, dummy2);
 }
 
 
