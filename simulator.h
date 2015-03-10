@@ -109,13 +109,13 @@ Community* build_community(const Parameters* par) {
     }
 
     if (par->fPreVaccinateFraction>0.0) {
-        community->vaccinate(par->fPreVaccinateFraction);
+        community->vaccinate(0, par->fPreVaccinateFraction);
     }
 
     if (par->nSizePrevaccinateAge>0) {
         for (int j=0; j<par->nSizePrevaccinateAge; j++) {
             for (int k=par->nPrevaccinateAgeMin[j]; k<=par->nPrevaccinateAgeMax[j]; k++) {
-                community->vaccinate(par->fPrevaccinateAgeFraction[j],k);
+                community->vaccinate(0, par->fPrevaccinateAgeFraction[j], k); // first argument is time
             }
         }
     }
@@ -297,7 +297,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
         if (date.startOfYear()) {
             for (int i=0; i<par->nSizeVaccinate; i++) {
                 if (date.year()==par->nVaccinateYear[i]) {
-                    community->vaccinate(par->fVaccinateFraction[i],par->nVaccinateAge[i]);
+                    community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
                     if (not par->abcVerbose) {
                         cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] << endl;
                     }

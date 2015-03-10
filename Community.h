@@ -27,24 +27,20 @@ class Community {
         Person* getPersonByID(int id);
         bool infect(int id, Serotype serotype, int day);
         int attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
-        int getDay() {                                                // what day is it?
-            return _nDay;
-        }
+        int getDay() { return _nDay; }                                // what day is it?
         void swapImmuneStates(); 
         void updateWithdrawnStatus(); 
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
-        void tick(int day);                                                  // simulate one day
+        void tick(int day);                                           // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
-        void setMosquitoMultiplier(double f) {                        // seasonality multiplier for number of mosquitoes
-            _fMosquitoCapacityMultiplier = f;
-        }
+        void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
         void setExtrinsicIncubation(int n) { _EIP = n; }
         int getExtrinsicIncubation() const { return _EIP; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
-        void vaccinate(double f, int age=-1);
+        void vaccinate(int time, double f, int age=-1);
         void setVES(double f);
         void setVESs(std::vector<double> f);
         Mosquito *getInfectiousMosquito(int n);
