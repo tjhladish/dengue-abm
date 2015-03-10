@@ -385,29 +385,26 @@ bool Community::infect(int id, Serotype serotype, int day) {
 
 // vaccinate - vaccinate fraction f of the population
 // if age>=0, then vaccinate only those who are "age" years old
-void Community::vaccinate(double f, int age) {
+void Community::vaccinate(int time, double f, int age) {
     // This approach to vaccination is somewhat problematic.  Age classes can be vaccinated multiple times,
     // so the probability of an individual being vaccinated becomes 1 - (1 - f)^n, where n is the number
     // of times an age class is specified, either explicitly or implicitly by using a negative value for age
-    if (f<=0.0) {
-        return;
-    } else {
-        if (age<0) {                                                      // vaccinate everyone
-            for (int i=0; i<_nNumPerson; i++) {
-                Person p = _person[i];
-                if (!p.isVaccinated() && gsl_rng_uniform(RNG)<f) {
-                    p.vaccinate();
-                }
+    assert(f>=0.0 and f<=1.0);
+    if (age<0) {                                                      // vaccinate everyone
+        for (int i=0; i<_nNumPerson; i++) {
+            Person p = _person[i];
+            if (!p.isVaccinated() && gsl_rng_uniform(RNG)<f) {
+                p.vaccinate(time);
             }
-        } else {
-            // is the specified age a valid index?
-            if (age <= NUM_AGE_CLASSES - 1) {
-                for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-                    Person* p = _personAgeCohort[age][pnum];
-                    assert(p!=NULL);
-                    if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
-                        p->vaccinate();
-                    }
+        }
+    } else {
+        // is the specified age a valid index?
+        if (age <= NUM_AGE_CLASSES - 1) {
+            for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
+                Person* p = _personAgeCohort[age][pnum];
+                assert(p!=NULL);
+                if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
+                    p->vaccinate(time);
                 }
             }
         }

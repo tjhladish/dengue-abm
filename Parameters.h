@@ -223,6 +223,8 @@ public:
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
     int nDaysImmune;
     int nSizeVaccinate;
+    bool linearlyWaningVaccine;
+    int vaccineImmunityDuration;
     std::vector<int> nVaccinateYear;                        // when to vaccinate
     std::vector<int> nVaccinateAge;                         // whom to vaccinate
     std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate
