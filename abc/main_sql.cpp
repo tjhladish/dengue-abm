@@ -101,35 +101,6 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-/*
-void sample_immune_history(Community* community, const Parameters* par) {
-    const int last_immunity_year = 1999;
-    vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
-
-    int N = community->getNumPerson();
-    for(int i=0; i<N; i++) {
-        Person* person = community->getPerson(i);
-
-        int age = person->getAge();
-        int maxAge = MAX_CENSUS_AGE;
-
-        age = age <= maxAge ? age : maxAge;
-        int r = gsl_rng_uniform_int(RNG, full_pop[age].size());
-        vector<int> states = full_pop[age][r];
-        // we need to go through the states, greatest to least
-        // Serotype 0, 1,  2, 3   -->   1, 3, 2, 0
-        //        { 0, 12, 1, 2 } --> { 1, 3, 2, 0 }
-        vector<int> indices = ordered(states);
-        for (int serotype: indices) {
-            if (states[serotype]>0) {
-                person->setImmunity((Serotype) serotype);
-                person->initializeNewInfection();
-                person->setRecoveryTime(-365*states[serotype]); // last dengue infection was x years ago
-            }
-        }
-    }
-}*/
-
 unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
