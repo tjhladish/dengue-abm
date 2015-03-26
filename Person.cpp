@@ -181,17 +181,10 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Determine if this person withdraws (stops going to work/school)
     const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
     const double secondary_scaling     = _par->fSecondaryScaling[(int) serotype];
-<<<<<<< HEAD
     const double effective_VEP         = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
     const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
 
     const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - effective_VEP) * secondary_symptomatic;
-=======
-    //const double vaccine_protection    = vaccineEfficacy(time); // returns 0 if unvaccinated
-    const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
-
-    const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - vaccineProtection(time)) * secondary_symptomatic;
->>>>>>> 4c1af063859ffc395a30cc74c3f59b340046de52
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability) {
         infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
