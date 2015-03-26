@@ -261,14 +261,75 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         periodic_incidence["daily"] = {0,0,0};
 }
 
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids, double &seropos_87) {
-    assert(serotested_ids.size() > 0);
+void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
+    for (int i=0; i<par->nSizeVaccinate; i++) {
+        if (date.year()==par->nVaccinateYear[i]) {
+            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
+            if (not par->abcVerbose) {
+                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] << endl;
+            }
+        }
+    }
+}
+
+
+int seed_epidemic(const Parameters* par, Community* community, const Date &date) {
+    int introduced_infection_ct = 0;
+    const int numperson = community->getNumPerson();
+    for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
+        const int ai_year_lookup = date.year() % par->annualIntroductions.size();
+        const double intros = par->annualIntroductions[ai_year_lookup];
+        const int de_year_lookup = date.year() % par->nDailyExposed.size();
+        const double serotype_weight = par->nDailyExposed[de_year_lookup][serotype];
+        const double annual_intros_weight = par->annualIntroductionsCoef;
+        const double expected_num_exposed = serotype_weight * annual_intros_weight * intros;
+        if (expected_num_exposed <= 0) continue;
+        const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
+        for (int i=0; i<num_exposed; i++) {
+            // gsl_rng_uniform_int returns on [0, numperson-1]
+            int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1;
+            if (community->infect(transmit_to_id, (Serotype) serotype, date.day())) {
+                introduced_infection_ct++;
+            }
+        }
+    }
+    return introduced_infection_ct;
+}
+
+
+void update_mosquito_population(const Parameters* par, Community* community, const Date &date, int& nextMosquitoMultiplierIndex) {
+    const int mosquitoMultiplierTotalDuration = par->getMosquitoMultiplierTotalDuration();
+    // should the mosquito population change?
+    if (par->mosquitoMultipliers.size() > 0) {
+        const int nextMosquitoStart = par->mosquitoMultipliers[nextMosquitoMultiplierIndex].start;
+        if ( ((date.day()+date.offset())%mosquitoMultiplierTotalDuration) == nextMosquitoStart) {
+            //cerr << "updating mosquitoes on day " << date.day() << ", which is day " << date.julianDay()
+            //     << " of the year. Using index " << nextMosquitoMultiplierIndex << endl;
+            community->setMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
+            nextMosquitoMultiplierIndex = (nextMosquitoMultiplierIndex+1)%par->mosquitoMultipliers.size();
+        }
+    }
+}
+
+
+void update_extrinsic_incubation_period(const Parameters* par, Community* community, const Date &date, int& nextEIPindex) {
+    // should the EIP change?
+    const int EIPtotalDuration = par->getEIPtotalDuration();
+    if (par->extrinsicIncubationPeriods.size() > 0) {
+        const int nextEIPstart = par->extrinsicIncubationPeriods[nextEIPindex].start;
+        if ( ((date.day()+date.offset())%EIPtotalDuration) == nextEIPstart) {
+            community->setExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
+            nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
+        }
+    }
+}
+
+
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
     vector<int> epi_sizes;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
-    const int mosquitoMultiplierTotalDuration = par->getMosquitoMultiplierTotalDuration();
     int nextEIPindex = 0;
-    const int EIPtotalDuration = par->getEIPtotalDuration();
 
     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
     vector<string> daily_output_buffer;
@@ -282,19 +343,9 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.endOfYear() and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
-                                                         // for a 155 year simulation starting on day 100
-            // calculate seroprevalence among 8-14 year old merida residents
-            for (int id: serotested_ids) {
-                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
-                seropos_87 += seropos;
-            }
-            seropos_87 /= serotested_ids.size();
-        } 
-        //date.print();
-
         // phased vaccination
         if (date.startOfYear()) {
+            update_vaccinations(par, community, date);
             for (int i=0; i<par->nSizeVaccinate; i++) {
                 if (date.year()==par->nVaccinateYear[i]) {
                     community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
@@ -305,47 +356,9 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
             }
         }
 
-
-        {   // seed epidemic
-            int numperson = community->getNumPerson();
-            for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-                const int ai_year_lookup = date.year() % par->annualIntroductions.size();
-                const double intros = par->annualIntroductions[ai_year_lookup];
-                const int de_year_lookup = date.year() % par->nDailyExposed.size();
-                const double serotype_weight = par->nDailyExposed[de_year_lookup][serotype];
-                const double annual_intros_weight = par->annualIntroductionsCoef;
-                const double expected_num_exposed = serotype_weight * annual_intros_weight * intros; 
-                if (expected_num_exposed <= 0) continue;
-                const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
-                for (int i=0; i<num_exposed; i++) {
-                    // gsl_rng_uniform_int returns on [0, numperson-1]
-                    int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1; 
-                    if (community->infect(transmit_to_id, (Serotype) serotype, date.day())) {
-                        periodic_incidence["daily"][0]++;
-                    }
-                }
-            }
-        }
-
-        // should the mosquito population change?
-        if (par->mosquitoMultipliers.size() > 0) {
-            const int nextMosquitoStart = par->mosquitoMultipliers[nextMosquitoMultiplierIndex].start;
-            if ( ((date.day()+date.offset())%mosquitoMultiplierTotalDuration) == nextMosquitoStart) {
-                //cerr << "updating mosquitoes on day " << date.day() << ", which is day " << date.julianDay() 
-                //     << " of the year. Using index " << nextMosquitoMultiplierIndex << endl;
-                community->setMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
-                nextMosquitoMultiplierIndex = (nextMosquitoMultiplierIndex+1)%par->mosquitoMultipliers.size();
-            }
-        }
-
-        // should the EIP change?
-        if (par->extrinsicIncubationPeriods.size() > 0) {
-            const int nextEIPstart = par->extrinsicIncubationPeriods[nextEIPindex].start;
-            if ( ((date.day()+date.offset())%EIPtotalDuration) == nextEIPstart) {
-                community->setExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
-                nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
-            }
-        }
+        periodic_incidence["daily"][0] += seed_epidemic(par, community, date);
+        update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
+        update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
         community->tick(date.day());
 
@@ -375,11 +388,53 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     return epi_sizes;
 }
 
+vector<int> simulate_abc(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids, double &seropos_87) {
+    assert(serotested_ids.size() > 0);
+    vector<int> epi_sizes;
+    Date date(par);
+    int nextMosquitoMultiplierIndex = 0;
+    int nextEIPindex = 0;
 
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
-    vector<int> dummy1 (1,1);
-    double dummy2 = 0.0;
-    return simulate_epidemic(par, community, process_id, dummy1, dummy2);
+    initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
+    vector<string> daily_output_buffer;
+    if (par->bSecondaryTransmission and not par->abcVerbose) {
+        daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
+        //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+    }
+
+    map<string, vector<int> > periodic_incidence { {"daily", vector<int>(3,0)},  // { introductions, local transmission, total }
+                                                   {"weekly", vector<int>(3,0)},
+                                                   {"monthly", vector<int>(3,0)},
+                                                   {"yearly", vector<int>(3,0)} };
+    for (; date.day() < par->nRunLength; date.increment()) {
+        if ( date.endOfYear() and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
+                                                         // for a 155 year simulation starting on day 100
+            // calculate seroprevalence among 8-14 year old merida residents
+            for (int id: serotested_ids) {
+                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+                seropos_87 += seropos;
+            }
+            seropos_87 /= serotested_ids.size();
+        }
+
+        periodic_incidence["daily"][0] += seed_epidemic(par, community, date);
+        update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
+        update_extrinsic_incubation_period(par, community, date, nextEIPindex);
+
+        community->tick(date.day());
+
+        for (int i=community->getNumPerson()-1; i>=0; i--) {
+            Person *p = community->getPerson(i);
+            if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
+                ++periodic_incidence["daily"][2];
+            }
+        }
+
+        periodic_output(par, community, periodic_incidence, date, process_id, epi_sizes);
+
+    }
+
+    return epi_sizes;
 }
 
 
