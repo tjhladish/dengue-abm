@@ -73,6 +73,7 @@ void Parameters::define_defaults() {
 
     linearlyWaningVaccine = false;
     vaccineImmunityDuration = INT_MAX;
+    vaccineBoosting = false;
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
     mosquitoMultipliers.clear();

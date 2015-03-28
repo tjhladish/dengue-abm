@@ -44,7 +44,7 @@ class Infection {
         symptomTime    = o->symptomTime;
         recoveryTime   = o->recoveryTime;
         withdrawnTime  = o->withdrawnTime;
-        _serotype       = o->_serotype;
+        _serotype      = o->_serotype;
     }
 
     int infectedByID;                               // who infected this person

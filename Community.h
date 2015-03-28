@@ -41,6 +41,7 @@ class Community {
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(int time, double f, int age=-1);
+        void boost(int time, double f);
         void setVES(double f);
         void setVESs(std::vector<double> f);
         Mosquito *getInfectiousMosquito(int n);

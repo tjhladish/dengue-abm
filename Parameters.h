@@ -225,6 +225,7 @@ public:
     int nSizeVaccinate;
     bool linearlyWaningVaccine;
     int vaccineImmunityDuration;
+    bool vaccineBoosting;
     std::vector<int> nVaccinateYear;                        // when to vaccinate
     std::vector<int> nVaccinateAge;                         // whom to vaccinate
     std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate

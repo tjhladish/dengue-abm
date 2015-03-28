@@ -412,6 +412,18 @@ void Community::vaccinate(int time, double f, int age) {
 }
 
 
+void Community::boost(int time, double f) { // re-vaccinate people who have less than threshold immunity left
+    assert(f>=0.0 and f<=1.0);
+    for (int i=0; i<_nNumPerson; i++) {
+        Person* p = _person + i;
+        // boost if ~fraction (or more) of immunity has waned
+        if (p->isVaccinated() and (p->daysSinceVaccination(time) >= f * _par->vaccineImmunityDuration) ) {
+            p->vaccinate(time);
+        }
+    }
+}
+
+
 // returns number of days mosquito has left to live
 int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID) {
     int eip = getExtrinsicIncubation();

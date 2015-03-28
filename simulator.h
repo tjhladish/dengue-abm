@@ -270,6 +270,7 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
             }
         }
     }
+    if (par->linearlyWaningVaccine and par->vaccineBoosting) community->boost(date.day(), 0.49); // boost if >0.49 of immunity has waned
 }
 
 
@@ -346,14 +347,6 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
         // phased vaccination
         if (date.startOfYear()) {
             update_vaccinations(par, community, date);
-            for (int i=0; i<par->nSizeVaccinate; i++) {
-                if (date.year()==par->nVaccinateYear[i]) {
-                    community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
-                    if (not par->abcVerbose) {
-                        cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] << endl;
-                    }
-                }
-            }
         }
 
         periodic_incidence["daily"][0] += seed_epidemic(par, community, date);
