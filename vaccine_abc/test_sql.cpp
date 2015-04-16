@@ -19,6 +19,7 @@ time_t GLOBAL_START_TIME;
 unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
+
     Parameters* par = new Parameters();
     par->define_defaults();
 
@@ -35,9 +36,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     string imm_dir("/scratch/lfs/thladish/imm_posterior_files");
     vector<long double> abc_args(&args[0], &args[5]);
     string argstring;
-    unsigned int imm_id = calculate_process_id(abc_args, argstring);
+    unsigned int imm_id = calculate_process_id(abc_args, argstring); 
 
-    par->randomseed = rng_seed;
+par->randomseed = 626612522;
     par->abcVerbose = true;
     par->nRunLength = 20*365+100;
     par->startDayOfYear = 1;
@@ -77,7 +78,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = imm_dir + "/immunity." + to_string(imm_id);
-cerr << "argstring: " << argstring << " " << par->immunityFilename << endl;
+cerr << par->immunityFilename << endl;
+par->immunityFilename   = "/scratch/lfs/thladish/imm_posterior_files/immunity.4174023314";
+cerr << par->immunityFilename << endl;
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
@@ -186,37 +189,34 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
 
 vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
-    gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
-
+gsl_rng_set(RNG, 626612522); // seed the rng using sys time and the process id
+args = {28.665400, 0.227260, 0.014808, 68.007300, 0.154266, 1.000000, 0.000000, 9.000000, 30.000000, 0.000000, 3.000000, 0.000000};
     Parameters* par = define_simulator_parameters(args, rng_seed);
 
     int discard_days = 100;
     int years_simulated = 20;
     vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
     vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
-
-//  Posterior pars
-//  0 caseEF real,
-//  1 mos_mov real,
-//  2 exp_coef real,
-//  3 num_mos real,
-//  4 beta real,
+// 0 caseEF real, 
+// 1 mos_mov real, 
+// 2 exp_coef real, 
+// 3 num_mos real, 
+// 4 beta real, 
 //
-//  Pseudo pars
-//  5 vac real,
-//  6 catchup real,
-//  7 target real,
-//  8 catchup_to real,
-//  9 vec_control real,
-// 10 vac_waning real,
-// 11 vac_boosting real
+// 5 vac real, 
+// 6 catchup real, 
+// 7 target real, 
+// 8 catchup_to real, 
+// 9 vec_control real, 
+//10 vac_waning real, 
+//11 vac_boosting real
 
     bool vaccine                  = (bool) args[5];
     bool catchup                  = (bool) args[6];
     int target                    = (int) args[7];
     int catchup_to                = (int) args[8];
     float vector_reduction        = vector_controls[(unsigned int) args[9]];
-    int vaccine_duration          = vaccine_durations[(unsigned int) args[10]];
+    int vaccine_duration          = vaccine_durations[(unsigned int) args[10]]; 
     bool boosting                 = (bool) args[11];
 
     if (vaccine_duration == -1) {
@@ -231,8 +231,8 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     bool nonsensical_parameters = false;
     // only run a non-vaccination campaign if all the vaccine parameters are 0
     // TODO - this should be reworked with new "catchup-to" parameter
-    if (not vaccine and (catchup or boosting)) { nonsensical_parameters = true; }
-    if ((vaccine_duration == -1) and boosting) { nonsensical_parameters = true; }
+    if (not vaccine and (catchup or boosting)) { nonsensical_parameters = true; } 
+    if ((vaccine_duration == -1) and boosting) { nonsensical_parameters = true; } 
     if (nonsensical_parameters) {
         // 3 is because vaccinated cases, total cases, and infections are reported
         vector<long double> dummy(years_simulated*NUM_OF_SEROTYPES*3, 0.0);
@@ -245,13 +245,14 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     if (vaccine) {
         int default_coverage = 0.7;
         int num_target  = community->ageIntervalSize(9,10); // default target
-        int num_catchup = community->ageIntervalSize(10,31);// default catchup
-        double target_coverage  = default_coverage*num_target/community->ageIntervalSize(target, target+1);
+        int num_catchup = community->ageIntervalSize(10,31);// default catchup 
+//cerr << "target, catchup sizes: " << num_target << " " << num_catchup << endl;
+        double target_coverage  = default_coverage*num_target/community->ageIntervalSize(target, target+1); 
         double catchup_coverage = default_coverage*num_catchup/community->ageIntervalSize(target+1, catchup_to+1);
 
         target_coverage = target_coverage > 1.0 ? 1.0 : target_coverage;
         catchup_coverage = catchup_coverage > 1.0 ? 1.0 : catchup_coverage;
-
+    
         par->bVaccineLeaky = true;
 
         par->fVESs.clear();
@@ -294,6 +295,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
         cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation shuold work\n";
         exit(-1834);
         int burnin = 0;
+//    cerr << "using vector reduction: " << vector_reduction << endl;
         assert( vector_reduction <= 1.0); 
         assert( par->mosquitoMultipliers.size() == 12); // expecting values for 12 months
         int running_sum = par->mosquitoMultipliers.back().start + DAYS_IN_MONTH[0]; // start on january 1 of year two
@@ -305,8 +307,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
             par->mosquitoMultipliers[i].duration = DAYS_IN_MONTH[month_of_year];
             float vector_coeff = i/12 >= burnin ? 1.0 - vector_reduction : 1.0; // normally, there's no reduction in vectors
             par->mosquitoMultipliers[i].value = vector_coeff * par->mosquitoMultipliers[month_of_year].value;
+//cerr << par->mosquitoMultipliers[i].value << " ";
             running_sum += DAYS_IN_MONTH[month_of_year];
         }
+//cerr << endl;
     }
 
     //initialize bookkeeping for run
