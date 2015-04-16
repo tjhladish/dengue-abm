@@ -197,16 +197,18 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
             line.str(buffer);
             while (line >> part) parts.push_back(part);
 
-            if (parts.size() == 1 + NUM_OF_SEROTYPES) {
+            // 1+ without age, 2+ with age
+            if (parts.size() == 1 + NUM_OF_SEROTYPES or parts.size() == 2 + NUM_OF_SEROTYPES) {
                 const int id = parts[0];
                 Person* person = getPersonByID(id);
-                for (unsigned int s=0; s<NUM_OF_SEROTYPES; s++) {
-                    const int infection_time = parts[1+s];
+                unsigned int offset = parts.size() - NUM_OF_SEROTYPES;
+                for (unsigned int f=offset; f<offset+NUM_OF_SEROTYPES; f++) {
+                    Serotype s = (Serotype) (f - offset);
+                    const int infection_time = parts[f];
                     if (infection_time == 0) {
                         continue; // no infection for this serotype
                     } else if (infection_time<0) {
-                        person->infect((Serotype) s, infection_time);
-                        //_person[i].setRecoveryTime(-365*parts[s+1]); // converstion we were using
+                        person->infect(s, infection_time);
                     } else {
                         cerr << "ERROR: Found positive-valued infection time in population immunity file:\n\t";
                         cerr << "person " << person->getID() << ", serotype " << s+1 << ", time " << infection_time << "\n\n";
