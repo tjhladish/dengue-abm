@@ -110,6 +110,10 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
 static const std::vector<double> MEAN_RUN_LENGTH = { 13.03, 8.99, 1.90, 2.17 };
 static const std::vector<double> MEAN_GAP_LENGTH = { 3.33, 6.36, 11.10, 9.43 };
 
+// old model
+//static const std::vector<double> MEAN_RUN_LENGTH = std::vector<double>(4,3.26);
+//static const std::vector<double> MEAN_GAP_LENGTH = std::vector<double>(4,4.32);
+
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
 // Jan        Feb        Mar        Apr        May        Jun
