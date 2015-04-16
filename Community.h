@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <unordered_set>
+#include <numeric>
 
 
 class Person;
@@ -50,6 +51,8 @@ class Community {
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
         static void flagInfectedLocation(Location* _pLoc, int day);
+
+        int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
 
         void reset();                                                 // reset the state of the community; experimental! 
 
