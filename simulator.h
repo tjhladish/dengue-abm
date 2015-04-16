@@ -270,7 +270,10 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
             }
         }
     }
-    if (par->linearlyWaningVaccine and par->vaccineBoosting) community->boost(date.day(), 0.49); // boost if >0.49 of immunity has waned
+    if (par->linearlyWaningVaccine and par->vaccineBoosting) {
+        double allowed_waning = 730/par->vaccineImmunityDuration; 
+        community->boost(date.day(), allowed_waning); // boost if > allowed_waning of immunity has waned
+    }
 }
 
 
@@ -345,7 +348,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                                                    {"yearly", vector<int>(3,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
         // phased vaccination
-        if (date.startOfYear()) {
+        if (date.julianDay() == 100) {
             update_vaccinations(par, community, date);
         }
 
@@ -400,8 +403,8 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.endOfYear() and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
-                                                         // for a 155 year simulation starting on day 100
+        if ( date.julianDay() == 99 and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
+                                                               // for a 155 year simulation
             // calculate seroprevalence among 8-14 year old merida residents
             for (int id: serotested_ids) {
                 const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
