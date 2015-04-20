@@ -32,13 +32,13 @@ Location::~Location() {
 }
 
 
-void Location::addPerson(Person *p, int t) {
+void Location::addPerson(Person* p, int t) {
     //assert((unsigned) t < _person.size());
     _person[t].push_back(p);
 }
 
 
-bool Location::removePerson(Person *p, int t) {
+bool Location::removePerson(Person* p, int t) {
     //assert((unsigned) t < _person.size());
     for (unsigned int i=0; i<_person[t].size(); i++) {
         if (_person[t][i] == p) {
@@ -53,7 +53,7 @@ bool Location::removePerson(Person *p, int t) {
 
 // addNeighbor - adds location p to the location's neighbor list.
 // Note that this relationship is one-way.
-void Location::addNeighbor(Location *p) {
+void Location::addNeighbor(Location* p) {
     for (unsigned int i=0; i<_neighbors.size(); i++)
         if (_neighbors[i]==p) return;                                                   // already a neighbor
     _neighbors.push_back(p);

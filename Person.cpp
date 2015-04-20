@@ -55,8 +55,8 @@ Infection& Person::initializeNewInfection(Serotype serotype) {
 }
 
 
-// copyImmunity - copy immune status from person *p
-void Person::copyImmunity(const Person *p) {
+// copyImmunity - copy immune status from person* p
+void Person::copyImmunity(const Person* p) {
     assert(p!=NULL);
     _nImmunity = p->_nImmunity;
     _bVaccinated = p->_bVaccinated;
