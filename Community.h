@@ -19,6 +19,7 @@ class Community {
         virtual ~Community();
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
+        bool loadMosquitoes(std::string moslocFilename, std::string mosFilename);
         int getNumPerson() const { return _nNumPerson; }
         Person *getPerson(int n) const { return _person+n; }
         int getNumInfected(int day);
@@ -55,7 +56,9 @@ class Community {
         int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
 
         void reset();                                                 // reset the state of the community; experimental! 
-
+        const std::vector<Location*> getLocations() const { return _location; }
+        const std::vector< std::vector<Mosquito*> > getInfectiousMosquitoes() const { return _infectiousMosquitoQueue; }
+        const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
 
     protected:
         static const Parameters* _par;

@@ -550,6 +550,48 @@ void daily_detailed_output(Community* community, int t) {
     }
 }
 
+
+void write_mosquito_location_data(const Community* community, string mos_filename, string loc_filename) {
+    ofstream mos_file;
+    mos_file.open(mos_filename);
+    mos_file << "locID sero queue idx ageInfd ageInfs ageDead\n";
+    const vector< vector<Mosquito*> > exposed = community->getExposedMosquitoes();
+    // Exposed mosquitoes, by incubation days left
+    for (unsigned int i = 0; i < exposed.size(); ++i) {
+        const vector<Mosquito*>& mosquitoes = exposed[i];
+        for (const Mosquito* m: mosquitoes) {
+            mos_file << m->getLocation()->getID() << " " << m->getSerotype()    << " "
+                     << "e " << i                 << " " << m->getAgeInfected() << " "
+                     << m->getAgeInfectious()     << " " << m->getAgeDeath()    << endl;
+        }
+    }
+
+    const vector< vector<Mosquito*> > infectious = community->getInfectiousMosquitoes();
+    // Infectious mosquitoes, by days left to live
+    for (unsigned int i = 0; i < infectious.size(); ++i) {
+        const vector<Mosquito*>& mosquitoes = infectious[i];
+        for (const Mosquito* m: mosquitoes) {
+            mos_file << m->getLocation()->getID() << " " << m->getSerotype()    << " "
+                     << "i " << i                 << " " << m->getAgeInfected() << " "
+                     << m->getAgeInfectious()     << " " << m->getAgeDeath()    << endl;
+        }
+    }
+    mos_file.close();
+
+    ofstream loc_file;
+    loc_file.open(loc_filename);
+    loc_file << "locID baseMos infdMos\n";
+    // Mosquitoes by location
+    const vector<Location*> locations = community->getLocations();
+    for (Location* loc: locations) {
+        loc_file << loc->getID() << " ";
+        loc_file << loc->getBaseMosquitoCapacity() << " ";
+        loc_file << loc->getCurrentInfectedMosquitoes() << endl;
+    }
+    loc_file.close();
+}
+
+
 void write_output(const Parameters* par, Community* community, vector<int> numInitialSusceptible) {
     if (!par->bSecondaryTransmission) {
         // outputs

@@ -175,7 +175,9 @@ public:
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
     void loadAnnualIntroductions(std::string annualIntrosFilename);
+    void loadAnnualSerotypes() { loadAnnualSerotypes(annualSerotypeFilename); };
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
+    void writeAnnualSerotypes(std::string filename) const;
     void loadDailyEIP(std::string dailyEIPFilename);
     void generateAnnualSerotypes();
     bool simulateAnnualSerotypes;
@@ -222,6 +224,8 @@ public:
     std::string annualIntroductionsFilename;                // time series of some external factor determining introduction rate
     std::string annualSerotypeFilename;                     // time series of some external factor determining introduction rate
     std::string dailyEIPfilename;
+    std::string mosquitoFilename;
+    std::string mosquitoLocationFilename;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)

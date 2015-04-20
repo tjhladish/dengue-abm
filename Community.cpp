@@ -48,7 +48,7 @@ Community::Community(const Parameters* parameters) :
 void Community::reset() { // used for r-zero calculations, to reset pop after a single intro
     // reset people
     for (int i=0; i<_nNumPerson; i++) {
-        Person *p = _person+i;
+        Person* p = _person+i;
         if (p->isWithdrawn(_nDay)) {
             p->getLocation(1)->addPerson(p,1);                        // goes back to work
             p->getLocation(0)->removePerson(p,1);                     // stops staying at home
@@ -344,6 +344,77 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     return true;
 }
 
+bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
+    if (moslocFilename == "" and mosFilename == "") return true; // nothing to do
+    assert(_location.size() > 0); // make sure loadLocations() was already called
+
+    ifstream iss_mosloc(moslocFilename.c_str());
+    if (!iss_mosloc) { cerr << "ERROR: " << moslocFilename << " not found." << endl; return false; }
+
+    string buffer;
+    int locID, baseMos, infdMos;
+    istringstream line(buffer);
+
+    while (iss_mosloc) {
+        if (!getline(iss_mosloc, buffer)) break;
+        line.clear();
+        line.str(buffer);
+        if (line >> locID >> baseMos >> infdMos) {
+            if (locID >= (signed) _location.size() - 1) {
+                cerr << "ERROR: Location ID in mosquito location file greater than largest valid location ID" << endl;
+                return false;
+            }
+            Location* loc = _location[locID];
+            loc->setBaseMosquitoCapacity(baseMos);
+            loc->clearInfectedMosquitoes();
+            loc->addInfectedMosquitoes(infdMos);
+        }
+    }
+    iss_mosloc.close();
+
+    ifstream iss_mos(mosFilename.c_str());
+    if (!iss_mos) { cerr << "ERROR: " << mosFilename << " not found." << endl; return false; }
+
+    for (unsigned int i = 0; i < _exposedMosquitoQueue.size(); i++ ) _exposedMosquitoQueue[i].clear();
+    _exposedMosquitoQueue.clear();
+    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+
+    for (unsigned int i = 0; i < _infectiousMosquitoQueue.size(); i++ ) _infectiousMosquitoQueue[i].clear();
+    _infectiousMosquitoQueue.clear();
+    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+
+    char queue;
+    int sero, idx, ageInfd, ageInfs, ageDead;
+
+    while (iss_mos) {
+        if (!getline(iss_mos, buffer)) break;
+        line.clear();
+        line.str(buffer);
+        if (line >> locID >> sero >> queue >> idx >> ageInfd >> ageInfs >> ageDead) {
+            if (locID >= (signed) _location.size() - 1) {
+                cerr << "ERROR: Location ID in mosquito location file greater than largest valid location ID" << endl;
+                return false;
+            }
+            assert(sero < NUM_OF_SEROTYPES);
+            Location* loc = _location[locID];
+            Mosquito* m = new Mosquito(loc, (Serotype) sero, ageInfd, ageInfs, ageDead);
+            if (queue == 'e') {
+                assert(idx < (signed) _exposedMosquitoQueue.size());
+                _exposedMosquitoQueue[idx].push_back(m);
+            } else if (queue == 'i') {
+                assert(idx < (signed) _infectiousMosquitoQueue.size());
+                _infectiousMosquitoQueue[idx].push_back(m);
+            } else {
+                cerr << "ERROR: unknown queue type: " << queue << endl;
+                return false;
+            }
+        }
+    }
+    iss_mos.close();
+
+    return true;
+}
+
 
 Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
@@ -427,12 +498,12 @@ void Community::boost(int time, double f) { // re-vaccinate people who have less
 
 
 // returns number of days mosquito has left to live
-int Community::attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID) {
+int Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
     int eip = getExtrinsicIncubation();
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
     eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
-    Mosquito *m = new Mosquito(p, serotype, nInfectedByID, eip);
+    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
@@ -464,7 +535,7 @@ int Community::getNumExposedMosquitoes() {
 }
 
 
-Mosquito *Community::getInfectiousMosquito(int n) {
+Mosquito* Community::getInfectiousMosquito(int n) {
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
         int bin_size = _infectiousMosquitoQueue[i].size();
         if (n >= bin_size) {
@@ -477,7 +548,7 @@ Mosquito *Community::getInfectiousMosquito(int n) {
 }
 
 
-Mosquito *Community::getExposedMosquito(int n) {
+Mosquito* Community::getExposedMosquito(int n) {
     for (unsigned int i=0; i<_exposedMosquitoQueue.size(); i++) {
         int bin_size = _exposedMosquitoQueue[i].size();
         if (n >= bin_size) {
@@ -490,14 +561,14 @@ Mosquito *Community::getExposedMosquito(int n) {
 }
 
 
-void Community::moveMosquito(Mosquito *m) {
+void Community::moveMosquito(Mosquito* m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
         if (r<_par->fMosquitoTeleport) {                               // teleport
             int locID = gsl_rng_uniform_int(RNG,_location.size());
             m->updateLocation(_location[locID]);
         } else {                                                            // move to neighbor
-            Location *pLoc = m->getLocation();
+            Location* pLoc = m->getLocation();
             double x1 = pLoc->getX();
             double y1 = pLoc->getY();
 
@@ -552,7 +623,7 @@ void Community::swapImmuneStates() {
     for (int age=NUM_AGE_CLASSES-1; age>0; age--) {
         for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
             //cerr << "age " << age << ": " << pnum << " of " << _nPersonAgeCohortSizes[age] << endl;
-            Person *p = _personAgeCohort[age][pnum];
+            Person* p = _personAgeCohort[age][pnum];
             assert(p!=NULL);
             if (_uniformSwap == true) {
                 // For people of age x, copy immune status from people of age x-1
@@ -588,7 +659,7 @@ void Community::swapImmuneStates() {
 
     // For people of age 0, reset immunity
     for (int pnum=0; pnum<_nPersonAgeCohortSizes[0]; pnum++) {
-        Person *p = _personAgeCohort[0][pnum];
+        Person* p = _personAgeCohort[0][pnum];
         assert(p!=NULL);
         p->resetImmunity();
     }
@@ -598,7 +669,7 @@ void Community::swapImmuneStates() {
 
 void Community::updateWithdrawnStatus() {
     for (int i=0; i<_nNumPerson; i++) {
-        Person *p = _person+i;
+        Person* p = _person+i;
         if (p->getNumInfections() == 0) continue;
         if (p->getSymptomTime()==_nDay) {                              // started showing symptoms
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
@@ -628,7 +699,7 @@ void Community::mosquitoToHumanTransmission() {
     for(unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
         for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
             Mosquito* m = _infectiousMosquitoQueue[i][j];
-            Location *pLoc = m->getLocation();
+            Location* pLoc = m->getLocation();
             if (gsl_rng_uniform(RNG)<_par->betaMP) {                      // infectious mosquito bites
 
                 // take sum of people in the location, weighting by time of day
@@ -649,7 +720,7 @@ void Community::mosquitoToHumanTransmission() {
                         r -= exposuretime[timeofday];
                     }
                     int idx = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
-                    Person *p = pLoc->getPerson(idx, timeofday);
+                    Person* p = pLoc->getPerson(idx, timeofday);
                     Serotype serotype = m->getSerotype();
                     if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
                         _nNumNewlyInfected[(int) serotype][_nDay]++;
@@ -679,7 +750,7 @@ void Community::humanToMosquitoTransmission() {
         // calculate fraction of people who are viremic
         for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
             for (int i=loc->getNumPerson(timeofday)-1; i>=0; i--) {
-                Person *p = loc->getPerson(i, timeofday);
+                Person* p = loc->getPerson(i, timeofday);
                 if (p->isViremic(_nDay)) {
                     double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
                     int serotype = (int) p->getSerotype();
@@ -705,8 +776,7 @@ void Community::humanToMosquitoTransmission() {
             int locid = loc->getID();                   // location ID
             int m = int(loc->getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);  // number of mosquitoes
             m -= loc->getCurrentInfectedMosquitoes(); // subtract off the number of already-infected mosquitos
-            if (m<0) // should never happen, but set minimum number of susceptible mosquitos to 0
-                m=0;
+            if (m<0) m=0; // more infected mosquitoes than the base capacity, presumable due to immigration
                                                                   // how many susceptible mosquitoes bite viremic hosts in this location?
             int numbites = gsl_ran_binomial(RNG, _par->betaPM*sumviremic/(sumviremic+sumnonviremic), m);
             while (numbites-->0) {
@@ -757,7 +827,7 @@ void Community::_advanceTimers() {
     assert(_exposedMosquitoQueue.size() > 0);
     // advance incubation period of exposed mosquitoes
     for (unsigned int mnum=0; mnum<_exposedMosquitoQueue[0].size(); mnum++) {
-        Mosquito *m = _exposedMosquitoQueue[0][mnum];
+        Mosquito* m = _exposedMosquitoQueue[0][mnum];
         // incubation over: some mosquitoes become infectious
         int daysinfectious = m->getAgeDeath() - m->getAgeInfectious(); // - MOSQUITO_INCUBATION;
         assert((unsigned) daysinfectious < _infectiousMosquitoQueue.size());

@@ -95,13 +95,13 @@ void Parameters::define_defaults() {
     abcVerbose = false;
 }
 
-void Parameters::readParameters(int argc, char *argv[]) {
+void Parameters::readParameters(int argc, char* argv[]) {
     cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << endl;
     cerr << "written by Dennis Chao and Thomas Hladish in 2012-2014" << endl;
 
     if (argc>1) {
         for (int i=1; i<argc; i++) {
-            char **end = NULL;
+            char** end = NULL;
             if (strcmp(argv[i], "-randomseed")==0) {
                 randomseed = strtol(argv[++i],end,10);
             }
@@ -517,6 +517,20 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
 }
 
 
+void Parameters::writeAnnualSerotypes(string filename) const {
+    char sep = ' ';
+
+    ofstream file;
+    file.open(filename);
+    for (auto &year: nDailyExposed) {
+        for (auto val: year) file << val << sep;
+        file << endl;
+    }
+
+    file.close();
+}
+
+
 void Parameters::generateAnnualSerotypes() {
     enum State {GAP, RUN};
     // get rid of anything there now
@@ -590,7 +604,7 @@ void Parameters::loadDailyEIP(string dailyEIPfilename) {
     // get rid of anything there now
     extrinsicIncubationPeriods.clear();
 
-    char **end = NULL;
+    char** end = NULL;
     char sep = ' ';
     string line;
 
