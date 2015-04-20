@@ -33,9 +33,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
 
     string imm_dir("/scratch/lfs/thladish/imm_posterior_files");
+    string sero_dir("/scratch/lfs/thladish/annual_serotype_files");
+    string mos_dir("/scratch/lfs/thladish/mosquito_files");
+    string mosloc_dir("/scratch/lfs/thladish/mosquito_location_files");
     vector<long double> abc_args(&args[0], &args[5]);
     string argstring;
-    unsigned int imm_id = calculate_process_id(abc_args, argstring);
+    string particle_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
@@ -69,18 +72,26 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(4, 0);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
+    par->simulateAnnualSerotypes = false;
+    par->normalizeSerotypeIntros = false;
     if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    par->annualSerotypeFilename = sero_dir + "/annual_serotypes." + particle_id;
+    par->loadAnnualSerotypes();
+
+    // we need to throw out the serotype years that were already used during ABC
+    int abc_duration = 155;
+    vector<vector<float> >(par->nDailyExposed.begin()+abc_duration, par->nDailyExposed.end()).swap(par->nDailyExposed);
 
     par->annualIntroductions = vector<double>(1, 1.0);
 
-    par->populationFilename = pop_dir + "/population-yucatan.txt";
-    par->immunityFilename   = imm_dir + "/immunity." + to_string(imm_id);
-cerr << "argstring: " << argstring << " " << par->immunityFilename << endl;
-    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
-    par->networkFilename    = pop_dir + "/network-yucatan.txt";
-    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->populationFilename       = pop_dir + "/population-yucatan.txt";
+    par->immunityFilename         = imm_dir + "/immunity." + particle_id;
+//cerr << "argstring: " << argstring << " " << par->immunityFilename << endl;
+    par->locationFilename         = pop_dir + "/locations-yucatan.txt";
+    par->networkFilename          = pop_dir + "/network-yucatan.txt";
+    par->swapProbFilename         = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->mosquitoFilename         = mos_dir + "/mos." + particle_id;
+    par->mosquitoLocationFilename = mosloc_dir + "/mosloc." + particle_id;
 
     par->monthlyOutput = true;
 
@@ -241,6 +252,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     Community* community = build_community(par);
+    community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
         int default_coverage = 0.7;
