@@ -36,7 +36,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 //    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = rng_seed;
-    gsl_rng_set(RNG, par->randomseed);
     par->abcVerbose = true;
     par->nRunLength = 155*365;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
@@ -178,26 +177,24 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     double seropos_87 = 0.0;
     vector<int> serotested_ids = read_pop_ids("8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
-    //vector<int> epi_sizes = simulate_abc(par, community, process_id, serotested_ids, seropos_87);
+
+    // We might want to write the immunity file if this is the real posterior
+//    string imm_filename = "/scratch/lfs/thladish/immunity." + to_string(process_id);
+//    write_immunity_file(par, community, process_id, imm_filename);
+
     vector<int> case_sizes = tally_counts(par, community);
     vector<int>(case_sizes.begin()+120, case_sizes.end()).swap(case_sizes); // throw out first 120 values
 
     time (&end);
     double dif = difftime (end,start);
 
-    // calculate linear regression based on estimated reported cases
     const double ef = par->expansionFactor;
-//    vector<double> x(case_sizes.size());
-//    vector<double> y(case_sizes.size());
     Col y(case_sizes.size());
     const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < case_sizes.size(); i++) { 
         // convert infections to cases per 100,000
         y[i] = ((float_type) 1e5*case_sizes[i])/(ef*pop_size); 
-        // year index, for regression
- //       x[i] = i+1.0;
     }
-    //Fit* fit = lin_reg(x, y);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
@@ -214,8 +211,6 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     float_type _seropos          = seropos_87;
     ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << " " << _seropos << endl;
       
-//       << fit->m << " " << fit->b << " " << fit->rsq << endl;
-
     string output = ss.str();
     fputs(output.c_str(), stderr);
     
@@ -230,6 +225,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     delete par;
     delete community;
+
     return metrics;
 }
 
@@ -238,7 +234,6 @@ void usage() {
     cerr << "\n\tUsage: ./abc_sql abc_config_sql.json --process\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate -n <number of simulations per database write>\n\n";
-
 }
 
 
