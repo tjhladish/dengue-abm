@@ -3,6 +3,7 @@
 *.swo
 *.png
 *.pdf
+*.sqlite
 abc/abc_mpi
 mpi_model
 pop-yucatan/locations-yucatan.txt

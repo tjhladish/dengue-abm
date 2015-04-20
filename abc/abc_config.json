@@ -1,12 +1,12 @@
 {
-    "smc_iterations" : 10,
-    "num_samples"    : 10000,
+    "smc_iterations" : 6,
+    "num_samples"    : 40000,
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.5,
 
     "particle_basefilename"         : "dengue_particles-120y",
     "predictive_prior_basefilename" : "dengue_predictive_prior-120y",
-    "database_filename"             : "dengue-caseEF.sqlite",
+    "database_filename"             : "posterior-dengue-caseEF.sqlite",
 
     "parameters" : [
         {"name"       : "case_expansion_factor",

@@ -46,6 +46,9 @@ abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 abc_sql: libabc_no_mpi dengue_no_mpi main_sql.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
+test_sql: libabc_no_mpi dengue_no_mpi test_sql.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean
 	$(MAKE) -C $(DENDIR) -f Makefile clean
