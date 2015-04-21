@@ -103,7 +103,7 @@ bool Person::isInfectable(Serotype serotype, int time) const {
     if (!isSusceptible(serotype)) {
         // immune to this serotype via previous infection OR non-leaky vaccine
         infectable = false;                                   
-    } else if (getNumInfections() > 0 and infectionHistory.back()->recoveryTime + _par->nDaysImmune > time) {
+    } else if (getNumInfections() > 0 and infectionHistory.back()->infectedTime + _par->nDaysImmune > time) {
         // cross-serotype protection from last infection
         infectable = false;
     } else if (getInfectionParity() >= maxinfectionparity) {
@@ -118,6 +118,8 @@ bool Person::isInfectable(Serotype serotype, int time) const {
         if ( r < protectionProbability ) {
             infectable = false;
         }
+    } else {
+        // Apparently person is infectable
     }
     return infectable;
 }
@@ -180,18 +182,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 
     // Determine if this person withdraws (stops going to work/school)
     const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
-    const double secondary_scaling     = _par->fSecondaryScaling[(int) serotype];
+    const double secondary_symptomatic = _nImmunity.any() ? _par->fSecondaryScaling[(int) serotype] : 1.0;
     const double effective_VEP         = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
-    const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
 
     const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - effective_VEP) * secondary_symptomatic;
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability) {
+        // TODO - the 1 in the below line is a parameter and should be moved out
         infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
         double r = gsl_rng_uniform(RNG);
         const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
         for (int i=0; i<symptomatic_duration; i++) {
-            if (r < 1-pow(0.5,1+i) ) {
+            if (r < 1-pow(0.5,1+i) ) {                                              // TODO - refactor to sample from geometric
                 infection.withdrawnTime = infection.symptomTime + i;                // withdraws
                 break;
             }
@@ -199,17 +201,20 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         _bCase = true;
     }
 
+    // TODO - clarify what's going on with d; sometimes this is an old infection, sometimes a current one
     for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
         if (d < 0) continue; // we don't need to worry about flagging locations for past infections
         for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
     }
+
     if (_par->bRetroactiveMatureVaccine) {
         // if the best vaccine-induced immunity can be acquired retroactively,
         // upgrade this person from naive to mature
         _bNaiveVaccineProtection = false;
     }
+
     return true;
 }
 

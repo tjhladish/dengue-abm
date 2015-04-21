@@ -8,6 +8,7 @@
 #include <sstream>
 #include <assert.h>
 #include <math.h>
+#include <algorithm>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include "Person.h"
@@ -202,13 +203,14 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
                 const int id = parts[0];
                 Person* person = getPersonByID(id);
                 unsigned int offset = parts.size() - NUM_OF_SEROTYPES;
+                vector<pair<int,Serotype> > infection_history;
                 for (unsigned int f=offset; f<offset+NUM_OF_SEROTYPES; f++) {
                     Serotype s = (Serotype) (f - offset);
                     const int infection_time = parts[f];
                     if (infection_time == 0) {
                         continue; // no infection for this serotype
                     } else if (infection_time<0) {
-                        person->infect(s, infection_time);
+                        infection_history.push_back(make_pair(infection_time, s));
                     } else {
                         cerr << "ERROR: Found positive-valued infection time in population immunity file:\n\t";
                         cerr << "person " << person->getID() << ", serotype " << s+1 << ", time " << infection_time << "\n\n";
@@ -217,6 +219,8 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
                         exit(-359);
                     }
                 }
+                sort(infection_history.begin(), infection_history.end());
+                for (auto p: infection_history) person->infect(p.second, p.first + _nDay);
             } else if (parts.size() == 0) {
                 continue; // skipping blank line, or line that doesn't start with ints
             } else {
@@ -419,9 +423,10 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
 Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
-    if(id < 0 or id > _nNumPerson) {
+    // TODO - make that not true (about starting at 1)
+    if(id < 1 or id > _nNumPerson) {
         cerr << "ERROR: failed to find person with id " << id << " max: " << _nNumPerson << endl;
-        assert(id >= 0 and id <= _nNumPerson);
+        assert(id > 0 and id <= _nNumPerson);
     }
 
     int i = 0;

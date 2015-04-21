@@ -82,7 +82,7 @@ const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 Community* build_community(const Parameters* par);
 void seed_epidemic(const Parameters* par, Community* community);
 vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id=0);
-void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename="");
+void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename, int runLength);
 void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename="");
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 void write_daily_buffer( vector<string>& buffer, const int process_id);
@@ -427,25 +427,9 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
         }
 
         periodic_output(par, community, periodic_incidence, date, process_id, epi_sizes);
-
     }
 
     return epi_sizes;
-}
-
-
-void write_immunity_file() {
-    /*{
-      epi_sizes.push_back(periodic_incidence["monthly"][2]);
-      string imm_filename;
-      stringstream ss_imm_filename;
-      //we're starting in april, want to start numbering at 1
-      ss_imm_filename << "immunity." << process_id << ".mon" << date.month();
-      //ss_imm_filename << "immunity." << process_id << ".year" << date.year() << ".mon" << date.month();
-      imm_filename = ss_imm_filename.str();
-      int dummy = 0;
-      write_immunity_by_age_file(par, community, dummy, imm_filename);
-    }*/
 }
 
 
@@ -492,7 +476,7 @@ void write_immunity_by_age_file(const Parameters* par, const Community* communit
 }
 
 
-void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename) {
+void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename, int runLength) {
     if (filename == "") {
         stringstream ss_filename;
         ss_filename << "immunity." << int_label;
@@ -503,15 +487,10 @@ void write_immunity_file(const Parameters* par, const Community* community, cons
     file << "pid age imm1 imm2 imm3 imm4\n";
     for (int i = 0; i<community->getNumPerson(); ++i) {
         Person* p = community->getPerson(i);
-        vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; 1 means last year, 2 means 2 years ago ...
-//if (i == 0) cerr << "person 0 num infections: " << p->getNumInfections()  << " in year " << year << endl;
+        vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; -1 means yesterday, -2 means 2 days ago ...
         for (int k = 0; k<p->getNumInfections(); ++k) {
             int s = (int) p->getSerotype(k);
-            infection_history[s] = p->getInfectedTime(k) - par->nRunLength;
-            // how many years ago did this person get infected?  within last 365 days = 1 year ago
-            // infection time is relative to end of simulation of par->nRunLength days
-            //infection_history[s] = 1 + (int) (par->nRunLength - p->getInfectedTime(k))/365;
-//if (i == 0) cerr << "infection time: " << p->getInfectedTime()  << " output as: " << infection_history[s] << endl;
+            infection_history[s] = p->getInfectedTime(k) - runLength;
         }
         file << p->getID() << " " << p->getAge() << " ";
         for (auto sero: infection_history) file << sero << " ";
