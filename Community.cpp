@@ -364,8 +364,8 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
         line.clear();
         line.str(buffer);
         if (line >> locID >> baseMos >> infdMos) {
-            if (locID >= (signed) _location.size() - 1) {
-                cerr << "ERROR: Location ID in mosquito location file greater than largest valid location ID" 
+            if (locID >= (signed) _location.size()) {
+                cerr << "ERROR: Location ID in mosquito location file greater than largest valid location"
                      << " ID: " << locID << " in file: " << moslocFilename << endl;
                 return false;
             }
@@ -396,8 +396,8 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
         line.clear();
         line.str(buffer);
         if (line >> locID >> sero >> queue >> idx >> ageInfd >> ageInfs >> ageDead) {
-            if (locID >= (signed) _location.size() - 1) {
-                cerr << "ERROR: Location ID in mosquito file greater than largest valid location ID"
+            if (locID >= (signed) _location.size()) {
+                cerr << "ERROR: Location ID in mosquito file greater than largest valid location"
                      << " ID: " << locID << " in file: " << mosFilename << endl;
                 return false;
             }
