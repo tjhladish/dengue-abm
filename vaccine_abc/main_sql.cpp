@@ -252,7 +252,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     Community* community = build_community(par);
-    community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
+    //community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
         int default_coverage = 0.7;
