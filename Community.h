@@ -28,7 +28,7 @@ class Community {
         void populate(Person **parray, int targetpop);
         Person* getPersonByID(int id);
         bool infect(int id, Serotype serotype, int day);
-        int attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
+        void attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() { return _nDay; }                                // what day is it?
         void swapImmuneStates(); 
         void updateWithdrawnStatus(); 

@@ -356,14 +356,15 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
     if (!iss_mosloc) { cerr << "ERROR: " << moslocFilename << " not found." << endl; return false; }
 
     string buffer;
-    int locID, baseMos, infdMos;
+    int locID, baseMos;
     istringstream line(buffer);
 
     while (iss_mosloc) {
         if (!getline(iss_mosloc, buffer)) break;
         line.clear();
         line.str(buffer);
-        if (line >> locID >> baseMos >> infdMos) {
+        if (line >> locID >> baseMos) { // there may be an infected_mosquito_ct field, but that is handled
+                                        // when we call the mos constructor while parsing the mosquito file
             if (locID >= (signed) _location.size()) {
                 cerr << "ERROR: Location ID in mosquito location file greater than largest valid location"
                      << " ID: " << locID << " in file: " << moslocFilename << endl;
@@ -372,7 +373,6 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
             Location* loc = _location[locID];
             loc->setBaseMosquitoCapacity(baseMos);
             loc->clearInfectedMosquitoes();
-            loc->addInfectedMosquitoes(infdMos);
         }
     }
     iss_mosloc.close();
@@ -505,7 +505,7 @@ void Community::boost(int time, double f) { // re-vaccinate people who have less
 
 
 // returns number of days mosquito has left to live
-int Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
+void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
     int eip = getExtrinsicIncubation();
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
@@ -514,13 +514,13 @@ int Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfecte
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
+        // dies before infectious
         delete m;
-        return daysleft;                                              // dies before infectious
+    } else {
+        // add mosquito to latency queue
+        _exposedMosquitoQueue[eip-1].push_back(m);
     }
-
-    // add mosquito to latency queue
-    _exposedMosquitoQueue[eip-1].push_back(m);
-    return daysleft;
+    return;
 }
 
 
@@ -795,8 +795,7 @@ void Community::humanToMosquitoTransmission() {
                     for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
                         r -= sumserotype[serotype];
                 }
-                int daysleft = attemptToAddMosquito(loc, (Serotype) serotype, locid);
-                if (daysleft > 0) loc->addInfectedMosquito();
+                attemptToAddMosquito(loc, (Serotype) serotype, locid);
             }
         }
     }

@@ -40,6 +40,7 @@ Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExter
     while (MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]<r && _nAgeDeath<MAX_MOSQUITO_AGE-1)
         _nAgeDeath++;
     _pLocation = _pOriginLocation = p;
+    _pLocation->addInfectedMosquito();
 }
 
 Mosquito::Mosquito(Location* p, Serotype s, int ageInfd, int ageInfs, int ageDead):
@@ -48,6 +49,7 @@ Mosquito::Mosquito(Location* p, Serotype s, int ageInfd, int ageInfs, int ageDea
     _bDead = false;
     _nInfectedAtID = -1;
     _pOriginLocation = NULL;
+    _pLocation->addInfectedMosquito();
 }
 
 
