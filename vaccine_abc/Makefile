@@ -8,7 +8,8 @@ DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
-INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
+INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR)
+HPC_INCLUDES += -I$$TACC_GSL_INC $$HPC_GSL_INC
 
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
 GSL_LIB = -lm -L$$TACC_GSL_LIB/ -L$$HPC_GSL_LIB/ -lgsl -lgslcblas -lpthread -ldl
@@ -39,6 +40,9 @@ immunity_mpi:
 
 abc: main.cpp
 	$(CC) $(CFLAGS) main.cpp -o abc $(INCLUDES) $(ABC_LIB) $(GSL_LIB)
+
+abc_sql_hpc: libabc_no_mpi dengue_no_mpi main_sql.cpp
+	$(CC) $(CFLAGS) $(HPC_INCLUDES) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_sql: libabc_no_mpi dengue_no_mpi main_sql.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
