@@ -1,0 +1,56 @@
+{
+    "smc_iterations" : 1,
+    "num_samples"    : 1000,
+    "predictive_prior_fraction" : 1.0,
+    "pls_training_fraction"     : 1.0,
+
+    "database_filename"             : "rzero.sqlite",
+    "posterior_database_filename"   : "posterior.sqlite",
+
+    "parameters" : [
+        {"name"       : "caseEF",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "mos_mov",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "exp_coef",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "num_mos",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "beta",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999}
+    ],
+
+    "metrics" : [
+        {"name" : "r01", "num_type" : "INT", "value" : 0},
+        {"name" : "r02", "num_type" : "INT", "value" : 0},
+        {"name" : "r03", "num_type" : "INT", "value" : 0},
+        {"name" : "r04", "num_type" : "INT", "value" : 0},
+        {"name" : "r05", "num_type" : "INT", "value" : 0},
+        {"name" : "r06", "num_type" : "INT", "value" : 0},
+        {"name" : "r07", "num_type" : "INT", "value" : 0},
+        {"name" : "r08", "num_type" : "INT", "value" : 0},
+        {"name" : "r09", "num_type" : "INT", "value" : 0},
+        {"name" : "r10", "num_type" : "INT", "value" : 0},
+        {"name" : "r11", "num_type" : "INT", "value" : 0},
+        {"name" : "r12", "num_type" : "INT", "value" : 0}
+    ]
+}
