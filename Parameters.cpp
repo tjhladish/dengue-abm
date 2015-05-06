@@ -5,6 +5,7 @@
 #include <sstream>
 #include <numeric>
 #include <gsl/gsl_randist.h>
+#include <climits> // INT_MAX
 
 void Parameters::define_defaults() {
     randomseed = 5489;
@@ -70,6 +71,10 @@ void Parameters::define_defaults() {
     nVaccinateAge.clear();
     fVaccinateFraction.clear();
 
+    linearlyWaningVaccine = false;
+    vaccineImmunityDuration = INT_MAX;
+    vaccineBoosting = false;
+
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
     mosquitoMultipliers.clear();
     mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
@@ -90,13 +95,13 @@ void Parameters::define_defaults() {
     abcVerbose = false;
 }
 
-void Parameters::readParameters(int argc, char *argv[]) {
+void Parameters::readParameters(int argc, char* argv[]) {
     cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << endl;
     cerr << "written by Dennis Chao and Thomas Hladish in 2012-2014" << endl;
 
     if (argc>1) {
         for (int i=1; i<argc; i++) {
-            char **end = NULL;
+            char** end = NULL;
             if (strcmp(argv[i], "-randomseed")==0) {
                 randomseed = strtol(argv[++i],end,10);
             }
@@ -512,6 +517,20 @@ void Parameters::loadAnnualSerotypes(string annualSerotypeFilename) {
 }
 
 
+void Parameters::writeAnnualSerotypes(string filename) const {
+    char sep = ' ';
+
+    ofstream file;
+    file.open(filename);
+    for (auto &year: nDailyExposed) {
+        for (auto val: year) file << val << sep;
+        file << endl;
+    }
+
+    file.close();
+}
+
+
 void Parameters::generateAnnualSerotypes() {
     enum State {GAP, RUN};
     // get rid of anything there now
@@ -521,16 +540,19 @@ void Parameters::generateAnnualSerotypes() {
     int run_length_years = (int) ceil((double) nRunLength / 365.0);
     nDailyExposed.resize(run_length_years, vector<float>(NUM_OF_SEROTYPES));
 
-    const float p_gap = 1.0/MEAN_GAP_LENGTH;
-    const float p_run = 1.0/MEAN_RUN_LENGTH;
-    const float p_gap_start = MEAN_GAP_LENGTH/(MEAN_GAP_LENGTH + MEAN_RUN_LENGTH);
-
     for (int s = 0; s<NUM_OF_SEROTYPES; ++s) {
+        const float p_gap = 1.0/MEAN_GAP_LENGTH[s];
+        const float p_run = 1.0/MEAN_RUN_LENGTH[s];
+        const float p_gap_start = MEAN_GAP_LENGTH[s]/(MEAN_GAP_LENGTH[s] + MEAN_RUN_LENGTH[s]);
+
         int years_so_far = 0;
         State state = p_gap_start > gsl_rng_uniform(RNG) ? GAP : RUN;
         while (years_so_far < run_length_years) {
             if (state == GAP) {
                 unsigned int gap = gsl_ran_geometric(RNG, p_gap);
+                // We may not be starting at the beginning of a gap
+                // Also: gsl_rng_uniform_int() returns ints on [0,n-1]
+                if (years_so_far == 0) gap = gsl_rng_uniform_int(RNG, gap) + 1;
                 while (gap > 0 and (unsigned) years_so_far < nDailyExposed.size()) {
                     nDailyExposed[years_so_far++][s] = 0.0;
                     --gap;
@@ -538,6 +560,7 @@ void Parameters::generateAnnualSerotypes() {
                 state = RUN;
             } else {
                 unsigned int run = gsl_ran_geometric(RNG, p_run);
+                if (years_so_far == 0) run = gsl_rng_uniform_int(RNG, run) + 1;
                 while (run > 0 and (unsigned) years_so_far < nDailyExposed.size()) {
                     nDailyExposed[years_so_far++][s] = 1.0;
                     --run;
@@ -581,7 +604,7 @@ void Parameters::loadDailyEIP(string dailyEIPfilename) {
     // get rid of anything there now
     extrinsicIncubationPeriods.clear();
 
-    char **end = NULL;
+    char** end = NULL;
     char sep = ' ';
     string line;
 

@@ -55,11 +55,15 @@ Infection& Person::initializeNewInfection(Serotype serotype) {
 }
 
 
-// copyImmunity - copy immune status from person *p
-void Person::copyImmunity(const Person *p) {
+// copyImmunity - copy immune status from person* p
+void Person::copyImmunity(const Person* p) {
     assert(p!=NULL);
     _nImmunity = p->_nImmunity;
     _bVaccinated = p->_bVaccinated;
+
+    vaccineHistory.clear();
+    vaccineHistory.assign(p->vaccineHistory.begin(), p->vaccineHistory.end());
+
     clearInfectionHistory();
     for (int i=0; i < p->getNumInfections(); i++) {
         infectionHistory.push_back( new Infection(p->infectionHistory[i]) );
@@ -72,6 +76,7 @@ void Person::resetImmunity() {
     _nImmunity.reset();
     clearInfectionHistory();
     _bVaccinated = false;
+    vaccineHistory.clear();
     _bNaiveVaccineProtection = false;
     _bCase = false;
     _bDead = false;
@@ -92,13 +97,13 @@ void Person::kill(int time) {
 }
 
 
-bool Person::isInfectable(Serotype serotype, int time) {
+bool Person::isInfectable(Serotype serotype, int time) const {
     bool infectable = true;
-    const int maxinfectionparity    = _par->nMaxInfectionParity;
+    const int maxinfectionparity = _par->nMaxInfectionParity;
     if (!isSusceptible(serotype)) {
         // immune to this serotype via previous infection OR non-leaky vaccine
         infectable = false;                                   
-    } else if (getNumInfections() > 0 and infectionHistory.back()->recoveryTime + _par->nDaysImmune > time) {
+    } else if (getNumInfections() > 0 and infectionHistory.back()->infectedTime + _par->nDaysImmune > time) {
         // cross-serotype protection from last infection
         infectable = false;
     } else if (getInfectionParity() >= maxinfectionparity) {
@@ -108,18 +113,39 @@ bool Person::isInfectable(Serotype serotype, int time) {
         // potentially protected by leaky vaccine
         // (all-or-none vaccines are handled via isSusceptible conditional)
         double r = gsl_rng_uniform(RNG);
-        double protectionProbability = 0;
+        double protectionProbability = vaccineProtection(serotype, time);
         // Which level of protection does this person have?
-        if (_bNaiveVaccineProtection == true) {
-            protectionProbability = _par->fVESs_NAIVE[serotype];
-        } else {
-            protectionProbability = _par->fVESs[serotype];
-        }
         if ( r < protectionProbability ) {
             infectable = false;
         }
+    } else {
+        // Apparently person is infectable
     }
     return infectable;
+}
+
+
+double Person::vaccineProtection(const Serotype serotype, const int time) const {
+    double ves;
+    if (not isVaccinated()) {
+        ves = 0.0;
+    } else {
+        int time_since_vac = daysSinceVaccination(time);
+        if (time_since_vac > _par->vaccineImmunityDuration) {
+            ves = 0.0;
+        } else {
+            if (_bNaiveVaccineProtection == true) {
+                ves = _par->fVESs_NAIVE[serotype];
+            } else {
+                ves = _par->fVESs[serotype];
+            }
+            if (_par->linearlyWaningVaccine) {
+                // reduce by fraction of immunity duration that has waned
+                ves *=  1.0 - ((double) time_since_vac / _par->vaccineImmunityDuration); 
+            }
+        }
+    }
+    return ves;
 }
 
 
@@ -156,18 +182,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 
     // Determine if this person withdraws (stops going to work/school)
     const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
-    const double secondary_scaling     = _par->fSecondaryScaling[(int) serotype];
-    const double vaccine_protection    = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
-    const double secondary_symptomatic = _nImmunity.any() ? secondary_scaling : 1.0;
+    const double secondary_symptomatic = _nImmunity.any() ? _par->fSecondaryScaling[(int) serotype] : 1.0;
+    const double effective_VEP         = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
 
-    const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - vaccine_protection) * secondary_symptomatic;
+    const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - effective_VEP) * secondary_symptomatic;
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability) {
+        // TODO - the 1 in the below line is a parameter and should be moved out
         infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
         double r = gsl_rng_uniform(RNG);
         const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
         for (int i=0; i<symptomatic_duration; i++) {
-            if (r < 1-pow(0.5,1+i) ) {
+            if (r < 1-pow(0.5,1+i) ) {                                              // TODO - refactor to sample from geometric
                 infection.withdrawnTime = infection.symptomTime + i;                // withdraws
                 break;
             }
@@ -175,22 +201,25 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         _bCase = true;
     }
 
+    // TODO - clarify what's going on with d; sometimes this is an old infection, sometimes a current one
     for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
         if (d < 0) continue; // we don't need to worry about flagging locations for past infections
         for (int t=0; t<STEPS_PER_DAY; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
     }
+
     if (_par->bRetroactiveMatureVaccine) {
         // if the best vaccine-induced immunity can be acquired retroactively,
         // upgrade this person from naive to mature
         _bNaiveVaccineProtection = false;
     }
+
     return true;
 }
 
 
-bool Person::isNewlyInfected(int time) {
+bool Person::isNewlyInfected(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time == infection->infectedTime) {
@@ -201,7 +230,7 @@ bool Person::isNewlyInfected(int time) {
 }
 
 
-bool Person::isInfected(int time) {
+bool Person::isInfected(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time >= infection->infectedTime and time < infection->recoveryTime) {
@@ -212,7 +241,7 @@ bool Person::isInfected(int time) {
 }
 
 
-bool Person::isViremic(int time) {
+bool Person::isViremic(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time >= infection->infectiousTime and time < infection->recoveryTime and not _bDead) {
@@ -223,7 +252,7 @@ bool Person::isViremic(int time) {
 }
 
 
-bool Person::isSymptomatic(int time) {
+bool Person::isSymptomatic(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
@@ -234,7 +263,7 @@ bool Person::isSymptomatic(int time) {
 }
 
 
-bool Person::isWithdrawn(int time) {
+bool Person::isWithdrawn(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time >= infection->withdrawnTime and time < infection->recoveryTime and not _bDead) {
@@ -245,18 +274,18 @@ bool Person::isWithdrawn(int time) {
 }
 
 
-bool Person::isSusceptible(Serotype serotype) {
+bool Person::isSusceptible(Serotype serotype) const {
     return !_bDead && !(_nImmunity[serotype] == 1);  //1<<0=1  1<<1=2  1<<2=4  1<<3=8   1<<4=16
 }
 
 
 // getInfectionParity - number of serotypes with immunity (including vaccination)
-int Person::getInfectionParity() {
+int Person::getInfectionParity() const {
     return _nImmunity.count(); // count number of 1's in bit string
 }
 
 
-bool Person::fullySusceptible() {
+bool Person::fullySusceptible() const {
     bool susceptible = true;
     for (int s = 0; s<(int) NUM_OF_SEROTYPES; ++s) {
         if ( not isSusceptible((Serotype) s) ) { susceptible = false; }
@@ -265,10 +294,11 @@ bool Person::fullySusceptible() {
 }
 
 
-bool Person::vaccinate() {
+bool Person::vaccinate(int time) {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;
         _bVaccinated = true;
+        vaccineHistory.push_back(time);
         if ( fullySusceptible() ) {
             _bNaiveVaccineProtection = true;
         } else {

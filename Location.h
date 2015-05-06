@@ -20,7 +20,9 @@ class Location {
         int getBaseMosquitoCapacity() { return _nBaseMosquitoCapacity; }
         int getCurrentInfectedMosquitoes() { return _currentInfectedMosquitoes; }
         void addInfectedMosquito() { _currentInfectedMosquitoes++; }
+        void addInfectedMosquitoes(int n) { _currentInfectedMosquitoes += n; }
         void removeInfectedMosquito() { _currentInfectedMosquitoes--; }
+        void removeInfectedMosquitoes(int n) { _currentInfectedMosquitoes -= n; }
         void clearInfectedMosquitoes() { _currentInfectedMosquitoes = 0; }
         void addNeighbor(Location *p);
         int getNumNeighbors() { return _neighbors.size(); }
