@@ -15,10 +15,12 @@ void Parameters::define_defaults() {
     fMosquitoMove = 0.2;
     mosquitoMoveModel = "weighted";
     fMosquitoTeleport = 0.01;
-    fVEI = 0.0;
-    fVEP = 0.0;
     fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
     fVESs_NAIVE.clear();
+    fVEI = 0.0;
+    fVEP = 0.0;
+    fVEH = 0.803;
+    hospitalizedFraction = 0.25;
     bVaccineLeaky = false;
     fPreVaccinateFraction = 0.0;
     nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
