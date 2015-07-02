@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <unordered_set>
+#include <numeric>
 
 
 class Person;
@@ -18,6 +19,7 @@ class Community {
         virtual ~Community();
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
+        bool loadMosquitoes(std::string moslocFilename, std::string mosFilename);
         int getNumPerson() const { return _nNumPerson; }
         Person *getPerson(int n) const { return _person+n; }
         int getNumInfected(int day);
@@ -27,24 +29,21 @@ class Community {
         Person* getPersonByID(int id);
         bool infect(int id, Serotype serotype, int day);
         int attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
-        int getDay() {                                                // what day is it?
-            return _nDay;
-        }
+        int getDay() { return _nDay; }                                // what day is it?
         void swapImmuneStates(); 
-        void updateWithdrawnStatus(); 
+        void updateDiseaseStatus();
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
-        void tick(int day);                                                  // simulate one day
+        void tick(int day);                                           // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
-        void setMosquitoMultiplier(double f) {                        // seasonality multiplier for number of mosquitoes
-            _fMosquitoCapacityMultiplier = f;
-        }
+        void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
         void setExtrinsicIncubation(int n) { _EIP = n; }
         int getExtrinsicIncubation() const { return _EIP; }
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
-        void vaccinate(double f, int age=-1);
+        void vaccinate(int time, double f, int age=-1);
+        void boost(int time, double f);
         void setVES(double f);
         void setVESs(std::vector<double> f);
         Mosquito *getInfectiousMosquito(int n);
@@ -52,10 +51,15 @@ class Community {
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
+        std::vector< std::vector<int> > getNumSevereCases() { return _nNumSevereCases; }
         static void flagInfectedLocation(Location* _pLoc, int day);
 
-        void reset();                                                 // reset the state of the community; experimental! 
+        int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
 
+        void reset();                                                 // reset the state of the community; experimental! 
+        const std::vector<Location*> getLocations() const { return _location; }
+        const std::vector< std::vector<Mosquito*> > getInfectiousMosquitoes() const { return _infectiousMosquitoQueue; }
+        const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
 
     protected:
         static const Parameters* _par;
@@ -77,6 +81,7 @@ class Community {
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
+        std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::unordered_set<Location*> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 

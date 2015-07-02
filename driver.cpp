@@ -1,6 +1,6 @@
 #include "simulator.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     const Parameters* par = new Parameters(argc, argv);
 
     Community* community = build_community(par);

@@ -15,29 +15,31 @@ class Mosquito
 {
     public:
         Mosquito();
-        Mosquito(Location *p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod);
+        Mosquito(Location* p, Serotype s, int nInfectedAtID, int nExternalIncubationPeriod);
+        Mosquito(Location* p, Serotype s, int ageInfd, int ageInfs, int ageDead);
+
         virtual ~Mosquito();
-        int getID() { return _nID; }
-        Location *getLocation() { return _pLocation; }
+        int getID() const { return _nID; }
+        Location* getLocation() const { return _pLocation; }
         void setLocation(Location *p) { _pLocation = p; }
-        void updateLocation(Location *p) { _pLocation->removeInfectedMosquito(); setLocation(p); _pLocation->addInfectedMosquito(); }
-        Location *getOriginLocation() { return _pOriginLocation; }
-        int getAgeInfected() { return _nAgeInfected; }
-        int getAgeInfectious() { return _nAgeInfectious; }
-        int getAgeDeath() { return _nAgeDeath; }
-        bool isDead() { return _bDead; }
-        Serotype getSerotype() { return _eSerotype; }
+        void updateLocation(Location *p) { _pLocation->removeInfectedMosquito(); setLocation(p); p->addInfectedMosquito(); }
+        Location* getOriginLocation() const { return _pOriginLocation; }
+        int getAgeInfected() const { return _nAgeInfected; }
+        int getAgeInfectious() const { return _nAgeInfectious; }
+        int getAgeDeath() const { return _nAgeDeath; }
+        bool isDead() const { return _bDead; }
+        Serotype getSerotype() const { return _eSerotype; }
 
 
     protected:
         int _nID;                                                     // unique identifier
-        Location *_pLocation;                                         // pointer to present location
-        Location *_pOriginLocation;                                   // pointer to origin (where infected) location
+        Location* _pLocation;                                         // pointer to present location
+        Location* _pOriginLocation;                                   // pointer to origin (where infected) location
+        Serotype _eSerotype;                                          // infecting serotype
         int _nAgeInfected;                                            // age when infected in days
         int _nAgeInfectious;                                          // age when infectious in days
         int _nAgeDeath;                                               // lifespan in days
         bool _bDead;                                                  // is dead?
-        Serotype _eSerotype;                                          // infecting serotype
         int _nInfectedAtID;                                           // location ID where infected
         static int _nNextID;                                          // unique ID to assign to the next Mosquito allocated
 };

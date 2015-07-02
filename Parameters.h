@@ -95,22 +95,24 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
 };
 
 //       RUNS 1979-2014 
-// DENV1:  7  9  1  1  5  1   
-// DENV2:  1  1  6 14
-// DENV3:  4  1  2  1
+// DENV1:  7  11  1  10
+// DENV2:  1  1  6  14
+// DENV3:  2  1  2  1
 // DENV4:  1  1  2  1  3   
 //
 //       GAPS 1979-2014
-// DENV1:  1  6  2  2  1
+// DENV1:  1  4  2
 // DENV2:  7  4  2  1
-// DENV3: 17  1  4  5  1
+// DENV3: 17  3  4  5  1
 // DENV4:  5  9  1  9  4
 
-// average number of consequtive years a serotype is observed, Yucatan data, 1979-2013
-static const double MEAN_RUN_LENGTH = 3.26;
+// fitted using ABC to Yucatan serotype data, 1979-2014
+static const std::vector<double> MEAN_RUN_LENGTH = { 13.03, 8.99, 1.90, 2.17 };
+static const std::vector<double> MEAN_GAP_LENGTH = { 3.33, 6.36, 11.10, 9.43 };
 
-// average number of consequtive years between serotype observations, Yucatan data, 1979-2013
-static const double MEAN_GAP_LENGTH = 4.32;
+// old model
+//static const std::vector<double> MEAN_RUN_LENGTH = std::vector<double>(4,3.26);
+//static const std::vector<double> MEAN_GAP_LENGTH = std::vector<double>(4,4.32);
 
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
@@ -173,22 +175,26 @@ public:
     void readParameters(int argc, char *argv[]);
     void validate_parameters();
     void loadAnnualIntroductions(std::string annualIntrosFilename);
+    void loadAnnualSerotypes() { loadAnnualSerotypes(annualSerotypeFilename); };
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
+    void writeAnnualSerotypes(std::string filename) const;
     void loadDailyEIP(std::string dailyEIPFilename);
     void generateAnnualSerotypes();
     bool simulateAnnualSerotypes;
 
-    int randomseed;
+    unsigned long int randomseed;
     int nRunLength;
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
     std::string mosquitoMoveModel;                          // weighted or uniform mosquito movement to adj. buildings
     double fMosquitoTeleport;                               // daily probability of mosquito teleportation (long-range movement)
-    double fVEI;                                            // vaccine efficacy to reduce infectiousness
-    double fVEP;                                            // vaccine efficacy for pathogenicity
     std::vector<double> fVESs;                              // vaccine efficacy for susceptibility (can be leaky or all-or-none)
     std::vector<double> fVESs_NAIVE;                        // VES for initially immunologically naive people
+    double fVEI;                                            // vaccine efficacy to reduce infectiousness
+    double fVEP;                                            // vaccine efficacy for pathogenicity
+    double fVEH;                                            // vaccine efficacy against hospitalization, given disease
+    double hospitalizedFraction;                            // Probability of being hospitalized, given disease
     double fPreVaccinateFraction;
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
@@ -220,11 +226,16 @@ public:
     std::string annualIntroductionsFilename;                // time series of some external factor determining introduction rate
     std::string annualSerotypeFilename;                     // time series of some external factor determining introduction rate
     std::string dailyEIPfilename;
+    std::string mosquitoFilename;
+    std::string mosquitoLocationFilename;
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
     int nDaysImmune;
     int nSizeVaccinate;
+    bool linearlyWaningVaccine;
+    int vaccineImmunityDuration;
+    bool vaccineBoosting;
     std::vector<int> nVaccinateYear;                        // when to vaccinate
     std::vector<int> nVaccinateAge;                         // whom to vaccinate
     std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate

@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "particle_basefilename"         : "particles-burnin_50mos_0.0-3.0",
-    "predictive_prior_basefilename" : "predictive_prior-burnin_50mos_0.0-3.0",
+    "posterior_database_filename"   : "imm_dump.sqlite",
+    "database_filename"             : "vac_waning-VEs.sqlite",
 
     "parameters" : [
         {"name"       : "vac",

@@ -1,4 +1,3 @@
-#include "mpi.h"
 #include <unistd.h>
 #include "AbcSmc.h"
 #include "simulator.h"
@@ -16,20 +15,6 @@ using dengue::util::stdev;
 using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
-
-
-void setup_mpi(MPI_par &m, int &argc, char **argv) {
-    /* MPI variables */
-    m.comm  = MPI_COMM_WORLD;
-    m.info  = MPI_INFO_NULL;
-
-    /* Initialize MPI */
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(m.comm, &m.mpi_size);
-    MPI_Comm_rank(m.comm, &m.mpi_rank);  
-}
-
-
 
 Parameters* define_default_parameters(const int years_simulated) {
     Parameters* par = new Parameters();
@@ -90,7 +75,7 @@ Parameters* define_default_parameters(const int years_simulated) {
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
 
-    //par->monthlyOutput = true;
+    par->monthlyOutput = true;
 
     return par;
 }
@@ -153,7 +138,7 @@ void generate_homogeneous_immune_history(Community* community, float attack_rate
     }
 }
 
-void sample_immune_history(Community* community, const Parameters* par) {
+/*void sample_immune_history(Community* community, const Parameters* par) {
     const int last_immunity_year = 2002;
     vector<vector<vector<int>>> full_pop = simulate_immune_dynamics(par->expansionFactor, last_immunity_year);
 
@@ -178,7 +163,7 @@ void sample_immune_history(Community* community, const Parameters* par) {
             }
         }
     }
-}
+}*/
 
 unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     // CCRC32 checksum based on string version of argument values
@@ -194,7 +179,7 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " BEGIN " << hex << process_id << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
@@ -253,8 +238,8 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 }
 
 
-vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
-
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+    gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
     const int years_simulated = 70;
     const int burnin = 50; // e.g., 0 means start vaccinating in the first simulated year
     const int discard_years = 30; // initial years of burn-in not to report
@@ -262,26 +247,39 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     Parameters* par = define_default_parameters(years_simulated); 
 
     vector<int> target_ages = {2,6,10,14};
-    bool vaccine      = (bool) args[0];
-    bool retro        = (bool) args[1];
-    bool catchup      = (bool) args[2];
-    int target        = target_ages[(unsigned int) args[3]];
-    bool full_catchup = (bool) args[4];
-    bool all_mature   = (bool) args[5];
+    vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
+    vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
+
+    bool vaccine                  = (bool) args[0];
+    bool retro                    = (bool) args[1];
+    bool catchup                  = (bool) args[2];
+    int target                    = target_ages[(unsigned int) args[3]];
+    int catchup_to                = (int) args[4];
+    bool all_mature               = (bool) args[5];
     par->nDefaultMosquitoCapacity = (int) args[6];
+    float vector_reduction        = vector_controls[(unsigned int) args[8]];
+    int vaccine_duration          = vaccine_durations[(unsigned int) args[9]]; 
+    bool boosting                 = (bool) args[10];
+
+    if (vaccine_duration == -1) {
+        par->linearlyWaningVaccine = false;
+        par->vaccineImmunityDuration = INT_MAX;
+    } else {
+        par->linearlyWaningVaccine = true;
+        par->vaccineImmunityDuration = vaccine_duration;
+        par->vaccineBoosting = boosting;
+    }
 
     bool nonsensical_parameters = false;
     // only run a non-vaccination campaign if all the vaccine parameters are 0
-    if (not vaccine and (retro or catchup or full_catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
-    // can't do a full catchup (all ages) if we're not doing a catchup
-    if (full_catchup and not catchup) { nonsensical_parameters = true; }
+    // TODO - this should be reworked with new "catchup-to" parameter
+    if (not vaccine and (retro or catchup or all_mature or target > target_ages[0])) { nonsensical_parameters = true; } 
     if (nonsensical_parameters) {
         // 3 is because vaccinated cases, total cases, and infections are reported
         vector<long double> dummy((years_simulated-discard_years)*NUM_OF_SEROTYPES*3, 0.0);
         delete par;
         return dummy;
     }
-    const int max_catchup_age = full_catchup ? 100 : 46; // imperial used 50 (instead of 46)
 
     if (vaccine) {
         par->bVaccineLeaky = true;
@@ -299,7 +297,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
         }
 
         if (catchup) {
-            for (int catchup_age = target + 1; catchup_age <= max_catchup_age; catchup_age++) {
+            for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
                 par->nVaccinateYear.push_back(burnin);
                 par->nVaccinateAge.push_back(catchup_age);
                 par->fVaccinateFraction.push_back(0.7);  // imperial used 0.5
@@ -317,6 +315,37 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
         if (retro) par->bRetroactiveMatureVaccine = true;
     }
 
+/*
+    const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
+    mosquitoMultipliers.clear();
+    mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
+    int running_sum = 0;
+    for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
+        mosquitoMultipliers[j].start = running_sum;
+        mosquitoMultipliers[j].duration = DAYS_IN_MONTH[j];
+        mosquitoMultipliers[j].value = MOSQUITO_MULTIPLIER_DEFAULTS[j];
+        running_sum += DAYS_IN_MONTH[j];
+    }
+*/
+
+    if (vector_reduction > 0.0) {
+//    cerr << "using vector reduction: " << vector_reduction << endl;
+        assert( vector_reduction <= 1.0); 
+        assert( par->mosquitoMultipliers.size() == 12); // expecting values for 12 months
+        int running_sum = par->mosquitoMultipliers.back().start + DAYS_IN_MONTH[0]; // start on january 1 of year two
+        const int months_simulated = years_simulated*12;
+        par->mosquitoMultipliers.resize(months_simulated);
+        for (unsigned int i = 12; i < months_simulated; ++i) {
+            const int month_of_year = i % 12;
+            par->mosquitoMultipliers[i].start = running_sum;
+            par->mosquitoMultipliers[i].duration = DAYS_IN_MONTH[month_of_year];
+            float vector_coeff = i/12 >= burnin ? 1.0 - vector_reduction : 1.0; // normally, there's no reduction in vectors
+            par->mosquitoMultipliers[i].value = vector_coeff * par->mosquitoMultipliers[month_of_year].value;
+//cerr << par->mosquitoMultipliers[i].value << " ";
+            running_sum += DAYS_IN_MONTH[month_of_year];
+        }
+//cerr << endl;
+    }
 
     //initialize bookkeeping for run
     time_t start ,end;
@@ -341,7 +370,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     vector<long double> metrics = tally_counts(par, community, discard_years);
 
     stringstream ss;
-    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
+    ss << mp->mpi_rank << " END " << hex << process_id << " " << dec << dif << " ";
 
     for (auto i: args) ss << i << " ";
     for (auto i: metrics) ss << i << " ";
@@ -361,27 +390,51 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     return metrics;
 }
 
+void usage() {
+    cerr << "\n\tUsage: ./abc_sql abc_config_sql.json --process\n\n";
+    cerr << "\t       ./abc_sql abc_config_sql.json --simulate\n\n";
+    cerr << "\t       ./abc_sql abc_config_sql.json --simulate -n <number of simulations per database write>\n\n";
+
+}
+
 
 int main(int argc, char* argv[]) {
-    MPI_par mp;
-    setup_mpi(mp, argc, argv);
 
-    if (argc != 2) {
-        cerr << "\n\tUsage: ./abc_mpi abc_config_file.json\n\n";
-        return 100;
+    if (not (argc == 3 or argc == 5 or argc == 6) ) {
+        usage();
+        exit(100);
     }
 
-//    const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
-    gsl_rng_set(RNG, time (NULL) * getpid()); // seed the rng using sys time and the process id
+    bool process_db = false;
+    bool simulate_db = false;
+    int buffer_size = -1;
 
-    AbcSmc* abc = new AbcSmc(mp);
-    abc->set_simulator(simulator);
+    for (int i=2; i < argc;  i++ ) {
+        if ( strcmp(argv[i], "--process") == 0  ) {
+            process_db = true;
+        } else if ( strcmp(argv[i], "--simulate") == 0  ) {
+            simulate_db = true;
+            buffer_size = buffer_size == -1 ? 1 : buffer_size;
+        } else if ( strcmp(argv[i], "-n" ) == 0 ) {
+            buffer_size = atoi(argv[++i]);
+        } else {
+            usage();
+            exit(101);
+        }
+    }
+
+    AbcSmc* abc = new AbcSmc();
     abc->parse_config(string(argv[1]));
-    time(&GLOBAL_START_TIME);
-    abc->run(RNG);
+    if (process_db) {
+        gsl_rng_set(RNG, time(NULL) * getpid()); // seed the rng using sys time and the process id
+        abc->process_database(RNG);
+    }
 
-    //caseFile << "vaccine retro catchup target year inf1 inf2 inf3 inf4 sym1 sym2 sym3 sym4" << endl;
+    if (simulate_db) {
+        time(&GLOBAL_START_TIME);
+        abc->set_simulator(simulator);
+        abc->simulate_next_particles(buffer_size);
+    }
 
-    MPI_Finalize();
     return 0;
 }

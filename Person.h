@@ -22,6 +22,7 @@ class Infection {
 
         withdrawnTime = INT_MAX;
         _serotype = NULL_SEROTYPE;
+        severeDisease = false;
     };
 
     Infection(const Serotype sero) {
@@ -34,6 +35,7 @@ class Infection {
 
         withdrawnTime = INT_MAX;
         _serotype = sero;
+        severeDisease = false;
     };
 
     Infection(const Infection* o) {
@@ -44,7 +46,8 @@ class Infection {
         symptomTime    = o->symptomTime;
         recoveryTime   = o->recoveryTime;
         withdrawnTime  = o->withdrawnTime;
-        _serotype       = o->_serotype;
+        _serotype      = o->_serotype;
+        severeDisease  = o->severeDisease;
     }
 
     int infectedByID;                               // who infected this person
@@ -56,6 +59,7 @@ class Infection {
     int withdrawnTime;                              // when person withdraws to home
     Serotype serotype() const { return _serotype; }
     Serotype _serotype;
+    bool severeDisease;
 };
 
 class Person {
@@ -77,8 +81,8 @@ class Person {
         void appendToSwapProbabilities(std::pair<int, double> p) { _swap_probabilities.push_back(p); }
         std::vector<std::pair<int, double> > getSwapProbabilities() { return _swap_probabilities; }
 
-        bool isSusceptible(Serotype serotype);                        // is susceptible to serotype (and is alive)
-        int getInfectionParity();                                     // is immune to n serotypes
+        bool isSusceptible(Serotype serotype) const;                  // is susceptible to serotype (and is alive)
+        int getInfectionParity() const;                               // is immune to n serotypes
         inline Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
         inline void setLocation(Location *p, int timeofday) { _pLocation[timeofday] = p; }
 
@@ -92,27 +96,32 @@ class Person {
         inline Serotype getSerotype(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->serotype(); }
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
-        bool isWithdrawn(int time);                                   // at home sick?
+        bool isWithdrawn(int time) const;                             // at home sick?
         inline int getNumInfections() const { return infectionHistory.size(); }
+        int getNumVaccinations() const { return vaccineHistory.size(); }
+        int daysSinceVaccination(int time) const { assert( vaccineHistory.size() > 0); return time - vaccineHistory.back(); } // isVaccinated() should be called first
+        double vaccineProtection(const Serotype serotype, const int time) const;
 
         bool infect(int sourceid, Serotype serotype, int time, int sourceloc);
         inline bool infect(Serotype serotype, int time) {return infect(INT_MIN, serotype, time, INT_MIN);}
-        bool isViremic(int time);
+        bool isViremic(int time) const;
 
         void kill(int time);
-        bool isDead() { return _bDead; }
+        bool isDead() const { return _bDead; }
         bool naturalDeath(int t);                                     // die of old age check?
 
-        bool isNewlyInfected(int time);                               // became infected today?
-        bool isInfected(int time);                                    // is currently infected
-        bool isSymptomatic(int time);                                 // has symptoms
-        bool isVaccinated() {                                         // has been vaccinated
+        bool isNewlyInfected(int time) const;                         // became infected today?
+        bool isInfected(int time) const;                              // is currently infected
+        bool isSymptomatic(int time) const;                           // has symptoms
+        bool hasSevereDisease(int time) const;                        // used for estimating hospitalizations
+        bool isVaccinated() const {                                   // has been vaccinated
             return _bVaccinated;
         }
-        bool isInfectable(Serotype serotype, int time);               // more complicated than isSusceptible
+        bool isInfectable(Serotype serotype, int time) const;         // more complicated than isSusceptible
+        double remainingEfficacy(const int time) const;
 
-        bool fullySusceptible();
-        bool vaccinate();                                 // vaccinate this person
+        bool fullySusceptible() const;
+        bool vaccinate(int time);                                     // vaccinate this person
         static void setPar(const Parameters* par) { _par = par; }
 
         static const double _fIncubationDistribution[MAX_INCUBATION];
@@ -126,7 +135,7 @@ class Person {
         int _nHomeID;                                                 // family membership
         int _nWorkID;                                                 // ID of location of work
         bool _bCase;                                                  // ever detected as case?
-        Location *_pLocation[STEPS_PER_DAY];                            // where this person is at morning, day, and evening
+        Location *_pLocation[STEPS_PER_DAY];                          // where this person is at morning, day, and evening
         int _nAge;                                                    // age in years
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead
@@ -136,6 +145,7 @@ class Person {
 
         std::vector<std::pair<int,double> > _swap_probabilities;      // list of the nearest people one year younger, with distances
         std::vector<Infection*> infectionHistory;
+        std::vector<int> vaccineHistory;
         void clearInfectionHistory();
 
         static const Parameters* _par;
