@@ -1,14 +1,14 @@
 #!/usr/bin/python
 
 #expecting input files names immunity.1, immunity.2 ...
-for k in range(1,13):
+for k in range(0,51):
     print "running", k
-    fo = open('imm_vs_age.'+str(k),'w')
+    fo = open('imm_vs_age.year'+str(k),'w')
     pop_size = 0
     imm = [[0,0,0,0,0] for i in range(101)]
 
     header = True
-    for line in file('immunity.'+str(k)):
+    for line in file('immunity.year'+str(k)):
         '''
         pid age imm1 imm2 imm3 imm4
         1 31 1 0 1 0
@@ -32,7 +32,7 @@ for k in range(1,13):
                 imm[p[1]][i+1] += 0
             else:
                 imm[p[1]][i+1] += 1
-            
+
     for age, vals in enumerate(imm):
         fo.write(' '.join([str(age)] + map(str,vals)) + '\n')
 
