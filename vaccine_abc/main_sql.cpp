@@ -42,7 +42,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
-    par->nRunLength = 20*365+100;
+    par->nRunLength = 100 + (20*365);
     par->startDayOfYear = 1;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
@@ -252,12 +252,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     Community* community = build_community(par);
-    //community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
+    community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
         double default_coverage = 0.7;
         int num_target  = community->ageIntervalSize(9,10); // default target
         int num_catchup = community->ageIntervalSize(10,31);// default catchup
+
         double target_coverage  = default_coverage*num_target/community->ageIntervalSize(target, target+1);
         double catchup_coverage = default_coverage*num_catchup/community->ageIntervalSize(target+1, catchup_to+1);
 
@@ -303,21 +304,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 */
 
     if (vector_reduction > 0.0) {
-        cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation shuold work\n";
-        exit(-1834);
-        int burnin = 0;
+        //cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation should work\n";
+        //exit(-1834);
         assert( vector_reduction <= 1.0); 
         assert( par->mosquitoMultipliers.size() == 12); // expecting values for 12 months
-        int running_sum = par->mosquitoMultipliers.back().start + DAYS_IN_MONTH[0]; // start on january 1 of year two
-        const int months_simulated = years_simulated*12;
-        par->mosquitoMultipliers.resize(months_simulated);
-        for (unsigned int i = 12; i < months_simulated; ++i) {
-            const int month_of_year = i % 12;
-            par->mosquitoMultipliers[i].start = running_sum;
-            par->mosquitoMultipliers[i].duration = DAYS_IN_MONTH[month_of_year];
-            float vector_coeff = i/12 >= burnin ? 1.0 - vector_reduction : 1.0; // normally, there's no reduction in vectors
-            par->mosquitoMultipliers[i].value = vector_coeff * par->mosquitoMultipliers[month_of_year].value;
-            running_sum += DAYS_IN_MONTH[month_of_year];
+        for (unsigned int i = 0; i < par->mosquitoMultipliers.size(); ++i) {
+            float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
+            par->mosquitoMultipliers[i].value *= vector_coeff;
         }
     }
 
