@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "dengue_vaccine-small.sqlite",
+    "database_filename"             : "dengue_vaccine.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
