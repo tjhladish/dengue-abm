@@ -22,6 +22,7 @@ class Infection {
 
         withdrawnTime = INT_MAX;
         _serotype = NULL_SEROTYPE;
+        severeDisease = false;
     };
 
     Infection(const Serotype sero) {
@@ -34,6 +35,7 @@ class Infection {
 
         withdrawnTime = INT_MAX;
         _serotype = sero;
+        severeDisease = false;
     };
 
     Infection(const Infection* o) {
@@ -45,6 +47,7 @@ class Infection {
         recoveryTime   = o->recoveryTime;
         withdrawnTime  = o->withdrawnTime;
         _serotype      = o->_serotype;
+        severeDisease  = o->severeDisease;
     }
 
     int infectedByID;                               // who infected this person
@@ -56,6 +59,7 @@ class Infection {
     int withdrawnTime;                              // when person withdraws to home
     Serotype serotype() const { return _serotype; }
     Serotype _serotype;
+    bool severeDisease;
 };
 
 class Person {
@@ -109,10 +113,12 @@ class Person {
         bool isNewlyInfected(int time) const;                         // became infected today?
         bool isInfected(int time) const;                              // is currently infected
         bool isSymptomatic(int time) const;                           // has symptoms
+        bool hasSevereDisease(int time) const;                        // used for estimating hospitalizations
         bool isVaccinated() const {                                   // has been vaccinated
             return _bVaccinated;
         }
         bool isInfectable(Serotype serotype, int time) const;         // more complicated than isSusceptible
+        double remainingEfficacy(const int time) const;
 
         bool fullySusceptible() const;
         bool vaccinate(int time);                                     // vaccinate this person
@@ -129,7 +135,7 @@ class Person {
         int _nHomeID;                                                 // family membership
         int _nWorkID;                                                 // ID of location of work
         bool _bCase;                                                  // ever detected as case?
-        Location *_pLocation[STEPS_PER_DAY];                            // where this person is at morning, day, and evening
+        Location *_pLocation[STEPS_PER_DAY];                          // where this person is at morning, day, and evening
         int _nAge;                                                    // age in years
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead

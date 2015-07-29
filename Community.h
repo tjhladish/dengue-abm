@@ -31,7 +31,7 @@ class Community {
         int attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() { return _nDay; }                                // what day is it?
         void swapImmuneStates(); 
-        void updateWithdrawnStatus(); 
+        void updateDiseaseStatus();
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
         void tick(int day);                                           // simulate one day
@@ -51,6 +51,7 @@ class Community {
         std::vector< std::vector<int> > getNumNewlyInfected() { return _nNumNewlyInfected; }
         std::vector< std::vector<int> > getNumNewlySymptomatic() { return _nNumNewlySymptomatic; }
         std::vector< std::vector<int> > getNumVaccinatedCases() { return _nNumVaccinatedCases; }
+        std::vector< std::vector<int> > getNumSevereCases() { return _nNumSevereCases; }
         static void flagInfectedLocation(Location* _pLoc, int day);
 
         int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
@@ -80,6 +81,7 @@ class Community {
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
+        std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::unordered_set<Location*> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 

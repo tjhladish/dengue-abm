@@ -125,6 +125,17 @@ bool Person::isInfectable(Serotype serotype, int time) const {
 }
 
 
+double Person::remainingEfficacy(const int time) const {
+    double remainingFraction = 1.0;
+    if (_par->linearlyWaningVaccine) {
+        // reduce by fraction of immunity duration that has waned
+        int time_since_vac = daysSinceVaccination(time);
+        remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration); 
+    }
+    return remainingFraction;
+}
+
+
 double Person::vaccineProtection(const Serotype serotype, const int time) const {
     double ves;
     if (not isVaccinated()) {
@@ -139,10 +150,7 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
             } else {
                 ves = _par->fVESs[serotype];
             }
-            if (_par->linearlyWaningVaccine) {
-                // reduce by fraction of immunity duration that has waned
-                ves *=  1.0 - ((double) time_since_vac / _par->vaccineImmunityDuration); 
-            }
+            ves *= remainingEfficacy(time);
         }
     }
     return ves;
@@ -188,6 +196,14 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - effective_VEP) * secondary_symptomatic;
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability) {
+        // Person develops symptoms == this is a case
+        // Is this a severe case (for estimating hospitalizations)
+        if (gsl_rng_uniform(RNG) < _par->hospitalizedFraction) { // potentially a severe case . . .
+            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // is this person unvaccinated or unlucky?
+                infection.severeDisease = true;
+            }
+        }
+
         // TODO - the 1 in the below line is a parameter and should be moved out
         infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
         double r = gsl_rng_uniform(RNG);
@@ -256,6 +272,17 @@ bool Person::isSymptomatic(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         if (time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool Person::hasSevereDisease(int time) const {
+    if (infectionHistory.size() > 0) {
+        Infection* infection = infectionHistory.back();
+        if (infection->severeDisease and time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
             return true;
         }
     }
