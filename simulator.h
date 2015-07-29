@@ -264,10 +264,11 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
     for (int i=0; i<par->nSizeVaccinate; i++) {
         if (date.year()==par->nVaccinateYear[i]) {
-            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
             if (not par->abcVerbose) {
-                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] << endl;
+                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] 
+                     << " on day " << date.day() << endl;
             }
+            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
         }
     }
     if (par->linearlyWaningVaccine and par->vaccineBoosting) {
