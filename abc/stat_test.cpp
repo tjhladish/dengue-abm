@@ -9,8 +9,12 @@ using namespace std;
 // mpicxx -O2 -std=c++11 -w0 -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -D USING_MPI -I/scratch/lfs/thladish/AbcSmc -I$HPC_GSL_INC ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L/scratch/lfs/thladish/AbcSmc -lm -L$HPC_GSL_LIB/ -lgsl -lgslcblas
 
 int main() {
-    // yucatan dengue case data, 1979-2012
-    vector<float_type> cases = {4234, 4672, 3377, 1412, 643, 5495, 193, 34, 15, 356, 2, 8, 352, 22, 29, 680, 69, 650, 5529, 36, 43, 0, 287, 946, 26, 57, 162, 627, 1861, 721, 3212, 2517, 6132, 13000, 8937};
+    // yucatan dengue case data, 1979-2013
+    vector<float_type> cases = {                                                      4234, //1979
+                                4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
+                                   8, 352,    22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
+                                   0, 287,   946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
+                                2517, 6132, 13000, 8937};                                   // 2010-2013
 
     // yucatan population size, interpolated as necessary, 1979-2012
     vector<float_type> pop = {                                                                                 1033195, // 1979
