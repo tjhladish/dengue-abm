@@ -674,14 +674,17 @@ void Community::swapImmuneStates() {
 }
 
 
-void Community::updateWithdrawnStatus() {
+void Community::updateDiseaseStatus() {
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person+i;
         if (p->getNumInfections() == 0) continue;
-        if (p->getSymptomTime()==_nDay) {                              // started showing symptoms
+        if (p->getSymptomTime()==_nDay) {                              // started showing symptoms today
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
             if (p->isVaccinated()) {
                 _nNumVaccinatedCases[(int) p->getSerotype()][_nDay]++;
+            }
+            if (p->hasSevereDisease(_nDay)) {                         // symptoms will be severe at onset
+                _nNumSevereCases[(int) p->getSerotype()][_nDay]++;    // if they're going to be severe
             }
         }
         if (p->getWithdrawnTime()==_nDay) {                           // started withdrawing
@@ -907,7 +910,7 @@ void Community::tick(int day) {
     if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
                                                                       // last day of simulator year
 
-    updateWithdrawnStatus();                                          // make people stay home or return to work
+    updateDiseaseStatus();                                          // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location

@@ -85,7 +85,7 @@ def output_simulator_network_file(edge_lengths, max_mosquito_travel, filename):
     fo.close()
     
 
-location_filename    = '../../pop-yucatan/locations-yucatan_final.txt'
+location_filename    = '../../pop-yucatan/locations-yucatan.txt'
 node_filename        = 'yucatan_locations.node'
 edge_filename        = node_filename.replace('node', '1.edge') # this the naming convention triangle seems to use
 edge_coords_filename = 'delaunay_edge_data.out'

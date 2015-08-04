@@ -72,6 +72,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(4, 0);
 
+    par->hospitalizedFraction = 0.25; // fraction of cases assumed to be hospitalized
+    par->fVEH = 0.803;                // fraction of hospitalized cases prevented by vaccine
+
     par->simulateAnnualSerotypes = false;
     par->normalizeSerotypeIntros = false;
     if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
@@ -158,19 +161,19 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     //                                  IMPORTANT:                                           //
     // Update dummy metrics vector in calling function if number of metrics is changed here! //
     ///////////////////////////////////////////////////////////////////////////////////////////
-    vector< vector<int> > vac_symptomatic = community->getNumVaccinatedCases();
+    vector< vector<int> > severe      = community->getNumSevereCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
     vector< vector<int> > infected    = community->getNumNewlyInfected();
     const int num_years = (int) par->nRunLength/365;
-    vector<vector<int> > vc_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
+    vector<vector<int> > h_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
     vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
-    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
+    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
 
     vector<long double> metrics;
     for (int t=discard_days; t<par->nRunLength; t++) {
         const int y = t/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            vc_tally[s][y] += vac_symptomatic[s][t];
+            h_tally[s][y] += severe[s][t];
             s_tally[s][y] += symptomatic[s][t];
             i_tally[s][y] += infected[s][t];
         }
@@ -179,7 +182,7 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     // this could be tightened up using the right stride
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = 0; y<num_years; ++y) {
-            metrics.push_back(vc_tally[s][y]);
+            metrics.push_back(h_tally[s][y]);
         }
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
