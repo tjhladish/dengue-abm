@@ -30,14 +30,14 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     //double _betamp   = 0.25;
     //double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-toy"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
-    par->nRunLength = 155*365;
+    par->nRunLength = 10*365;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     // pathogenicity values fitted in
@@ -70,16 +70,13 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->normalizeSerotypeIntros = true;
     if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
 
-    // 100 year burn-in, 20 years of no dengue, then re-introduction
-    par->annualIntroductions = vector<double>(100, 1.0);
-    par->annualIntroductions.resize(120, 0.0);
-    par->annualIntroductions.resize(155, 1.0);
+    par->annualIntroductions = vector<double>(10, 1.0);
 
-    par->populationFilename = pop_dir + "/population-yucatan.txt";
+    par->populationFilename = pop_dir + "/population-toy.txt";
     par->immunityFilename   = "";
-    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
-    par->networkFilename    = pop_dir + "/network-yucatan.txt";
-    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->locationFilename   = pop_dir + "/locations-toy.txt";
+    par->networkFilename    = pop_dir + "/network-toy.txt";
+    par->swapProbFilename   = pop_dir + "/swap_probabilities-toy.txt";
     return par;
 }
 
@@ -183,45 +180,17 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //    write_immunity_file(par, community, process_id, imm_filename);
 
     vector<int> case_sizes = tally_counts(par, community);
-    vector<int>(case_sizes.begin()+120, case_sizes.end()).swap(case_sizes); // throw out first 120 values
+    vector<long double> metrics(case_sizes.begin(), case_sizes.end());
 
     time (&end);
     double dif = difftime (end,start);
 
-    const double ef = par->expansionFactor;
-    Col y(case_sizes.size());
-    const int pop_size = community->getNumPerson();
-    for (unsigned int i = 0; i < case_sizes.size(); i++) { 
-        // convert infections to cases per 100,000
-        y[i] = ((float_type) 1e5*case_sizes[i])/(ef*pop_size); 
-    }
 
-    stringstream ss;
-    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
-    // parameters
-    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << log(par->annualIntroductionsCoef)/log(10) << " "
-       << par->nDefaultMosquitoCapacity << " " << par->betaMP << " ";
-    // metrics
-    float_type _mean             = mean(y);
-    float_type _median           = median(y);
-    float_type _stdev            = sqrt(variance(y, _mean));
-    float_type _max              = max(y);
-    float_type _skewness         = skewness(y);
-    float_type _median_crossings = median_crossings(y);
-    float_type _seropos          = seropos_87;
-    ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << " " << _seropos << endl;
-      
+    for (auto v: metrics) ss << v << " ";
+    ss << endl;
+
     string output = ss.str();
     fputs(output.c_str(), stderr);
-    
-    vector<long double> metrics;
-    append_if_finite(metrics, _mean);
-    append_if_finite(metrics, _median);
-    append_if_finite(metrics, _stdev);
-    append_if_finite(metrics, _max);
-    append_if_finite(metrics, _skewness);
-    append_if_finite(metrics, _median_crossings);
-    append_if_finite(metrics, _seropos);
 
     delete par;
     delete community;

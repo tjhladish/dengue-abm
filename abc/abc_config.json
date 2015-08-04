@@ -1,11 +1,9 @@
 {
-    "smc_iterations" : 6,
-    "num_samples"    : 40000,
+    "smc_iterations" : 1,
+    "num_samples"    : 12,
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.5,
 
-    "particle_basefilename"         : "dengue_particles-120y",
-    "predictive_prior_basefilename" : "dengue_predictive_prior-120y",
     "database_filename"             : "posterior-dengue-caseEF.sqlite",
 
     "parameters" : [
@@ -13,35 +11,35 @@
          "short_name" : "caseEF",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 20,
-         "par2"       : 50},
+         "par1"       : 25,
+         "par2"       : 25},
 
         {"name"       : "mosquito_movement",
          "short_name" : "mos_mov",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 0,
-         "par2"       : 1},
+         "par1"       : 0.5,
+         "par2"       : 0.5},
 
         {"name"       : "exposures_coefficient",
          "short_name" : "exp_coef",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : -3,
-         "par2"       : 1},
+         "par1"       : 0,
+         "par2"       : 0},
 
         {"name"       : "mosquito_density",
          "short_name" : "num_mos",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 25,
-         "par2"       : 100},
+         "par1"       : 70,
+         "par2"       : 70},
 
         {"name"       : "beta",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 0.1,
-         "par2"       : 0.2}
+         "par1"       : 0.15,
+         "par2"       : 0.15}
     ],
 
     "metrics" : [
