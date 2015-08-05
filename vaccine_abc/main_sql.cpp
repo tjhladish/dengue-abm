@@ -16,7 +16,7 @@ using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -50,15 +50,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->fPrimaryPathogenicity[0] = 1.000;
-    par->fPrimaryPathogenicity[1] = 0.825;
-    par->fPrimaryPathogenicity[2] = 0.833;
-    par->fPrimaryPathogenicity[3] = 0.317;
+    par->fPrimaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->fSecondaryScaling = {1.0, 1.0, 1.0, 1.0};
 
-    par->fSecondaryScaling[0] = 1.0;
-    par->fSecondaryScaling[1] = 1.0;
-    par->fSecondaryScaling[2] = 1.0;
-    par->fSecondaryScaling[3] = 1.0;
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     //par->expansionFactor = _caseEF;
@@ -85,11 +79,10 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     int abc_duration = 155;
     vector<vector<float> >(par->nDailyExposed.begin()+abc_duration, par->nDailyExposed.end()).swap(par->nDailyExposed);
 
-    par->annualIntroductions = vector<double>(1, 1.0);
+    par->annualIntroductions = {1.0};
 
     par->populationFilename       = pop_dir + "/population-yucatan.txt";
     par->immunityFilename         = imm_dir + "/immunity." + particle_id;
-//cerr << "argstring: " << argstring << " " << par->immunityFilename << endl;
     par->locationFilename         = pop_dir + "/locations-yucatan.txt";
     par->networkFilename          = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename         = pop_dir + "/swap_probabilities-yucatan.txt";
@@ -119,7 +112,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -129,15 +122,16 @@ unsigned int calculate_process_id(vector< long double> &args, string &argstring)
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
+
     return process_id;
 }
 
 
-unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
-    unsigned int process_id = calculate_process_id(args, argstring);
+    const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
