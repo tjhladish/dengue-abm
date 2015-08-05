@@ -171,7 +171,8 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
     vector<long double> metrics;
     for (int t=discard_days; t<par->nRunLength; t++) {
-        const int y = t/365;
+        // use epidemic years, instead of calendar years
+        const int y = (t-discard_days)/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
             h_tally[s][y] += severe[s][t];
             s_tally[s][y] += symptomatic[s][t];
