@@ -50,6 +50,10 @@ class Infection {
         severeDisease  = o->severeDisease;
     }
 
+    bool isSymptomatic() const { return symptomTime > infectedTime; }
+    bool isSevere()      const { return severeDisease; }
+    Serotype serotype()  const { return _serotype; }
+
     int infectedByID;                               // who infected this person
     int infectedPlace;                              // where infected?
     int infectedTime;                               // when infected?
@@ -57,7 +61,6 @@ class Infection {
     int symptomTime;                                // when symptoms start
     int recoveryTime;                               // when recovered?
     int withdrawnTime;                              // when person withdraws to home
-    Serotype serotype() const { return _serotype; }
     Serotype _serotype;
     bool severeDisease;
 };
@@ -86,14 +89,15 @@ class Person {
         inline Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
         inline void setLocation(Location *p, int timeofday) { _pLocation[timeofday] = p; }
 
-        inline int getInfectedByID(int infectionsago=0)   { return infectionHistory[getNumInfections() - 1 - infectionsago]->infectedByID; }
-        inline int getInfectedPlace(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->infectedPlace; }
-        inline int getInfectedTime(int infectionsago=0)   { return infectionHistory[getNumInfections() - 1 - infectionsago]->infectedTime; }
-        inline int getInfectiousTime(int infectionsago=0) { return infectionHistory[getNumInfections() - 1 - infectionsago]->infectiousTime; }
-        inline int getSymptomTime(int infectionsago=0)    { return infectionHistory[getNumInfections() - 1 - infectionsago]->symptomTime; }
-        inline int getRecoveryTime(int infectionsago=0)   { return infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime; }
-        inline int getWithdrawnTime(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->withdrawnTime; }
-        inline Serotype getSerotype(int infectionsago=0)  { return infectionHistory[getNumInfections() - 1 - infectionsago]->serotype(); }
+        inline int getInfectedByID(int infectionsago=0)    { return getInfection(infectionsago)->infectedByID; }
+        inline int getInfectedPlace(int infectionsago=0)   { return getInfection(infectionsago)->infectedPlace; }
+        inline int getInfectedTime(int infectionsago=0)    { return getInfection(infectionsago)->infectedTime; }
+        inline int getInfectiousTime(int infectionsago=0)  { return getInfection(infectionsago)->infectiousTime; }
+        inline int getSymptomTime(int infectionsago=0)     { return getInfection(infectionsago)->symptomTime; }
+        inline int getRecoveryTime(int infectionsago=0)    { return getInfection(infectionsago)->recoveryTime; }
+        inline int getWithdrawnTime(int infectionsago=0)   { return getInfection(infectionsago)->withdrawnTime; }
+        inline Serotype getSerotype(int infectionsago=0)   { return getInfection(infectionsago)->serotype(); }
+        const Infection* getInfection(int infectionsago=0) { return infectionHistory[getNumInfections() - 1 - infectionsago]; }
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
