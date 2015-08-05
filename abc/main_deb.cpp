@@ -15,6 +15,9 @@ using dengue::util::stdev;
 using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
+bool RESUME;
+
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -27,32 +30,25 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     
     double _betamp   = args[4]; // mp and pm and not separately
     double _betapm   = args[4]; // identifiable, so they're the same
-    //double _betamp   = 0.25;
-    //double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-toy"; 
-//    string WORK(std::getenv("WORK"));
-//    string imm_dir = WORK + "/initial_immunity";
-//    string imm_dir = pop_dir + "/immunity";
+    vector<long double> abc_args(&args[0], &args[5]);
+    string argstring;
+    const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
-    par->nRunLength = 10*365;
+    par->nRunLength = 5*365;
+    par->startDayOfYear = 1;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->fPrimaryPathogenicity[0] = 1.000;
-    par->fPrimaryPathogenicity[1] = 0.825;
-    par->fPrimaryPathogenicity[2] = 0.833;
-    par->fPrimaryPathogenicity[3] = 0.317;
+    par->fPrimaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->fSecondaryScaling = {1.0, 1.0, 1.0, 1.0};
 
-    par->fSecondaryScaling[0] = 1.0;
-    par->fSecondaryScaling[1] = 1.0;
-    par->fSecondaryScaling[2] = 1.0;
-    par->fSecondaryScaling[3] = 1.0;
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     par->expansionFactor = _EF;
@@ -66,17 +62,25 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(4, 0);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    par->nDailyExposed = {{1,1,1,1}};
+    //par->simulateAnnualSerotypes = true;
+    //par->normalizeSerotypeIntros = true;
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
 
-    par->annualIntroductions = vector<double>(10, 1.0);
+    par->annualIntroductions = {1.0};
 
     par->populationFilename = pop_dir + "/population-toy.txt";
-    par->immunityFilename   = "";
     par->locationFilename   = pop_dir + "/locations-toy.txt";
     par->networkFilename    = pop_dir + "/network-toy.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-toy.txt";
+    if (RESUME) {
+        // if resuming this particular run
+        par->immunityFilename = "./debug_immunity/immunity." + to_string(process_id);
+    } else {
+        // otherwise use a vanilla immunity file, or "" if fully susceptible
+        par->immunityFilename = pop_dir + "/immunity-toy.txt";
+    }
+
     return par;
 }
 
@@ -97,18 +101,26 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
 
-    string argstring;
     for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((long double) args[i]) + " ";
 
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
+
+    return process_id;
+}
+
+
+const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
+
+    string argstring;
+    const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
@@ -118,6 +130,7 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
     return process_id;
 }
 
+
 void append_if_finite(vector<long double> &vec, double val) {
     if (isfinite(val)) { 
         vec.push_back((long double) val);
@@ -126,12 +139,14 @@ void append_if_finite(vector<long double> &vec, double val) {
     }
 }
 
+
 vector<int> read_pop_ids (string filename) {
     ifstream is(filename);
     istream_iterator<double> start(is), end;
     vector<int> ids(start, end);
     return ids;
 }
+
 
 vector<int> tally_counts(const Parameters* par, Community* community) {
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
@@ -168,16 +183,25 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     const unsigned int process_id = report_process_id(args, mp, start);
 
     // initialize & run simulator 
-    const Parameters* par = define_simulator_parameters(args, rng_seed); 
+    Parameters* par = define_simulator_parameters(args, rng_seed); 
+    par->mosquitoFilename         = "./debug_mos/mos." + to_string(process_id);
+    par->mosquitoLocationFilename = "./debug_mosloc/mosloc." + to_string(process_id);
+
     Community* community = build_community(par);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
     vector<int> serotested_ids = read_pop_ids("8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
-    // We might want to write the immunity file if this is the real posterior
-//    string imm_filename = "/scratch/lfs/thladish/immunity." + to_string(process_id);
-//    write_immunity_file(par, community, process_id, imm_filename);
+    if (RESUME)  {
+        community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
+    } else {
+        write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+
+        // We might want to write the immunity file if this is the real posterior
+        string imm_filename = "./debug_immunity/immunity." + to_string(process_id);
+        write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    }
 
     vector<int> case_sizes = tally_counts(par, community);
     vector<long double> metrics(case_sizes.begin(), case_sizes.end());
@@ -185,7 +209,8 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     time (&end);
     double dif = difftime (end,start);
 
-
+    stringstream ss;
+    ss << hex << process_id << dec << " ";
     for (auto v: metrics) ss << v << " ";
     ss << endl;
 
@@ -207,6 +232,7 @@ void usage() {
 
 
 int main(int argc, char* argv[]) {
+    RESUME = false;
 
     if (not (argc == 3 or argc == 5 or argc == 6) ) {
         usage();
@@ -225,6 +251,8 @@ int main(int argc, char* argv[]) {
             buffer_size = buffer_size == -1 ? 1 : buffer_size;
         } else if ( strcmp(argv[i], "-n" ) == 0 ) {
             buffer_size = atoi(argv[++i]);
+        } else if ( strcmp(argv[i], "--resume") == 0 ) {
+            RESUME = true;
         } else {
             usage();
             exit(101);

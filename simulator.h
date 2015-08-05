@@ -217,48 +217,51 @@ void initialize_seasonality(const Parameters* par, Community* community, int& ne
 
 
 void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const int process_id, vector<int>& epi_sizes) {
-        // local transmission          = total                          - introductions
-        periodic_incidence["daily"][1] = periodic_incidence["daily"][2] - periodic_incidence["daily"][0];
-        if (par->dailyOutput) {
-            cerr << "day: " << date.day() << " "; for (auto v: periodic_incidence["daily"]) cerr << v << " ";
-            cerr << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+    stringstream ss;
+    // local transmission          = total                          - introductions
+    periodic_incidence["daily"][1] = periodic_incidence["daily"][2] - periodic_incidence["daily"][0];
+    if (par->dailyOutput) {
+        ss << hex << process_id << dec << " day: " << date.day() << " "; for (auto v: periodic_incidence["daily"]) ss << v << " ";
+        ss << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+    }
+
+    if (par->weeklyOutput) {
+        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["weekly"][i] += periodic_incidence["daily"][i];
+        if (date.endOfWeek()) {
+            ss << hex << process_id << dec << " week: " << date.week() << " "; for (auto v: periodic_incidence["weekly"]) ss << v << " "; ss << endl;
+            periodic_incidence["weekly"] = {0,0,0};
         }
+    }
 
-        if (par->weeklyOutput) {
-            for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["weekly"][i] += periodic_incidence["daily"][i];
-            if (date.endOfWeek()) {
-                cerr << "week: " << date.week() << " "; for (auto v: periodic_incidence["weekly"]) cerr << v << " "; cerr << endl;
-                periodic_incidence["weekly"] = {0,0,0};
-            }
+    if (par->monthlyOutput) {
+        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["monthly"][i] += periodic_incidence["daily"][i];
+        if (date.endOfMonth()) {
+            ss << hex << process_id << dec << " month: " << date.julianMonth() << " "; for (auto v: periodic_incidence["monthly"]) ss << v << " "; ss << endl;
+            periodic_incidence["monthly"] = {0,0,0};
         }
+    }
 
-        if (par->monthlyOutput) {
-            for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["monthly"][i] += periodic_incidence["daily"][i];
-            if (date.endOfMonth()) {
-                cerr << "month: " << date.julianMonth() << " "; for (auto v: periodic_incidence["monthly"]) cerr << v << " "; cerr << endl;
-                periodic_incidence["monthly"] = {0,0,0};
-            }
+    // handle several things that happen yearly
+
+    for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
+
+    if (date.endOfYear()) {
+        if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
+
+        epi_sizes.push_back(periodic_incidence["yearly"][2]);
+
+        if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
+
+        if (par->yearlyOutput) {
+            ss << hex << process_id << dec << " year: " << date.year() + 1 << " "; 
+            for (auto v: periodic_incidence["yearly"]) ss << v << " "; ss << endl;
         }
+        periodic_incidence["yearly"] = {0,0,0};
+    }
 
-        // handle several things that happen yearly
-
-        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
-
-        if (date.endOfYear()) {
-            if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
-
-            epi_sizes.push_back(periodic_incidence["yearly"][2]);
-
-            if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-
-            if (par->yearlyOutput) {
-                cerr << "year: " << date.year() + 1 << " "; 
-                for (auto v: periodic_incidence["yearly"]) cerr << v << " "; cerr << endl;
-            }
-            periodic_incidence["yearly"] = {0,0,0};
-        }
-
-        periodic_incidence["daily"] = {0,0,0};
+    periodic_incidence["daily"] = {0,0,0};
+    string output = ss.str();
+    fputs(output.c_str(), stderr);
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
