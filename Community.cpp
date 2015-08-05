@@ -877,36 +877,6 @@ void Community::_modelMosquitoMovement() {
 
 
 void Community::tick(int day) {
-
-/*{ 
-    int w = 0;
-    int v = 0;
-    int d = 0;
-    int ni = 0;
-    int i = 0;
-    int s = 0;
-    int va = 0;
-    int in = 0;
-    int fs = 0;
-    for (int k=0; k<_nNumPerson; k++) {
-        Person* p = _person + k;
-        if ( p->isWithdrawn(day) )               w++;
-        if ( p->isViremic(day) )                 v++;
-        if ( p->isDead() )                       d++;
-
-        if ( p->isNewlyInfected(day) )          ni++;
-        if ( p->isInfected(day) )                i++; 
-        if ( p->isSymptomatic(day) )             s++;
-
-        if ( p->isVaccinated() )                va++;
-        if ( p->isInfectable(SEROTYPE_1, day) ) in++;
-        if ( p->fullySusceptible() )            fs++;
-    }
-
-    cerr << w << " " << v << " " << d << " | " << ni << " " << i << " " << s << " | " << va << " " << in << " " << fs;
-    cerr << " || " << _nNumPerson << endl;
-}*/
-
     _nDay = day;
     if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
                                                                       // last day of simulator year
@@ -939,7 +909,6 @@ int Community::getNumSymptomatic(int day) {
             count++;
     return count;
 }
-
 
 // getNumSusceptible - counts number of susceptible residents
 vector<int> Community::getNumSusceptible() {
