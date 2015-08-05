@@ -30,7 +30,8 @@ Community::Community(const Parameters* parameters) :
     _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
-    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
+    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
+    _nNumSevereCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
     {
     _par = parameters;
     _nDay = 0;
