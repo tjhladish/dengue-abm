@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS = -O2 -std=c++11 -Wall
+CFLAGS = -O2 -std=c++11 -Wall -fopenmp
 ABCDIR = $(HOME)/work/AbcSmc
 SQLDIR = $(ABCDIR)/sqdb
 
