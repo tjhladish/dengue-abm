@@ -18,6 +18,7 @@ typedef map< string, vector< vector< vector< vector< vector<double> > > > > > Ag
 const int MAX_AGE = 100;
 const int YEARS_SIMULATED = 20;
 
+
 inline vector<string> glob(const string& pat){
     glob_t glob_result;
     glob(pat.c_str(),GLOB_TILDE,NULL,&glob_result);
@@ -33,16 +34,6 @@ inline vector<string> glob(const string& pat){
 string slurp(ifstream& in) {
     return static_cast<stringstream const&>(stringstream() << in.rdbuf()).str();
 }
-
-
-/*inline ostringstream slurp(string filename) {
-    ifstream fin(filename);
-    ostringstream sout;
-    copy(istreambuf_iterator<char>(fin),
-         istreambuf_iterator<char>(),
-              ostreambuf_iterator<char>(sout));
-    return sout;
-}*/
 
 
 bool fileExists(const std::string& filename) {
@@ -102,6 +93,7 @@ struct Scenario {
     }
 };
 
+
 bool read_scenarios_from_database (string database_filename, map<int, Scenario*> &scenarios) {
     sqdb::Db db(database_filename.c_str());
 
@@ -123,7 +115,7 @@ bool read_scenarios_from_database (string database_filename, map<int, Scenario*>
         const int waning    = s.GetField(3);
         const int boosting  = s.GetField(4);
 
-        assert(scenarios.find(seed) == scenarios.end()); // not a seed collision
+        assert(scenarios.find(seed) == scenarios.end()); // assert: this is not a seed collision
         
         scenarios[seed] = new Scenario(vac, catchup, waning, boosting);
     }
@@ -139,10 +131,10 @@ void initialize_aggregate_datastructure(map<int, Scenario*>& scenarios, AgType& 
         uniqe_scenarios.insert(scenario); 
     } 
 
-         //  scenario      serotype  history  age  outcome year
-//typedef map< string, map< int, map< int, map< int, map< int, vector<int> > > > > > AgType;
+    // dimensions: scenario, serotype, history, age, outcome, year
     for (auto scenario: uniqe_scenarios) {
         N[scenario] = 0;
+        // I'm not looking forward to writing another one of these.
         ag[scenario] = vector< vector< vector< vector< vector<double> > > > >
                        ((int) NUM_OF_SEROTYPES, vector< vector< vector< vector<double> > > >(
                                (int) NUM_OF_HISTORY_TYPES, vector< vector< vector <double> > >(
@@ -166,14 +158,12 @@ void report_average_counts(AgType& ag, map<string, int>& N, string filename) {
                 for (auto &age: history) {
                     int out_ct = 0;
                     for (auto &outcome: age) {
-                        //for (auto val: outcome) cout << val << " "; cout << endl;
                         string line = scenario.first + ","
                                       + to_string(sero_ct) + ","
                                       + to_string(hist_ct) + ","
                                       + to_string(age_ct) + ","
                                       + to_string(out_ct);
                         for (auto &val: outcome) { val /= divisor; line += ("," + to_string(val)); }
-                        //for (auto val: outcome) cout << val << " "; cout << endl;
                         all_output += (line + "\n");
                         ++out_ct;
                     }
@@ -193,7 +183,7 @@ void report_average_counts(AgType& ag, map<string, int>& N, string filename) {
     ofstream file;
     file.open(filename);
 
-    if (file.is_open()) {  // TODO - add this check everywhere a file is opened
+    if (file.is_open()) {
         file << all_output;
         file.close();
     } else {
@@ -205,7 +195,6 @@ void report_average_counts(AgType& ag, map<string, int>& N, string filename) {
 
 void process_daily_files(map<int, Scenario*> scenarios, string daily_path, string digest_filename) {
     int file_ctr = 0;
-    //vector<string> daily_filenames = glob(daily_path);
     vector<string> daily_filenames = glob(daily_path + "/daily.*");
     AgType ag;
     map<string, int> N;
@@ -214,36 +203,24 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_path, strin
     #pragma omp parallel for num_threads(10) 
     for (unsigned int i = 0; i<daily_filenames.size(); ++i) {
         string daily_filename = daily_filenames[i];
-   // for (string daily_filename: daily_filenames) {
         cerr << file_ctr << " " << daily_filename << endl;
         Scenario* scenario = scenarios[ extract_seed_from_filename(daily_filename) ];
         const string scenarioKey = scenario->asKey();
         #pragma omp atomic
         ++N[scenarioKey];
 
+        // Read entire file into a stringstream
         ifstream fin(daily_filename.c_str());
-        if (!fin) {
-            cerr << "ERROR: Could not open " << daily_filename << endl;
-            exit(114);
-        }
-
+        if (!fin) { cerr << "ERROR: Could not open " << daily_filename << endl; exit(114); }
         stringstream iss;
-        copy(istreambuf_iterator<char>(fin),
-             istreambuf_iterator<char>(),
-                  ostreambuf_iterator<char>(iss));
-
+        copy(istreambuf_iterator<char>(fin), istreambuf_iterator<char>(), ostreambuf_iterator<char>(iss));
         fin.close();
-        /*
-        ifstream iss(daily_filename.c_str());
-        if (!iss) {
-            cerr << "ERROR: Could not open " << daily_filename << endl;
-            exit(114);
-        }*/
-        // day,id,age,sero,case,hosp,hist,lastvac
-        // 0,1497628,6,0,F,F,---+,-1
+
         char buffer[500];
         istringstream line(buffer);
         
+        // day,id,age,sero,case,hosp,hist,lastvac
+        // 0,1497628,6,0,F,F,---+,-1
         int day;
         int id;
         int age;
@@ -266,30 +243,20 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_path, strin
                 int num_prev_infections = count(hist.begin(), hist.end(), '+') - 1; // -1 b/c current one is being reported
                 num_prev_infections = num_prev_infections > 2 ? 2 : num_prev_infections;
                 const int outcome = isHosp ? 2 : isCase ? 1 : 0; 
-                //  scenario      serotype  history  age  outcome year
-                //cerr << scenario->asKey() << " " << sero << " " << num_prev_infections << " " << age << " " << outcome << " " << year << endl;;
                 #pragma omp atomic
                 ++ag[scenarioKey][sero][num_prev_infections][age][outcome][year];
-                
-//line_ctr++;
-                //cerr << line_str << " | " << year << " " << age << " " << isCase << " " << isHosp << " " << num_infections << endl;
-                //continue;
             } else {
-                continue;
+                continue; // Didn't process line, normal for header or EOF
                 //cerr << "WARNING: Could not parse line: " << line.str() << endl;
             }
         }
 
-
-        //iss.close();
-        //exit(-1); 
         #pragma omp atomic
         ++file_ctr;
-//if (++file_ctr >= max_file_ct) break;
     }
 
     report_average_counts(ag, N, digest_filename);
-cout << "read files: " << file_ctr << endl;
+    cout << "read files: " << file_ctr << endl;
 }
 
 
