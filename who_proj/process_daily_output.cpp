@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <string>
 #include <algorithm>
+#include <iterator>
 #include <assert.h>
 #include <glob.h>
 #include <sys/stat.h>
@@ -32,6 +33,16 @@ inline vector<string> glob(const string& pat){
 string slurp(ifstream& in) {
     return static_cast<stringstream const&>(stringstream() << in.rdbuf()).str();
 }
+
+
+/*inline ostringstream slurp(string filename) {
+    ifstream fin(filename);
+    ostringstream sout;
+    copy(istreambuf_iterator<char>(fin),
+         istreambuf_iterator<char>(),
+              ostreambuf_iterator<char>(sout));
+    return sout;
+}*/
 
 
 bool fileExists(const std::string& filename) {
@@ -200,7 +211,7 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_path, strin
     map<string, int> N;
     initialize_aggregate_datastructure(scenarios, ag, N);
 
-    #pragma omp parallel for num_threads(3) 
+    #pragma omp parallel for num_threads(10) 
     for (unsigned int i = 0; i<daily_filenames.size(); ++i) {
         string daily_filename = daily_filenames[i];
    // for (string daily_filename: daily_filenames) {
@@ -210,11 +221,24 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_path, strin
         #pragma omp atomic
         ++N[scenarioKey];
 
+        ifstream fin(daily_filename.c_str());
+        if (!fin) {
+            cerr << "ERROR: Could not open " << daily_filename << endl;
+            exit(114);
+        }
+
+        stringstream iss;
+        copy(istreambuf_iterator<char>(fin),
+             istreambuf_iterator<char>(),
+                  ostreambuf_iterator<char>(iss));
+
+        fin.close();
+        /*
         ifstream iss(daily_filename.c_str());
         if (!iss) {
             cerr << "ERROR: Could not open " << daily_filename << endl;
             exit(114);
-        }
+        }*/
         // day,id,age,sero,case,hosp,hist,lastvac
         // 0,1497628,6,0,F,F,---+,-1
         char buffer[500];
@@ -257,7 +281,7 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_path, strin
         }
 
 
-        iss.close();
+        //iss.close();
         //exit(-1); 
         #pragma omp atomic
         ++file_ctr;
