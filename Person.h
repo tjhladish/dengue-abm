@@ -50,10 +50,6 @@ class Infection {
         severeDisease  = o->severeDisease;
     }
 
-    bool isSymptomatic() const { return symptomTime > infectedTime; }
-    bool isSevere()      const { return severeDisease; }
-    Serotype serotype()  const { return _serotype; }
-
     int infectedByID;                               // who infected this person
     int infectedPlace;                              // where infected?
     int infectedTime;                               // when infected?
@@ -63,6 +59,12 @@ class Infection {
     int withdrawnTime;                              // when person withdraws to home
     Serotype _serotype;
     bool severeDisease;
+
+  public:
+
+    bool isSymptomatic() const { return symptomTime > infectedTime; }
+    bool isSevere()      const { return severeDisease; }
+    Serotype serotype()  const { return _serotype; }
 };
 
 class Person {
@@ -79,6 +81,8 @@ class Person {
         int getWorkID() { return _nWorkID; }
         void setWorkID(int n) { _nWorkID = n; }
         void setImmunity(Serotype serotype) { _nImmunity[(int) serotype] = 1; }
+        const std::bitset<NUM_OF_SEROTYPES> getImmunityBitset() { return _nImmunity; }
+        const std::string getImmunityString() { return _nImmunity.to_string(); }
         void copyImmunity(const Person *p);
         void resetImmunity();
         void appendToSwapProbabilities(std::pair<int, double> p) { _swap_probabilities.push_back(p); }
