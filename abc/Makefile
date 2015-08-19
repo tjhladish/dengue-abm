@@ -53,6 +53,9 @@ abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 abc_sql: libabc_no_mpi dengue_no_mpi main_sql.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
+abc_thai: libabc_no_mpi dengue_no_mpi main_sql-thai.cpp
+	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql-thai.cpp -o abc_thai $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+
 abc_deb: libabc_no_mpi dengue_no_mpi main_deb.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_deb.cpp -o main_deb $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
