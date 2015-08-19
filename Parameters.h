@@ -179,7 +179,7 @@ public:
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
     void writeAnnualSerotypes(std::string filename) const;
     void loadDailyEIP(std::string dailyEIPFilename);
-    void generateAnnualSerotypes();
+    void generateAnnualSerotypes(int total_num_years = -1);
     bool simulateAnnualSerotypes;
 
     unsigned long int randomseed;
