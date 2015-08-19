@@ -272,7 +272,7 @@ bool Person::isSymptomatic(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
         // TODO: this is a mess of conditionals.  Make it not confusing.
-        if (infection->isSymtomatic() and time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
+        if (infection->isSymptomatic() and time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
             return true;
         }
     }
