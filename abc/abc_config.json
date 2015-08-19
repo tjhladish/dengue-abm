@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 12,
+    "num_samples"    : 1000,
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.5,
 
-    "database_filename"             : "posterior-dengue-caseEF.sqlite",
+    "database_filename"             : "posterior-tmp-adj-mos-thai.sqlite",
 
     "parameters" : [
         {"name"       : "case_expansion_factor",
