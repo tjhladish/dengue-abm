@@ -342,6 +342,8 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
     vector<string> daily_output_buffer;
+daily_output_buffer.reserve(2e6);
+daily_output_buffer.push_back("day,id,age,sero,case,hosp,hist,lastvac");
 
     if (par->bSecondaryTransmission and not par->abcVerbose) {
         //daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
@@ -352,7 +354,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                                                    {"weekly", vector<int>(3,0)},
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
-
+    
     for (; date.day() < par->nRunLength; date.increment()) {
         // phased vaccination
         if (date.julianDay() == 100) {
@@ -372,7 +374,19 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
             if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
                 ++periodic_incidence["daily"][2];
 
-               /*
+const Infection* infec = p->getInfection();
+stringstream ss;
+ss << date.day() << ","                                                // day
+   << p->getID() << ","                                                // id
+   << p->getAge() << ","                                               // age
+   << (int) infec->serotype() << ","                                   // serotype
+   << (infec->isSymptomatic()?"T":"F") << ","                          // case
+   << (infec->isSevere()?"T":"F") << ","                               // hospitalization
+   << p->getImmunityBitset().to_string('-','+') << ","                 // history
+   << (p->isVaccinated() ? p->daysSinceVaccination(date.day()) : -1);  // lastvac
+daily_output_buffer.push_back(ss.str());
+
+                /*
                 // this is commented out because we don't usually output daily data,
                 // and there's no point wasting ~100 mb of ram per process on long runs
                 stringstream ss;
@@ -390,7 +404,11 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     }
 
-    // write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+stringstream ss_filename;
+ss_filename << "/scratch/lfs/thladish/who_output/daily." << par->randomseed << "." << process_id;
+string dailyfilename = ss_filename.str();
+
+    write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
     return epi_sizes;
 }
 
@@ -413,15 +431,15 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.julianDay() == 99 and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
-                                                               // for a 155 year simulation
-            // calculate seroprevalence among 8-14 year old merida residents
-            for (int id: serotested_ids) {
-                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
-                seropos_87 += seropos;
-            }
-            seropos_87 /= serotested_ids.size();
-        }
+//        if ( date.julianDay() == 99 and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
+//                                                               // for a 155 year simulation
+//            // calculate seroprevalence among 8-14 year old merida residents
+//            for (int id: serotested_ids) {
+//                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+//                seropos_87 += seropos;
+//            }
+//            seropos_87 /= serotested_ids.size();
+//        }
 
         periodic_incidence["daily"][0] += seed_epidemic(par, community, date);
         update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
