@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
   //const int NUM_PEOPLE = 1819497; // yucatan
     const int NUM_PEOPLE =  207591; // bangphae 
     cerr << "Using a population size of " << NUM_PEOPLE << endl;
-    const int NUM_NEIGHBORS = 10;           // Number of nearest neighbors to report for swap file
+    const int NUM_NEIGHBORS = 1;           // Number of nearest neighbors to report for swap file
     const double MIN_DISPLACEMENT = 0.005;  // Distance (in km) to use between people who live in the same house
 
     loadLocations(locations_filename);
