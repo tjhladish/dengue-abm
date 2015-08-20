@@ -30,7 +30,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betamp   = args[4]; // mp and pm and not separately
     double _betapm   = args[4]; // identifiable, so they're the same
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-bangphae"; 
     string output_dir = "/scratch/lfs/thladish";
 
     vector<long double> abc_args(&args[0], &args[5]);
@@ -60,26 +60,28 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->nDefaultMosquitoCapacity = (int) _nmos;
     par->eMosquitoDistribution = EXPONENTIAL;
 
+    const vector<float> MOSQUITO_MULTIPLIER_THAI = {0.0840, 0.137, 0.163, 0.296, 0.708, 0.779, 0.820, 0.898, 1.00, 0.792, 0.278, 0.0642};
+    assert(par->mosquitoMultipliers.size() == MOSQUITO_MULTIPLIER_THAI.size());
+    for (unsigned int j=0; j<par->mosquitoMultipliers.size(); j++) {
+        par->mosquitoMultipliers[j].value = MOSQUITO_MULTIPLIER_THAI[j];
+    }
+
     par->nDaysImmune = 730;
     par->fVESs.clear();
     par->fVESs.resize(4, 0);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
-    // generate some extra years of serotypes, for subsequent intervention modeling
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
-    // 100 year burn-in, 20 years of no dengue, then re-introduction
-    par->annualIntroductions = vector<double>(100, 1.0);
-    par->annualIntroductions.resize(120, 0.0);
-    par->annualIntroductions.resize(155, 1.0);
+    par->simulateAnnualSerotypes = false;
+    par->normalizeSerotypeIntros = false;
+    par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
+    par->annualIntroductions = vector<double>(155, 1.0);
 
-    par->populationFilename = pop_dir + "/population-yucatan.txt";
+    par->populationFilename = pop_dir + "/population-bangphae.txt";
     par->immunityFilename   = "";
-    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
-    par->networkFilename    = pop_dir + "/network-yucatan.txt";
-    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
-    par->mosquitoFilename         = output_dir + "/mos_tmp/mos." + to_string(process_id);
-    par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
+    par->locationFilename   = pop_dir + "/locations-bangphae.txt";
+    par->networkFilename    = pop_dir + "/network-bangphae.txt";
+    par->swapProbFilename   = pop_dir + "/swap_probabilities-bangphae.txt";
+    par->mosquitoFilename         = output_dir + "/mos_thai/mos." + to_string(process_id);
+    par->mosquitoLocationFilename = output_dir + "/mosloc_thai/mosloc." + to_string(process_id);
     return par;
 }
 
@@ -182,7 +184,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     // initialize & run simulator 
     const Parameters* par = define_simulator_parameters(args, rng_seed); 
 
-    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
+    string sero_filename = "/scratch/lfs/thladish/sero_thai/annual_serotypes." + to_string(process_id);
     par->writeAnnualSerotypes(sero_filename);
 
     gsl_rng_set(RNG, rng_seed);
@@ -193,7 +195,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
     // We might want to write the immunity and mosquito files if this is the real posterior
-    string imm_filename = "/scratch/lfs/thladish/imm_tmp/immunity." + to_string(process_id);
+    string imm_filename = "/scratch/lfs/thladish/imm_thai/immunity." + to_string(process_id);
     write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
     write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
