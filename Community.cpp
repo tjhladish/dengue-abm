@@ -30,7 +30,8 @@ Community::Community(const Parameters* parameters) :
     _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
     _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
-    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
+    _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
+    _nNumSevereCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
     {
     _par = parameters;
     _nDay = 0;
@@ -356,14 +357,15 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
     if (!iss_mosloc) { cerr << "ERROR: " << moslocFilename << " not found." << endl; return false; }
 
     string buffer;
-    int locID, baseMos, infdMos;
+    int locID, baseMos;
     istringstream line(buffer);
 
     while (iss_mosloc) {
         if (!getline(iss_mosloc, buffer)) break;
         line.clear();
         line.str(buffer);
-        if (line >> locID >> baseMos >> infdMos) {
+        if (line >> locID >> baseMos) { // there may be an infected_mosquito_ct field, but that is handled
+                                        // when we call the mos constructor while parsing the mosquito file
             if (locID >= (signed) _location.size()) {
                 cerr << "ERROR: Location ID in mosquito location file greater than largest valid location"
                      << " ID: " << locID << " in file: " << moslocFilename << endl;
@@ -372,7 +374,6 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
             Location* loc = _location[locID];
             loc->setBaseMosquitoCapacity(baseMos);
             loc->clearInfectedMosquitoes();
-            loc->addInfectedMosquitoes(infdMos);
         }
     }
     iss_mosloc.close();
@@ -505,7 +506,7 @@ void Community::boost(int time, double f) { // re-vaccinate people who have less
 
 
 // returns number of days mosquito has left to live
-int Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
+void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
     int eip = getExtrinsicIncubation();
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
@@ -514,13 +515,13 @@ int Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfecte
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
+        // dies before infectious
         delete m;
-        return daysleft;                                              // dies before infectious
+    } else {
+        // add mosquito to latency queue
+        _exposedMosquitoQueue[eip-1].push_back(m);
     }
-
-    // add mosquito to latency queue
-    _exposedMosquitoQueue[eip-1].push_back(m);
-    return daysleft;
+    return;
 }
 
 
@@ -798,8 +799,7 @@ void Community::humanToMosquitoTransmission() {
                     for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
                         r -= sumserotype[serotype];
                 }
-                int daysleft = attemptToAddMosquito(loc, (Serotype) serotype, locid);
-                if (daysleft > 0) loc->addInfectedMosquito();
+                attemptToAddMosquito(loc, (Serotype) serotype, locid);
             }
         }
     }
@@ -877,36 +877,6 @@ void Community::_modelMosquitoMovement() {
 
 
 void Community::tick(int day) {
-
-/*{ 
-    int w = 0;
-    int v = 0;
-    int d = 0;
-    int ni = 0;
-    int i = 0;
-    int s = 0;
-    int va = 0;
-    int in = 0;
-    int fs = 0;
-    for (int k=0; k<_nNumPerson; k++) {
-        Person* p = _person + k;
-        if ( p->isWithdrawn(day) )               w++;
-        if ( p->isViremic(day) )                 v++;
-        if ( p->isDead() )                       d++;
-
-        if ( p->isNewlyInfected(day) )          ni++;
-        if ( p->isInfected(day) )                i++; 
-        if ( p->isSymptomatic(day) )             s++;
-
-        if ( p->isVaccinated() )                va++;
-        if ( p->isInfectable(SEROTYPE_1, day) ) in++;
-        if ( p->fullySusceptible() )            fs++;
-    }
-
-    cerr << w << " " << v << " " << d << " | " << ni << " " << i << " " << s << " | " << va << " " << in << " " << fs;
-    cerr << " || " << _nNumPerson << endl;
-}*/
-
     _nDay = day;
     if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
                                                                       // last day of simulator year
@@ -939,7 +909,6 @@ int Community::getNumSymptomatic(int day) {
             count++;
     return count;
 }
-
 
 // getNumSusceptible - counts number of susceptible residents
 vector<int> Community::getNumSusceptible() {

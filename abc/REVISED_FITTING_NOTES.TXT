@@ -1,0 +1,242 @@
+TODO:
+
+01.) Summary: Seed RNG, generate the serotype sequence, and re-seed
+     Status : Fixed, commit b1cd1f74aa02b71de329421181cfdff41f740826
+     Details: This will make the simulation independent of the length of the serotype sequence
+              generated, in case we want to generate more years than we will use in ABC.
+
+02.) Summary: Check the status of the 8-14 year olds on April 10, 1987, not December 31, 1986
+     Status :
+     Details: 
+
+03.) Summary: Address negative mosquito counts
+     Status : Fixed, commit 95d64c4f3c3f5f31739ed67187cd3db4fc888abe
+     Details: Mosquitoes that do not survive the EIP are being killed twice.
+
+04.) Summary: Add 100 days at the end, to finish on April 9
+     Status :
+     Details: 
+
+05.) Summary: Output serotypes, mosquitoes, and population immunity at end of posterior runs
+     Status : Partially fixed, commit b1cd1f74aa02b71de329421181cfdff41f740826
+     Details: We are currently outputting these things, but we won't always want them (e.g.,
+              not for runs that don't make it into the posterior.  Runs that are selected for
+              the posterior are then re-run in order to gather more information about them,
+              like these outputs.  We might want to implement some more sophisticated control
+              flow for turning on/off these outputs.
+
+06.) Summary: Turn off the weird carrying capacity but not bit with infected mosquitoes
+     Status :
+     Details: Not sure what this note was referring to.
+
+07.) Summary: Use seasonally-varying EIP based on temperature
+     Status :
+     Details: Already supported and previously used; need to dig up that code and data, and
+              write up the process C and I came up with for converting temp data to effective
+              daily EIPs.
+
+08.) Summary: Impose empirical serotypes for 35 year period
+     Status :
+     Details: Sample from conditional distributions to get serotypes before and after the
+              window we know about.  Probably don't bother refitting serotype model to
+              integrate over all possibly serotypes circulating in missing years, because
+              that would make this challenging.
+
+09.) Summary: Add autocorrelation coefficients as metrics
+     Status :
+     Details: CABP and I have discussed this at length, but have not come to any firm
+              conclusions about what kind of autocorrelation analysis is best.  Unless
+              something definitive is decided, I'm going to use whatever method I can get
+              working and understand the implications of.  Needs to be implemented in C++; I'm
+              not adding an R dependency to the fitting procedure for this one thing.
+
+10.) Summary: Consider adding epidemic size quartiles as metrics, taking out maximum
+     Status :
+     Details: One of Aaron King's suggestions
+
+11.) Summary: Start sim and vaccinate on April 10, age on April 9
+     Status :
+     Details:  
+
+12.) Summary: Kill off some infected mosquitoes when monthly capacity decreases
+     Status :
+     Details: Our mosquito seasonality currently gives special treatment to infected
+              mosquitoes: when a location's capacity decreases (e.g. at end of rainy season),
+              susceptible mosquitoes are implicitly killed off, but infectious mosquitoes are
+              allowed to finish a normal lifespan.  Aside from being inconsistent, this is
+              potentially the cause of (or a contributor to) the lag observed in the
+              simulated seasonal epidemic curve, as compared to the empirical curve.  At the
+              end of Infectious mosquitoes should be killed off with probability
+              1 - min(k_2/k_1, 1.0) [corrected by JRCP from original email], where k_2 is the
+              new months multiplier and k_1 is last months multiplier.  In months where
+              capacity increases, nothing happens to infected mosquitoes because the
+              additional cap space is filled with susceptible mosquitoes.
+
+13.) Summary: Reduce mosquito pops AND introductions during DDT period
+     Status :
+     Details: Per Hector's malaria paper, spraying insecticides for malaria began in 1956.  In
+              1958, 77% of homes in Yucatan were sprayed, with higher coverage (rough average
+              = 90%) for nearby states.  Even though these numbers are far from perfect
+              (different insecticides were used, or not used, with changing protocols over the
+              "DDT period"), they are better than what we have had.
+
+              Original comments from JRCP: Seems that in the 'DDT period' case introductions
+              stop but mosquito populations aren't affect. This seems the opposite of what one
+              would expect to occur biologically - where you would expect the same number (or
+              possibly lower, but not zero) of introductions, with limited (or approximately
+              0) subsequent transmission (because mosquito numbers have dropped dramatically.
+              The new version of the incidence figure highlights the consequences of the way
+              it's currently modeled vs the more plausible version: during the DDT period,
+              number of cases dip gradually instead of dipping more suddenly and then
+              gradually rebounding (which is what you would expect, if you have introductions
+              but 'no' local transmission - population level immunity would decline through
+              time some more introductions would be 'successful'). How difficult would it be
+              to implement so that the DDT periods gets introductions but has limited or no
+              mosquito capacity?
+
+14.) Summary: New/alt parameters - separate DF and DHF expansion factors
+     Status :
+     Details: Probably implement this as a EF_DF and a EF_DHF_multiplier on [0,1].  In other
+              words, the DF EF can vary, perhaps with a U(20,50) prior, while the DHF
+              multiplier would have a U(0,1) prior, meaning that the number of unreported DHF
+
+15.) Summary: Fix mosquito movement parameter to Dennis' value
+     Status :
+     Details: This parameter is essentially unidentifiable using the current (and likely
+              proposed) metrics.  Per experimenting with ABC, including it likely slows down
+              the estimation procedure, and increases the credible intervals around other
+              parameters.
+
+16.) Summary: New metrics - mean DHF prevalence, slope and intercept of DHF regression
+     Status :
+     Details: We have the data and are predicting severe cases, we might as well be fitting to
+              it.
+
+17.) Summary: Use an elevated secondary pathogenicty probability
+     Status :
+     Details: Currently, primary and non-primary infections are equally likely to be
+              symptomatic.  We know this is unrealistic, but exactly what is realistic is
+              poorly understood.  Certainly, secondary infections have an elevated
+              pathogenicity, but it is dependent on serotypes involved (which we likely do not
+              have adequate data to parameterize).  It's debated whether post-secondary
+              infections also have elevated pathogenicity, and possibly even whether they are
+              common at all.  Currently proposed implementation is to make all post-primary 
+              infections 1.5x as likely to be symptomatic.
+
+18.) Summary: 
+     Status :
+     Details: 
+
+
+=============================================================================================
+
+
+From emails:
+
+### TH to JRCP, CABP
+
+I was pretty sure there was more, and I just remembered what they were:
+
+- Seed RNG, generate the serotype sequence, and re-seed.  This will make the simulation
+  independent of the length of the serotype sequence generated, in case we want to generate
+  more years than we will use in ABC
+
+- Check the status of the 8-14 year olds on April 10, 1987, not December 31, 1986
+
+And to recap the other stuff:
+
+- Run with only non-negative numbers of mosquitoes
+
+- Add 100 days at the end, to finish on April 9, outputting serotypes, mosquitoes, and
+  immunity
+
+- Turn off the weird carrying capacity but not bit with infected mosquitoes
+
+---------------------------------------------------------------------------------------------
+
+### TH to JRCP, CABP
+
+More abc-to-do notes:
+
+- Consider seasonally (not annually) varying EIP, as this is already implemented and I have
+  the temp data, but we haven't tried it because we never looked at whether the seasonality
+  was good before.
+
+- Impose serotypes for 35 year period, sample from conditional distributions to get
+  serotypes before and after the window we know about.
+
+- Add autocorrelation coefficients as metrics.
+
+- Consider adding quartiles as metrics, possibly taking out maximum (one of Aaron King's
+  suggestions).
+
+- Probably don't bother refitting serotype model to integrate over all possibly serotypes
+  circulating in missing years, because that would make the second bullet above a pita.
+
+---------------------------------------------------------------------------------------------
+
+### TH to JRCP, CABP
+
+Something to consider:
+
+Immunity swapping and vaccination both should occur during the "off-season."  It's
+definitely weird, I think, to vaccinate and then immediately age the population.  That would
+mean that in the year immediately following vaccination, the number of vaccinated people
+would be different from the number of doses administered.
+
+Currently, vaccinations happen on Julian day 100 (day 99 of the simulator, if the simulator
+starts on Jan 1), while immunity swapping occurs on simulator-year day 364, or when
+simulator day + 1 % 365 == 0.  So . . . we should decide something, and then do it.
+
+---------------------------------------------------------------------------------------------
+
+### CABP to TJH, JRCP
+
+Wait, the write up said immunity swapping occurred in off season as well?  I agree with
+making it happen then - the argument for then was very sensible.
+
+---------------------------------------------------------------------------------------------
+
+### TH to JRCP, CABP
+
+Additional note from conversations today:
+
+Our mosquito seasonality currently gives special treatment to infected mosquitoes: when a
+location's capacity decreases (e.g. at end of rainy season), susceptible mosquitoes are
+implicitly killed off, but infectious mosquitoes are allowed to finish a normal lifespan.
+Aside from being inconsistent, this is potentially the cause of (or a contributor to) the
+lag observed in the simulated seasonal epidemic curve, as compared to the empirical curve.
+At the end of Infectious mosquitoes should be killed off with probability 1 - min(k_2/k_1,
+1.0) [corrected from original email by JRCP], where k_2 is the new months multiplier and k_1
+is last months multiplier.  In months where capacity increases, nothing happens to infected
+mosquitoes because the additional cap space is filled with susceptible mosquitoes.
+
+---------------------------------------------------------------------------------------------
+
+### JRCP to TJH, CABP
+
+C and I also came up w another issue, that I think should be addressed with these changes.
+Seems that in the 'DDT period' case introductions stop but mosquito populations aren't
+affect. This seems the opposite of what one would expect to occur biologically - where you
+would expect the same number (or possibly lower, but not zero) of introductions, with
+limited (or approximately 0) subsequent transmission (because mosquito numbers have dropped
+dramatically. The new version of the incidence figure highlights the consequences of the way
+it's currently modeled vs the more plausible version: during the DDT period, number of cases
+dip gradually instead of dipping more suddenly and then gradually rebounding (which is what
+you would expect, if you have introductions but 'no' local transmission - population level
+immunity would decline through time some more introductions would be 'successful'). How
+difficult would it be to implement so that the DDT periods gets introductions but has
+limited or no mosquito capacity?
+
+---------------------------------------------------------------------------------------------
+
+### TH to JRCP, CABP
+
+If DDT was applied throughout the region, then it should affect both mosquitoes and
+introductions.  Currently, however, I have no hard info about any of that.  Maybe I can ask
+Diana to look into this, since sources may well be in Spanish.  Yesterday Ira asked me if
+the paper could be done in a month.  I told him I didn't think it would quite be ready to
+submit, but I don't think we're so far from that anymore.  The real problem is that I just
+haven't had time to sit down and focus on making these changes, and with the Cuba thing
+coming up and Carl going back to Ghana, the next few weeks don't look awesome.  If these
+changes don't happen before 8/22, they will become the priority at that point.

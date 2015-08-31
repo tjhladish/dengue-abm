@@ -14,6 +14,7 @@
 #include "Location.h"
 #include "Community.h"
 #include "Utility.h"
+#include "sys/stat.h"
 
 using namespace dengue::standard;
 using namespace dengue::util;
@@ -85,7 +86,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename, int runLength);
 void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename="");
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
-void write_daily_buffer( vector<string>& buffer, const int process_id);
+void write_daily_buffer( vector<string>& buffer, const int process_id, string filename);
 
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
@@ -217,57 +218,61 @@ void initialize_seasonality(const Parameters* par, Community* community, int& ne
 
 
 void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const int process_id, vector<int>& epi_sizes) {
-        // local transmission          = total                          - introductions
-        periodic_incidence["daily"][1] = periodic_incidence["daily"][2] - periodic_incidence["daily"][0];
-        if (par->dailyOutput) {
-            cerr << "day: " << date.day() << " "; for (auto v: periodic_incidence["daily"]) cerr << v << " ";
-            cerr << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+    stringstream ss;
+    // local transmission          = total                          - introductions
+    periodic_incidence["daily"][1] = periodic_incidence["daily"][2] - periodic_incidence["daily"][0];
+    if (par->dailyOutput) {
+        ss << hex << process_id << dec << " day: " << date.day() << " "; for (auto v: periodic_incidence["daily"]) ss << v << " ";
+        ss << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+    }
+
+    if (par->weeklyOutput) {
+        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["weekly"][i] += periodic_incidence["daily"][i];
+        if (date.endOfWeek()) {
+            ss << hex << process_id << dec << " week: " << date.week() << " "; for (auto v: periodic_incidence["weekly"]) ss << v << " "; ss << endl;
+            periodic_incidence["weekly"] = {0,0,0};
         }
+    }
 
-        if (par->weeklyOutput) {
-            for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["weekly"][i] += periodic_incidence["daily"][i];
-            if (date.endOfWeek()) {
-                cerr << "week: " << date.week() << " "; for (auto v: periodic_incidence["weekly"]) cerr << v << " "; cerr << endl;
-                periodic_incidence["weekly"] = {0,0,0};
-            }
+    if (par->monthlyOutput) {
+        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["monthly"][i] += periodic_incidence["daily"][i];
+        if (date.endOfMonth()) {
+            ss << hex << process_id << dec << " month: " << date.julianMonth() << " "; for (auto v: periodic_incidence["monthly"]) ss << v << " "; ss << endl;
+            periodic_incidence["monthly"] = {0,0,0};
         }
+    }
 
-        if (par->monthlyOutput) {
-            for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["monthly"][i] += periodic_incidence["daily"][i];
-            if (date.endOfMonth()) {
-                cerr << "month: " << date.julianMonth() << " "; for (auto v: periodic_incidence["monthly"]) cerr << v << " "; cerr << endl;
-                periodic_incidence["monthly"] = {0,0,0};
-            }
+    // handle several things that happen yearly
+
+    for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
+
+    if (date.endOfYear()) {
+        if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
+
+        epi_sizes.push_back(periodic_incidence["yearly"][2]);
+
+        if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
+
+        if (par->yearlyOutput) {
+            ss << hex << process_id << dec << " year: " << date.year() + 1 << " "; 
+            for (auto v: periodic_incidence["yearly"]) ss << v << " "; ss << endl;
         }
+        periodic_incidence["yearly"] = {0,0,0};
+    }
 
-        // handle several things that happen yearly
-
-        for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
-
-        if (date.endOfYear()) {
-            if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
-
-            epi_sizes.push_back(periodic_incidence["yearly"][2]);
-
-            if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-
-            if (par->yearlyOutput) {
-                cerr << "year: " << date.year() + 1 << " "; 
-                for (auto v: periodic_incidence["yearly"]) cerr << v << " "; cerr << endl;
-            }
-            periodic_incidence["yearly"] = {0,0,0};
-        }
-
-        periodic_incidence["daily"] = {0,0,0};
+    periodic_incidence["daily"] = {0,0,0};
+    string output = ss.str();
+    fputs(output.c_str(), stderr);
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
     for (int i=0; i<par->nSizeVaccinate; i++) {
         if (date.year()==par->nVaccinateYear[i]) {
-            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
             if (not par->abcVerbose) {
-                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] << endl;
+                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] 
+                     << " on day " << date.day() << endl;
             }
+            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
         }
     }
     if (par->linearlyWaningVaccine and par->vaccineBoosting) {
@@ -337,8 +342,9 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
     vector<string> daily_output_buffer;
+
     if (par->bSecondaryTransmission and not par->abcVerbose) {
-        daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
+        //daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
         //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     }
 
@@ -346,6 +352,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
                                                    {"weekly", vector<int>(3,0)},
                                                    {"monthly", vector<int>(3,0)},
                                                    {"yearly", vector<int>(3,0)} };
+
     for (; date.day() < par->nRunLength; date.increment()) {
         // phased vaccination
         if (date.julianDay() == 100) {
@@ -358,11 +365,14 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
         community->tick(date.day());
 
+        // TODO - make it cleaner to iterate through pop
         for (int i=community->getNumPerson()-1; i>=0; i--) {
             Person *p = community->getPerson(i);
+            // TODO - it should be sufficient to only check second conditional
             if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
                 ++periodic_incidence["daily"][2];
-                /*
+
+               /*
                 // this is commented out because we don't usually output daily data,
                 // and there's no point wasting ~100 mb of ram per process on long runs
                 stringstream ss;
@@ -380,7 +390,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     }
 
-    //write_daily_buffer(daily_output_buffer, process_id);
+    // write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
     return epi_sizes;
 }
 
@@ -433,14 +443,37 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
 }
 
 
-void write_daily_buffer( vector<string>& buffer, const int process_id) {
-    stringstream ss_filename;
-    ss_filename << "daily_output." << process_id;
-    ofstream file;
-    file.open(ss_filename.str());
+bool fileExists(const std::string& filename) {
+    struct stat buf;
+    return stat(filename.c_str(), &buf) != -1;
+}
 
-    for (string s: buffer) file << s << endl;
-    file.close();
+
+void write_daily_buffer( vector<string>& buffer, const int process_id, string filename = "" ) {
+    if (filename == "") {
+        stringstream ss_filename;
+        ss_filename << "daily_output." << process_id;
+        filename = ss_filename.str();
+    }
+
+    string all_output;
+    for (const auto &line : buffer) all_output += (line + "\n");
+
+    if (fileExists(filename)) {
+        cerr << "WARNING: Daily output file already exists: " << filename << endl << "WARNING: Aborting write.\n";
+        return;
+    }
+
+    ofstream file;
+    file.open(filename);
+
+    if (file.is_open()) {  // TODO - add this check everywhere a file is opened
+        file << all_output;
+        file.close();
+    } else {
+        cerr << "ERROR: Could not open daily buffer file for output: " << filename << endl;
+        exit(-842);
+    }
 }
 
 

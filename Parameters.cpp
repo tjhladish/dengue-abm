@@ -533,14 +533,16 @@ void Parameters::writeAnnualSerotypes(string filename) const {
 }
 
 
-void Parameters::generateAnnualSerotypes() {
+void Parameters::generateAnnualSerotypes(int total_num_years) { // default arg value is -1
     enum State {GAP, RUN};
     // get rid of anything there now
     for (auto &v: nDailyExposed) v.clear();
     nDailyExposed.clear();
 
-    int run_length_years = (int) ceil((double) nRunLength / 365.0);
-    nDailyExposed.resize(run_length_years, vector<float>(NUM_OF_SEROTYPES));
+    if (total_num_years == -1) {
+        total_num_years = (int) ceil((double) nRunLength / 365.0);
+    }
+    nDailyExposed.resize(total_num_years, vector<float>(NUM_OF_SEROTYPES));
 
     for (int s = 0; s<NUM_OF_SEROTYPES; ++s) {
         const float p_gap = 1.0/MEAN_GAP_LENGTH[s];
@@ -549,7 +551,7 @@ void Parameters::generateAnnualSerotypes() {
 
         int years_so_far = 0;
         State state = p_gap_start > gsl_rng_uniform(RNG) ? GAP : RUN;
-        while (years_so_far < run_length_years) {
+        while (years_so_far < total_num_years) {
             if (state == GAP) {
                 unsigned int gap = gsl_ran_geometric(RNG, p_gap);
                 // We may not be starting at the beginning of a gap

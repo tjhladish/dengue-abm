@@ -271,7 +271,8 @@ bool Person::isViremic(int time) const {
 bool Person::isSymptomatic(int time) const {
     if (infectionHistory.size() > 0) {
         Infection* infection = infectionHistory.back();
-        if (time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
+        // TODO: this is a mess of conditionals.  Make it not confusing.
+        if (infection->isSymptomatic() and time >= infection->symptomTime and time < infection->recoveryTime and not _bDead) {
             return true;
         }
     }

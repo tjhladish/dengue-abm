@@ -16,6 +16,8 @@ using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
 
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
@@ -27,32 +29,28 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     
     double _betamp   = args[4]; // mp and pm and not separately
     double _betapm   = args[4]; // identifiable, so they're the same
-    //double _betamp   = 0.25;
-    //double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
-//    string WORK(std::getenv("WORK"));
-//    string imm_dir = WORK + "/initial_immunity";
-//    string imm_dir = pop_dir + "/immunity";
+    string output_dir = "/scratch/lfs/thladish";
+
+    vector<long double> abc_args(&args[0], &args[5]);
+    string argstring;
+    const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
-    par->nRunLength = 155*365;
+    int runLengthYears = 155;
+    par->nRunLength = runLengthYears*365;
+    par->startDayOfYear = 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->fPrimaryPathogenicity[0] = 1.000;
-    par->fPrimaryPathogenicity[1] = 0.825;
-    par->fPrimaryPathogenicity[2] = 0.833;
-    par->fPrimaryPathogenicity[3] = 0.317;
+    par->fPrimaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->fSecondaryScaling = {1.0, 1.0, 1.0, 1.0};
 
-    par->fSecondaryScaling[0] = 1.0;
-    par->fSecondaryScaling[1] = 1.0;
-    par->fSecondaryScaling[2] = 1.0;
-    par->fSecondaryScaling[3] = 1.0;
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     par->expansionFactor = _EF;
@@ -68,8 +66,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->simulateAnnualSerotypes = true;
     par->normalizeSerotypeIntros = true;
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
-
+    // generate some extra years of serotypes, for subsequent intervention modeling
+    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 100 year burn-in, 20 years of no dengue, then re-introduction
     par->annualIntroductions = vector<double>(100, 1.0);
     par->annualIntroductions.resize(120, 0.0);
@@ -80,6 +78,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
     par->networkFilename    = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->mosquitoFilename         = output_dir + "/mos_tmp/mos." + to_string(process_id);
+    par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
 }
 
@@ -100,18 +100,26 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
 
-    string argstring;
     for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((long double) args[i]) + " ";
 
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
+
+    return process_id;
+}
+
+
+const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
+
+    string argstring;
+    const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
@@ -120,6 +128,7 @@ unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, co
 
     return process_id;
 }
+
 
 void append_if_finite(vector<long double> &vec, double val) {
     if (isfinite(val)) { 
@@ -172,15 +181,21 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     // initialize & run simulator 
     const Parameters* par = define_simulator_parameters(args, rng_seed); 
+
+    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
+    par->writeAnnualSerotypes(sero_filename);
+
+    gsl_rng_set(RNG, rng_seed);
     Community* community = build_community(par);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
     vector<int> serotested_ids = read_pop_ids("8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
-    // We might want to write the immunity file if this is the real posterior
-//    string imm_filename = "/scratch/lfs/thladish/immunity." + to_string(process_id);
-//    write_immunity_file(par, community, process_id, imm_filename);
+    // We might want to write the immunity and mosquito files if this is the real posterior
+    string imm_filename = "/scratch/lfs/thladish/imm_tmp/immunity." + to_string(process_id);
+    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
     vector<int> case_sizes = tally_counts(par, community);
     vector<int>(case_sizes.begin()+120, case_sizes.end()).swap(case_sizes); // throw out first 120 values

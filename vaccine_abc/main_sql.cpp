@@ -16,7 +16,7 @@ using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -42,7 +42,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->randomseed = rng_seed;
     par->abcVerbose = true;
-    par->nRunLength = 20*365+100;
+    par->nRunLength = 100 + (20*365);
     par->startDayOfYear = 1;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
@@ -50,15 +50,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->fPrimaryPathogenicity[0] = 1.000;
-    par->fPrimaryPathogenicity[1] = 0.825;
-    par->fPrimaryPathogenicity[2] = 0.833;
-    par->fPrimaryPathogenicity[3] = 0.317;
+    par->fPrimaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->fSecondaryScaling = {1.0, 1.0, 1.0, 1.0};
 
-    par->fSecondaryScaling[0] = 1.0;
-    par->fSecondaryScaling[1] = 1.0;
-    par->fSecondaryScaling[2] = 1.0;
-    par->fSecondaryScaling[3] = 1.0;
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     //par->expansionFactor = _caseEF;
@@ -85,11 +79,10 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     int abc_duration = 155;
     vector<vector<float> >(par->nDailyExposed.begin()+abc_duration, par->nDailyExposed.end()).swap(par->nDailyExposed);
 
-    par->annualIntroductions = vector<double>(1, 1.0);
+    par->annualIntroductions = {1.0};
 
     par->populationFilename       = pop_dir + "/population-yucatan.txt";
     par->immunityFilename         = imm_dir + "/immunity." + particle_id;
-//cerr << "argstring: " << argstring << " " << par->immunityFilename << endl;
     par->locationFilename         = pop_dir + "/locations-yucatan.txt";
     par->networkFilename          = pop_dir + "/network-yucatan.txt";
     par->swapProbFilename         = pop_dir + "/swap_probabilities-yucatan.txt";
@@ -119,7 +112,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -129,15 +122,16 @@ unsigned int calculate_process_id(vector< long double> &args, string &argstring)
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
+
     return process_id;
 }
 
 
-unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
-    unsigned int process_id = calculate_process_id(args, argstring);
+    const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
     ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
@@ -171,7 +165,8 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
 
     vector<long double> metrics;
     for (int t=discard_days; t<par->nRunLength; t++) {
-        const int y = t/365;
+        // use epidemic years, instead of calendar years
+        const int y = (t-discard_days)/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
             h_tally[s][y] += severe[s][t];
             s_tally[s][y] += symptomatic[s][t];
@@ -258,9 +253,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
-        int default_coverage = 0.7;
+        double default_coverage = 0.7;
         int num_target  = community->ageIntervalSize(9,10); // default target
         int num_catchup = community->ageIntervalSize(10,31);// default catchup
+
         double target_coverage  = default_coverage*num_target/community->ageIntervalSize(target, target+1);
         double catchup_coverage = default_coverage*num_catchup/community->ageIntervalSize(target+1, catchup_to+1);
 
@@ -306,21 +302,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 */
 
     if (vector_reduction > 0.0) {
-        cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation shuold work\n";
-        exit(-1834);
-        int burnin = 0;
+        //cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation should work\n";
+        //exit(-1834);
         assert( vector_reduction <= 1.0); 
         assert( par->mosquitoMultipliers.size() == 12); // expecting values for 12 months
-        int running_sum = par->mosquitoMultipliers.back().start + DAYS_IN_MONTH[0]; // start on january 1 of year two
-        const int months_simulated = years_simulated*12;
-        par->mosquitoMultipliers.resize(months_simulated);
-        for (unsigned int i = 12; i < months_simulated; ++i) {
-            const int month_of_year = i % 12;
-            par->mosquitoMultipliers[i].start = running_sum;
-            par->mosquitoMultipliers[i].duration = DAYS_IN_MONTH[month_of_year];
-            float vector_coeff = i/12 >= burnin ? 1.0 - vector_reduction : 1.0; // normally, there's no reduction in vectors
-            par->mosquitoMultipliers[i].value = vector_coeff * par->mosquitoMultipliers[month_of_year].value;
-            running_sum += DAYS_IN_MONTH[month_of_year];
+        for (unsigned int i = 0; i < par->mosquitoMultipliers.size(); ++i) {
+            float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
+            par->mosquitoMultipliers[i].value *= vector_coeff;
         }
     }
 
