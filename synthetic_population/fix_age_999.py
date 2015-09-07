@@ -1,11 +1,12 @@
 #!/usr/bin/python
-from sys import argv
+from sys import argv, exit
 import random
 
 if len(argv) < 4:
     print "\n\tUsage: ./fix_age_999.py age_column input_population_filename output_population_filename\n"
-    print "\tIf input and output filenames are the same, file will be overwritten.\n"
+    print "\tIf input and output filenames are the same, file will be overwritten."
     print "\tage_column should be the index (starting with 0) of the column where age data is located in the input file\n"
+    exit()
 
 peeps = []
 header = ''

@@ -165,7 +165,7 @@ bool loadLocations(string locFilename) {
 int main(int argc, char** argv) { 
 
     if (argc != 3) {
-        cerr << "\n\tUsage: ./generate_swap_file <locations_file> <population_file>\n\n";
+        cerr << "\n\tUsage: ./generate_swap_file <locations_file> <population_file> > swap_filename.txt\n\n";
         return -5;
     }
 
@@ -173,8 +173,9 @@ int main(int argc, char** argv) {
     string population_filename = argv[2];
 
   //const int NUM_PEOPLE = 1819497; // yucatan
-    const int NUM_PEOPLE =  207591; // bangphae 
-    cerr << "Using a population size of " << NUM_PEOPLE << endl;
+  //const int NUM_PEOPLE =  207591; // bangphae 
+    const int NUM_PEOPLE =  839659; // merida
+    cerr << "Assuming a population size of " << NUM_PEOPLE << endl;
     const int NUM_NEIGHBORS = 1;           // Number of nearest neighbors to report for swap file
     const double MIN_DISPLACEMENT = 0.005;  // Distance (in km) to use between people who live in the same house
 
