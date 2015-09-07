@@ -128,3 +128,43 @@ eip_plots = function() {
 
 #min_max_plot()
 #eip_plots()
+
+mean_seasonal_eip = aggregate(rtemps$EIP, by=list(as.factor(format(rtemps$DATE, '%m-%d'))), mean)
+names(mean_seasonal_eip)=c('day', 'eip')
+
+mean_seasonal_eip = mean_seasonal_eip[-which(mean_seasonal_eip$day=='02-29'),]
+mean_seasonal_eip$eip = round(mean_seasonal_eip$eip)
+write.table(mean_seasonal_eip[,c(2,1)], 'seasonal_avg_eip.out', quote=F, row.names=F, col.names=F)
+
+
+# mean_seasonality = aggregate(rtemps[c('TMINmerged', 'TMAXmerged')], by=list(as.factor(format(rtemps$DATE, '%m-%d'))), mean)
+# names(mean_seasonality) = c('day', 'TMIN', 'TMAX')
+# mean_seasonality$EIR = 1/rowMeans(data.frame(eip(mean_seasonality$TMIN), eip(mean_seasonality$TMAX)))
+#
+# smoothed_eip_w_wrapping = function(current_day) {
+#     total = 0
+#     eip = 0
+#     while (total < 1) {
+#         total = total + mean_seasonality$EIR[current_day]
+#         eip = eip + 1
+#         if (current_day < length(mean_seasonality$EIR)) {
+#             current_day = current_day + 1
+#         } else {
+#             current_day = 1
+#         }
+#     }
+#     return(eip)
+# }
+#
+# for (day in 1:dim(mean_seasonality)[1]) {
+#     mean_seasonality[day, 'EIP'] = smoothed_eip_w_wrapping(day)
+# }
+#
+# # compare averaging temps and then calculating EIP with calculating daily EIP and then averaging
+# #plot(mean_seasonality$EIP, type='l', xlab='Julian day', ylab='EIP')
+# #lines(round(mean_seasonal_eip$eip), type='l', col='blue')
+# #legend('topleft', legend=c('EIP(average temps)', 'average(EIP(daily temps))'), fill=c('black','blue'), bty='n')
+#
+# # get rid of leap day, since sim expects 365 days/year
+# mean_seasonality = mean_seasonality[-which(mean_seasonality$day=='02-29'),]
+# write.table(mean_seasonality[,c(5,1,2,3,4)], 'seasonal_eip.out', quote=F, row.names=F)
