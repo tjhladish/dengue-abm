@@ -201,8 +201,8 @@ public:
     std::vector<int> nInitialExposed;                       // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
-    std::vector<double> fPrimaryPathogenicity;              // serotypes
-    std::vector<double> fSecondaryScaling;
+    std::vector<double> primaryPathogenicity;               // serotypes
+    std::vector<double> secondaryPathogenicityOddsRatio;
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;

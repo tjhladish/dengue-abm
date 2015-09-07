@@ -159,7 +159,7 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
 
 // infect - infect this individual
 // primary symptomatic is a scaling factor for pathogenicity of primary infections.
-// secondary_scaling * primarysymptomatic is the scaling factor for pathogenicity of secondary infections.
+// if secondaryPathogenicityOddsRatio > 1, secondary infections are more often symptomatic
 // returns true if infection occurs
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Bail now if this person can not become infected
@@ -189,11 +189,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
 
     // Determine if this person withdraws (stops going to work/school)
-    const double primary_symptomatic   = _par->fPrimaryPathogenicity[(int) serotype];
-    const double secondary_symptomatic = _nImmunity.any() ? _par->fSecondaryScaling[(int) serotype] : 1.0;
-    const double effective_VEP         = isVaccinated()   ? _par->fVEP        : 0.0;   // reduced symptoms due to vaccine
+    const double primary_pathogenicity = _par->primaryPathogenicity[(int) serotype];
 
-    const double symptomatic_probability = primary_symptomatic * SYMPTOMATIC_BY_AGE[_nAge] * (1.0 - effective_VEP) * secondary_symptomatic;
+    const double primary_symptomatic_prob = primary_pathogenicity * SYMPTOMATIC_BY_AGE[_nAge];
+    double symptomatic_probability = primary_symptomatic_prob;
+
+    if (_nImmunity.any() and primary_symptomatic_prob != 1.0) {
+        const double secondary_odds = _par->secondaryPathogenicityOddsRatio[(int) serotype] * primary_symptomatic_prob / (1.0 - primary_symptomatic_prob);
+        symptomatic_probability = secondary_odds / (1.0 + secondary_odds);
+    }
+
+    const double effective_VEP = isVaccinated() ? _par->fVEP : 0.0;   // reduced symptoms due to vaccine
+    symptomatic_probability *= (1.0 - effective_VEP);
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability) {
         // Person develops symptoms == this is a case

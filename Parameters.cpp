@@ -53,21 +53,21 @@ void Parameters::define_defaults() {
     nInitialInfected.clear();
     nInitialInfected.resize(NUM_OF_SEROTYPES, 0);
 
-    fPrimaryPathogenicity.clear();
-    fPrimaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
+    primaryPathogenicity.clear();
+    primaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
     if (NUM_OF_SEROTYPES == 4) {
         // values fitted in
         // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
         // Normalized from Fc values in supplement table 2, available at
         // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-        fPrimaryPathogenicity[0] = 1.000;
-        fPrimaryPathogenicity[1] = 0.825;
-        fPrimaryPathogenicity[2] = 0.833;
-        fPrimaryPathogenicity[3] = 0.317;
+        primaryPathogenicity[0] = 1.000;
+        primaryPathogenicity[1] = 0.825;
+        primaryPathogenicity[2] = 0.833;
+        primaryPathogenicity[3] = 0.317;
     }
 
-    fSecondaryScaling.clear();
-    fSecondaryScaling.resize(NUM_OF_SEROTYPES, 1.0);
+    secondaryPathogenicityOddsRatio.clear();
+    secondaryPathogenicityOddsRatio.resize(NUM_OF_SEROTYPES, 1.0);
 
     nVaccinateYear.clear();
     nVaccinateAge.clear();
@@ -125,10 +125,10 @@ void Parameters::readParameters(int argc, char* argv[]) {
                 }
             }
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) fPrimaryPathogenicity[j]=strtod(argv[++i],end);
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) primaryPathogenicity[j]=strtod(argv[++i],end);
             }
-            else if (strcmp(argv[i], "-secondaryscaling")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) fSecondaryScaling[j]=strtod(argv[++i],end);
+            else if (strcmp(argv[i], "-secondaryoddsratio")==0) {
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) secondaryPathogenicityOddsRatio[j]=strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-annualintroscoef")==0) {
                 annualIntroductionsCoef = strtod(argv[++i],end);
@@ -333,12 +333,12 @@ void Parameters::validate_parameters() {
     cerr << "maximum infection parity = " << nMaxInfectionParity << endl;
     cerr << "pathogenicity of primary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        cerr << " " << fPrimaryPathogenicity[i];
+        cerr << " " << primaryPathogenicity[i];
     }
     cerr << endl;
-    cerr << "pathogenicity scaling for secondary infection =";
+    cerr << "pathogenicity odds ratios for secondary infection =";
     for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        cerr << " " << fSecondaryScaling[i];
+        cerr << " " << secondaryPathogenicityOddsRatio[i];
     }
     cerr << endl;
     cerr << "mosquito move prob = " << fMosquitoMove << endl;
