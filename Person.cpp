@@ -28,7 +28,7 @@ Person::Person() {
     _nLifespan = -1;
     _nHomeID = -1;
     _nWorkID = -1;
-    for(int i=0; i<STEPS_PER_DAY; i++) _pLocation[i] = NULL;
+    for(int i=0; i<(int) NUM_OF_TIME_PERIODS; i++) _pLocation[i] = NULL;
     _bDead = false;
     _bVaccinated = false;
     _bNaiveVaccineProtection = false;
@@ -168,6 +168,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         return false;
     }
 
+    bool maternalAntibodyEnhancement = false;
+    if (getAge() == 0) {                                     // this is an infant
+        Person* mom = getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
+        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
+            if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
+                return false;                                // maternal antibody protection
+            } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
+                maternalAntibodyEnhancement = true;          // maternal antibodies are a problem
+            }
+        }
+    }
+
     Infection& infection = initializeNewInfection(serotype); // Create a new infection record
 
     infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
@@ -202,10 +214,10 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     const double effective_VEP = isVaccinated() ? _par->fVEP : 0.0;   // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
 
-    if (gsl_rng_uniform(RNG) < symptomatic_probability) {
+    if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {
         // Person develops symptoms == this is a case
         // Is this a severe case (for estimating hospitalizations)
-        if (gsl_rng_uniform(RNG) < _par->hospitalizedFraction) { // potentially a severe case . . .
+        if (gsl_rng_uniform(RNG) < _par->hospitalizedFraction or maternalAntibodyEnhancement) { // potentially a severe case . . .
             if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // is this person unvaccinated or unlucky?
                 infection.severeDisease = true;
             }
@@ -227,7 +239,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // TODO - clarify what's going on with d; sometimes this is an old infection, sometimes a current one
     for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
         if (d < 0) continue; // we don't need to worry about flagging locations for past infections
-        for (int t=0; t<STEPS_PER_DAY; t++) {
+        for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
             Community::flagInfectedLocation(_pLocation[t], d);
         }
     }

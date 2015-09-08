@@ -69,6 +69,12 @@ void Parameters::define_defaults() {
     secondaryPathogenicityOddsRatio.clear();
     secondaryPathogenicityOddsRatio.resize(NUM_OF_SEROTYPES, 1.0);
 
+    // Probabilities GIVEN maternal antibodies (from random cohabitating female of reproductive age)
+    // Values estimated based on Fig. 5 of Halstead et al, Dengue hemorrhagic fever in infants: research opportunities ignored, EID, 2002
+    // http://stacks.cdc.gov/view/cdc/13972/cdc_13972_DS1.pdf
+    infantImmuneProb = 3.0/12.0;    // given exposure and maternal antibodies, chance of resisting infection (first 3 months)
+    infantSevereProb = 6.0/9.0;     // given infection and maternal antibodies, chance of severe disease (next 6 months)
+
     nVaccinateYear.clear();
     nVaccinateAge.clear();
     fVaccinateFraction.clear();

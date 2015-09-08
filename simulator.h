@@ -553,7 +553,7 @@ void daily_detailed_output(Community* community, int t) {
             cout << t 
                  << ",p,"
                  << p->getID() << "," 
-                 << p->getLocation(0)->getID() << "," 
+                 << p->getLocation(HOME_MORNING)->getID() << "," 
                  << 1 + (int) p->getSerotype() << "," 
                  << (p->isSymptomatic(t)?1:0) << "," 
                  << (p->isWithdrawn(t)?1:0) << ","

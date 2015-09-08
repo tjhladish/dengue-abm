@@ -52,8 +52,8 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person+i;
         if (p->isWithdrawn(_nDay)) {
-            p->getLocation(1)->addPerson(p,1);                        // goes back to work
-            p->getLocation(0)->removePerson(p,1);                     // stops staying at home
+            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);                        // goes back to work
+            p->getLocation(HOME_MORNING)->removePerson(p,WORK_DAY);             // stops staying at home
         }
         p->resetImmunity(); // no past infections, not dead, not vaccinated
     }
@@ -153,7 +153,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     int id, age, house, work;
     string hh_serial;
     int pernum;
-    string gender;  // might be "M", "F", "1", or "2"
+    int sex; // per IPUMS, expecting 1 for male, 2 for female
     while (iss) {
         iss.getline(buffer,500);
         line.clear(); 
@@ -166,15 +166,16 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         4 2 32 1 2748114000 1 397104
         5 2 30 2 2748114000 2 396166
         */
-        if (line >> id >> house >> age >> gender >> hh_serial >> pernum >> work) {
+        if (line >> id >> house >> age >> sex >> hh_serial >> pernum >> work) {
             _person[_nNumPerson].setAge(age);
+            _person[_nNumPerson].setSex((SexType) sex);
             _person[_nNumPerson].setHomeID(house);
-            _person[_nNumPerson].setLocation(_location[house], 0);
-            _person[_nNumPerson].setLocation(_location[work], 1);
-            _person[_nNumPerson].setLocation(_location[house], 2);
-            _location[house]->addPerson(_person+_nNumPerson, 0);
-            _location[work]->addPerson(_person+_nNumPerson, 1);
-            _location[house]->addPerson(_person+_nNumPerson, 2);
+            _person[_nNumPerson].setLocation(_location[house], HOME_MORNING);
+            _person[_nNumPerson].setLocation(_location[work], WORK_DAY);
+            _person[_nNumPerson].setLocation(_location[house], HOME_NIGHT);
+            _location[house]->addPerson(_person+_nNumPerson, HOME_MORNING);
+            _location[work]->addPerson(_person+_nNumPerson, WORK_DAY);
+            _location[house]->addPerson(_person+_nNumPerson, HOME_NIGHT);
             assert(age<NUM_AGE_CLASSES);
             agecounts[age]++;
             _nNumPerson++;
@@ -657,8 +658,8 @@ void Community::swapImmuneStates() {
             // update map of locations with infectious people
             if (p->getNumInfections() > 0 and p->getRecoveryTime() > _nDay) {
                 for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
-                    for (int t=0; t<STEPS_PER_DAY; t++) {
-                        flagInfectedLocation(p->getLocation(t), d);
+                    for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                        flagInfectedLocation(p->getLocation((TimePeriod) t), d);
                     }
                 }
             }
@@ -689,12 +690,12 @@ void Community::updateDiseaseStatus() {
             }
         }
         if (p->getWithdrawnTime()==_nDay) {                           // started withdrawing
-            p->getLocation(0)->addPerson(p,1);                        // stays at home at mid-day
-            p->getLocation(1)->removePerson(p,1);                     // does not go to work
+            p->getLocation(HOME_MORNING)->addPerson(p,WORK_DAY);      // stays at home at mid-day
+            p->getLocation(WORK_DAY)->removePerson(p,WORK_DAY);       // does not go to work
         } else if (p->isWithdrawn(_nDay-1) &&
         p->getRecoveryTime()==_nDay) {                                // just stopped withdrawing
-            p->getLocation(1)->addPerson(p,1);                        // goes back to work
-            p->getLocation(0)->removePerson(p,1);                     // stops staying at home
+            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);                        // goes back to work
+            p->getLocation(HOME_MORNING)->removePerson(p,WORK_DAY);                     // stops staying at home
         }
     }
     return;
@@ -714,24 +715,24 @@ void Community::mosquitoToHumanTransmission() {
             if (gsl_rng_uniform(RNG)<_par->betaMP) {                      // infectious mosquito bites
 
                 // take sum of people in the location, weighting by time of day
-                double exposuretime[STEPS_PER_DAY];
+                double exposuretime[(int) NUM_OF_TIME_PERIODS];
                 double totalExposureTime = 0;
-                for (int t=0; t<STEPS_PER_DAY; t++) {
-                    exposuretime[t] = pLoc->getNumPerson(t) * DAILY_BITING_PDF[t];
+                for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                    exposuretime[t] = pLoc->getNumPerson((TimePeriod) t) * DAILY_BITING_PDF[t];
                     totalExposureTime += exposuretime[t];
                 }
                 if ( totalExposureTime > 0 ) {
                     double r = gsl_rng_uniform(RNG) * totalExposureTime;
                     int timeofday;
-                    for (timeofday=0; timeofday<STEPS_PER_DAY - 1; timeofday++) {
+                    for (timeofday=0; timeofday<(int) NUM_OF_TIME_PERIODS - 1; timeofday++) {
                         if (r<exposuretime[timeofday]) {
                             // bite at this time of day
                             break;
                         }
                         r -= exposuretime[timeofday];
                     }
-                    int idx = floor(r*pLoc->getNumPerson(timeofday)/exposuretime[timeofday]);
-                    Person* p = pLoc->getPerson(idx, timeofday);
+                    int idx = floor(r*pLoc->getNumPerson((TimePeriod) timeofday)/exposuretime[timeofday]);
+                    Person* p = pLoc->getPerson(idx, (TimePeriod) timeofday);
                     Serotype serotype = m->getSerotype();
                     if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
                         _nNumNewlyInfected[(int) serotype][_nDay]++;
@@ -759,9 +760,9 @@ void Community::humanToMosquitoTransmission() {
         vector<double> sumserotype(NUM_OF_SEROTYPES,0.0);                                    // serotype fractions at location
 
         // calculate fraction of people who are viremic
-        for (int timeofday=0; timeofday<STEPS_PER_DAY; timeofday++) {
-            for (int i=loc->getNumPerson(timeofday)-1; i>=0; i--) {
-                Person* p = loc->getPerson(i, timeofday);
+        for (int timeofday=0; timeofday<(int) NUM_OF_TIME_PERIODS; timeofday++) {
+            for (int i=loc->getNumPerson((TimePeriod) timeofday)-1; i>=0; i--) {
+                Person* p = loc->getPerson(i, (TimePeriod) timeofday);
                 if (p->isViremic(_nDay)) {
                     double vaceffect = (p->isVaccinated()?(1.0-_par->fVEI):1.0);
                     int serotype = (int) p->getSerotype();
@@ -881,7 +882,7 @@ void Community::tick(int day) {
     if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
                                                                       // last day of simulator year
 
-    updateDiseaseStatus();                                          // make people stay home or return to work
+    updateDiseaseStatus();                                            // make people stay home or return to work
     mosquitoToHumanTransmission();                                    // infect people
 
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location

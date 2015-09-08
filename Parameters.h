@@ -30,6 +30,20 @@ enum MosquitoDistribution {
     NUM_OF_DISTRIBUTIONS
 };
 
+enum TimePeriod {
+    HOME_MORNING,
+    WORK_DAY,
+    HOME_NIGHT,
+    NUM_OF_TIME_PERIODS
+};
+
+enum SexType {
+    UNKNOWN,
+    MALE,
+    FEMALE,
+    NUM_OF_SEX_TYPES
+};
+
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
 static const std::vector<std::string> MONTH_NAMES = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
@@ -50,9 +64,8 @@ const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
 };
 
 // from Community
-static const int STEPS_PER_DAY = 3;                           // number of time steps per day
                                                               // probability of biting at 3 different times of day (as defined in Location.h)
-static const float DAILY_BITING_PDF[STEPS_PER_DAY] = {0.08, 0.76, 0.16};  
+static const float DAILY_BITING_PDF[(int) NUM_OF_TIME_PERIODS] = {0.08, 0.76, 0.16};  
  
 // from Mosquito
 static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of mosquito in days
@@ -202,7 +215,9 @@ public:
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
     std::vector<double> primaryPathogenicity;               // serotypes
-    std::vector<double> secondaryPathogenicityOddsRatio;
+    std::vector<double> secondaryPathogenicityOddsRatio;    // Grange et al 2014 doi: 10.3389/fimmu.2014.00280 suggests the odds ratio is 1
+    double infantImmuneProb;                                // Probability that age 0 person is uninfectable, given maternal immunity
+    double infantSevereProb;                                // Probability that age 0 person experiences severe disease, given maternal immunity
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;

@@ -7,6 +7,7 @@
 #include <vector>
 #include <climits>
 #include "Parameters.h"
+#include "Location.h"
 
 class Location;
 
@@ -74,6 +75,8 @@ class Person {
         inline int getID() { return _nID; }
         int getAge() { return _nAge; }
         void setAge(int n) { _nAge = n; }
+        SexType getSex() { return _sex; }
+        void setSex(SexType sex) { _sex = sex; }
         int getLifespan() { return _nLifespan; }
         void setLifespan(int n) { _nLifespan = n; }
         int getHomeID() { return _nHomeID; }
@@ -90,8 +93,8 @@ class Person {
 
         bool isSusceptible(Serotype serotype) const;                  // is susceptible to serotype (and is alive)
         int getInfectionParity() const;                               // is immune to n serotypes
-        inline Location *getLocation(int timeofday) { return _pLocation[timeofday]; }
-        inline void setLocation(Location *p, int timeofday) { _pLocation[timeofday] = p; }
+        inline Location* getLocation(TimePeriod timeofday) { return _pLocation[(int) timeofday]; }
+        inline void setLocation(Location* p, TimePeriod timeofday) { _pLocation[(int) timeofday] = p; }
 
         inline int getInfectedByID(int infectionsago=0)    { return getInfection(infectionsago)->infectedByID; }
         inline int getInfectedPlace(int infectionsago=0)   { return getInfection(infectionsago)->infectedPlace; }
@@ -143,8 +146,9 @@ class Person {
         int _nHomeID;                                                 // family membership
         int _nWorkID;                                                 // ID of location of work
         bool _bCase;                                                  // ever detected as case?
-        Location *_pLocation[STEPS_PER_DAY];                          // where this person is at morning, day, and evening
+        Location *_pLocation[(int) NUM_OF_TIME_PERIODS];              // where this person is at morning, day, and evening
         int _nAge;                                                    // age in years
+        SexType _sex;                                                 // sex (gender)
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead
         std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype exposure

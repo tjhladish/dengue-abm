@@ -17,7 +17,7 @@ int Location::_nNextSerial = 0;
 //int Location::_nDefaultMosquitoCapacity;
 
 Location::Location()
-    : _person(STEPS_PER_DAY, vector<Person*>(0) ) {
+    : _person((int) NUM_OF_TIME_PERIODS, vector<Person*>(0) ) {
     _serial = _nNextSerial++;
     _ID = 0;
     _nBaseMosquitoCapacity = 0;
@@ -48,6 +48,22 @@ bool Location::removePerson(Person* p, int t) {
         }
     }
     return false;
+}
+
+
+// Calling scope must verify that returned person is not nullptr
+Person* Location::findMom() {
+    vector<Person*> residents = getResidents();
+    vector<Person*> potential_moms;
+    int minage = 15;
+    int maxage = 45;
+    for (auto p: residents) {
+        if (p->getSex() == FEMALE and p->getAge() >= minage and p->getAge() <= maxage) potential_moms.push_back(p); 
+    }
+    if (potential_moms.size() == 0) return nullptr;
+    int r = gsl_rng_uniform_int(RNG, potential_moms.size());
+    Person* mom = potential_moms[r];
+    return mom;
 }
 
 

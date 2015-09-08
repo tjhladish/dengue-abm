@@ -15,7 +15,9 @@ class Location {
         int getSerial() { return _serial; }
         void addPerson(Person *p, int t);
         bool removePerson(Person *p, int t);
-        int getNumPerson(int timeofday) { return _person[timeofday].size(); } 
+        int getNumPerson(TimePeriod timeofday) { return _person[(int) timeofday].size(); } 
+        std::vector<Person*> getResidents() { return _person[HOME_NIGHT]; }
+        Person* findMom();                                            // Try to find a resident female of reproductive age
         void setBaseMosquitoCapacity(int capacity) { _nBaseMosquitoCapacity = capacity; }
         int getBaseMosquitoCapacity() { return _nBaseMosquitoCapacity; }
         int getCurrentInfectedMosquitoes() { return _currentInfectedMosquitoes; }
@@ -27,7 +29,7 @@ class Location {
         void addNeighbor(Location *p);
         int getNumNeighbors() { return _neighbors.size(); }
         Location *getNeighbor(int n) { return _neighbors[n]; }
-        inline Person* getPerson(int idx, int timeofday) { return _person[timeofday][idx]; }
+        inline Person* getPerson(int idx, TimePeriod timeofday) { return _person[(int) timeofday][idx]; }
         void setCoordinates(std::pair<double, double> c) { _coord = c; }
         std::pair<double, double> getCoordinates() { return _coord; }
         void setX(double x) { _coord.first = x; }
@@ -38,13 +40,13 @@ class Location {
         bool operator == ( const Location* other ) const { return ( ( _ID == other->_ID ) && ( _serial == other->_serial ) ); }
 
     protected:
-        int _ID;                                                     // original identifier in location file
+        int _ID;                                                      // original identifier in location file
         int _serial;                                                  // unique identifier assigned on construction
         std::vector< std::vector<Person*> > _person;                  // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
         int _currentInfectedMosquitoes;
         std::vector<Location*> _neighbors;
-        static int _nNextSerial;                                          // unique ID to assign to the next Location allocated
-        std::pair<double, double> _coord;                                  // (x,y) coordinates for location
+        static int _nNextSerial;                                      // unique ID to assign to the next Location allocated
+        std::pair<double, double> _coord;                             // (x,y) coordinates for location
 };
 #endif
