@@ -73,6 +73,10 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->annualIntroductions.resize(120, 0.0);
     par->annualIntroductions.resize(155, 1.0);
 
+    // load daily EIP
+    // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed Merida temps
+    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
+
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
