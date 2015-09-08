@@ -48,7 +48,8 @@ write.table(seasonal_rain[, 'mosquitoes'], 'mosquito_seasonality.out', row.names
 #(1:10+3)%%11
 max_rain = max(seasonal_rain$precip)
 e = read.table('seasonal_eip.out', header=T)
-rescaled_e = e[,1]/max(e[,1])
+e_avg = read.table('seasonal_avg_eip.out', header=T)
+rescaled_e_avg = e_avg[,1]/max(e_avg[,1])
 
 t = read.table('merida_temps.out', header=F)
 rescaled_tmin = e[,3]/max(t[,1])
@@ -64,7 +65,7 @@ lines(seasonal_rain$smooth/max(seasonal_rain$smooth),col=4, lwd=2);# lines(1:365
 lines(rescaled_t, col=2, lwd=2); 
 lines(rescaled_tmin, col=2);
 lines(rescaled_tmax, col=2); 
-lines(rescaled_e, col=3, lwd=2); 
+lines(rescaled_e_avg, col=3, lwd=2); 
 points(month_days2, rescaled_rain, type='l', col='blue', lty=2); 
 legend('topright', legend=c('Mean temp', 'Min/max temp', 'EIP', 'Pr{precip}', 'Smoothed precip', 'Old precip model'), col=c('red','red','green','black','blue','blue'), lwd=c(2,1,2,0.5,2,2), lty=c(1,1,1,1,1,2), bty='n', cex=0.8)
 dev.off()

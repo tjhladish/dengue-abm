@@ -18,6 +18,10 @@ time_t GLOBAL_START_TIME;
 
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
+const int DDT_START       = 77; // simulator year 77
+const int DDT_DURATION    = 23;  // 23 years long
+const int FITTED_DURATION = 35;
+
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
@@ -37,19 +41,19 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
-    par->randomseed = rng_seed;
-    par->abcVerbose = true;
-    int runLengthYears = 155;
-    par->nRunLength = runLengthYears*365;
-    par->startDayOfYear = 100;
+    par->randomseed              = rng_seed;
+    par->abcVerbose              = true;
+    int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
+    par->nRunLength              = runLengthYears*365;
+    par->startDayOfYear          = 100;
     par->annualIntroductionsCoef = pow(10,_exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->fPrimaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
-    par->fSecondaryScaling = {1.0, 1.0, 1.0, 1.0};
+    par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -68,21 +72,28 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
     if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
-    // 100 year burn-in, 20 years of no dengue, then re-introduction
-    par->annualIntroductions = vector<double>(100, 1.0);
-    par->annualIntroductions.resize(120, 0.0);
-    par->annualIntroductions.resize(155, 1.0);
+    // 77 year burn-in, 23 years of no dengue, then re-introduction
+    // annualIntros is indexed in terms of simulator (not calendar) years
+    par->annualIntroductions = vector<double>(DDT_START, 1.0);
+    par->annualIntroductions.resize(DDT_START+DDT_DURATION, 0.1); // 90% reduction in intros for 20 years
+    par->annualIntroductions.resize(runLengthYears, 1.0);
 
     // load daily EIP
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed Merida temps
     par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
 
-    par->populationFilename = pop_dir + "/population-yucatan.txt";
-    par->immunityFilename   = "";
-    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
-    par->networkFilename    = pop_dir + "/network-yucatan.txt";
-    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
-    par->mosquitoFilename         = output_dir + "/mos_tmp/mos." + to_string(process_id);
+    // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
+    // mosquitoMultipliers are indexed to start on Jan 1
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
+    assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
+    for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.25; // 75% reduction is mosquitoes 
+
+    par->populationFilename       = pop_dir    + "/population-yucatan.txt";
+    par->immunityFilename         = "";
+    par->locationFilename         = pop_dir    + "/locations-yucatan.txt";
+    par->networkFilename          = pop_dir    + "/network-yucatan.txt";
+    par->swapProbFilename         = pop_dir    + "/swap_probabilities-yucatan.txt";
+    par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
     par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
 }
@@ -202,7 +213,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
     vector<int> case_sizes = tally_counts(par, community);
-    vector<int>(case_sizes.begin()+120, case_sizes.end()).swap(case_sizes); // throw out first 120 values
+    vector<int>(case_sizes.begin()+100, case_sizes.end()).swap(case_sizes); // throw out first 100 values
 
     time (&end);
     double dif = difftime (end,start);

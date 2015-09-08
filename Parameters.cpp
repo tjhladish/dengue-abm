@@ -636,12 +636,64 @@ void Parameters::loadDailyEIP(string dailyEIPfilename) {
             extrinsicIncubationPeriods.emplace_back(start, duration, value);
             start += duration;
         } else {
-            cerr << "WARNING: Found line with unexpected number of values in daily EIP file" << endl;
+            cerr << "WARNING: Found line with no values in daily EIP file" << endl;
             cerr << "\tFile: " << dailyEIPfilename << endl;
-            cerr << "\tLine: " << line << endl;
         }
     }
 
     return;
 }
 
+
+void Parameters::loadDailyMosquitoMultipliers(string mosquitoMultiplierFilename, int desired_size) { // default desired size == 0
+    ifstream iss(mosquitoMultiplierFilename.c_str());
+    if (!iss) {
+        cerr << "ERROR: " << mosquitoMultiplierFilename << " not found." << endl;
+        exit(116);
+    }
+
+    // get rid of anything there now
+    mosquitoMultipliers.clear();
+
+    char** end = NULL;
+    char sep = ' ';
+    string line;
+
+    const int duration = 1;  // this assumption is what makes it daily
+    int start = 0;
+    double value = 0;
+    while ( getline(iss,line) ) {
+        // expecting first value on each line to be the mosquito multiplier (floats on [0,1])
+        // other, subsequent values are permitted, but ignored
+        vector<string> fields = dengue::util::split(line, sep);
+
+        if (fields.size() >= 1) {
+            value = strtod(fields[0].c_str(), end);
+            if (value < 0.0 or value > 1.0) {
+                cerr << "A mosquito multiplier < 0 or > 1 was read from " << mosquitoMultiplierFilename << "." << endl;
+                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+                exit(117);
+            }
+            mosquitoMultipliers.emplace_back(start, duration, value);
+            start += duration;
+        } else {
+            cerr << "WARNING: Found line with no values in mosquito multiplier file" << endl;
+            cerr << "\tFile: " << mosquitoMultiplierFilename << endl;
+        }
+    }
+
+    // this allows us to repeat a sequence many times and then modify it elsewhere,
+    // e.g. for vector control modeling
+    const int orig_len = mosquitoMultipliers.size();
+    while ((signed) mosquitoMultipliers.size() < desired_size) {
+        for (int i = 0; i < orig_len; ++i) {
+            auto value = mosquitoMultipliers[i].value;
+            mosquitoMultipliers.emplace_back(start, duration, value);
+            start += duration;
+        }
+    }
+
+    if (desired_size > 0 and (signed) mosquitoMultipliers.size() > desired_size) mosquitoMultipliers.resize(desired_size);
+
+    return;
+}
