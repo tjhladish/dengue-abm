@@ -314,7 +314,7 @@ void update_mosquito_population(const Parameters* par, Community* community, con
         if ( ((date.day()+date.offset())%mosquitoMultiplierTotalDuration) == nextMosquitoStart) {
             //cerr << "updating mosquitoes on day " << date.day() << ", which is day " << date.julianDay()
             //     << " of the year. Using index " << nextMosquitoMultiplierIndex << endl;
-            community->setMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
+            community->applyMosquitoMultiplier(par->mosquitoMultipliers[nextMosquitoMultiplierIndex].value);
             nextMosquitoMultiplierIndex = (nextMosquitoMultiplierIndex+1)%par->mosquitoMultipliers.size();
         }
     }

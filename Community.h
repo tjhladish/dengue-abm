@@ -37,6 +37,7 @@ class Community {
         void tick(int day);                                           // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
         void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
+        void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
         void setExtrinsicIncubation(int n) { _EIP = n; }
         int getExtrinsicIncubation() const { return _EIP; }
@@ -88,6 +89,7 @@ class Community {
         void expandExposedQueues();
         void expandMosquitoQueues();
         void moveMosquito(Mosquito *m);
+        void mosquitoFilter(std::vector<Mosquito*>& mosquitoes, const double survival_prob);
         void _advanceTimers();
         void _modelMosquitoMovement();
 };

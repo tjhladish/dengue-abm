@@ -526,6 +526,28 @@ void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfect
 }
 
 
+void Community::mosquitoFilter(vector<Mosquito*>& mosquitoes, const double survival_prob) {
+    const unsigned int nmos = mosquitoes.size();
+    if (nmos == 0) return;
+    gsl_ran_shuffle(RNG, mosquitoes.data(), nmos, sizeof(Mosquito*));
+    const int survivors = gsl_ran_binomial(RNG, survival_prob, nmos);
+    for (unsigned int m = survivors; m<mosquitoes.size(); ++m) delete mosquitoes[m];
+    mosquitoes.resize(survivors);
+}
+
+
+//void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
+void Community::applyMosquitoMultiplier(double current) {
+    const double prev = getMosquitoMultiplier();
+    setMosquitoMultiplier(current);
+    if (current < prev) {
+        const double survival_prob = current/prev;
+        for (unsigned int day = 0; day < _exposedMosquitoQueue.size(); ++day) mosquitoFilter(_exposedMosquitoQueue[day], survival_prob);
+        for (unsigned int day = 0; day < _infectiousMosquitoQueue.size(); ++day) mosquitoFilter(_infectiousMosquitoQueue[day], survival_prob);
+    }
+}
+
+
 int Community::getNumInfectiousMosquitoes() {
     int count = 0;
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
