@@ -1,0 +1,51 @@
+1.)  Build locations-merida.txt using something like
+
+head -1 ../../pop-yucatan/locations-yucatan.txt > ./using_yucatan_location_ids/locations-merida.txt
+awk '$3 >= -89.752178 && $3 <= -89.504299 && $4 >= 20.847583 && $4 <= 21.076652 { print $0 }' ../../pop-yucatan/locations-yucatan.txt >> ./using_yucatan_location_ids/locations-merida.txt
+
+     Note that the locations in that file have IDs consistent with locations-yucatan.txt, and thus are likely not
+     sequential integers starting at 1.
+
+
+2.)  Build population-merida_prelim.txt and network-merida.txt by filtering population-yucatan_prelim.txt and 
+     network-yucatan.txt based on whether the household ID is listed in ./using_yucatan_location_ids/locations-merida.txt
+
+./filter_prelim_pop_by_valid_locations.py
+
+
+3.)  Filter schools_and_workplaces.out based on lat, long coordinates
+
+head -1 ../schools_and_workplaces.out > schools_and_workplaces-merida.out
+awk '$3 >= -89.752178 && $3 <= -89.504299 && $4 >= 20.847583 && $4 <= 21.076652 { print $0 }' ../schools_and_workplaces.out >> schools_and_workplaces-merida.out
+
+
+4.)  Build lookup file so we can map workplaces to the number of employees
+
+./build_workplace_size_file.py
+
+     Note that we are matching locations based on (latitude, longitude) float values, which is potentially problematic.
+     When it was run in this instance, however, exact matches were found for all locations.  We do not bother to check
+     for collisions because, with a total of 24 digits of precision, they are very unlikely.
+
+5.)  Assign employees to workplaces and students to schools
+
+./assign_merida_people_to_work_and_school.py
+
+     Note that this script takes a long time to run; approximately 1 hr 40 minutes on a Dell workstation (Intel Xeon 
+     E5-2620 @ 2.00GHz) in this instance.
+
+6.)  Re-map people and location ID's so that they are sequential integers starting at 1.
+
+./re-map_ids.py
+
+7.)  Fix unknown ages (coded as 999)
+
+../fix_age_999.py 2 population-merida.txt population-merida.txt
+
+8.)  Generate immunity swap file
+
+../immunity_swapping/generate_swap_file_omp locations-merida.txt population-merida.txt > swap_probabilities-merida.txt
+
+    Note that generate_swap_file_omp may need to be recompiled because (a) the population size in the source must match
+    the input population file, and (b) different hardware may have a different number of cores that can be used by OMP.
+    On the Dell workstation mentioned above, parallelized across 10 cores, it took 7 minutes.
