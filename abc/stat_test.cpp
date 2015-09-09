@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "AbcUtil.h"
+//#include "ranker.h"
 
 using namespace std;
 // To compile on hipergator:
@@ -8,9 +9,11 @@ using namespace std;
 // or
 // mpicxx -O2 -std=c++11 -w0 -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -D USING_MPI -I/scratch/lfs/thladish/AbcSmc -I$HPC_GSL_INC ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L/scratch/lfs/thladish/AbcSmc -lm -L$HPC_GSL_LIB/ -lgsl -lgslcblas
 
+// To compile on dragonfly:
+// g++ -O2 -std=c++0x -Wall -I../../AbcSmc ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L../../AbcSmc -lm -lgsl -lgslcblas
 int main() {
     // yucatan dengue case data, 1979-2013
-    vector<float_type> cases = {                                                      4234, //1979
+    vector<int> cases = {                                                      4234, // 1979
                                 4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
                                    8, 352,    22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
                                    0, 287,   946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
@@ -32,13 +35,45 @@ int main() {
     cout << col.transpose() << endl;
     // vector<float_type> new_vec(col.data(), col.data()+col.size());
 
-    cout << "mean: " << mean(col) << endl;
-    cout << "median: " << median(col) << endl;
-    cout << "stdev: " << sqrt(variance(col, mean(col))) << endl;
-    cout << "max: " << max(col) << endl;
-    cout << "skewness: " << skewness(col) << endl;
+    vector<int> severe = {                                                         0,  // 1979
+                             0,    0,    0,    0,    9,    0,    0,    0,    0,    0,  // 1980-1989
+                             0,    0,    0,    0,    6,    4,   30,  163,    0,    0,  // 1990-1999
+                             0,   35,  197,    6,    6,   39,  162,  389,  148, 1110,  // 2000-2009
+                           810, 2092, 2497,  914};                                     // 2010-2013
+
+    vector<double> x(severe.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
+
+    LogisticFit* fit = logistic_reg(x, severe, cases);
+    assert(fit->status == GSL_SUCCESS);
+
+    cout << "mean:             " << mean(col) << endl;
+    cout << "0%   quantile:    " << quantile(incidence, 0.0) << endl;
+    cout << "25%  quantile:    " << quantile(incidence, 0.25) << endl;
+    cout << "50%  quantile:    " << quantile(incidence, 0.5) << endl;
+    cout << "75%  quantile:    " << quantile(incidence, 0.75) << endl;
+    cout << "100% quantile:    " << quantile(incidence, 1.0) << endl;
+    cout << "stdev:            " << sqrt(variance(col, mean(col))) << endl;
+    cout << "skewness:         " << skewness(col) << endl;
     cout << "median crossings: " << median_crossings(col) << endl;
-    
+    cout << "seroprevalence:   " << 0.6 << endl;
+    cout << "beta0:            " << fit->beta0 << endl;
+    cout << "beta1:            " << fit->beta1 << endl;
+
+
+//        {"name" : "mean",       "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "min",        "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "quant25",    "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "median",     "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "quant75",    "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "max",        "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "stdev",      "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "skewness",   "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "med_xing",   "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "seroprev",   "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "beta0",      "num_type" : "FLOAT",   "value"     : },
+//        {"name" : "beta1",      "num_type" : "FLOAT",   "value"     : },
+
+
     // test of median_crossings function
     /*
     Col test(4); 

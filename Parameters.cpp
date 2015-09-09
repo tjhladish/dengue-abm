@@ -20,10 +20,14 @@ void Parameters::define_defaults() {
     fVEI = 0.0;
     fVEP = 0.0;
     fVEH = 0.803;
-    hospitalizedFraction = 0.25;
+    primarySevereFraction.clear();
+    primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0);   // never severe, except possibly for infants
+    secondarySevereFraction.clear();
+    secondarySevereFraction.resize(NUM_OF_SEROTYPES, 0.5);
+    hospitalizedFraction = {0.0, 0.15, 0.9};               // rough estimates in mex
     bVaccineLeaky = false;
     fPreVaccinateFraction = 0.0;
-    nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
+    nDefaultMosquitoCapacity = 20;                         // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
     populationFilename = "population-64.txt";
@@ -43,7 +47,7 @@ void Parameters::define_defaults() {
     nSizeVaccinate = 0;                                 // number of parts in phased vaccination
     nSizePrevaccinateAge = 0;
     nMaxInfectionParity = NUM_OF_SEROTYPES;
-    expansionFactor = 1;
+    reportedFraction = {0.0, 0.05, 1.0};                // fraction of asymptomatic, mild, and severe cases reported
     nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
     annualSerotypeFilename = "";
     dailyEIPfilename = "";
@@ -144,9 +148,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
             }
             else if (strcmp(argv[i], "-betamp")==0) {
                 betaMP = strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-expansionfactor")==0) {
-                expansionFactor = strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-mosquitomove")==0) {
                 fMosquitoMove = strtod(argv[++i],end);

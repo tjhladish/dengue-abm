@@ -44,6 +44,13 @@ enum SexType {
     NUM_OF_SEX_TYPES
 };
 
+enum InfectionOutcome {
+    ASYMPTOMATIC,
+    MILD,
+    SEVERE,
+    NUM_OF_INFECTION_OUTCOMES
+};
+
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
 static const std::vector<std::string> MONTH_NAMES = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
@@ -208,7 +215,12 @@ public:
     double fVEI;                                            // vaccine efficacy to reduce infectiousness
     double fVEP;                                            // vaccine efficacy for pathogenicity
     double fVEH;                                            // vaccine efficacy against hospitalization, given disease
-    double hospitalizedFraction;                            // Probability of being hospitalized, given disease
+    std::vector<double> primarySevereFraction;              // fraction of primary cases (symptomatic infections) that are severe
+    std::vector<double> secondarySevereFraction;            // fraction of post-primary cases (symptomatic infections) that are severe
+    std::vector<double> hospitalizedFraction;               // Probability of being hospitalized, given asymptomatic, mild, and severe infection
+    std::vector<double> reportedFraction;                   // Probability of being reported, given asymptomatic, mild, and severe infection
+    double infantImmuneProb;                                // Probability that age 0 person is uninfectable, given maternal immunity
+    double infantSevereProb;                                // Probability that age 0 person experiences severe disease, given maternal immunity
     double fPreVaccinateFraction;
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
@@ -217,8 +229,6 @@ public:
     std::vector<int> nInitialInfected;                      // serotypes
     std::vector<double> primaryPathogenicity;               // serotypes
     std::vector<double> secondaryPathogenicityOddsRatio;    // Grange et al 2014 doi: 10.3389/fimmu.2014.00280 suggests the odds ratio is 1
-    double infantImmuneProb;                                // Probability that age 0 person is uninfectable, given maternal immunity
-    double infantSevereProb;                                // Probability that age 0 person experiences severe disease, given maternal immunity
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
@@ -261,7 +271,6 @@ public:
     double fPrevaccinateAgeFraction[100];
     int nMaxInfectionParity;
     int startDayOfYear;
-    double expansionFactor;
     bool dailyOutput;
     bool weeklyOutput;
     bool monthlyOutput;

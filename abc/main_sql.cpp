@@ -26,18 +26,19 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    double _EF       = args[0];
-    double _mos_move = args[1];
-    double _exp_coef = args[2];
-    double _nmos     = args[3];
-    
-    double _betamp   = args[4]; // mp and pm and not separately
-    double _betapm   = args[4]; // identifiable, so they're the same
+    double _mild_EF      = args[0];
+    double _severe_EF    = args[1];
+    double _sec_severity = args[2];
+    double _exp_coef     = args[3];
+    double _nmos         = args[4];
+    double _betamp       = args[5]; // mp and pm and not separately
+    double _betapm       = args[5]; // identifiable, so they're the same
+
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-merida";
     string output_dir = "/scratch/lfs/thladish";
 
-    vector<long double> abc_args(&args[0], &args[5]);
+    vector<long double> abc_args(&args[0], &args[6]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
@@ -46,7 +47,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
-    par->annualIntroductionsCoef = pow(10,_exp_coef);
+    par->annualIntroductionsCoef = pow(10, _exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
@@ -54,11 +55,15 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
     par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
     par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+    par->primarySevereFraction.clear();
+    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0);
+    par->secondarySevereFraction.clear();
+    par->secondarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity);
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
-    par->expansionFactor = _EF;
-    par->fMosquitoMove = _mos_move;
+    par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
@@ -66,7 +71,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->nDaysImmune = 730;
     par->fVESs.clear();
-    par->fVESs.resize(4, 0);
+    par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
     par->simulateAnnualSerotypes = true;
     par->normalizeSerotypeIntros = true;
@@ -86,13 +91,13 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // mosquitoMultipliers are indexed to start on Jan 1
     par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
     assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
-    for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.25; // 75% reduction is mosquitoes 
+    for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
 
-    par->populationFilename       = pop_dir    + "/population-yucatan.txt";
+    par->populationFilename       = pop_dir    + "/population-merida.txt";
     par->immunityFilename         = "";
-    par->locationFilename         = pop_dir    + "/locations-yucatan.txt";
-    par->networkFilename          = pop_dir    + "/network-yucatan.txt";
-    par->swapProbFilename         = pop_dir    + "/swap_probabilities-yucatan.txt";
+    par->locationFilename         = pop_dir    + "/locations-merida.txt";
+    par->networkFilename          = pop_dir    + "/network-merida.txt";
+    par->swapProbFilename         = pop_dir    + "/swap_probabilities-merida.txt";
     par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
     par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
@@ -160,31 +165,27 @@ vector<int> read_pop_ids (string filename) {
     return ids;
 }
 
-vector<int> tally_counts(const Parameters* par, Community* community) {
-    vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
-    //vector< vector<int> > infected    = community->getNumNewlyInfected();
+void tally_counts(const Parameters* par, Community* community, vector<int>& all_cases_annual, vector<int>& severe_cases_annual) {
+    vector< vector<int> > all_cases_daily = community->getNumNewlySymptomatic();
+    vector< vector<int> > severe_cases_daily    = community->getNumSevereCases();
+
     const int num_years = (int) par->nRunLength/365;
-    vector<int> s_tally(num_years, 0);
-    //vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
+
+    all_cases_annual.clear();
+    all_cases_annual.resize(num_years, 0);
+
+    severe_cases_annual.clear();
+    severe_cases_annual.resize(num_years, 0);
 
     for (int t=0; t<par->nRunLength; t++) {
         const int y = t/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            s_tally[y] += symptomatic[s][t];
-    //        i_tally[s][y] += infected[s][t];
+            all_cases_annual[y]    += all_cases_daily[s][t];
+            severe_cases_annual[y] += severe_cases_daily[s][t];
         }
     }
-    /*for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = discard_years; y<num_years; ++y) {
-            metrics.push_back(s_tally[s][y]);
-        }
-    }*/
-    /*for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = discard_years; y<num_years; ++y) {
-            metrics.push_back(i_tally[s][y]);
-        }
-    }*/
-    return s_tally;
+
+    return;
 }
 
 vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
@@ -194,64 +195,112 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     time (&start);
     const unsigned int process_id = report_process_id(args, mp, start);
 
-    // initialize & run simulator 
-    const Parameters* par = define_simulator_parameters(args, rng_seed); 
+    // initialize & run simulator
+    const Parameters* par = define_simulator_parameters(args, rng_seed);
 
-    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
-    par->writeAnnualSerotypes(sero_filename);
+//    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
+//    par->writeAnnualSerotypes(sero_filename);
 
     gsl_rng_set(RNG, rng_seed);
     Community* community = build_community(par);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
-    vector<int> serotested_ids = read_pop_ids("8-14_merida_ids.txt");
+    vector<int> serotested_ids = read_pop_ids("../pop-merida/8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
     // We might want to write the immunity and mosquito files if this is the real posterior
-    string imm_filename = "/scratch/lfs/thladish/imm_tmp/immunity." + to_string(process_id);
-    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
-    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+//    string imm_filename = "/scratch/lfs/thladish/imm_tmp/immunity." + to_string(process_id);
+//    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+//    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
-    vector<int> case_sizes = tally_counts(par, community);
-    vector<int>(case_sizes.begin()+100, case_sizes.end()).swap(case_sizes); // throw out first 100 values
+    vector<int> all_cases;
+    vector<int> severe_cases;
+    tally_counts(par, community, all_cases, severe_cases);
+
+    // throw out everything before end of DDT period
+    vector<int>(all_cases.begin()+DDT_START+DDT_DURATION, all_cases.end()).swap(all_cases);
+    vector<int>(severe_cases.begin()+DDT_START+DDT_DURATION, severe_cases.end()).swap(severe_cases);
 
     time (&end);
     double dif = difftime (end,start);
 
-    const double ef = par->expansionFactor;
-    Col y(case_sizes.size());
+    const double mild_reporting = par->reportedFraction[(int) MILD];
+    const double severe_reporting = par->reportedFraction[(int) SEVERE];
+
+    // convert all cases and severe fraction to reported cases
+    Col reported(all_cases.size());
     const int pop_size = community->getNumPerson();
-    for (unsigned int i = 0; i < case_sizes.size(); i++) { 
-        // convert infections to cases per 100,000
-        y[i] = ((float_type) 1e5*case_sizes[i])/(ef*pop_size); 
+    for (unsigned int i = 0; i < all_cases.size(); i++) {
+        const float_type mild_reported   = (all_cases[i] - severe_cases[i]) * mild_reporting;
+        const float_type severe_reported = severe_cases[i] * severe_reporting;
+        // convert to reported cases per 100,000
+        reported[i] = 1e5 * (mild_reported + severe_reported) / pop_size;
     }
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
     // parameters
-    ss << par->expansionFactor << " " << par->fMosquitoMove << " " << log(par->annualIntroductionsCoef)/log(10) << " "
-       << par->nDefaultMosquitoCapacity << " " << par->betaMP << " ";
+    ss << 1.0/par->reportedFraction[(int) MILD] << " " 
+       << 1.0/par->reportedFraction[(int) SEVERE] << " " 
+       << par->secondarySevereFraction[0] << " " 
+       << log(par->annualIntroductionsCoef)/log(10) << " "
+       << par->nDefaultMosquitoCapacity << " " 
+       << par->betaMP << " ";
+
     // metrics
-    float_type _mean             = mean(y);
-    float_type _median           = median(y);
-    float_type _stdev            = sqrt(variance(y, _mean));
-    float_type _max              = max(y);
-    float_type _skewness         = skewness(y);
-    float_type _median_crossings = median_crossings(y);
+    float_type _mean             = mean(reported);
+    float_type _min              = quantile(reported, 0.00);
+    float_type _quant25          = quantile(reported, 0.25);
+    float_type _median           = quantile(reported, 0.50);
+    float_type _quant75          = quantile(reported, 0.75);
+    float_type _max              = quantile(reported, 1.00);
+    float_type _stdev            = sqrt(variance(reported, _mean));
+    float_type _skewness         = skewness(reported);
+    float_type _median_crossings = median_crossings(reported);
     float_type _seropos          = seropos_87;
-    ss << _mean << " " << _median << " " << _stdev << " " << _max << " " << _skewness << " " << _median_crossings << " " << _seropos << endl;
-      
+
+    // logistic regression requires x values that are, in this case, just sequential ints
+    vector<double> x(all_cases.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
+
+    LogisticFit* fit = logistic_reg(x, severe_cases, all_cases);
+    float_type _beta0, _beta1;
+    if (fit->status == GSL_SUCCESS) {
+        _beta0 = fit->beta0;
+        _beta1 = fit->beta1;
+    } else {
+        _beta0 = -1;
+        _beta1 = -1;
+    }
+
+    ss << _mean << " "
+       << _min << " "
+       << _quant25 << " "
+       << _median << " "
+       << _quant75 << " "
+       << _max << " "
+       << _stdev << " "
+       << _skewness << " "
+       << _median_crossings << " "
+       << _seropos << " "
+       << _beta0 << " "
+       << _beta1 << endl;
+
     string output = ss.str();
     fputs(output.c_str(), stderr);
-    
+
     vector<long double> metrics;
     append_if_finite(metrics, _mean);
+    append_if_finite(metrics, _min);
+    append_if_finite(metrics, _quant25);
     append_if_finite(metrics, _median);
-    append_if_finite(metrics, _stdev);
+    append_if_finite(metrics, _quant75);
     append_if_finite(metrics, _max);
+    append_if_finite(metrics, _stdev);
     append_if_finite(metrics, _skewness);
     append_if_finite(metrics, _median_crossings);
     append_if_finite(metrics, _seropos);
+    append_if_finite(metrics, _beta0);
+    append_if_finite(metrics, _beta1);
 
     delete par;
     delete community;

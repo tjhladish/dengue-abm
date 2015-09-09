@@ -169,7 +169,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
 
     bool maternalAntibodyEnhancement = false;
-    if (getAge() == 0) {                                     // this is an infant
+    if (getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
         Person* mom = getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
         if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
             if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
@@ -186,6 +186,8 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     infection.infectedTime  = time;
     infection.infectedPlace = sourceloc;
 
+    const bool postprimary = getImmunityBitset().any();      // has this person ever been infected before?
+
     // When do they become infectious?
     infection.infectiousTime = 0;
     double r = gsl_rng_uniform(RNG);
@@ -194,19 +196,16 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
     infection.infectiousTime += time;
 
-    if (_nImmunity.any()) {
+    if (postprimary) {
         infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_SEC;        // TODO - draw from distribution
     } else {
         infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;        // TODO - draw from distribution
     }
 
-    // Determine if this person withdraws (stops going to work/school)
-    const double primary_pathogenicity = _par->primaryPathogenicity[(int) serotype];
-
-    const double primary_symptomatic_prob = primary_pathogenicity * SYMPTOMATIC_BY_AGE[_nAge];
+    const double primary_symptomatic_prob = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
     double symptomatic_probability = primary_symptomatic_prob;
 
-    if (_nImmunity.any() and primary_symptomatic_prob != 1.0) {
+    if (postprimary and primary_symptomatic_prob != 1.0) {
         const double secondary_odds = _par->secondaryPathogenicityOddsRatio[(int) serotype] * primary_symptomatic_prob / (1.0 - primary_symptomatic_prob);
         symptomatic_probability = secondary_odds / (1.0 + secondary_odds);
     }
@@ -215,14 +214,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     symptomatic_probability *= (1.0 - effective_VEP);
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {
-        // Person develops symptoms == this is a case
-        // Is this a severe case (for estimating hospitalizations)
-        if (gsl_rng_uniform(RNG) < _par->hospitalizedFraction or maternalAntibodyEnhancement) { // potentially a severe case . . .
+        // Person develops symptoms --> this is a case
+        // Is this a severe case?
+        const double severe_rand = gsl_rng_uniform(RNG);
+        if ( (!postprimary and severe_rand < _par->primarySevereFraction[(int) serotype])     // primary infection
+             or (postprimary and severe_rand < _par->secondarySevereFraction[(int) serotype]) // secondary infection
+             or maternalAntibodyEnhancement) {                                                // infant w/ antibodies
             if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // is this person unvaccinated or unlucky?
                 infection.severeDisease = true;
             }
         }
 
+        // Determine if this person withdraws (stops going to work/school)
         // TODO - the 1 in the below line is a parameter and should be moved out
         infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
         double r = gsl_rng_uniform(RNG);
@@ -244,11 +247,8 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         }
     }
 
-    if (_par->bRetroactiveMatureVaccine) {
-        // if the best vaccine-induced immunity can be acquired retroactively,
-        // upgrade this person from naive to mature
-        _bNaiveVaccineProtection = false;
-    }
+    // if the antibody-primed vaccine-induced immunity can be acquired retroactively, upgrade this person from naive to mature
+    if (_par->bRetroactiveMatureVaccine) _bNaiveVaccineProtection = false;
 
     return true;
 }
