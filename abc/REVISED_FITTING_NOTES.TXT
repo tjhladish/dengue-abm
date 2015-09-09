@@ -6,7 +6,7 @@ TODO:
               generated, in case we want to generate more years than we will use in ABC.
 
 02.) Summary: Check the status of the 8-14 year olds on April 10, 1987, not December 31, 1986
-     Status :
+     Status : Fixed, commit 6db4f9871864bff3acde69c0b0e2805a6e39961f
      Details: 
 
 03.) Summary: Address negative mosquito counts
@@ -14,7 +14,7 @@ TODO:
      Details: Mosquitoes that do not survive the EIP are being killed twice.
 
 04.) Summary: Add 100 days at the end, to finish on April 9
-     Status :
+     Status : Ignore; conflicts with #11
      Details: 
 
 05.) Summary: Output serotypes, mosquitoes, and population immunity at end of posterior runs
@@ -26,24 +26,24 @@ TODO:
               flow for turning on/off these outputs.
 
 06.) Summary: Turn off the weird carrying capacity but not bit with infected mosquitoes
-     Status :
+     Status : Ignore; probably fixed elsewhere (e.g. #12).
      Details: Not sure what this note was referring to.
 
 07.) Summary: Use seasonally-varying EIP based on temperature
-     Status :
+     Status : Fixed, commits cbd7d398f4, daf1fcc004, d712ae14e3
      Details: Already supported and previously used; need to dig up that code and data, and
               write up the process C and I came up with for converting temp data to effective
               daily EIPs.
 
 08.) Summary: Impose empirical serotypes for 35 year period
-     Status :
+     Status : Ignore for now
      Details: Sample from conditional distributions to get serotypes before and after the
               window we know about.  Probably don't bother refitting serotype model to
               integrate over all possibly serotypes circulating in missing years, because
               that would make this challenging.
 
 09.) Summary: Add autocorrelation coefficients as metrics
-     Status :
+     Status : Ignore for now
      Details: CABP and I have discussed this at length, but have not come to any firm
               conclusions about what kind of autocorrelation analysis is best.  Unless
               something definitive is decided, I'm going to use whatever method I can get
@@ -51,15 +51,15 @@ TODO:
               not adding an R dependency to the fitting procedure for this one thing.
 
 10.) Summary: Consider adding epidemic size quartiles as metrics, taking out maximum
-     Status :
+     Status : Fixed using all quartiles, commit 8884e4ed899548ae2f52319f9b8f4031ad061b8f
      Details: One of Aaron King's suggestions
 
 11.) Summary: Start sim and vaccinate on April 10, age on April 9
-     Status :
+     Status : Fixed, commit 6db4f9871864bff3acde69c0b0e2805a6e39961f
      Details:  
 
 12.) Summary: Kill off some infected mosquitoes when monthly capacity decreases
-     Status :
+     Status : Fixed, commit bf826a2f62c3fba8a2b2104e0cc2f09c31703d72
      Details: Our mosquito seasonality currently gives special treatment to infected
               mosquitoes: when a location's capacity decreases (e.g. at end of rainy season),
               susceptible mosquitoes are implicitly killed off, but infectious mosquitoes are
@@ -73,7 +73,7 @@ TODO:
               additional cap space is filled with susceptible mosquitoes.
 
 13.) Summary: Reduce mosquito pops AND introductions during DDT period
-     Status :
+     Status : Fixed, commit 662511eb2084d4ecb1c3261a89f280a6d50e6755
      Details: Per Hector's malaria paper, spraying insecticides for malaria began in 1956.  In
               1958, 77% of homes in Yucatan were sprayed, with higher coverage (rough average
               = 90%) for nearby states.  Even though these numbers are far from perfect
@@ -95,25 +95,25 @@ TODO:
               mosquito capacity?
 
 14.) Summary: New/alt parameters - separate DF and DHF expansion factors
-     Status :
+     Status : Fixed using reporting probs, commit 8884e4ed899548ae2f52319f9b8f4031ad061b8f 
      Details: Probably implement this as a EF_DF and a EF_DHF_multiplier on [0,1].  In other
               words, the DF EF can vary, perhaps with a U(20,50) prior, while the DHF
-              multiplier would have a U(0,1) prior, meaning that the number of unreported DHF
+              multiplier might have a U(0,1) prior.
 
 15.) Summary: Fix mosquito movement parameter to Dennis' value
-     Status :
+     Status : Fixed, commit 8884e4ed899548ae2f52319f9b8f4031ad061b8f
      Details: This parameter is essentially unidentifiable using the current (and likely
               proposed) metrics.  Per experimenting with ABC, including it likely slows down
               the estimation procedure, and increases the credible intervals around other
               parameters.
 
 16.) Summary: New metrics - mean DHF prevalence, slope and intercept of DHF regression
-     Status :
+     Status : Fixed using logistic regression, commit 8884e4ed899548ae2f52319f9b8f4031ad061b8f
      Details: We have the data and are predicting severe cases, we might as well be fitting to
               it.
 
 17.) Summary: Use an elevated secondary pathogenicty probability
-     Status :
+     Status : Supported but set to 1 per comm w/ Diana, commit 8884e4ed89
      Details: Currently, primary and non-primary infections are equally likely to be
               symptomatic.  We know this is unrealistic, but exactly what is realistic is
               poorly understood.  Certainly, secondary infections have an elevated
@@ -123,8 +123,12 @@ TODO:
               common at all.  Currently proposed implementation is to make all post-primary 
               infections 1.5x as likely to be symptomatic.
 
-18.) Summary: 
-     Status :
+18.) Summary: Use daily-varying mosquito numbers based on spline fit to precip data
+     Status : Fixed, commit 662511eb2084d4ecb1c3261a89f280a6d50e6755
+     Details: 
+
+19.) Summary: Re-fit serotype model, integrating over missing years
+     Status : Ignore for now
      Details: 
 
 
