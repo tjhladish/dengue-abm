@@ -685,17 +685,17 @@ void Community::updateDiseaseStatus() {
             if (p->isVaccinated()) {
                 _nNumVaccinatedCases[(int) p->getSerotype()][_nDay]++;
             }
-            if (p->hasSevereDisease(_nDay)) {                         // symptoms will be severe at onset
-                _nNumSevereCases[(int) p->getSerotype()][_nDay]++;    // if they're going to be severe
+            if (p->hasSevereDisease(_nDay)) {                          // symptoms will be severe at onset
+                _nNumSevereCases[(int) p->getSerotype()][_nDay]++;     // if they're going to be severe
             }
         }
-        if (p->getWithdrawnTime()==_nDay) {                           // started withdrawing
-            p->getLocation(HOME_MORNING)->addPerson(p,WORK_DAY);      // stays at home at mid-day
-            p->getLocation(WORK_DAY)->removePerson(p,WORK_DAY);       // does not go to work
-        } else if (p->isWithdrawn(_nDay-1) &&
-        p->getRecoveryTime()==_nDay) {                                // just stopped withdrawing
-            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);                        // goes back to work
-            p->getLocation(HOME_MORNING)->removePerson(p,WORK_DAY);                     // stops staying at home
+        if (p->getWithdrawnTime()==_nDay) {                            // started withdrawing
+            p->getLocation(HOME_MORNING)->addPerson(p,WORK_DAY);       // stays at home at mid-day
+            p->getLocation(WORK_DAY)->removePerson(p,WORK_DAY);        // does not go to work
+        } else if (p->isWithdrawn(_nDay-1) and
+        p->getRecoveryTime()==_nDay) {                                 // just stopped withdrawing
+            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);           // goes back to work
+            p->getLocation(HOME_MORNING)->removePerson(p,WORK_DAY);    // stops staying at home
         }
     }
     return;
