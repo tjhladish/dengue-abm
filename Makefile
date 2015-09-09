@@ -10,7 +10,7 @@ INCLUDES 	= -I $(HPC_GSL_INC) $(TACC_GSL_INC)
 LIBS     	= -lm -lgsl -lgslcblas
 DEFINES  	= -DVERBOSE 
 
-default: model
+default: all_no_mpi
 
 all_mpi: mpi_model
 
