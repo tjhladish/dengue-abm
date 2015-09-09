@@ -509,7 +509,6 @@ void Community::boost(int time, double f) { // re-vaccinate people who have less
 // returns number of days mosquito has left to live
 void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
     const int eip = getExtrinsicIncubation();
-    const double sd = eip/10.0;
     int eip_r = gsl_ran_poisson(RNG, eip);
 
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
