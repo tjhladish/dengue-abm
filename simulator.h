@@ -230,7 +230,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["weekly"][i] += periodic_incidence["daily"][i];
         if (date.endOfWeek()) {
             ss << hex << process_id << dec << " week: " << date.week() << " "; for (auto v: periodic_incidence["weekly"]) ss << v << " "; ss << endl;
-            periodic_incidence["weekly"] = {0,0,0};
+            periodic_incidence["weekly"] = {0,0,0,0,0};
         }
     }
 
@@ -238,7 +238,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["monthly"][i] += periodic_incidence["daily"][i];
         if (date.endOfMonth()) {
             ss << hex << process_id << dec << " month: " << date.julianMonth() << " "; for (auto v: periodic_incidence["monthly"]) ss << v << " "; ss << endl;
-            periodic_incidence["monthly"] = {0,0,0};
+            periodic_incidence["monthly"] = {0,0,0,0,0};
         }
     }
 
@@ -247,7 +247,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence["yearly"][i] += periodic_incidence["daily"][i];
 
     if (date.endOfYear()) {
-        if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: " << periodic_incidence["yearly"][2] << endl;
+        if (par->abcVerbose) cout << hex << process_id << dec << " T: " << date.day() << " annual: "; for (auto v: periodic_incidence["yearly"]) cout << v << " "; cout << endl;
 
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
@@ -257,10 +257,10 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
             ss << hex << process_id << dec << " year: " << date.year() + 1 << " "; 
             for (auto v: periodic_incidence["yearly"]) ss << v << " "; ss << endl;
         }
-        periodic_incidence["yearly"] = {0,0,0};
+        periodic_incidence["yearly"] = {0,0,0,0,0};
     }
 
-    periodic_incidence["daily"] = {0,0,0};
+    periodic_incidence["daily"] = {0,0,0,0,0};
     string output = ss.str();
     fputs(output.c_str(), stderr);
 }
@@ -408,10 +408,10 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
         //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
     }
 
-    map<string, vector<int> > periodic_incidence { {"daily", vector<int>(3,0)},  // { introductions, local transmission, total }
-                                                   {"weekly", vector<int>(3,0)},
-                                                   {"monthly", vector<int>(3,0)},
-                                                   {"yearly", vector<int>(3,0)} };
+    map<string, vector<int> > periodic_incidence { {"daily", vector<int>(5,0)},  // { introductions, local transmission, total, mild, severe}
+                                                   {"weekly", vector<int>(5,0)},
+                                                   {"monthly", vector<int>(5,0)},
+                                                   {"yearly", vector<int>(5,0)} };
     for (; date.day() < par->nRunLength; date.increment()) {
         if ( date.julianDay() == 99 and date.year() == 127 ) { // This should correspond to April 9 (day 99) of 1987
                                                                // for a 155 year simulation
@@ -433,6 +433,9 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
             Person *p = community->getPerson(i);
             if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
                 ++periodic_incidence["daily"][2];
+                const Infection* infec = p->getInfection();
+                if (infec->isSymptomatic()) ++periodic_incidence["daily"][3];
+                if (infec->isSevere())      ++periodic_incidence["daily"][4];
             }
         }
 

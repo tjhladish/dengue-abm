@@ -43,6 +43,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
+    par->dailyOutput             = true;
     par->abcVerbose              = true;
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
     par->nRunLength              = runLengthYears*365;
@@ -245,7 +246,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
        << par->secondarySevereFraction[0] << " " 
        << log(par->annualIntroductionsCoef)/log(10) << " "
        << par->nDefaultMosquitoCapacity << " " 
-       << par->betaMP << " ";
+       << par->betaMP << " | ";
 
     // metrics
     float_type _mean             = mean(reported);
