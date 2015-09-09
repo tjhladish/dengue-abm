@@ -508,19 +508,29 @@ void Community::boost(int time, double f) { // re-vaccinate people who have less
 
 // returns number of days mosquito has left to live
 void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
-    int eip = getExtrinsicIncubation();
+    const int eip = getExtrinsicIncubation();
+    const double sd = eip/10.0;
+    int eip_r = gsl_ran_poisson(RNG, eip);
+
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
-    eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
-    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip);
+    eip_r = eip_r > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip_r;
+    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip_r);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
-    int daysinfectious = daysleft - eip;
+    int daysinfectious = daysleft - eip_r;
     if (daysinfectious<=0) {
         // dies before infectious
         delete m;
     } else {
-        // add mosquito to latency queue
-        _exposedMosquitoQueue[eip-1].push_back(m);
+        if (eip_r == 0) {
+            // infectious immediately -- unlikely, but supported
+            // we don't push onto index 0, because we're at the end of the day already;
+            // this mosquito would be destroyed before being allowed to transmit
+            _infectiousMosquitoQueue[daysinfectious].push_back(m);
+        } else {
+            // more typically, add mosquito to latency queue
+            _exposedMosquitoQueue[eip_r].push_back(m);
+        }
     }
     return;
 }
