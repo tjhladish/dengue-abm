@@ -222,6 +222,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     vector<int>(all_cases.begin()+DDT_START+DDT_DURATION, all_cases.end()).swap(all_cases);
     vector<int>(severe_cases.begin()+DDT_START+DDT_DURATION, severe_cases.end()).swap(severe_cases);
 
+    const double total_severe = accumulate(severe_cases.begin(), severe_cases.end(), 0.0);
+    const double total_cases  = accumulate(all_cases.begin(), all_cases.end(), 0.0);
+    const double mean_severe  = total_severe / total_cases;
+
     time (&end);
     double dif = difftime (end,start);
 
@@ -259,6 +263,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     float_type _skewness         = skewness(reported);
     float_type _median_crossings = median_crossings(reported);
     float_type _seropos          = seropos_87;
+    float_type _severe_prev      = mean_severe;
 
     // logistic regression requires x values that are, in this case, just sequential ints
     vector<double> x(all_cases.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
@@ -269,8 +274,8 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
         _beta0 = fit->beta0;
         _beta1 = fit->beta1;
     } else {
-        _beta0 = -1;
-        _beta1 = -1;
+        _beta0 = 100;
+        _beta1 = 100;
     }
 
     ss << _mean << " "
@@ -283,6 +288,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
        << _skewness << " "
        << _median_crossings << " "
        << _seropos << " "
+       << _severe_prev << " "
        << _beta0 << " "
        << _beta1 << endl;
 
@@ -300,6 +306,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     append_if_finite(metrics, _skewness);
     append_if_finite(metrics, _median_crossings);
     append_if_finite(metrics, _seropos);
+    append_if_finite(metrics, _severe_prev);
     append_if_finite(metrics, _beta0);
     append_if_finite(metrics, _beta1);
 

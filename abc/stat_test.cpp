@@ -5,7 +5,7 @@
 
 using namespace std;
 // To compile on hipergator:
-// g++ -O2 -std=c++0x -Wall -I/scratch/lfs/thladish/AbcSmc -I$HPC_GSL_INC ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L/scratch/lfs/thladish/AbcSmc -lm -L$HPC_GSL_LIB/ -lgsl -lgslcblas
+// g++ -O2 -std=c++0x -Wall -I../../AbcSmc -I$HPC_GSL_INC ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -lm -L$HPC_GSL_LIB/ -lgsl -lgslcblas
 // or
 // mpicxx -O2 -std=c++11 -w0 -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -D USING_MPI -I/scratch/lfs/thladish/AbcSmc -I$HPC_GSL_INC ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L/scratch/lfs/thladish/AbcSmc -lm -L$HPC_GSL_LIB/ -lgsl -lgslcblas
 
@@ -13,11 +13,11 @@ using namespace std;
 // g++ -O2 -std=c++0x -Wall -I../../AbcSmc ../../AbcSmc/AbcUtil.o stat_test.cpp -o stats -L../../AbcSmc -lm -lgsl -lgslcblas
 int main() {
     // yucatan dengue case data, 1979-2013
-    vector<int> cases = {                                                      4234, // 1979
-                                4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
-                                   8, 352,    22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
-                                   0, 287,   946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
-                                2517, 6132, 13000, 8937};                                   // 2010-2013
+    vector<int> cases = {                                                       4234, // 1979
+                          4672, 3377, 1412,  643, 5495,  193,   34,   15,  356,    2, // 1980-1989
+                             8, 352,    22,   29,  680,   69,  650, 5529,   36,   43, // 1990-1999
+                             0, 287,   946,   26,   57,  162,  627, 1861,  721, 3212, // 2000-2009
+                          2517, 6132, 13000, 8937};                                   // 2010-2013
 
     // yucatan population size, interpolated as necessary, 1979-2012
     vector<float_type> pop = {                                                                                 1033195, // 1979
@@ -46,6 +46,10 @@ int main() {
     LogisticFit* fit = logistic_reg(x, severe, cases);
     assert(fit->status == GSL_SUCCESS);
 
+    double total_severe = accumulate(severe.begin(), severe.end(), 0.0);
+    double total_cases  = accumulate(cases.begin(), cases.end(), 0.0);
+    double mean_severe  = total_severe / total_cases;
+
     cout << "mean:             " << mean(col) << endl;
     cout << "0%   quantile:    " << quantile(incidence, 0.0) << endl;
     cout << "25%  quantile:    " << quantile(incidence, 0.25) << endl;
@@ -56,6 +60,7 @@ int main() {
     cout << "skewness:         " << skewness(col) << endl;
     cout << "median crossings: " << median_crossings(col) << endl;
     cout << "seroprevalence:   " << 0.6 << endl;
+    cout << "severe prev:      " << mean_severe << endl;
     cout << "beta0:            " << fit->beta0 << endl;
     cout << "beta1:            " << fit->beta1 << endl;
 
