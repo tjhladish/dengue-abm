@@ -131,6 +131,19 @@ TODO:
      Status : Ignore for now
      Details: 
 
+20.) Summary: Relax priors
+     Status : 
+     Details: Initial priors were clearly too strict.  These need to be relaxed, and ABC
+              repeated.
+
+21.) Summary: Check seroprevalence 107 years in (1987), not 127 (2007)
+     Status : Fixed
+     Details: ABC needs to be repeated
+
+23.) Summary: Draw EIPs from log-normal, not poisson
+     Status : 
+     Details: 
+
 
 =============================================================================================
 
