@@ -58,7 +58,7 @@ rescaled_t    = t[,1]/max(t[,1])
 #rain = c(0.189, 0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199,0.189)
 month_days = c(31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365) - 15
 month_days2 = c(1,month_days,365)
-rescaled_rain = rain/max(rain)
+#rescaled_rain = rain/max(rain)
 pdf('rain_fit.pdf', width=10, height=6); 
 plot(seasonal_rain$precip/max(seasonal_rain$smooth), type='l', lwd=0.5, ylab='Scale', xlab='Julian day', main='Seasonality in Merida, Yucatan'); 
 lines(seasonal_rain$smooth/max(seasonal_rain$smooth),col=4, lwd=2);# lines(1:365+8, seasonal_rain$smooth,col=3, lwd=2); dev.off()
@@ -66,6 +66,6 @@ lines(rescaled_t, col=2, lwd=2);
 lines(rescaled_tmin, col=2);
 lines(rescaled_tmax, col=2); 
 lines(rescaled_e_avg, col=3, lwd=2); 
-points(month_days2, rescaled_rain, type='l', col='blue', lty=2); 
+#points(month_days2, rescaled_rain, type='l', col='blue', lty=2); 
 legend('topright', legend=c('Mean temp', 'Min/max temp', 'EIP', 'Pr{precip}', 'Smoothed precip', 'Old precip model'), col=c('red','red','green','black','blue','blue'), lwd=c(2,1,2,0.5,2,2), lty=c(1,1,1,1,1,2), bty='n', cex=0.8)
 dev.off()
