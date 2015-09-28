@@ -96,12 +96,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     Parameters* par = define_simulator_parameters(args, rng_seed);
     Community* community = build_community(par);
-    const vector<int> MONTH_START = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+    //const vector<int> MONTH_START = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
     vector<long double> metrics;
 
-    for (unsigned int month = 0; month < MONTH_START.size(); ++month) {
-        par->startDayOfYear = MONTH_START[month];
+    //for (unsigned int month = 0; month < MONTH_START.size(); ++month) {
+    for (unsigned int day = 0; day < 365; ++day) {
+        par->startDayOfYear = day;
 
         seed_epidemic(par, community);
         simulate_epidemic(par, community);
