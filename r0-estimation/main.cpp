@@ -30,7 +30,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betapm       = args[5]; // identifiable, so they're the same
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-yucatan";
 
     vector<long double> abc_args(&args[0], &args[6]);
     string argstring;
@@ -55,7 +55,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->nDaysImmune = 730;
 
     par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
-    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
