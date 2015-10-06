@@ -1,10 +1,10 @@
 {
-    "smc_iterations" : 10,
-    "num_samples"    : 10000,
+    "smc_iterations" : 9,
+    "num_samples"    : 40000,
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.8,
 
-    "database_filename"         : "refit.sqlite",
+    "database_filename"         : "refit_posterior-yuc-5.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
@@ -12,14 +12,14 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 20,
-         "par2"       : 50},
+         "par2"       : 70},
 
         {"name"       : "severe_expansion_factor",
          "short_name" : "severe_EF",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 1,
-         "par2"       : 2},
+         "par2"       : 4},
 
         {"name"       : "secondary_severity",
          "short_name" : "sec_sev",
@@ -40,13 +40,13 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 40,
-         "par2"       : 120},
+         "par2"       : 140},
 
         {"name"       : "beta",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 0.1,
-         "par2"       : 0.2}
+         "par2"       : 0.3}
     ],
 
     "metrics" : [

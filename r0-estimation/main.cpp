@@ -15,32 +15,38 @@ using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
 
+//const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    //double _caseEF   = args[0]; // only care about infections for R0
-    double _mos_move = args[1];
-    //double _exp_coef = args[2]; // no annual intros for R0 estimation
-    double _nmos     = args[3];
-
-    double _betamp   = args[4]; // these two aren't independently identifiable
-    double _betapm   = args[4];
+    double _mild_EF      = args[0];
+    double _severe_EF    = args[1];
+    //double _sec_severity = args[2]; // not used
+    //double _exp_coef     = args[3]; // not used
+    double _nmos         = args[4];
+    double _betamp       = args[5]; // mp and pm and not separately
+    double _betapm       = args[5]; // identifiable, so they're the same
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue/pop-yucatan";
+
+    vector<long double> abc_args(&args[0], &args[6]);
+    string argstring;
+    //const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->abcVerbose = true;
     par->nRunLength = 100;
     par->annualIntroductionsCoef = 0.0;
     par->randomseed = rng_seed;
 
-    par->fPrimaryPathogenicity[0] = 1.0;  // shouldn't matter what this is
-    par->fSecondaryScaling[0] = 1.0;      // shouldn't matter what this is
+    par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF};
     par->betaPM = _betapm;
     par->betaMP = _betamp;
-    par->fMosquitoMove = _mos_move;
+    par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     par->nDefaultMosquitoCapacity = (int) _nmos;
@@ -48,6 +54,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->nDaysImmune = 730;
 
+    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
     par->populationFilename = pop_dir + "/population-yucatan.txt";
     par->immunityFilename   = "";
     par->locationFilename   = pop_dir + "/locations-yucatan.txt";
@@ -88,20 +96,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     Parameters* par = define_simulator_parameters(args, rng_seed);
     Community* community = build_community(par);
-    const vector<float> MOSQUITO_MULTIPLIERS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
+    //const vector<int> MONTH_START = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
     vector<long double> metrics;
 
-    for (int month = 0; month < 12; ++month) {
-        {
-            par->mosquitoMultipliers.clear();
-            par->mosquitoMultipliers.resize(1);
-            par->mosquitoMultipliers[0].start = 0;
-            par->mosquitoMultipliers[0].duration = par->nRunLength;
-            par->mosquitoMultipliers[0].value = MOSQUITO_MULTIPLIERS[month];
-        }
-
-        //initialize bookkeeping for run
+    //for (unsigned int month = 0; month < MONTH_START.size(); ++month) {
+    for (unsigned int day = 0; day < 365; ++day) {
+        par->startDayOfYear = day;
 
         seed_epidemic(par, community);
         simulate_epidemic(par, community);

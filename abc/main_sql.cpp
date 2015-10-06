@@ -17,10 +17,11 @@ using dengue::util::max_element;
 time_t GLOBAL_START_TIME;
 
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+const string SIM_POP = "merida";
 
-const int DDT_START       = 77; // simulator year 77
+const int DDT_START       = 77;  // simulator year 77
 const int DDT_DURATION    = 23;  // 23 years long
-const int FITTED_DURATION = 35;
+const int FITTED_DURATION = 35;  // 35 for 1979-2013 inclusive
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -35,7 +36,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betapm       = args[5]; // identifiable, so they're the same
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-merida";
+    string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
     string output_dir = "/scratch/lfs/thladish";
 
     vector<long double> abc_args(&args[0], &args[6]);
@@ -94,11 +95,11 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
     for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
 
-    par->populationFilename       = pop_dir    + "/population-merida.txt";
+    par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     par->immunityFilename         = "";
-    par->locationFilename         = pop_dir    + "/locations-merida.txt";
-    par->networkFilename          = pop_dir    + "/network-merida.txt";
-    par->swapProbFilename         = pop_dir    + "/swap_probabilities-merida.txt";
+    par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
+    par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
+    par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
     par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
     par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
@@ -206,7 +207,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     Community* community = build_community(par);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
-    vector<int> serotested_ids = read_pop_ids("../pop-merida/8-14_merida_ids.txt");
+    vector<int> serotested_ids = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
     // We might want to write the immunity and mosquito files if this is the real posterior
