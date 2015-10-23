@@ -1,63 +1,110 @@
-all_data = read.csv("NOAA_yucatan_daily.csv")
+require(data.table)
+require(lubridate)
+
+miami = setkey(fread("NOAA_miami.csv")[,
+    list(
+        DATE = as.Date(paste(YEAR,MONTH,DAY,sep="/")),
+        TMAX = TMAX/10,
+        TMIN = TMIN/10
+    )
+][between(DATE, as.Date("1979/1/1"), as.Date("2014/1/1"))], DATE)
 
 # work with Merida data only
-d = all_data[all_data$NAME=='AEROP.INTERNACIONAL',]
-d$DATE = as.Date(d$DATE)
-# temps currently in tenths of degrees
-d$TMAX = d$TMAX/10
-d$TMIN = d$TMIN/10
+merida = setkey(fread("NOAA_yucatan_daily.csv")[NAME=='AEROP.INTERNACIONAL'][,
+  list(
+    DATE = as.Date(DATE),
+    TMAX = TMAX/10,
+    TMIN = TMIN/10
+  )
+], DATE)
 
-alpha = 0.001
-validLows = quantile(d$TMIN,  probs = c(alpha, 1-alpha), na.rm=T)
-validHighs = quantile(d$TMAX,  probs = c(alpha, 1-alpha), na.rm=T)
-outlier_plots = function() {
-  png("outlier_temps.png", width=2000, height=1600, res=200)
-  par(mfrow=c(2,2))
-  
-  tmp_y_data = head(sort(na.omit(d$TMIN)), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily low temperatures', cex=0.5, 
-       col=1+as.numeric(tmp_y_data < validLows[1]))
-  
-  tmp_y_data = head(sort(na.omit(d$TMIN), decreasing = T), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily low temperatures', cex=0.5, 
-       col=1+as.numeric(tmp_y_data > validLows[2]))
-  
-  tmp_y_data = head(sort(na.omit(d$TMAX)), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily high temperatures', cex=0.5, 
-       col=1+as.numeric(tmp_y_data < validHighs[1]))
-  
-  tmp_y_data = head(sort(na.omit(d$TMAX), decreasing = T), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily high temperatures', cex=0.5, 
-       col=1+as.numeric(tmp_y_data > validHighs[2]))
-  
-  dev.off()
-}
+extremeLimits <- function(dt, alpha = 0.001, ps=c(alpha, 1-alpha)) with(dt,{
+  lows <- quantile(TMIN, probs=ps, na.rm=T)
+  highs <- quantile(TMAX, probs=ps, na.rm=T)
+  list(lows = lows, highs = highs)
+})
 
-# throw out most extreme 0.1%
-d$TMIN[d$TMIN < validLows[1]] = NA
-d$TMIN[d$TMIN > validLows[2]] = NA
-d$TMAX[d$TMAX < validHighs[1]] = NA
-d$TMAX[d$TMAX > validHighs[2]] = NA
+valid = extremeLimits(merida)
 
-# generate reconstructed temps data structure, starting with date sequence
-# TMINr and TMAXr will be the reconstructed temps
-rtemps=data.frame(DATE=seq(as.Date("1979/1/1"), as.Date("2014/1/1"), "days"), TMINr=NA, TMAXr=NA)
-rtemps$TMIN = d$TMIN[match(rtemps$DATE, d$DATE)]
-rtemps$TMAX = d$TMAX[match(rtemps$DATE, d$DATE)]
+# throw out most extreme alpha*2
+meridacensored = with(valid, merida[between(TMIN, lows[1], lows[2]) & between(TMAX, highs[1], highs[2])])
 
-# grab miami data in order to reconstruct merida data
-m = read.table("NOAA_miami.csv", header=T)
-m$DATE = as.Date(paste(m$YEAR,"/",m$MONTH, "/", m$DAY, sep=""))
-rtemps$TMINmia = m$TMIN[match(rtemps$DATE, m$DATE)]/10
-rtemps$TMAXmia = m$TMAX[match(rtemps$DATE, m$DATE)]/10
+reconstructedtemps = merge(
+    data.table(DATE=seq(as.Date("1979/1/1"), as.Date("2014/1/1"), "days"), key="DATE"),
+    meridacensored,
+    by="DATE", all.x=T
+)
 
 # regressions using miami temp and month
-reg_min = lm(TMIN ~ TMINmia + as.factor(format(DATE, '%m')), data=rtemps)
-reg_max = lm(TMAX ~ TMAXmia + as.factor(format(DATE, '%m')), data=rtemps)
+reg = with(reconstructedtemps[miami],{
+  list(
+    min=lm(TMIN ~ i.TMIN + as.factor(format(DATE, '%m'))),
+    max=lm(TMAX ~ i.TMAX + as.factor(format(DATE, '%m')))
+  )
+})
 
-# predict missing values more sensibly
-rtemps$TMINr[is.na(rtemps$TMIN)] = predict(reg_min, newdata=rtemps[is.na(rtemps$TMIN),], type='response')
-rtemps$TMAXr[is.na(rtemps$TMAX)] = predict(reg_max, newdata=rtemps[is.na(rtemps$TMAX),], type='response')
+reconstructedtemps[is.na(TMAX)]$TMAX = reconstructedtemps[miami][is.na(TMAX),
+  predict(reg$max, newdata=.SD)
+]
+
+reconstructedtemps[is.na(TMIN)]$TMIN = reconstructedtemps[miami][is.na(TMIN),
+  predict(reg$min, newdata=.SD)
+]
+
+censoredtemps = reconstructedtemps[!(month(DATE)==2 & day(DATE)==29)]
+
+# from Chan-Johansson
+beta0 = 2.9
+betaT = -0.08
+var = 1/4.9
+
+eip = function(tempC, beta0, betaT, var) { exp(exp(beta0 + betaT*tempC) + var/2) }
+eir = function(tempC, beta0, betaT, var) { 1/exp(exp(beta0 + betaT*tempC) + var/2) }
+
+plot(
+  censoredtemps[,
+    list(eip=(eip(TMAX, beta0, betaT, var)+eip(TMIN, beta0, betaT, var))/2),
+    keyby=DATE
+  ][, mean(eip), keyby=as.Date(paste("2001", month(DATE), mday(DATE),sep="-"))],
+  ylim=c(0,1000)
+)
+
+eirs = reconstructedtemps[,
+  list(
+    EIRMIN=eir(TMIN,beta0,betaT,var)/2,
+    EIRMAX=eir(TMAX,beta0,betaT,var)/2
+  ),                  
+  keyby=DATE
+]
+
+# look backwards to find upper limit on start date
+limdate = eirs[dim(eirs)[1]:1,list(datelim=cumsum(EIRMAX+EIRMIN), DATE)][datelim > 1][1,DATE]-1
+
+lookaheads = eirs[DATE <= limdate, {
+  cumeir = EIRMAX/2 + EIRMIN # assume initial bite is during the day
+  ahead = DATE
+  while(cumeir < 1) {
+    ahead = ahead+1
+    slice = eirs[DATE == ahead]
+    add = slice$EIRMAX
+    cumeir = cumeir + add
+    if (cumeir < 1) {
+      add = slice$EIRMIN
+      cumeir = cumeir + add
+    }
+  }
+  del = cumeir - 1
+  as.numeric(ahead-DATE) + (1-del/add)*0.5
+}, keyby=DATE]
+
+eipmeantoTeff = function(meanEIP, beta0, betaT, var) (log(log(meanEIP) - var/2) - beta0)/betaT
+
+effeips = lookaheads[!(month(DATE)==2 & mday(DATE)==29),
+  mean(V1),
+  keyby=list(month(DATE),mday(DATE))
+][,list(eipeff=V1), keyby=as.Date(paste("2001",month,mday,sep="-"))]
+
+
 
 # store fahrenheits, too, for convenience for us non-metric weirdos
 #d$TMINf = d$TMIN * 9/5 + 32
@@ -84,12 +131,6 @@ min_max_plot = function() {
   points(rtemps$DATE, rtemps$TMAXr, type='l', col='red')
   dev.off()
 }
-
-# create new columns that merge the merida data and the reconstructed values
-rtemps$TMINmerged = rtemps$TMIN
-rtemps$TMINmerged[is.na(rtemps$TMINmerged)] = rtemps$TMINr[is.na(rtemps$TMINmerged)]
-rtemps$TMAXmerged = rtemps$TMAX
-rtemps$TMAXmerged[is.na(rtemps$TMAXmerged)] = rtemps$TMAXr[is.na(rtemps$TMAXmerged)]
 
 # EIP log-normal function from http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0050972
 eip = function(T) { exp(exp(2.9 -0.08*T) + 1/(2*4.9)) }
@@ -168,3 +209,26 @@ write.table(mean_seasonal_eip[,c(2,1)], 'seasonal_avg_eip.out', quote=F, row.nam
 # # get rid of leap day, since sim expects 365 days/year
 # mean_seasonality = mean_seasonality[-which(mean_seasonality$day=='02-29'),]
 # write.table(mean_seasonality[,c(5,1,2,3,4)], 'seasonal_eip.out', quote=F, row.names=F)
+
+outlier_plots = function() {
+    png("outlier_temps.png", width=2000, height=1600, res=200)
+    par(mfrow=c(2,2))
+    
+    tmp_y_data = head(sort(na.omit(d$TMIN)), n=100)
+    plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily low temperatures', cex=0.5, 
+         col=1+as.numeric(tmp_y_data < validLows[1]))
+    
+    tmp_y_data = head(sort(na.omit(d$TMIN), decreasing = T), n=100)
+    plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily low temperatures', cex=0.5, 
+         col=1+as.numeric(tmp_y_data > validLows[2]))
+    
+    tmp_y_data = head(sort(na.omit(d$TMAX)), n=100)
+    plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily high temperatures', cex=0.5, 
+         col=1+as.numeric(tmp_y_data < validHighs[1]))
+    
+    tmp_y_data = head(sort(na.omit(d$TMAX), decreasing = T), n=100)
+    plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily high temperatures', cex=0.5, 
+         col=1+as.numeric(tmp_y_data > validHighs[2]))
+    
+    dev.off()
+}
