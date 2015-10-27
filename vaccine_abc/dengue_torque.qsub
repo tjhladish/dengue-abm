@@ -15,5 +15,5 @@ cd $PBS_O_WORKDIR
 module load gsl
 for i in `seq 1 20`;
 do
-    ./abc_sql abc_vaccine.json --simulate
+    ./abc_sql abc_vaccine-alt_catchup.json --simulate
 done

@@ -271,10 +271,11 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
-        double default_target_coverage = 0.8;
-        double default_catchup_coverage = 0.6;
-        int num_target  = community->ageIntervalSize(9,10); // default target
-        int num_catchup = community->ageIntervalSize(10,31);// default catchup
+        const double default_target_coverage = 0.7;
+        const double default_catchup_coverage = 0.7;
+        const int num_target  = community->ageIntervalSize(9,10); // default target
+        //const int num_catchup = community->ageIntervalSize(10,31);// default catchup
+        const int num_catchup = community->ageIntervalSize(10,40);// default catchup
 
         double target_coverage  = default_target_coverage*num_target/community->ageIntervalSize(target, target+1);
         double catchup_coverage = default_catchup_coverage*num_catchup/community->ageIntervalSize(target+1, catchup_to+1);
