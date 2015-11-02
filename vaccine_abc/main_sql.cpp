@@ -217,8 +217,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     Parameters* par = define_simulator_parameters(args, rng_seed);
 
     const int discard_days        = 0;
-    const int vac_start_year      = 5;
     const int years_simulated     = 25;
+    const int vac_start_year      = 5;
+    const int vr_start_day        = vac_start_year*365;
+    const int vr_end_day          = years_simulated*365;
     vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
     vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
 
@@ -324,9 +326,9 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
         //cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation should work\n";
         //exit(-1834);
         assert( vector_reduction <= 1.0); 
-        assert( par->mosquitoMultipliers.size() == 12); // expecting values for 12 months
-        for (unsigned int i = 0; i < par->mosquitoMultipliers.size(); ++i) {
-            float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
+        assert( vr_end_day <= par->mosquitoMultipliers.size() );
+        const float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
+        for (int i = vr_start_day; i < vr_end_day; ++i) {
             par->mosquitoMultipliers[i].value *= vector_coeff;
         }
     }
