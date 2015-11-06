@@ -34,6 +34,9 @@ require(reshape2)
 both <- melt(rbind(
   cbind(merida, location=factor("MERIDA", levels=c("MERIDA","MIAMI"), ordered = T)),
   cbind(miami, location=factor("MIAMI", levels=c("MERIDA","MIAMI"), ordered = T))
-), id.vars = c("DATE","location"), value.name = "celsius", variable.name = "extrema", na.rm = T)
+), id.vars = c("doy","location","DATE"), value.name = "celsius", variable.name = "extrema", na.rm = T)
 
-ggplot(both) + theme_bw() + facet_grid(extrema ~ location, scales = "free") + aes(x=yday(DATE), y=celsius, group=year(DATE)) + geom_line(alpha=0.1)
+ggplot(both) + theme_bw() + facet_grid(. ~ location, scales = "free") + 
+  aes(x=doy, y=celsius, color=extrema, group=interaction(year(DATE), extrema)) + geom_line(alpha=0.1) +
+  scale_color_manual(values=c(TMAX='red',TMIN='blue'))
+

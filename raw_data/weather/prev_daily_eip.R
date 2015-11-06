@@ -1,3 +1,5 @@
+rm(list=ls())
+
 all_data = read.csv("NOAA_yucatan_daily.csv")
 
 # work with Merida data only
@@ -77,7 +79,7 @@ rtemps$TMAXr[is.na(rtemps$TMAX)] = predict(reg_max, newdata=rtemps[is.na(rtemps$
 # pull out means for the four locations we have, can't remember what the match part does exactly
 # We're only really using the merida values currently
 
-min_max_plot = function(save=F) {
+min_max_plot = function(rtemps, save=F) {
   if(save) pdf("Merida_min_max_temps.pdf", width=11, height=8.5)
   #png("reconstructed_merida_min_max_temperatures.png", width=1800, height=800, res=200)
   oldpar <- par(mfrow=c(2,1), mar=c(2.5,4,3,1))
@@ -91,7 +93,7 @@ min_max_plot = function(save=F) {
   par(oldpar)
 }
 
-min_max_plot()
+min_max_plot(rtemps)
 
 # create new columns that merge the merida data and the reconstructed values
 rtemps$TMINmerged = rtemps$TMIN
@@ -104,7 +106,7 @@ eip = function(T) { exp(exp(2.9 -0.08*T) + 1/(2*4.9)) }
 
 # EIR is extrinsic incubation rate, 1/EIP
 # assumes square temp function, i.e. 12 hours at daily max temp and 12 hours at daily min temp
-rtemps$EIR = 1/rowMeans(data.frame(eip(rtemps$TMINmerged), eip(rtemps$TMAXmerged)))
+rtemps$EIR = 2/(eip(rtemps$TMINmerged)+eip(rtemps$TMAXmerged))
 
 smoothed_eip = function(current_day) {
   total = 0
