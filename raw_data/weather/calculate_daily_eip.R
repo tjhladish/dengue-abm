@@ -27,8 +27,8 @@ merida[,
 
 eirs = merida[,
   list(
-    EIRMIN=1/EIPMIN/2,
-    EIRMAX=1/EIPMAX/2
+    EIRMIN=(1/EIPMIN)/2,
+    EIRMAX=(1/EIPMAX)/2
   ),
   keyby=DATE
 ]
@@ -64,7 +64,7 @@ teff.dt <- merida[lookaheads][,
 ][,
   list(
     Teff = eipmeantoTeff(EIPAVE, beta0, betaT, vr),
-    mu = eipmeanToMu(EIPAVE, vr),
+    emu = exp(eipmeanToMu(EIPAVE, vr)),
     EIPAVE
   ),
   keyby=doy
@@ -75,7 +75,7 @@ saveRDS(
   "Teff.RData"
 )
 
-write.table(teff.dt$mu, file = "dailyMu.csv", row.names = F, col.names = F)
+write.table(teff.dt, file = "EIPinfo.csv", row.names = F)
 
 require(reshape2)
 require(ggplot2)
