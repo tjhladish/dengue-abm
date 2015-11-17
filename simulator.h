@@ -218,7 +218,7 @@ void initialize_seasonality(const Parameters* par, Community* community, int& ne
             currentDayOfYearOffset += par->extrinsicIncubationPeriods[nextEIPindex].duration;
             if (currentDayOfYearOffset > date.offset()) {
                 const double eip = par->extrinsicIncubationPeriods[nextEIPindex].value;
-                community->setExtrinsicIncubation(eip);
+                community->setExpectedExtrinsicIncubation(eip);
             }
             nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }
@@ -242,7 +242,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     periodic_incidence["daily"][LOCAL] = periodic_incidence["daily"][INFECTION] - periodic_incidence["daily"][INTRO];
     if (par->dailyOutput) {
         _reporter(ss, periodic_incidence, process_id, " day: ", date.day(), "daily");
-        ss << community->getExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
+        ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
 
     if (par->weeklyOutput) {
@@ -343,7 +343,7 @@ void update_extrinsic_incubation_period(const Parameters* par, Community* commun
     if (par->extrinsicIncubationPeriods.size() > 0) {
         const int nextEIPstart = par->extrinsicIncubationPeriods[nextEIPindex].start;
         if ( ((date.day()+date.offset())%EIPtotalDuration) == nextEIPstart) {
-            community->setExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
+            community->setExpectedExtrinsicIncubation(par->extrinsicIncubationPeriods[nextEIPindex].value);
             nextEIPindex = (nextEIPindex+1)%par->extrinsicIncubationPeriods.size();
         }
     }

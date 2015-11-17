@@ -257,6 +257,7 @@ public:
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
+    bool simpleEIP;                                         // do all mosquitoes infected on day X have the same EIP? (default=F, e.g. sampled)
     int nDaysImmune;
     int nSizeVaccinate;
     bool linearlyWaningVaccine;

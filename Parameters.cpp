@@ -21,13 +21,13 @@ void Parameters::define_defaults() {
     fVEP = 0.0;
     fVEH = 0.803;
     primarySevereFraction.clear();
-    primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0);   // never severe, except possibly for infants
+    primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0); // never severe, except possibly for infants
     secondarySevereFraction.clear();
     secondarySevereFraction.resize(NUM_OF_SEROTYPES, 0.5);
-    hospitalizedFraction = {0.0, 0.15, 0.9};               // rough estimates in mex
+    hospitalizedFraction = {0.0, 0.15, 0.9};            // rough estimates in mex
     bVaccineLeaky = false;
     fPreVaccinateFraction = 0.0;
-    nDefaultMosquitoCapacity = 20;                         // mosquitoes per location
+    nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
     populationFilename = "population-64.txt";
@@ -38,8 +38,8 @@ void Parameters::define_defaults() {
     yearlyPeopleOutputFilename = "";
     dailyOutputFilename = "";
     swapProbFilename = "";
-    annualIntroductionsFilename = "";  // time series of some external factor determining introduction rate
-    annualIntroductionsCoef = 1;     // multiplier to rescale external introductions to something sensible
+    annualIntroductionsFilename = "";                   // time series of some external factor determining introduction rate
+    annualIntroductionsCoef = 1;                        // multiplier to rescale external introductions to something sensible
     normalizeSerotypeIntros = false;
     annualIntroductions.clear();
     annualIntroductions.push_back(1.0);
@@ -48,10 +48,14 @@ void Parameters::define_defaults() {
     nSizePrevaccinateAge = 0;
     nMaxInfectionParity = NUM_OF_SEROTYPES;
     reportedFraction = {0.0, 0.05, 1.0};                // fraction of asymptomatic, mild, and severe cases reported
-    nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default is no introductions
+    nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default: no introductions
     annualSerotypeFilename = "";
-    dailyEIPfilename = "";
 
+    extrinsicIncubationPeriods.clear();
+    extrinsicIncubationPeriods.emplace_back(0, 1, 11);  // default: 11 days (Nishiura & Halstead 2007), starting on day 0 with (reused) duration 1 day
+    dailyEIPfilename = "";
+    simpleEIP = false;                                  // default: sample EIPs from a log-normal distribution, using expected incubation periods (Chan & Johanson 2012)
+                                                        // 'true' means use EIPs literally as provided (all mosquitoes infected on day X have same EIP)
     nInitialExposed.clear();
     nInitialExposed.resize(NUM_OF_SEROTYPES, 0);
     nInitialInfected.clear();

@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_set>
 #include <numeric>
-#include <math>
+#include <cmath>
 
 
 class Person;
@@ -41,14 +41,9 @@ class Community {
         void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
 
-        void setExtrinsicIncubation(int n) { _EIP = n; }
-        int getExtrinsicIncubation() const { return _EIP; }
-
-        //void setEMU(double emu) { _emu = emu; } // alt approach
-        //double getEIPcached(double z) { return getEIP(_emu, z); }
-        double getEIP(double emu, double z) const { // provided the current e^mu (emu) and standard normal draw (z), transform to EIP
-          return emu*exp(z*_sigma);
-        }
+        void setExpectedExtrinsicIncubation(int n) { _expectedEIP = n; _EIP_emu = exp(log(_expectedEIP) - (_EIP_sigma*_EIP_sigma)/2.0); }
+        int getExpectedExtrinsicIncubation() const { return _expectedEIP; }
+        double getEIP() const { return (_par->simpleEIP ? _expectedEIP : _EIP_emu * exp(gsl_ran_gaussian(RNG, _EIP_sigma))); }
 
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
@@ -66,7 +61,7 @@ class Community {
 
         int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
 
-        void reset();                                                 // reset the state of the community; experimental!
+        void reset();                                                 // reset the state of the community
         const std::vector<Location*> getLocations() const { return _location; }
         const std::vector< std::vector<Mosquito*> > getInfectiousMosquitoes() const { return _infectiousMosquitoQueue; }
         const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
@@ -87,9 +82,9 @@ class Community {
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-        int _EIP;                                                     // extrinsic incubation period in days
-        //double _emu; // approach emu identically to _EIP?
-        double _sigma;
+        int _expectedEIP;                                             // extrinsic incubation period in days
+        double _EIP_emu;                                              // e^mu for log-normal sampling of EIP, (Chan & Johanson 2012 approach)
+        static constexpr double _EIP_sigma = pow((double) 4.9, -0.5); // SD for log-normal sampling of EIP, (Chan & Johanson 2012 approach)
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
