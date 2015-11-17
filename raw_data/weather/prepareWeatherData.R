@@ -36,7 +36,7 @@ both <- melt(rbind(
   cbind(miami, location=factor("MIAMI", levels=c("MERIDA","MIAMI"), ordered = T))
 ), id.vars = c("doy","location","DATE"), value.name = "celsius", variable.name = "extrema", na.rm = T)
 
-ggplot(both) + theme_bw() + facet_grid(. ~ location, scales = "free") + 
+ggplot(both) + theme_bw() + facet_grid(. ~ location, scales = "free") +
   aes(x=doy, y=celsius, color=extrema, group=interaction(year(DATE), extrema)) + geom_line(alpha=0.1) +
   scale_color_manual(values=c(TMAX='red',TMIN='blue'))
 

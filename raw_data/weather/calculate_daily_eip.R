@@ -29,7 +29,7 @@ eirs = merida[,
   list(
     EIRMIN=1/EIPMIN/2,
     EIRMAX=1/EIPMAX/2
-  ),                  
+  ),
   keyby=DATE
 ]
 

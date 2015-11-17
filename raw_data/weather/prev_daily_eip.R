@@ -17,23 +17,23 @@ validHighs = quantile(d$TMAX,  probs = c(alpha, 1-alpha), na.rm=T)
 outlier_plots = function(save=F) {
   if(save) png("outlier_temps.png", width=2000, height=1600, res=200)
   oldpar <- par(mfrow=c(2,2))
-  
+
   tmp_y_data = head(sort(na.omit(d$TMIN)), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily low temperatures', cex=0.5, 
+  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily low temperatures', cex=0.5,
        col=1+as.numeric(tmp_y_data < validLows[1]))
-  
+
   tmp_y_data = head(sort(na.omit(d$TMIN), decreasing = T), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily low temperatures', cex=0.5, 
+  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily low temperatures', cex=0.5,
        col=1+as.numeric(tmp_y_data > validLows[2]))
-  
+
   tmp_y_data = head(sort(na.omit(d$TMAX)), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily high temperatures', cex=0.5, 
+  plot(tmp_y_data, ylab='Temp (deg C)', main='Smallest daily high temperatures', cex=0.5,
        col=1+as.numeric(tmp_y_data < validHighs[1]))
-  
+
   tmp_y_data = head(sort(na.omit(d$TMAX), decreasing = T), n=100)
-  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily high temperatures', cex=0.5, 
+  plot(tmp_y_data, ylab='Temp (deg C)', main='Largest daily high temperatures', cex=0.5,
        col=1+as.numeric(tmp_y_data > validHighs[2]))
-  
+
   if (save) dev.off()
   par(oldpar)
 }
@@ -119,8 +119,8 @@ smoothed_eip = function(current_day) {
   return(eip)
 }
 
-for (day in 1:dim(rtemps)[1]) { 
-  rtemps[day, 'EIP'] = smoothed_eip(day) 
+for (day in 1:dim(rtemps)[1]) {
+  rtemps[day, 'EIP'] = smoothed_eip(day)
 }
 
 eip_plots = function() {
