@@ -7,6 +7,7 @@
 #include <map>
 #include <unordered_set>
 #include <numeric>
+#include <math>
 
 
 class Person;
@@ -30,7 +31,7 @@ class Community {
         bool infect(int id, Serotype serotype, int day);
         void attemptToAddMosquito(Location *p, Serotype serotype, int nInfectedByID);
         int getDay() { return _nDay; }                                // what day is it?
-        void swapImmuneStates(); 
+        void swapImmuneStates();
         void updateDiseaseStatus();
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
@@ -39,8 +40,16 @@ class Community {
         void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
         void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
+
         void setExtrinsicIncubation(int n) { _EIP = n; }
         int getExtrinsicIncubation() const { return _EIP; }
+
+        //void setEMU(double emu) { _emu = emu; } // alt approach
+        //double getEIPcached(double z) { return getEIP(_emu, z); }
+        double getEIP(double emu, double z) const { // provided the current e^mu (emu) and standard normal draw (z), transform to EIP
+          return emu*exp(z*_sigma);
+        }
+
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(int time, double f, int age=-1);
@@ -57,7 +66,7 @@ class Community {
 
         int ageIntervalSize(int ageMin, int ageMax) { return std::accumulate(_nPersonAgeCohortSizes+ageMin, _nPersonAgeCohortSizes+ageMax,0); }
 
-        void reset();                                                 // reset the state of the community; experimental! 
+        void reset();                                                 // reset the state of the community; experimental!
         const std::vector<Location*> getLocations() const { return _location; }
         const std::vector< std::vector<Mosquito*> > getInfectiousMosquitoes() const { return _infectiousMosquitoQueue; }
         const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
@@ -79,6 +88,8 @@ class Community {
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
         int _EIP;                                                     // extrinsic incubation period in days
+        //double _emu; // approach emu identically to _EIP?
+        double _sigma;
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
