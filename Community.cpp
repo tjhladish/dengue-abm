@@ -39,6 +39,7 @@ Community::Community(const Parameters* parameters) :
     _person = NULL;
     _fMosquitoCapacityMultiplier = 1.0;
     _expectedEIP = -1;
+    _EIP_emu = -1;
     _fMortality = NULL;
     _bNoSecondaryTransmission = false;
     _uniformSwap = true;
