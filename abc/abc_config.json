@@ -28,6 +28,13 @@
          "par1"       : 0.0,
          "par2"       : 1.0},
 
+        {"name"       : "primary_secondary_severity_ratio",
+         "short_name" : "pss_ratio",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 1.0},
+
         {"name"       : "exposures_coefficient",
          "short_name" : "exp_coef",
          "dist_type"  : "UNIFORM",

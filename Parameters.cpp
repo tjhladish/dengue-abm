@@ -14,26 +14,26 @@ void Parameters::define_defaults() {
     betaMP = 0.1;
     fMosquitoMove = 0.2;
     mosquitoMoveModel = "weighted";
-    fMosquitoTeleport = 0.01;
-    fVESs.clear(); fVESs.resize(NUM_OF_SEROTYPES, 0.95);
+    fMosquitoTeleport = 0.0;
+    fVESs = vector<double>(NUM_OF_SEROTYPES, 0.7);
     fVESs_NAIVE.clear();
     fVEI = 0.0;
     fVEP = 0.0;
     fVEH = 0.803;
-    primarySevereFraction.clear();
-    primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0); // never severe, except possibly for infants
-    secondarySevereFraction.clear();
-    secondarySevereFraction.resize(NUM_OF_SEROTYPES, 0.5);
+    primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, 0.0);  // never severe, except possibly for infants
+    secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, 0.5);
+    tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, 0.0);
+    quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, 0.0);
     hospitalizedFraction = {0.0, 0.15, 0.9};            // rough estimates in mex
     bVaccineLeaky = false;
     fPreVaccinateFraction = 0.0;
-    nDefaultMosquitoCapacity = 20;                      // mosquitoes per location
+    nDefaultMosquitoCapacity = 50;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
-    populationFilename = "population-64.txt";
+    populationFilename = "population.txt";
     immunityFilename = "";
-    networkFilename = "locations-network-64.txt";
-    locationFilename = "locations-64.txt";
+    networkFilename = "network.txt";
+    locationFilename = "locations.txt";
     peopleOutputFilename = "";
     yearlyPeopleOutputFilename = "";
     dailyOutputFilename = "";
@@ -41,12 +41,10 @@ void Parameters::define_defaults() {
     annualIntroductionsFilename = "";                   // time series of some external factor determining introduction rate
     annualIntroductionsCoef = 1;                        // multiplier to rescale external introductions to something sensible
     normalizeSerotypeIntros = false;
-    annualIntroductions.clear();
-    annualIntroductions.push_back(1.0);
+    annualIntroductions = {1.0};
     nDaysImmune = 365;
     nSizeVaccinate = 0;                                 // number of parts in phased vaccination
     nSizePrevaccinateAge = 0;
-    nMaxInfectionParity = NUM_OF_SEROTYPES;
     reportedFraction = {0.0, 0.05, 1.0};                // fraction of asymptomatic, mild, and severe cases reported
     nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default: no introductions
     annualSerotypeFilename = "";
@@ -56,26 +54,17 @@ void Parameters::define_defaults() {
     dailyEIPfilename = "";
     simpleEIP = false;                                  // default: sample EIPs from a log-normal distribution, using expected incubation periods (Chan & Johanson 2012)
                                                         // 'true' means use EIPs literally as provided (all mosquitoes infected on day X have same EIP)
-    nInitialExposed.clear();
-    nInitialExposed.resize(NUM_OF_SEROTYPES, 0);
-    nInitialInfected.clear();
-    nInitialInfected.resize(NUM_OF_SEROTYPES, 0);
+    nInitialExposed  = vector<int>(NUM_OF_SEROTYPES, 0);
+    nInitialInfected = vector<int>(NUM_OF_SEROTYPES, 0);
 
-    primaryPathogenicity.clear();
-    primaryPathogenicity.resize(NUM_OF_SEROTYPES, 1.0);
-    if (NUM_OF_SEROTYPES == 4) {
-        // values fitted in
-        // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
-        // Normalized from Fc values in supplement table 2, available at
-        // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-        primaryPathogenicity[0] = 1.000;
-        primaryPathogenicity[1] = 0.825;
-        primaryPathogenicity[2] = 0.833;
-        primaryPathogenicity[3] = 0.317;
-    }
-
-    secondaryPathogenicityOddsRatio.clear();
-    secondaryPathogenicityOddsRatio.resize(NUM_OF_SEROTYPES, 1.0);
+    // values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
+    secondaryPathogenicity  = {1.000, 0.825, 0.833, 0.317};
+    tertiaryPathogenicity   = vector<double>(NUM_OF_SEROTYPES, 0.0);
+    quaternaryPathogenicity = vector<double>(NUM_OF_SEROTYPES, 0.0);
 
     // Probabilities GIVEN maternal antibodies (from random cohabitating female of reproductive age)
     // Values estimated based on Fig. 5 of Halstead et al, Dengue hemorrhagic fever in infants: research opportunities ignored, EID, 2002
@@ -91,7 +80,7 @@ void Parameters::define_defaults() {
     vaccineImmunityDuration = INT_MAX;
     vaccineBoosting = false;
 
-    const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
+    const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179, 0.128, 0.123, 0.0956, 0.195, 0.777, 0.940, 0.901, 1.0, 0.491, 0.301, 0.199};
     mosquitoMultipliers.clear();
     mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
     int running_sum = 0;
@@ -141,8 +130,14 @@ void Parameters::readParameters(int argc, char* argv[]) {
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
                 for (int j=0; j<NUM_OF_SEROTYPES; j++) primaryPathogenicity[j]=strtod(argv[++i],end);
             }
-            else if (strcmp(argv[i], "-secondaryoddsratio")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) secondaryPathogenicityOddsRatio[j]=strtod(argv[++i],end);
+            else if (strcmp(argv[i], "-secondarypathogenicity")==0) {
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) secondaryPathogenicity[j]=strtod(argv[++i],end);
+            }
+            else if (strcmp(argv[i], "-tertiarypathogenicity")==0) {
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) tertiaryPathogenicity[j]=strtod(argv[++i],end);
+            }
+            else if (strcmp(argv[i], "-quaternarypathogenicity")==0) {
+                for (int j=0; j<NUM_OF_SEROTYPES; j++) quaternaryPathogenicity[j]=strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-annualintroscoef")==0) {
                 annualIntroductionsCoef = strtod(argv[++i],end);
@@ -213,10 +208,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
             }
             else if (strcmp(argv[i], "-startdayofyear")==0) {
                 startDayOfYear = strtol(argv[++i],end,10);
-            }
-            else if (strcmp(argv[i], "-maxinfectionparity")==0) {
-                nMaxInfectionParity = strtol(argv[++i],end,10);
-                assert(nMaxInfectionParity>0 && nMaxInfectionParity<=NUM_OF_SEROTYPES);
             }
             else if (strcmp(argv[i], "-VES")==0 || strcmp(argv[i], "-ves")==0) {
                 fVESs.clear();
@@ -341,17 +332,14 @@ void Parameters::validate_parameters() {
     cerr << "beta_PM = " << betaPM << endl;
     cerr << "beta_MP = " << betaMP << endl;
     cerr << "days of complete cross protection = " << nDaysImmune << endl;
-    cerr << "maximum infection parity = " << nMaxInfectionParity << endl;
     cerr << "pathogenicity of primary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        cerr << " " << primaryPathogenicity[i];
-    }
-    cerr << endl;
-    cerr << "pathogenicity odds ratios for secondary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) {
-        cerr << " " << secondaryPathogenicityOddsRatio[i];
-    }
-    cerr << endl;
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << primaryPathogenicity[i]; } cerr << endl;
+    cerr << "pathogenicity of secondary infection =";
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << secondaryPathogenicity[i]; } cerr << endl;
+    cerr << "pathogenicity of tertiary infection =";
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << tertiaryPathogenicity[i]; } cerr << endl;
+    cerr << "pathogenicity of quaternary infection =";
+    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << quaternaryPathogenicity[i]; } cerr << endl;
     cerr << "mosquito move prob = " << fMosquitoMove << endl;
     cerr << "mosquito move model = " << mosquitoMoveModel << endl;
     if ( mosquitoMoveModel != "uniform" and mosquitoMoveModel != "weighted" ) {

@@ -156,6 +156,10 @@ TODO:
 
 24.) Summary: Consider adding a fitted severity par for infections 1/3/4
      Status : 
+     Details: Alternate: fitted primary severity par, 3 & 4 never severe
+
+25.) Summary: Re-fit serotype model, with initial introductions of 2-4 occuring as observed
+     Status : 
      Details: 
 
 

@@ -30,15 +30,12 @@ Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExter
     _bDead = false;
     _eSerotype = serotype;
     _nInfectedAtID = nInfectedAtID;
-    double r = gsl_rng_uniform(RNG);
-    _nAgeInfected = 0;
-    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeInfected]<r && _nAgeInfected<MAX_MOSQUITO_AGE-1)
-        _nAgeInfected++;
+    _nAgeInfected = Parameters::sampler(MOSQUITO_AGE_CDF, gsl_rng_uniform(RNG));
     _nAgeInfectious = _nAgeInfected + nExternalIncubationPeriod;
-    _nAgeDeath = _nAgeInfected;
-    r = 1.0-(gsl_rng_uniform(RNG)*(1.0-MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]));
-    while (MOSQUITO_AGE_DISTRIBUTION[_nAgeDeath]<r && _nAgeDeath<MAX_MOSQUITO_AGE-1)
-        _nAgeDeath++;
+    _nAgeDeath = _nAgeInfected; // can't be younger than this
+    double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-MOSQUITO_AGE_CDF[_nAgeInfected]));
+    _nAgeDeath = Parameters::sampler(MOSQUITO_AGE_CDF, r, _nAgeDeath);
+
     _pLocation = _pOriginLocation = p;
     _pLocation->addInfectedMosquito();
 }

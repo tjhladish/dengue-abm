@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <algorithm>
 
 #include <assert.h>
 #include <bitset>
@@ -32,7 +33,6 @@ Person::Person() {
     _bDead = false;
     _bVaccinated = false;
     _bNaiveVaccineProtection = false;
-    _bCase = false;
 }
 
 
@@ -52,6 +52,15 @@ Infection& Person::initializeNewInfection(Serotype serotype) {
     Infection* infection = new Infection(serotype);
     infectionHistory.push_back(infection);
     return *infection;
+}
+
+
+Infection& Person::initializeNewInfection(Serotype serotype, int time, int sourceloc, int sourceid) {
+    Infection& infection = initializeNewInfection(serotype);
+    infection.infectedTime  = time;
+    infection.infectedPlace = sourceloc;
+    infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
+    return infection;
 }
 
 
@@ -78,7 +87,6 @@ void Person::resetImmunity() {
     _bVaccinated = false;
     vaccineHistory.clear();
     _bNaiveVaccineProtection = false;
-    _bCase = false;
     _bDead = false;
 }
 
@@ -98,18 +106,15 @@ void Person::kill(int time) {
 
 
 bool Person::isInfectable(Serotype serotype, int time) const {
+    // TODO - consider refactoring (CABP)
     bool infectable = true;
-    const int maxinfectionparity = _par->nMaxInfectionParity;
     if (!isSusceptible(serotype)) {
         // immune to this serotype via previous infection OR non-leaky vaccine
         infectable = false;                                   
     } else if (getNumInfections() > 0 and infectionHistory.back()->infectedTime + _par->nDaysImmune > time) {
         // cross-serotype protection from last infection
         infectable = false;
-    } else if (getInfectionParity() >= maxinfectionparity) {
-        // already infected max number of times
-        infectable = false;
-    } else if (isVaccinated() && _par->bVaccineLeaky==true) {
+    } else if (isVaccinated() and _par->bVaccineLeaky==true) {
         // potentially protected by leaky vaccine
         // (all-or-none vaccines are handled via isSusceptible conditional)
         double r = gsl_rng_uniform(RNG);
@@ -118,8 +123,6 @@ bool Person::isInfectable(Serotype serotype, int time) const {
         if ( r < protectionProbability ) {
             infectable = false;
         }
-    } else {
-        // Apparently person is infectable
     }
     return infectable;
 }
@@ -156,6 +159,30 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
     return ves;
 }
 
+enum MaternalEffect { MATERNAL_PROTECTION, NO_EFFECT, MATERNAL_ENHANCEMENT };
+
+MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int time) {
+    MaternalEffect effect;
+    if (p->getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
+        Person* mom = p->getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
+        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
+            if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
+                effect = MATERNAL_PROTECTION;
+            } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
+                effect = MATERNAL_ENHANCEMENT;
+            } else {
+                effect = NO_EFFECT;
+            }
+        } else {                                             // no mother with immunity
+            effect = NO_EFFECT;
+        }
+    } else {                                                 // not an infant, or reloading an infection histories
+        effect = NO_EFFECT;
+    }
+
+    return effect;
+}
+
 
 // infect - infect this individual
 // primary symptomatic is a scaling factor for pathogenicity of primary infections.
@@ -164,86 +191,87 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Bail now if this person can not become infected
     // TODO - clarify this.  why would a person not be infectable in this scope?
-    if (not isInfectable(serotype, time)) {
-        return false;
+    if (not isInfectable(serotype, time)) return false;
+
+    MaternalEffect maternal_effect = _maternal_antibody_effect(this, _par, time);
+    bool maternalAntibodyEnhancement;
+    switch( maternal_effect ) {
+        case MATERNAL_PROTECTION:
+            return false;
+            break;
+        case NO_EFFECT:
+            maternalAntibodyEnhancement = false;
+            break;
+        case MATERNAL_ENHANCEMENT:
+            maternalAntibodyEnhancement = true;
+            break;
+        default:
+            cerr << "ERROR: Unknown maternal effect: " << maternal_effect << endl;
+            exit(-837);
+            break;
     }
 
-    bool maternalAntibodyEnhancement = false;
-    if (getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
-        Person* mom = getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
-        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
-            if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
-                return false;                                // maternal antibody protection
-            } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
-                maternalAntibodyEnhancement = true;          // maternal antibodies are a problem
-            }
-        }
-    }
+    const int numPrevInfections = getNumInfections(); // needs to be called before initializing new infection
 
-    Infection& infection = initializeNewInfection(serotype); // Create a new infection record
-
-    infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
-    infection.infectedTime  = time;
-    infection.infectedPlace = sourceloc;
-
-    const bool postprimary = getImmunityBitset().any();      // has this person ever been infected before?
+     // Create a new infection record
+    Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
     // When do they become infectious?
-    infection.infectiousTime = 0;
-    double r = gsl_rng_uniform(RNG);
-    while (infection.infectiousTime < MAX_INCUBATION && INCUBATION_DISTRIBUTION[infection.infectiousTime] < r) {
-        infection.infectiousTime++;
-    }
-    infection.infectiousTime += time;
+    infection.infectiousTime = Parameters::sampler(INCUBATION_CDF, gsl_rng_uniform(RNG)) + time;
 
-    if (postprimary) {
-        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_SEC;        // TODO - draw from distribution
-    } else {
-        infection.recoveryTime = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;        // TODO - draw from distribution
-    }
-
-    const double primary_symptomatic_prob = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-    double symptomatic_probability = primary_symptomatic_prob;
-
-    if (postprimary and primary_symptomatic_prob != 1.0) {
-        const double secondary_odds = _par->secondaryPathogenicityOddsRatio[(int) serotype] * primary_symptomatic_prob / (1.0 - primary_symptomatic_prob);
-        symptomatic_probability = secondary_odds / (1.0 + secondary_odds);
+    double symptomatic_probability = 0.0;
+    double severe_given_case = 0.0;
+    switch (numPrevInfections) {
+        case 0:
+            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;
+            symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            severe_given_case       = _par->primarySevereFraction[(int) serotype];
+            break;
+        case 1:
+            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
+            symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            severe_given_case       = _par->secondarySevereFraction[(int) serotype];
+            break;
+        case 2:
+            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
+            symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
+            break;
+        case 3:
+            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
+            symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+            break;
+        default:
+            cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
+            exit(-838);
     }
 
     const double effective_VEP = isVaccinated() ? _par->fVEP : 0.0;   // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
 
-    if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {
-        // Person develops symptoms --> this is a case
-        // Is this a severe case?
+    if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {           // Is this a case?
         const double severe_rand = gsl_rng_uniform(RNG);
-        if ( (!postprimary and severe_rand < _par->primarySevereFraction[(int) serotype])     // primary infection
-             or (postprimary and severe_rand < _par->secondarySevereFraction[(int) serotype]) // secondary infection
-             or maternalAntibodyEnhancement) {                                                // infant w/ antibodies
-            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // is this person unvaccinated or unlucky?
+        if ( severe_rand < severe_given_case or maternalAntibodyEnhancement) {                     // Is this a severe case?
+            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // Is this person unvaccinated or vaccinated but unlucky?
                 infection.severeDisease = true;
             }
         }
 
         // Determine if this person withdraws (stops going to work/school)
-        // TODO - the 1 in the below line is a parameter and should be moved out
-        infection.symptomTime = infection.infectiousTime + 1;                   // symptomatic one day after infectious
-        double r = gsl_rng_uniform(RNG);
+        infection.symptomTime = infection.infectiousTime + SYMPTOMATIC_DELAY;
         const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
-        for (int i=0; i<symptomatic_duration; i++) {
-            if (r < 1-pow(0.5,1+i) ) {                                              // TODO - refactor to sample from geometric
-                infection.withdrawnTime = infection.symptomTime + i;                // withdraws
-                break;
-            }
-        }
-        _bCase = true;
+        const int symptomatic_active_period = gsl_ran_geometric(RNG, 0.5) - 1; // min generator value is 1 trial
+        infection.withdrawnTime = symptomatic_active_period < symptomatic_duration ?
+                                  infection.symptomTime + symptomatic_active_period :
+                                  infection.withdrawnTime;
     }
 
-    // TODO - clarify what's going on with d; sometimes this is an old infection, sometimes a current one
-    for (int d=infection.infectiousTime; d<infection.recoveryTime; d++) {
-        if (d < 0) continue; // we don't need to worry about flagging locations for past infections
+    // Flag locations with (non-historical) infections, so that we know to look there for human->mosquito transmission
+    // Negative days are historical (pre-simulation) events, and thus we don't care about modeling transmission
+    for (int day = std::max(infection.infectiousTime, 0); day < infection.recoveryTime; day++) {
         for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
-            Community::flagInfectedLocation(_pLocation[t], d);
+            Community::flagInfectedLocation(_pLocation[t], day);
         }
     }
 
@@ -323,12 +351,6 @@ bool Person::isWithdrawn(int time) const {
 
 bool Person::isSusceptible(Serotype serotype) const {
     return !_bDead && !(_nImmunity[serotype] == 1);  //1<<0=1  1<<1=2  1<<2=4  1<<3=8   1<<4=16
-}
-
-
-// getInfectionParity - number of serotypes with immunity (including vaccination)
-int Person::getInfectionParity() const {
-    return _nImmunity.count(); // count number of 1's in bit string
 }
 
 
