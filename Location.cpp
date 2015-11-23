@@ -58,7 +58,7 @@ Person* Location::findMom() {
     int minage = 15;
     int maxage = 45;
     for (auto p: residents) {
-        if (p->getSex() == FEMALE and p->getAge() >= minage and p->getAge() <= maxage) potential_moms.push_back(p); 
+        if (p->getSex() == FEMALE and p->getAge() >= minage and p->getAge() <= maxage) potential_moms.push_back(p);
     }
     if (potential_moms.size() == 0) return nullptr;
     int r = gsl_rng_uniform_int(RNG, potential_moms.size());
