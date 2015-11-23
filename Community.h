@@ -41,8 +41,8 @@ class Community {
         void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
 
-        void setExpectedExtrinsicIncubation(int n) { _expectedEIP = n; _EIP_emu = exp(log(_expectedEIP) - (_EIP_sigma*_EIP_sigma)/2.0); }
-        int getExpectedExtrinsicIncubation() const { return _expectedEIP; }
+        void setExpectedExtrinsicIncubation(double n) { _expectedEIP = n; _EIP_emu = exp(log(_expectedEIP) - (_EIP_sigma*_EIP_sigma)/2.0); }
+        double getExpectedExtrinsicIncubation() const { return _expectedEIP; }
         double getEIP() const { return (_par->simpleEIP ? _expectedEIP : _EIP_emu * exp(gsl_ran_gaussian(RNG, _EIP_sigma))); }
 
         int getNumInfectiousMosquitoes();
@@ -82,9 +82,9 @@ class Community {
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
-        int _expectedEIP;                                             // extrinsic incubation period in days
-        double _EIP_emu;                                              // e^mu for log-normal sampling of EIP, (Chan & Johanson 2012 approach)
-        static constexpr double _EIP_sigma = pow((double) 4.9, -0.5); // SD for log-normal sampling of EIP, (Chan & Johanson 2012 approach)
+        double _expectedEIP;                                          // extrinsic incubation period in days
+        double _EIP_emu;                                              // e^mu for log-normal sampling of EIP, (Chan & Johanson 2012)
+        static constexpr double _EIP_sigma = pow((double) 4.9, -0.5); // SD for log-normal sampling of EIP, (Chan & Johanson 2012)
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
