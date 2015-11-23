@@ -92,6 +92,9 @@ class Person {
         std::vector<std::pair<int, double> > getSwapProbabilities() { return _swap_probabilities; }
 
         bool isSusceptible(Serotype serotype) const;                  // is susceptible to serotype (and is alive)
+        bool isCrossProtected(int time) const;
+        bool isVaccineProtected(Serotype serotype, int time) const;
+
         inline Location* getLocation(TimePeriod timeofday) { return _pLocation[(int) timeofday]; }
         inline void setLocation(Location* p, TimePeriod timeofday) { _pLocation[(int) timeofday] = p; }
 

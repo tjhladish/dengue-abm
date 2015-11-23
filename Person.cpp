@@ -106,25 +106,10 @@ void Person::kill(int time) {
 
 
 bool Person::isInfectable(Serotype serotype, int time) const {
-    // TODO - consider refactoring (CABP)
-    bool infectable = true;
-    if (!isSusceptible(serotype)) {
-        // immune to this serotype via previous infection OR non-leaky vaccine
-        infectable = false;                                   
-    } else if (getNumInfections() > 0 and infectionHistory.back()->infectedTime + _par->nDaysImmune > time) {
-        // cross-serotype protection from last infection
-        infectable = false;
-    } else if (isVaccinated() and _par->bVaccineLeaky==true) {
-        // potentially protected by leaky vaccine
-        // (all-or-none vaccines are handled via isSusceptible conditional)
-        double r = gsl_rng_uniform(RNG);
-        double protectionProbability = vaccineProtection(serotype, time);
-        // Which level of protection does this person have?
-        if ( r < protectionProbability ) {
-            infectable = false;
-        }
-    }
-    return infectable;
+    return
+       isSusceptible(serotype) and // is susceptible to this serotype (i.e., not immune to this serotype via previous infection)
+       !isCrossProtected(time) and // not cross-serotype protection from last infection
+       !isVaccineProtected(serotype, time); // not vaccine protected at this time
 }
 
 
@@ -133,7 +118,7 @@ double Person::remainingEfficacy(const int time) const {
     if (_par->linearlyWaningVaccine) {
         // reduce by fraction of immunity duration that has waned
         int time_since_vac = daysSinceVaccination(time);
-        remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration); 
+        remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
     }
     return remainingFraction;
 }
@@ -353,6 +338,19 @@ bool Person::isSusceptible(Serotype serotype) const {
     return !_bDead && !(_nImmunity[serotype] == 1);  //1<<0=1  1<<1=2  1<<2=4  1<<3=8   1<<4=16
 }
 
+bool Person::isCrossProtected(int time) const {
+    return
+      (getNumInfections() > 0) and // has any past infection
+      (infectionHistory.back()->infectedTime + _par->nDaysImmune > time); // past infection w/in x-prot time
+}
+
+bool Person::isVaccineProtected(Serotype serotype, int time) const {
+    return
+      isVaccinated() and
+      ( !_par->bVaccineLeaky or // if the vaccine isn't leaky
+        (gsl_rng_uniform(RNG) < vaccineProtection(serotype, time)) // or it protects (i.e., doesn't leak this time)
+      );
+}
 
 bool Person::fullySusceptible() const {
     bool susceptible = true;
