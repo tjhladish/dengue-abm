@@ -5,6 +5,7 @@
 #include "CCRC32.h"
 #include "Utility.h"
 #include "ImmunityGenerator.h"
+#include "yucatan_serotype_generator.h"
 #include <unordered_set>
 
 using namespace std;
@@ -19,9 +20,13 @@ time_t GLOBAL_START_TIME;
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
 
-const int DDT_START       = 77;  // simulator year 77
-const int DDT_DURATION    = 23;  // 23 years long
-const int FITTED_DURATION = 35;  // 35 for 1979-2013 inclusive
+
+const int FIRST_YEAR          = 1879;                                 // inclusive
+const int FIRST_OBSERVED_YEAR = 1979;
+const int LAST_YEAR           = 2013;                                 // inclusive
+const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
+const int DDT_DURATION        = 23;                                   // 23 years long
+const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -81,10 +86,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
+
+    //par->simulateAnnualSerotypes = false;
+    //par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
     par->annualIntroductions = vector<double>(DDT_START, 1.0);
