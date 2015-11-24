@@ -221,6 +221,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     const int vac_start_year      = 5;
     const int vr_start_day        = vac_start_year*365;
     const int vr_end_day          = years_simulated*365;
+    //const int vr_end_day          = (vac_start_year+10)*365;
     vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
     vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
 
