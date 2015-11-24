@@ -58,7 +58,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
     par->primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
     par->secondaryPathogenicity  = par->primaryPathogenicity;
-    par->teriaryPathogenicity    = {0,0,0,0};
+    par->tertiaryPathogenicity   = {0,0,0,0};
     par->quaternaryPathogenicity = {0,0,0,0};
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
