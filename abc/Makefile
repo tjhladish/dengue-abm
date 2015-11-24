@@ -1,4 +1,4 @@
-CC=g++
+CC=g++-4.9
 #CC=mpicxx
 #CFLAGS = -g -std=c++11
 CFLAGS = -O2 -std=c++11
@@ -6,6 +6,7 @@ ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
+SERDIR = $(DENDIR)/synthetic_population/serotype_runs
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
 
@@ -51,7 +52,7 @@ abc_mpi: libabc_mpi dengue_mpi immunity_mpi main_mpi.cpp
 	$(CC) $(CFLAGS) -D USING_MPI $(INCLUDE) main_mpi.cpp -o abc_mpi $(DENOBJ) $(IMMOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_sql: libabc_no_mpi dengue_no_mpi main_sql.cpp
-	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_thai: libabc_no_mpi dengue_no_mpi main_sql-thai.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql-thai.cpp -o abc_thai $(DENOBJ) $(ABC_LIB) $(GSL_LIB)

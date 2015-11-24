@@ -57,8 +57,9 @@ static const std::vector<std::string> MONTH_NAMES = {"JAN", "FEB", "MAR", "APR",
 static const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static const std::vector<int> END_DAY_OF_MONTH = {31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
 
+static const int SYMPTOMATIC_DELAY = 1;                       // delay of symptoms after infectious period starts
 static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
-static const int INFECTIOUS_PERIOD_SEC = 4;                   // number of days until recovery from secondary infection
+static const int INFECTIOUS_PERIOD_POST_PRI = 4;              // number of days until recovery from post-primary infection
 
 // from Person.h
 static const int NUM_AGE_CLASSES = 101;                       // maximum age+1 for a person
@@ -66,9 +67,7 @@ static const int MAX_INCUBATION = 9;                          // max incubation 
 static const int MAX_HISTORY = 50;                            // length of exposure history in years
 
 // cdf of incubation period, starting from day 1 (from Nishiura 2007)
-const double INCUBATION_DISTRIBUTION[MAX_INCUBATION] = {
-    0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1
-};
+const std::vector<double> INCUBATION_CDF = { 0,0,0.03590193,0.5070053,0.8248687,0.9124343,0.949212,0.974606,1 };
 
 // from Community
                                                               // probability of biting at 3 different times of day (as defined in Location.h)
@@ -89,7 +88,7 @@ static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of 
 //    0.1290510,0.1294285,0.1297580,0.1300453};
 
 // cumulative density of mosquito ages
-static const double MOSQUITO_AGE_DISTRIBUTION[MAX_MOSQUITO_AGE] = {
+static const std::vector<double> MOSQUITO_AGE_CDF = {
     0.03115129,0.06224651,0.09327738,0.1242344,0.1551069,0.1858824,0.2165471,
     0.247085,0.2774781,0.3077061,0.3377462,0.3675725,0.3971563,0.4264656,0.4554649,
     0.484115,0.5123732,0.5401928,0.5675238,0.5943126,0.620503,0.6460362,0.6708519,
@@ -101,7 +100,7 @@ static const double MOSQUITO_AGE_DISTRIBUTION[MAX_MOSQUITO_AGE] = {
 };
 
 // for some serotypes, the fraction who are symptomatic upon primary infection
-static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
+static const std::vector<double> SYMPTOMATIC_BY_AGE = {
     0.05189621,0.05189621,0.05189621,0.05189621,0.05189621,
     0.1017964,0.1017964,0.1017964,0.1017964,0.1017964,
     0.2774451,0.2774451,0.2774451,0.2774451,0.2774451,
@@ -129,10 +128,6 @@ static const double SYMPTOMATIC_BY_AGE[NUM_AGE_CLASSES] = {
 // fitted using ABC to Yucatan serotype data, 1979-2014
 static const std::vector<double> MEAN_RUN_LENGTH = { 13.03, 8.99, 1.90, 2.17 };
 static const std::vector<double> MEAN_GAP_LENGTH = { 3.33, 6.36, 11.10, 9.43 };
-
-// old model
-//static const std::vector<double> MEAN_RUN_LENGTH = std::vector<double>(4,3.26);
-//static const std::vector<double> MEAN_GAP_LENGTH = std::vector<double>(4,4.32);
 
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
@@ -203,6 +198,11 @@ public:
     void generateAnnualSerotypes(int total_num_years = -1);
     bool simulateAnnualSerotypes;
 
+    static int sampler (const std::vector<double> CDF, const double rand, unsigned int index = 0) {
+        while (index < CDF.size() and CDF[index] < rand) index++;
+        return index;
+    };
+
     unsigned long int randomseed;
     int nRunLength;
     double betaPM;                                          // scales person-to-mosquito transmission
@@ -217,6 +217,8 @@ public:
     double fVEH;                                            // vaccine efficacy against hospitalization, given disease
     std::vector<double> primarySevereFraction;              // fraction of primary cases (symptomatic infections) that are severe
     std::vector<double> secondarySevereFraction;            // fraction of post-primary cases (symptomatic infections) that are severe
+    std::vector<double> tertiarySevereFraction;             // fraction of post-primary cases (symptomatic infections) that are severe
+    std::vector<double> quaternarySevereFraction;           // fraction of post-primary cases (symptomatic infections) that are severe
     std::vector<double> hospitalizedFraction;               // Probability of being hospitalized, given asymptomatic, mild, and severe infection
     std::vector<double> reportedFraction;                   // Probability of being reported, given asymptomatic, mild, and severe infection
     double infantImmuneProb;                                // Probability that age 0 person is uninfectable, given maternal immunity
@@ -228,7 +230,9 @@ public:
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
     std::vector<double> primaryPathogenicity;               // serotypes
-    std::vector<double> secondaryPathogenicityOddsRatio;    // Grange et al 2014 doi: 10.3389/fimmu.2014.00280 suggests the odds ratio is 1
+    std::vector<double> secondaryPathogenicity;             // Grange et al 2014 doi: 10.3389/fimmu.2014.00280 suggests pri:sec odds ratio is 1
+    std::vector<double> tertiaryPathogenicity;
+    std::vector<double> quaternaryPathogenicity;
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
@@ -257,6 +261,7 @@ public:
     std::vector<double> annualIntroductions;
     double annualIntroductionsCoef;                         // multiplier to rescale external introductions to something sensible
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
+    bool simpleEIP;                                         // do all mosquitoes infected on day X have the same EIP? (default=F, e.g. sampled)
     int nDaysImmune;
     int nSizeVaccinate;
     bool linearlyWaningVaccine;
@@ -269,7 +274,6 @@ public:
     int nPrevaccinateAgeMin[100];
     int nPrevaccinateAgeMax[100];
     double fPrevaccinateAgeFraction[100];
-    int nMaxInfectionParity;
     int startDayOfYear;
     bool dailyOutput;
     bool weeklyOutput;

@@ -5,6 +5,7 @@
 #include "CCRC32.h"
 #include "Utility.h"
 #include "ImmunityGenerator.h"
+#include "yucatan_serotype_generator.h"
 #include <unordered_set>
 
 using namespace std;
@@ -19,9 +20,13 @@ time_t GLOBAL_START_TIME;
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
 
-const int DDT_START       = 77;  // simulator year 77
-const int DDT_DURATION    = 23;  // 23 years long
-const int FITTED_DURATION = 35;  // 35 for 1979-2013 inclusive
+
+const int FIRST_YEAR          = 1879;                                 // inclusive
+const int FIRST_OBSERVED_YEAR = 1979;
+const int LAST_YEAR           = 2013;                                 // inclusive
+const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
+const int DDT_DURATION        = 23;                                   // 23 years long
+const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
@@ -30,10 +35,11 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
     double _sec_severity = args[2];
-    double _exp_coef     = args[3];
-    double _nmos         = args[4];
-    double _betamp       = args[5]; // mp and pm and not separately
-    double _betapm       = args[5]; // identifiable, so they're the same
+    double _pss_ratio    = args[3];
+    double _exp_coef     = args[4];
+    double _nmos         = args[5];
+    double _betamp       = args[6]; // mp and pm and not separately
+    double _betapm       = args[6]; // identifiable, so they're the same
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
@@ -55,13 +61,18 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
-    par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
+    par->primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
+    par->secondaryPathogenicity  = par->primaryPathogenicity;
+    par->tertiaryPathogenicity   = {0,0,0,0};
+    par->quaternaryPathogenicity = {0,0,0,0};
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+
     par->primarySevereFraction.clear();
-    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0);
+    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
     par->secondarySevereFraction.clear();
     par->secondarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity);
+    par->tertiarySevereFraction   = {0,0,0,0};
+    par->quaternarySevereFraction = {0,0,0,0};
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -75,10 +86,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
+
+    //par->simulateAnnualSerotypes = false;
+    //par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
     par->annualIntroductions = vector<double>(DDT_START, 1.0);

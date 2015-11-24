@@ -5,7 +5,7 @@
     "pls_training_fraction"     : 1.0,
 
     "database_filename"             : "rzero.sqlite",
-    "posterior_database_filename"   : "refit_posterior-yuc.sqlite",
+    "posterior_database_filename"   : "posterior-refit.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",

@@ -1,0 +1,34 @@
+{
+    "smc_iterations" : 10,
+    "num_samples"    : 1000000,
+    "predictive_prior_fraction" : 0.01,
+    "pls_training_fraction"     : 0.5,
+
+    "database_filename"         : "denv1.sqlite",
+
+    "parameters" : [
+        {"name"       : "geometric run mean",
+         "short_name" : "geo_run",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 20},
+
+        {"name"       : "geometric gap mean",
+         "short_name" : "geo_gap",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 20}
+    ],                
+
+    "metrics" : [     
+        {"name"       : "obs_run_mean",
+         "num_type"   : "FLOAT",
+         "value"      : 7.25},
+
+        {"name"       : "obs_gap_mean",
+         "num_type"   : "FLOAT",
+         "value"      : 1.0}
+    ]
+}

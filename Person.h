@@ -92,7 +92,6 @@ class Person {
         std::vector<std::pair<int, double> > getSwapProbabilities() { return _swap_probabilities; }
 
         bool isSusceptible(Serotype serotype) const;                  // is susceptible to serotype (and is alive)
-        int getInfectionParity() const;                               // is immune to n serotypes
         inline Location* getLocation(TimePeriod timeofday) { return _pLocation[(int) timeofday]; }
         inline void setLocation(Location* p, TimePeriod timeofday) { _pLocation[(int) timeofday] = p; }
 
@@ -138,6 +137,7 @@ class Person {
         static const double _fIncubationDistribution[MAX_INCUBATION];
 
         Infection& initializeNewInfection(Serotype serotype);
+        Infection& initializeNewInfection(Serotype serotype, int time, int sourceloc, int sourceid);
 
         static void reset_ID_counter() { _nNextID = 1; }
 
@@ -145,13 +145,12 @@ class Person {
         int _nID;                                                     // unique identifier
         int _nHomeID;                                                 // family membership
         int _nWorkID;                                                 // ID of location of work
-        bool _bCase;                                                  // ever detected as case?
         Location *_pLocation[(int) NUM_OF_TIME_PERIODS];              // where this person is at morning, day, and evening
         int _nAge;                                                    // age in years
         SexType _sex;                                                 // sex (gender)
         int _nLifespan;                                               // lifespan in years
         bool _bDead;                                                  // is dead
-        std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype exposure
+        std::bitset<NUM_OF_SEROTYPES> _nImmunity;                     // bitmask of serotype infection
         bool _bVaccinated;                                            // has been vaccinated
         bool _bNaiveVaccineProtection; // if vaccinated, do we use the naive or non-naive VE_S?
 

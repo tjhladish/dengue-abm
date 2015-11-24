@@ -131,6 +131,37 @@ TODO:
      Status : Ignore for now
      Details: 
 
+20.) Summary: Relax priors
+     Status : 
+     Details: Initial priors were clearly too strict.  These need to be relaxed, and ABC
+              repeated.
+
+21.) Summary: Check seroprevalence 107 years in (1987), not 127 (2007)
+     Status : Fixed
+     Details: ABC needs to be repeated
+
+22.) Summary: Draw EIPs from log-normal, not poisson
+     Status : 
+     Details: - get temperature series (mean maxs, mean mins)
+              - using Chan-Johansson fits, get half-day mean EIPs (mu = e^(beta X), mean = e^(mu + sigma^2/2)
+              - get half-day mean EIRs (1/EIP)
+              - use half-day mean EIRs to get effective mean EIPs (1/# days when sum EIR == 1 - should be able to pro-rate last half increment for float days EIP)
+              - start w/ half daytime (6hr) mean max EIR for summation (assumes uniformly distribute daytime biting, but also consistent w/ dawn/dusk biting)
+              - use effective mean EIPs to calculate daily effective T (mu = log(mean)-sigma^2/2)
+              - use daily effective T w/ Chan-Johansson fits to draw EIPs
+
+23.) Summary: Increase disease severity for 2nd (and not 3rd/4th) infections
+     Status : 
+     Details: 
+
+24.) Summary: Consider adding a fitted severity par for infections 1/3/4
+     Status : 
+     Details: Alternate: fitted primary severity par, 3 & 4 never severe
+
+25.) Summary: Re-fit serotype model, with initial introductions of 2-4 occuring as observed
+     Status : 
+     Details: 
+
 
 =============================================================================================
 
