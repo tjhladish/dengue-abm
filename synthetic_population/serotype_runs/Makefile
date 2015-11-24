@@ -1,19 +1,27 @@
-CC=mpicxx
-CFLAGS = -g -std=c++11
-#CFLAGS = -O2 -std=c++11
+CC=g++-4.9
+#CFLAGS = -g -std=c++11
+CFLAGS = -O2 -std=c++11
 ABCDIR = $(HOME)/work/AbcSmc
+DENDIR = $(HOME)/work/dengue
+DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
+SQLDIR = $(ABCDIR)/sqdb
 
-ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp   
-GSL_LIB = -lm -L$$TACC_GSL_LIB/ -L$$HPC_GSL_LIB/ -lgsl -lgslcblas
+INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(SQLDIR)
 
-libabc_mpi:  
-	$(MAKE) -C $(ABCDIR) -f Makefile all_ubuntu_mpi
+ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
+GSL_LIB = -lm -lgsl -lgslcblas -lpthread -ldl
 
-gen_sero: 
-	mpicxx -O2 -std=c++11 generate_serotype_runs.cpp -o gen_sero -lm -lgsl -lgslcblas
+sero: libabc
+	$(CC) $(CFLAGS) $(INCLUDE) -Wno-deprecated-declarations fit_serotype_data.cpp -o simulate_serotypes -I/home/tjhladish/work/AbcSmc $(ABC_LIB) $(GSL_LIB)
 
-sero_mpi: libabc_mpi
-	mpicxx -O2 -std=c++11 -D USING_MPI fit_serotype_data.cpp -o simulate_serotypes -I/home/tjhladish/work/AbcSmc -L/home/tjhladish/work/AbcSmc -labc -ljsoncpp -lm -lgsl -lgslcblas
+generator:
+	$(CC) $(CFLAGS) yucatan_serotype_generator.cpp -o sero_generator $(GSL_LIB)
+
+libabc:
+	$(MAKE) -C $(ABCDIR) -f Makefile all_no_mpi
+
+gen_sero:
+	$(CC) -O2 -std=c++11 generate_serotype_runs.cpp -o gen_sero -lm -lgsl -lgslcblas
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

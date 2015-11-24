@@ -4,8 +4,7 @@
     "predictive_prior_fraction" : 0.01,
     "pls_training_fraction"     : 0.5,
 
-    "particle_basefilename"         : "denv2_sero_particles",
-    "predictive_prior_basefilename" : "denv2_sero_predictive_prior",
+    "database_filename"         : "denv2.sqlite",
 
     "parameters" : [
         {"name"       : "geometric run mean",
@@ -26,10 +25,10 @@
     "metrics" : [     
         {"name"       : "obs_run_mean",
          "num_type"   : "FLOAT",
-         "value"      : 5.5},
+         "value"      : 3.8},
 
         {"name"       : "obs_gap_mean",
          "num_type"   : "FLOAT",
-         "value"      : 3.5}
+         "value"      : 3.0}
     ]
 }
