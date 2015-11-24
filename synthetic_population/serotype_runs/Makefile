@@ -14,7 +14,7 @@ GSL_LIB = -lm -lgsl -lgslcblas -lpthread -ldl
 sero: libabc
 	$(CC) $(CFLAGS) $(INCLUDE) -Wno-deprecated-declarations fit_serotype_data.cpp -o simulate_serotypes -I/home/tjhladish/work/AbcSmc $(ABC_LIB) $(GSL_LIB)
 
-generator:
+generator: yucatan_serotype_generator.h
 	$(CC) $(CFLAGS) yucatan_serotype_generator.cpp -o sero_generator $(GSL_LIB)
 
 libabc:
