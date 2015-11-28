@@ -1,15 +1,15 @@
 require("RSQLite")
 require(beanplot)
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "refit.sqlite")
+db = dbConnect(drv, "new_sero-merida.sqlite")
 abc = dbGetQuery(db, 'select J.*, P.*, M.* from jobs J, parameters P, metrics M where J.serial = P.serial and J.serial = M.serial')
 extra_serials = which(names(abc)== 'serial')[-1] 
 abc = abc[,-c(extra_serials)]
 abc = subset(abc, select=-c(startTime, duration, attempts, seed))
 abc$post_bool = abc$posterior >= 0
 
-par_cols = 6:11
-met_cols = c(12:24)
+par_cols = 6:12
+met_cols = c(13:25)
 obs_met = c( 121.943, 0, 2.68004, 33.9603, 147.642, 646.692, 176.722, 1.38442, 0.235294, 0.6, 0.129899, -5.06394, 0.116576 )
 
 incomplete_sets = unique(abc$smcSet[abc$status!='D']) # 6
