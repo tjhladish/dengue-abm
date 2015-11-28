@@ -50,7 +50,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
+    par->dailyOutput             = false;
     par->abcVerbose              = true;
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
     par->nRunLength              = runLengthYears*365;

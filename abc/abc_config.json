@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 9,
-    "num_samples"    : 40000,
+    "num_samples"    : 10000,
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.8,
 
-    "database_filename"         : "refit_posterior-yuc-5.sqlite",
+    "database_filename"         : "new_sero-merida.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
@@ -12,14 +12,14 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 20,
-         "par2"       : 70},
+         "par2"       : 100},
 
         {"name"       : "severe_expansion_factor",
          "short_name" : "severe_EF",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 1,
-         "par2"       : 4},
+         "par2"       : 10},
 
         {"name"       : "secondary_severity",
          "short_name" : "sec_sev",
@@ -46,8 +46,8 @@
          "short_name" : "num_mos",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 40,
-         "par2"       : 140},
+         "par1"       : 20,
+         "par2"       : 120},
 
         {"name"       : "beta",
          "dist_type"  : "UNIFORM",
