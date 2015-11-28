@@ -98,7 +98,15 @@ void Parameters::define_defaults() {
     monthlyOutput = false;
     yearlyOutput = false;
     abcVerbose = false;
+
+    // WHO vaccine mechanism variables
+    whoDiseaseOutcome = INC_NUM_INFECTIONS;
+    whoBreakthrough = SEROPOSITIVE;
+    whoWaning = SERONEGATIVE_ONLY;
+
 }
+
+// TODO(TJH): not sure how you want to read in WHO_* settings, so leaving that for you; I set defaults as "baseline" they set
 
 void Parameters::readParameters(int argc, char* argv[]) {
     cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << endl;
@@ -124,7 +132,7 @@ void Parameters::readParameters(int argc, char* argv[]) {
                     for (int j=0; j<NUM_OF_SEROTYPES; j++) nDailyExposed[0][j]=strtod(argv[++i],end);
                 } else {
                     // This warning doesn't get thrown if -dailyexposed comes before the -annualserotypefile
-                    cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
+                    cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n";
                 }
             }
             else if (strcmp(argv[i], "-primarypathogenicity")==0) {
@@ -432,8 +440,8 @@ void Parameters::validate_parameters() {
             cerr << "Vaccine protection is upgraded from naive to non-naive upon infection (retroactive maturity)" << endl;
         } else {
             cerr << "-retroactivematurevaccine is only defined for leaky vaccines (-vaccineleaky)" << endl;
-            exit(-1); 
-        } 
+            exit(-1);
+        }
     }
 
     if (peopleOutputFilename.length()>0) {
@@ -462,7 +470,7 @@ void Parameters::loadAnnualIntroductions(string annualIntrosFilename) {
         exit(114);
     }
     annualIntroductions.clear();
- 
+
     char buffer[500];
     double intros;
     istringstream line(buffer);
