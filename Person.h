@@ -111,6 +111,15 @@ class Person {
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
         inline int getNumInfections() const { return infectionHistory.size(); }
+        inline int getInfectionOrdinality() const {
+          int order = getNumInfections();
+          if (_par->whoDiseaseOutcome != UNRELATED and isVaccinated()) {
+            // TODO(cabp): account for INC_NUM_INFECTIONS vs INC_INFECTIONS_NAIVE
+            order += 1;
+          };
+          return order;
+        }
+
         int getNumVaccinations() const { return vaccineHistory.size(); }
         int daysSinceVaccination(int time) const { assert( vaccineHistory.size() > 0); return time - vaccineHistory.back(); } // isVaccinated() should be called first
         double vaccineProtection(const Serotype serotype, const int time) const;

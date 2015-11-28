@@ -117,9 +117,16 @@ bool Person::isInfectable(Serotype serotype, int time) const {
 double Person::remainingEfficacy(const int time) const {
     double remainingFraction = 1.0;
     if (_par->linearlyWaningVaccine) {
-        // reduce by fraction of immunity duration that has waned
+      // reduce by fraction of immunity duration that has waned
+      if (_par->whoWaning == SERONEGATIVE_ONLY) { // only naive individuals wane
+        if (getNumInfections() == 0) {
+          int time_since_vac = daysSinceVaccination(time);
+          remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
+        }
+      } else { // everyone wanes
         int time_since_vac = daysSinceVaccination(time);
         remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
+      }
     }
     return remainingFraction;
 }
@@ -192,7 +199,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
               break;
       }
 
-      const int numPrevInfections = getNumInfections(); // needs to be called before initializing new infection
+      const int numPrevInfections = getInfectionOrdinality(); // needs to be called before initializing new infection
 
        // Create a new infection record
       Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
@@ -383,4 +390,3 @@ bool Person::vaccinate(int time) {
         return false;
     }
 }
-

@@ -107,6 +107,12 @@ void Parameters::define_defaults() {
 }
 
 // TODO(TJH): not sure how you want to read in WHO_* settings, so leaving that for you; I set defaults as "baseline" they set
+/*
+also want A1 + B2 + C3a
+whoDiseaseOutcome = UNRELATED; // only difference
+whoBreakthrough = SEROPOSITIVE;
+whoWaning = SERONEGATIVE_ONLY;
+*/
 
 void Parameters::readParameters(int argc, char* argv[]) {
     cerr << "Dengue model, Version " << VERSION_NUMBER_MAJOR << "." << VERSION_NUMBER_MINOR << endl;
