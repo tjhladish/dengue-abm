@@ -29,7 +29,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    const vector<float> beta_multipliers = {0.4, 0.8, 1.0, 1.2, 1.6};
+    //const vector<float> beta_multipliers = {0.4, 0.8, 1.0, 1.2, 1.6};
+    const vector<float> beta_multipliers = {0.52, 0.70, 0.92, 1.25, 2.25};
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
