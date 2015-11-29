@@ -2,69 +2,71 @@
 #include <vector>
 #include <numeric>
 #include <unistd.h>
+#include "AbcSmc.h"
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#include "mpi.h"
-#include "AbcSmc.h"
 
 using namespace std;
 
-const int RUN_LENGTH_YEARS = 36;
+const int SEQUENCE_LENGTH = 36;
 const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
+const vector<int> INTRO_YEARS = {0, 7, 17, 5}; // First year that each serotype appears, respectively
+const vector<int> UNOBSERVED_YEARS = {19, 20, 21, 24};
+int serotype = 1;
 
-
-void setup_mpi(MPI_par &m, int &argc, char **argv) {
-    /* MPI variables */
-    m.comm  = MPI_COMM_WORLD;
-    m.info  = MPI_INFO_NULL;
-
-    /* Initialize MPI */
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(m.comm, &m.mpi_size);
-    MPI_Comm_rank(m.comm, &m.mpi_rank);
-}
-
-
-vector<long double> generateSerotypeSequence(vector<long double> args, const MPI_par* mp) {
+vector<long double> revisedSerotypeGenerator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+    gsl_rng_set(RNG, rng_seed);
+    //const int serotype = (int) args[0] - 1;
     const long double geometric_mean_run = args[0];
     const long double geometric_mean_gap = args[1];
-    vector<long double> obs_run_and_gap_means (2,0.0);
-    vector<int> runs;
-    vector<int> gaps;
-    
-    enum State {GAP, RUN};
-    // get rid of anything there now
-
     const float p_gap = 1.0/geometric_mean_gap;
     const float p_run = 1.0/geometric_mean_run;
-    const float p_gap_start = geometric_mean_gap/(geometric_mean_gap + geometric_mean_run);
 
-    int years_so_far = 0;
-    State state = p_gap_start > gsl_rng_uniform(RNG) ? GAP : RUN;
-    while (years_so_far < RUN_LENGTH_YEARS) {
-        if (state == GAP) {
-            unsigned int gap = gsl_ran_geometric(RNG, p_gap);
-            // We may not be starting at the beginning of a gap
-            // Also: gsl_rng_uniform_int() returns ints on [0,n-1]
-            if (years_so_far == 0) gap = gsl_rng_uniform_int(RNG, gap) + 1;
-            // Truncate if we've gone over the observation window
-            if (years_so_far + gap > RUN_LENGTH_YEARS) gap = RUN_LENGTH_YEARS - years_so_far;
-            //cerr << "g" << gap << " ";
-            gaps.push_back(gap);
-            years_so_far += gap;
-            state = RUN; // switch state
-        } else {
-            unsigned int run = gsl_ran_geometric(RNG, p_run);
-            if (years_so_far == 0) run = gsl_rng_uniform_int(RNG, run) + 1;
-            if (years_so_far + run > RUN_LENGTH_YEARS) run = RUN_LENGTH_YEARS - years_so_far;
-            //cerr << "r" << run << " ";
-            runs.push_back(run);
-            years_so_far += run;
-            state = GAP; // switch state
-        }
+    vector<long double> obs_run_and_gap_means(2, 0.0);
+
+    enum State {GAP, RUN, NEITHER};
+    vector<State> series(INTRO_YEARS[serotype], NEITHER);
+
+    while (series.size() < SEQUENCE_LENGTH) {
+        unsigned int run = gsl_ran_geometric(RNG, p_run);
+        series.resize(series.size() + run, RUN);
+        unsigned int gap = gsl_ran_geometric(RNG, p_gap);
+        series.resize(series.size() + gap, GAP);
     }
-    //cerr << endl;
+    series.resize(SEQUENCE_LENGTH);
+
+    for (auto year: UNOBSERVED_YEARS) series[year] = NEITHER;
+
+    vector<int> runs;
+    vector<int> gaps;
+
+    State last_state = NEITHER;
+    int tally = 0;
+    for (auto s: series) {
+        if (s == last_state) {          // continuing
+            ++tally;
+        } else if (last_state == RUN) { // end of a run
+            runs.push_back(tally);
+            tally = 1;
+        } else if (last_state == GAP) { // end of a gap
+            gaps.push_back(tally);
+            tally = 1;
+        } else {
+            tally = 1;
+        }
+        last_state = s;
+    }
+
+    if (last_state == RUN) { // ends on a run
+            runs.push_back(tally);
+    } else if (last_state == GAP) {
+            gaps.push_back(tally);
+    }
+
+    for (auto i: series) cerr << i << " "; cerr << endl;
+    for (auto i: runs) cerr << i << " "; cerr << endl;
+    for (auto i: gaps) cerr << i << " "; cerr << endl;
 
     if (runs.size() > 0) {
         obs_run_and_gap_means[0] = accumulate(runs.begin(), runs.end(), 0.0) / runs.size();
@@ -81,21 +83,52 @@ vector<long double> generateSerotypeSequence(vector<long double> args, const MPI
     return obs_run_and_gap_means;
 }
 
+
+void usage() {
+    cerr << "\n\tUsage: ./abc_sql abc_config_sql.json --process\n\n";
+    cerr << "\t       ./abc_sql abc_config_sql.json --simulate\n\n";
+    cerr << "\t       ./abc_sql abc_config_sql.json --simulate -n <number of simulations per database write>\n\n";
+}
+
+
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        cerr << "\n\tUsage: ./executable abc_config.json\n\n";
-        return 100;
+
+    if (not (argc >= 3) ) {
+        usage();
+        exit(100);
     }
 
-    MPI_par mp;
-    setup_mpi(mp, argc, argv);
+    bool process_db  = false;
+    bool simulate_db = false;
+    int buffer_size  = -1;
 
-    gsl_rng_set(RNG, time (NULL) * getpid()); 
-    AbcSmc* abc = new AbcSmc(mp);
-    abc->set_simulator(generateSerotypeSequence);
+    for (int i=2; i < argc;  i++ ) {
+        if ( strcmp(argv[i], "--process") == 0  ) {
+            process_db = true;
+        } else if ( strcmp(argv[i], "--simulate") == 0  ) {
+            simulate_db = true;
+            buffer_size = buffer_size == -1 ? 1 : buffer_size;
+        } else if ( strcmp(argv[i], "--serotype" ) == 0 ) {
+            serotype = atoi(argv[++i]) - 1;
+        } else if ( strcmp(argv[i], "-n" ) == 0 ) {
+            buffer_size = atoi(argv[++i]);
+        } else {
+            usage();
+            exit(101);
+        }
+    }
+
+    AbcSmc* abc = new AbcSmc();
     abc->parse_config(string(argv[1]));
-    abc->run(RNG);
+    if (process_db) {
+        gsl_rng_set(RNG, time(NULL) * getpid()); // seed the rng using sys time and the process id
+        abc->process_database(RNG);
+    }
 
-    MPI_Finalize(); 
+    if (simulate_db) {
+        abc->set_simulator(revisedSerotypeGenerator);
+        abc->simulate_next_particles(buffer_size);
+    }
+
     return 0;
 }

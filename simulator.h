@@ -410,6 +410,45 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     return epi_sizes;
 }
 
+
+vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids) {
+    assert(serotested_ids.size() > 0);
+    vector<long double> metrics;
+    vector<int> epi_sizes;
+    Date date(par);
+    int nextMosquitoMultiplierIndex = 0;
+    int nextEIPindex = 0;
+
+    initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
+    vector<string> daily_output_buffer;
+
+    if (par->bSecondaryTransmission and not par->abcVerbose) {
+        daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
+        //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+    }
+
+    map<string, vector<int> > periodic_incidence = construct_tally();
+
+    for (; date.day() < par->nRunLength; date.increment()) {
+        if ( date.julianDay() == 99 ) {
+                                                               // for a 135 year simulation
+            // calculate seroprevalence among 9 year old merida residents
+            double seropos_9yo = 0.0;
+            for (int id: serotested_ids) {
+                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+                seropos_9yo += seropos;
+            }
+            seropos_9yo /= serotested_ids.size();
+            metrics.push_back(seropos_9yo);
+        }
+
+        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+    }
+
+    return metrics;
+}
+
+
 vector<int> simulate_abc(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids, double &seropos_87) {
     assert(serotested_ids.size() > 0);
     vector<int> epi_sizes;

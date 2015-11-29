@@ -5,7 +5,7 @@ CFLAGS = -O2 -std=c++11 -pedantic -Wall
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
-INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC .
+INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
 SQLDIR = $(ABCDIR)/sqdb
 
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o 

@@ -1,4 +1,4 @@
-DEFAULT_CPP = g++
+DEFAULT_CPP = g++-4.9
 CPP      	= mpicxx
 MAKE     	= make --no-print-directory
 SHELL    	= /bin/sh

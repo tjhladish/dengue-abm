@@ -1,8 +1,15 @@
-mpiexec -n 10 simulate_serotypes abc_config_denv1.json 2> sero.log 
-echo "1 done\n"
-mpiexec -n 10 simulate_serotypes abc_config_denv2.json 2>> sero.log 
-echo "2 done\n"
-mpiexec -n 10 simulate_serotypes abc_config_denv3.json 2>> sero.log 
-echo "3 done\n"
-mpiexec -n 10 simulate_serotypes abc_config_denv4.json 2>> sero.log 
-echo "4 done\n"
+serotype=$1
+
+if [[ -n "$serotype" ]]; then
+
+    touch sero${serotype}.log
+
+    for i in `seq 1 10`;
+    do
+        ./simulate_serotypes abc_config_denv${serotype}.json --process --simulate -n 1000000 --serotype ${serotype} 2>> sero${serotype}.log
+    done
+
+    ./simulate_serotypes abc_config_denv${serotype}.json --process 2>> sero${serotype}.log
+else
+    echo "argument error"
+fi
