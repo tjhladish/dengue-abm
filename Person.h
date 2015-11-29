@@ -113,7 +113,7 @@ class Person {
         inline int getNumInfections() const { return infectionHistory.size(); }
         inline int getInfectionOrdinality() const {
           int order = getNumInfections();
-          if (_par->whoDiseaseOutcome != UNRELATED and isVaccinated()) {
+          if (_par->whoDiseaseOutcome != VAC_ISNT_INFECTION and isVaccinated()) {
             // TODO(cabp): account for INC_NUM_INFECTIONS vs INC_INFECTIONS_NAIVE
             order += 1;
           };

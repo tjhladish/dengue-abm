@@ -55,27 +55,28 @@ enum InfectionOutcome {
 
 // series A
 enum WHO_DiseaseOutcome {
-  UNRELATED, // 1. no effect of vaccine on disease outcome
-  INC_NUM_INFECTIONS, // 2a. treat vaccination as increasing the # of infections an individual has experienced
-  INC_INFECTIONS_NAIVE, // 2b. INC_NUM_INFECTIONS, but for seronegative only
-  NUM_WHO_DISEASE_OUTCOMES
-}; // n.b., since we have 3rd/4th infections as always silent, INC_NUM_INFECTIONS == INC_INFECTIONS_NAIVE
+    VAC_ISNT_INFECTION,             // 1.  no effect of vaccine on disease outcome
+    INC_NUM_INFECTIONS,             // 2a. treat vaccination as increasing the # of infections an individual has experienced
+    INC_INFECTIONS_NAIVE,           // 2b. INC_NUM_INFECTIONS, but for seronegative only
+    NUM_OF_WHO_DISEASE_OUTCOMES
+}; // n.b., since we have 3rd/4th infections as always silent, INC_NUM_INFECTIONS == INC_INFECTIONS_NAIVE (TH: I don't see why that equivalence would be true)
 
 // series B
 enum WHO_BreakthroughEffect {
-  NOEFFECT, // 1. breakthrough infections have no effect on vaccine efficiacy
-  SEROPOSITIVE, // 2. breakthough makes vaccine behave like person is now seropositive; TODO(cabp): duplicates bRetroactiveMatureVaccine / _bNaiveVaccineProtection mechanism
-  FULL, // 3. breakthrough makes vaccine have 100% efficiacy afterwards
-  NUM_WHO_BREAKTHROUGH_EFFECTS
+    NO_BREAKTHROUGH_EFFECT,         // 1.  breakthrough infections have no effect on vaccine efficiacy
+                                    // TODO(cabp): duplicates bRetroactiveMatureVaccine / _bNaiveVaccineProtection mechanism
+    BREAKTHROUGH_SEROCONVERSION,    // 2.  breakthough makes vaccine behave like person is now seropositive;
+    PERFECT_BREAKTHROUGH,           // 3.  breakthrough makes vaccine have 100% efficiacy afterwards
+    NUM_OF_WHO_BREAKTHROUGH_EFFECTS
 }; // default and alt matches our current model; no changes to make use of this variable
 
 // series C
 enum WHO_Waning {
-  NONE, // 1. no waning; TODO(cabp): we already cover otherwise, need to unify approach
-  ALL, // 2. waning applies to all vaccinees
-  SERONEGATIVE_ONLY, // 3a. waning only effects seronegative vaccinees
-  TRACKING_ANTIBODIES, // 3b. waning modeled as antibody decline; intermediate period w/ disease enhancement, subsequent non-effect
-  NUM_WHO_WANING
+    NO_WANING,                      // 1.  no waning; TODO(cabp): we already cover otherwise, need to unify approach (i.e., linearlyWaningVaccine = false)
+    UNIVERSAL_WANING,               // 2.  waning applies to all vaccinees (current same as linearlyWaningVaccine = true)
+    NAIVE_WANING_ONLY,              // 3a. waning only effects seronegative vaccinees
+    ANTIBODY_WANING,                // 3b. waning modeled as antibody decline; intermediate period w/ disease enhancement, subsequent non-effect
+    NUM_OF_WHO_WANINGS
 };
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);

@@ -79,6 +79,7 @@ void Parameters::define_defaults() {
     linearlyWaningVaccine = false;
     vaccineImmunityDuration = INT_MAX;
     vaccineBoosting = false;
+    bRetroactiveMatureVaccine = false;
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179, 0.128, 0.123, 0.0956, 0.195, 0.777, 0.940, 0.901, 1.0, 0.491, 0.301, 0.199};
     mosquitoMultipliers.clear();
@@ -93,17 +94,16 @@ void Parameters::define_defaults() {
 
     startDayOfYear = 1;
 
-    dailyOutput = false;
-    weeklyOutput = false;
+    dailyOutput   = false;
+    weeklyOutput  = false;
     monthlyOutput = false;
-    yearlyOutput = false;
-    abcVerbose = false;
+    yearlyOutput  = false;
+    abcVerbose    = false;
 
     // WHO vaccine mechanism variables
-    whoDiseaseOutcome = INC_NUM_INFECTIONS;
-    whoBreakthrough = SEROPOSITIVE;
-    whoWaning = SERONEGATIVE_ONLY;
-
+    whoDiseaseOutcome = VAC_ISNT_INFECTION;
+    whoBreakthrough   = NO_BREAKTHROUGH_EFFECT;
+    whoWaning         = NO_WANING;
 }
 
 // TODO(TJH): not sure how you want to read in WHO_* settings, so leaving that for you; I set defaults as "baseline" they set

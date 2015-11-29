@@ -118,7 +118,7 @@ double Person::remainingEfficacy(const int time) const {
     double remainingFraction = 1.0;
     if (_par->linearlyWaningVaccine) {
       // reduce by fraction of immunity duration that has waned
-      if (_par->whoWaning == SERONEGATIVE_ONLY) { // only naive individuals wane
+      if (_par->whoWaning == NAIVE_WANING_ONLY) { // only naive individuals wane
         if (getNumInfections() == 0) {
           int time_since_vac = daysSinceVaccination(time);
           remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
