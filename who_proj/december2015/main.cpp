@@ -237,7 +237,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     bool catchup           = (bool) args[7];
     int vaccine_mechanism  = (int) args[8];
 
-    bool vaccine           = true;
+    bool vaccine           = (bool) args[9];
     int vaccine_duration   = 4*365; 
     bool boosting          = false;
     int target             = 9;
