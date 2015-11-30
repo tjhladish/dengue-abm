@@ -65,6 +65,7 @@ class Community {
         const std::vector<Location*> getLocations() const { return _location; }
         const std::vector< std::vector<Mosquito*> > getInfectiousMosquitoes() const { return _infectiousMosquitoQueue; }
         const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
+        const std::vector<Person*> getAgeCohort(unsigned int age) const { assert(age<_personAgeCohort.size()); return _personAgeCohort[age]; }
 
     protected:
         static const Parameters* _par;
