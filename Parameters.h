@@ -59,7 +59,7 @@ enum WHO_DiseaseOutcome {
     INC_NUM_INFECTIONS,             // 2a. treat vaccination as increasing the # of infections an individual has experienced
     INC_INFECTIONS_NAIVE,           // 2b. INC_NUM_INFECTIONS, but for seronegative only
     NUM_OF_WHO_DISEASE_OUTCOMES
-}; // n.b., since we have 3rd/4th infections as always silent, INC_NUM_INFECTIONS == INC_INFECTIONS_NAIVE (TH: I don't see why that equivalence would be true)
+};
 
 // series B
 enum WHO_BreakthroughEffect {
