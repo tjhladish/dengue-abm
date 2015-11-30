@@ -62,10 +62,16 @@ bool fileExists(const std::string& filename) {
 }
 
 
-inline unsigned int extract_seed_from_filename(const string& s) {
+inline string extract_checksum_from_filename(const string& s) {
     string::size_type p  = s.find('.');
     string::size_type pp = s.find('.', p + 2); 
-    return stoul(s.substr(p + 1, pp - p - 1));
+    return s.substr(p + 1, pp - p - 1);
+    //return stoul(s.substr(p + 1, pp - p - 1));
+}
+
+inline string extract_seed_from_filename(const string& s) {
+    return s.substr(s.rfind('.') + 1);
+    //return stoul(s.substr(p + 1, pp - p - 1));
 }
 
 enum SerotypeState {SERO1, SERO2, SERO3, SERO4, NUM_OF_SEROTYPES};
@@ -118,7 +124,7 @@ struct Scenario {
 };
 
 
-bool read_scenarios_from_database (string database_filename, map<int, Scenario*> &scenarios, int vac, int catchup, int vac_mech, int beta_mult) {
+bool read_scenarios_from_database (string database_filename, map<string, Scenario*> &scenarios, int vac, int catchup, int vac_mech, int beta_mult) {
     sqdb::Db db(database_filename.c_str());
 
     // make sure database looks intact
@@ -132,7 +138,7 @@ bool read_scenarios_from_database (string database_filename, map<int, Scenario*>
     sqdb::Statement s = db.Query( select_ss.str().c_str() );
 
     while (s.Next()) {
-        const int seed = s.GetField(0);
+        const string seed = s.GetField(0);
         assert(scenarios.find(seed) == scenarios.end()); // assert: this is not a seed collision
         scenarios[seed] = new Scenario(vac, catchup, vac_mech, beta_mult);
     }
@@ -141,7 +147,7 @@ bool read_scenarios_from_database (string database_filename, map<int, Scenario*>
 }
 
 
-void initialize_aggregate_datastructure(map<int, Scenario*>& scenarios, AgType& ag, map<string, int>& N) {
+void initialize_aggregate_datastructure(map<string, Scenario*>& scenarios, AgType& ag, map<string, int>& N) {
     unordered_set<string> uniqe_scenarios;
     for (auto scen: scenarios) {
         string scenario = (scen.second)->asKey(); 
@@ -219,19 +225,21 @@ void report_average_counts(AgType& ag, map<string, int>& N, string filename) {
 }
 
 
-void process_daily_files(map<int, Scenario*> scenarios, string daily_dir, string output_dir) {
+void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, string output_dir) {
     int file_ctr = 0;
     vector<string> daily_filenames = glob(daily_dir + "/daily.*");
     AgType ag;
     map<string, int> N;
     initialize_aggregate_datastructure(scenarios, ag, N);
 
-    #pragma omp parallel for num_threads(32) 
+    cerr << "globbed " << daily_filenames.size() << " filenames\n";
+    #pragma omp parallel for num_threads(10) 
     for (unsigned int i = 0; i<daily_filenames.size(); ++i) {
         string daily_filename = daily_filenames[i];
-        const int seed = extract_seed_from_filename(daily_filename);
+        const string seed = extract_seed_from_filename(daily_filename);
 
         if (scenarios.count(seed) == 0) {
+            //if (i < 10) cerr << "no match: <" << seed << ">\n";
             continue;
         } else {
             cerr << file_ctr << " " << daily_filename << endl;
@@ -261,22 +269,33 @@ void process_daily_files(map<int, Scenario*> scenarios, string daily_dir, string
             int serotype;
             int symptomatic;
             int severe;
-
             while (iss) {
                 iss.getline(buffer,500);
                 line.clear();
                 string line_str(buffer);
                 replace(line_str.begin(), line_str.end(), ',', ' ');
                 line.str(line_str);
+//                           11832    32    69242   15     14685        1              2            0          0
                 if (line >> day >> year >> id >> age >> location >> vaccinated >> serotype >> symptomatic >> severe) {
                     if (year < BURNIN) continue;
+//                    cerr << line_str << endl;
+                    const int sero = serotype - 1;
+                    const int y = year - BURNIN;
                     const int outcome = severe==1 ? 2 : symptomatic==1 ? 1 : 0;
+//                    cerr << "a";
+//                    assert(sero < (int) NUM_OF_SEROTYPES); 
+//                    assert(age <= MAX_AGE);
+//                    assert(outcome < (int) NUM_OF_SEVERITY_TYPES);
+//                    assert(year < INTERVENTION_DURATION);
+
                     #pragma omp atomic
-                    ++ag[scenarioKey][serotype][age][outcome][year];
+                    ++ag[scenarioKey][sero][age][outcome][y];
+//                    cerr << "b";
                 } else {
                     continue; // Didn't process line, normal for header or EOF
                     //cerr << "WARNING: Could not parse line: " << line.str() << endl;
                 }
+ //               cerr << "c";
             }
             #pragma omp atomic
             ++file_ctr;
@@ -297,10 +316,10 @@ void usage() {
 
 int main (int argc, char* argv[]) {
 
-    if (not (argc == 4) ) {
+    /*if (not (argc == 4) ) {
         usage();
         exit(100);
-    }
+    }*/
 
     string db_filename = string(argv[1]);
     string daily_dir   = string(argv[2]);
@@ -316,10 +335,16 @@ int main (int argc, char* argv[]) {
     }*/
 
 
-    map<int, Scenario*> scenarios;
+    map<string, Scenario*> scenarios;
     
     if (read_scenarios_from_database(db_filename, scenarios, vac, catchup, vac_mech, beta_mult)) {
         process_daily_files(scenarios, daily_dir, output_dir); 
+    } else {
+        cerr << "Failed to read scenarios\n"; 
     }
-    //for (auto row: scenarios) cout << row.first << " " << *(row.second) << endl; // database read sanity check
+    int counter = 0;
+    for (auto row: scenarios) {
+        if (++counter > 10) break;
+        cout << row.first << " " << *(row.second) << endl; // database read sanity check
+    }
 }
