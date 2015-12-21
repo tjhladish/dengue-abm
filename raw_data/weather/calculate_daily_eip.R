@@ -55,27 +55,30 @@ lookaheads = eirs[between(DATE,dateRange$start,min(limdate, dateRange$end)), {
   ahead + (1-del/add)*0.5
 }, keyby=DATE]
 
-eipmeanToMu <- function(meanEIP, vr) log(meanEIP) - vr/2
+eipToMu <- function(EIP, vr) log(EIP) - vr/2
 
-eipmeantoTeff = function(meanEIP, beta0, betaT, vr) (log(eipmeanToMu(meanEIP, vr)) - beta0)/betaT
+eiptoTeff = function(EIP, beta0, betaT, vr) (log(eipToMu(EIP, vr)) - beta0)/betaT
 
 teff.dt <- merida[lookaheads][,
-  list(EIPAVE = mean(V1)), keyby=doy
+  list(EIP = V1, EIRDAY = (1/EIPMAX + 1/EIPMIN)/2), keyby=list(year=year(DATE), doy)
 ][,
   list(
-    Teff = eipmeantoTeff(EIPAVE, beta0, betaT, vr),
-    emu = exp(eipmeanToMu(EIPAVE, vr)),
-    EIPAVE
+    Teff = eiptoTeff(EIP, beta0, betaT, vr),
+    mu = eipToMu(EIP, vr),
+    EIP, EIRDAY
   ),
-  keyby=doy
+  keyby=list(year, doy)
 ]
+
+#plot(teff.dt[,mean(Teff),keyby=doy])
+#points(teff.dt[,eiptoTeff(mean(EIP),beta0,betaT,vr),keyby=doy], col="red")
 
 saveRDS(
   teff.dt,
   "Teff.RData"
 )
 
-write.table(teff.dt, file = "EIPinfo.csv", row.names = F)
+write.table(teff.dt[, list(mu = eipToMu(mean(EIP),vr)), keyby=doy]$mu, file = "dailyMu.csv", row.names = F, col.names = F)
 
 require(reshape2)
 require(ggplot2)

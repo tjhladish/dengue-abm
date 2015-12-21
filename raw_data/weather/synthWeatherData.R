@@ -24,19 +24,3 @@ joint[is.na(TMIN) & is.na(TMAX), TMIN.reg := predict(tmin.alt, newdata = .SD)]
 merida.filled <- joint[,list(doy, TMAX=max(TMAX, TMAX.reg, na.rm=T), TMIN=min(TMIN, TMIN.reg, na.rm=T)),keyby=DATE]
 
 saveRDS(merida.filled, "meridaREG.RData")
-
-require(ggplot2)
-
-molten_weather <- function(src) melt(src, id.vars = c("DATE","doy"), value.name = "celsius", variable.name = "extrema")
-
-ggplot(molten_weather(merida.filled)) + theme_bw() +
-  aes(x=doy, y=celsius, color=extrema, group=interaction(year(DATE), extrema)) + geom_line(alpha=0.1) +
-  geom_point(data=molten_weather(joint[is.na(TMAX), list(TMAX=TMAX.reg, doy), keyby=DATE]), size=1) +
-  geom_point(data=molten_weather(joint[is.na(TMIN), list(TMIN=TMIN.reg, doy), keyby=DATE]), size=1) +
-  scale_color_manual(values=c(TMAX='red',TMIN='blue'))
-
-ggplot(molten_weather(merida.filled)) + theme_bw() +
-  aes(x=DATE, y=celsius, color=extrema) + geom_line(alpha=0.1) +
-  geom_point(data=molten_weather(joint[is.na(TMAX), list(TMAX=TMAX.reg, doy), keyby=DATE]), size=1) +
-  geom_point(data=molten_weather(joint[is.na(TMIN), list(TMIN=TMIN.reg, doy), keyby=DATE]), size=1) +
-  scale_color_manual(values=c(TMAX='red',TMIN='blue'))
