@@ -41,8 +41,8 @@ miami.interpolate <- (
 joint[miami.missing, i.celsius := miami.interpolate]
 joint[is.na(celsius), celsius := predict(t.model2, newdata = .SD)]
 
-dateRange <- list(start=as.POSIXct("1979/1/1 00:00:00", tz = "UTC")-1, end=as.POSIXct("2014/1/1 00:00:00",tz="UTC")-1)
-
+dateRange <- list(start=as.POSIXct("1979/1/1 00:00:00", tz = "UTC")-1, end=as.POSIXct("2014/4/11 00:00:00",tz="UTC")-1)
+## dateRange <- list(start=as.POSIXct("2014/1/1 00:00:00", tz = "UTC")-1, end=as.POSIXct("2014/4/11 00:00:00",tz="UTC")-1)
 ## at this point, slight differences in reconstructed values, due to initial (here) vs later (in orig) pruning by date
 
 # from Chan-Johansson
@@ -106,6 +106,14 @@ write.table(
   lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)],
   file = "seriesMu.csv", row.names = F, col.names = T
 )
+
+write.table(
+  lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year,doy)][between(year, 1979, 1988), list(weighed_mu=mean(weighted_mu)), keyby=doy],
+  file = "burninMu.csv", row.names = F, col.names = T
+)
+
+
+
 
 # ggplot(lookaheads) + aes(x=doy, y=EIP) + facet_grid(year ~ .) + geom_line()
 
