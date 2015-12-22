@@ -19,8 +19,8 @@ readIn <- function(pth) setkey(fread(
   doy := yday(as.Date(paste("2001",month,day,sep="/"))) - ifelse(month > 2, 1, 0)
 ][!(day == 29 & month == 2)], year, month, day, hour, date, doy)
 
-merida <- readIn("~/Downloads/Hourly/AllYears/32569_Manuel_Crescencio_Rejón_International_Airport__Hourly_1948_2015.csv")
-miami <- readIn("~/Downloads/Hourly/AllYears/30883_Miami_International_Airport__Hourly_1948_2015.csv")
+merida <- readIn("32569_Manuel_Crescencio_Rejón_International_Airport__Hourly_1948_2015.csv")
+miami <- readIn("30883_Miami_International_Airport__Hourly_1948_2015.csv")
 
 firstday <- merida[!is.na(celsius), min(date)]
 lastday <- merida[!is.na(celsius), max(date)]
@@ -77,18 +77,38 @@ accum <- function(here, expectedMax=30) with(
   (index - (1-(cumeir - 1)/add))/24
 )
 
-lookaheads = joint[
-  between(date,dateRange$start, min(limdate,dateRange$end))
-][,
-  accum(globalindex, 20),
-  keyby=list(year, doy, hour)
-]
+require(parallel)
 
-ggplot(lookaheads[, mean(V1), keyby=doy]) + aes(x=doy, y=V1) + geom_line()
+cores <- detectCores() - 1
+
+lookaheads <- rbindlist(mclapply(
+  joint[between(date,dateRange$start, min(limdate,dateRange$end)), which=T],
+  function(d) joint[d, list(EIP=accum(globalindex, 30), year, doy, hour)],
+  mc.cores = cores
+))
+
+## fix missing vals
+over <- rbindlist(mclapply(
+  joint[year == 1980 & doy >= 358, which = T],
+  function(d) joint[d, list(EIP=accum(globalindex, 60), year, doy, hour)],
+  mc.cores = cores
+))
+
+lookaheads[year == 1980 & doy >= 358, EIP := over$EIP]
+
+eipToMu <- function(EIP, vr) log(EIP) - vr/2
+lookaheads[, mu := eipToMu(EIP,vr) ]
+dayBitingPref <- .76
+weighting <- c(rep(1-dayBitingPref, 6)/12, rep(dayBitingPref, 12)/12, rep(1-dayBitingPref, 6)/12)
+
+
+write.table(
+  lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)],
+  file = "seriesMu.csv", row.names = F, col.names = T
+)
+
+# ggplot(lookaheads) + aes(x=doy, y=EIP) + facet_grid(year ~ .) + geom_line()
 
 # todo this better:
-#  - start at several positions (based on number of available threads)
 #  - for a position, calculate its required lookahead
 #  - next position, has at least that lookahead-1 => can reduce calculations to starting there
-
-# ggplot(joint) + aes(x=date, y=celsius, color=state) + geom_point()
