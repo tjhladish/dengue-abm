@@ -16,7 +16,7 @@ readIn <- function(pth) setkey(fread(
 )[,
   date := dmy(paste(day,month,year))+hm(paste(hour,"00"))
 ][, 
-  doy := yday(as.Date(paste("2001",month,day,sep="/"))) - ifelse(month > 2, 1, 0)
+  doy := yday(as.Date(paste("2001",month,day,sep="/")))
 ][!(day == 29 & month == 2)], year, month, day, hour, date, doy)
 
 merida <- readIn("32569_Manuel_Crescencio_Rejón_International_Airport__Hourly_1948_2015.csv")
@@ -64,7 +64,9 @@ joint[,
 
 limdate = joint[dim(joint)[1]:1,list(datelim=cumsum(EIprogress), date)][datelim > 1][1,date]-1
 
-accum <- function(here, expectedMax=30) with(
+meridaExpectedMax <- 30
+
+accum <- function(here, expectedMax) with(
   joint[
     globalindex >= here
   ][
@@ -79,24 +81,31 @@ accum <- function(here, expectedMax=30) with(
 
 require(parallel)
 
-cores <- detectCores() - 1
-
-lookaheads <- rbindlist(mclapply(
-  joint[between(date,dateRange$start, min(limdate,dateRange$end)), which=T],
-  function(d) joint[d, list(EIP=accum(globalindex, 30), year, doy, hour)],
+lookahead <- function(src_rows, emax, cores = detectCores() - 1) setkey(rbindlist(mclapply(
+  src_rows,
+  function(d) joint[d, list(EIP=accum(globalindex, emax), year, doy, hour)],
   mc.cores = cores
-))
+)), year, doy, hour)
 
-## fix missing vals
-over <- rbindlist(mclapply(
-  joint[year == 1980 & doy >= 358, which = T],
-  function(d) joint[d, list(EIP=accum(globalindex, 60), year, doy, hour)],
-  mc.cores = cores
-))
+lookaheads <- lookahead(joint[between(date,dateRange$start, min(limdate,dateRange$end)), which=T], meridaExpectedMax)
 
-lookaheads[year == 1980 & doy >= 358, EIP := over$EIP]
+if (lookaheads[is.na(EIP), length(EIP)] != 0) {
+  setkey(joint, year, doy, hour, date, month, day)
+  replace <- lookahead(joint[lookaheads[is.na(EIP)], which=T], meridaExpectedMax+10)
+  lookaheads[is.na(EIP), EIP := replace$EIP]
+}
+
+# ## fix missing vals
+# over <- rbindlist(mclapply(
+#   joint[year == 1980 & doy >= 358, which = T],
+#   function(d) joint[d, list(EIP=accum(globalindex, 60), year, doy, hour)],
+#   mc.cores = cores
+# ))
+# 
+# lookaheads[year == 1980 & doy >= 358, EIP := over$EIP]
 
 eipToMu <- function(EIP, vr) log(EIP) - vr/2
+muToEIP <- function(mu, vr) exp(mu + vr/2)
 lookaheads[, mu := eipToMu(EIP,vr) ]
 dayBitingPref <- .76
 weighting <- c(rep(1-dayBitingPref, 6)/12, rep(dayBitingPref, 12)/12, rep(1-dayBitingPref, 6)/12)
@@ -112,10 +121,16 @@ write.table(
   file = "burninMu.csv", row.names = F, col.names = T
 )
 
+daily_mean_EIP <- lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)][,list(EIP=muToEIP(weighted_mu, vr)), keyby=list(year, doy)]
 
+ggplot(
+  daily_mean_EIP
+) + aes(x=doy, y=EIP, group = year) +
+  theme_bw() + theme(panel.border=element_blank()) +
+  geom_line(alpha=0.2) +
+  scale_x_continuous("day of year", breaks=seq(0,364,by=7)) +
+  scale_y_log10("mean EIP, days",breaks=c(7,14,21,28,35))
 
-
-# ggplot(lookaheads) + aes(x=doy, y=EIP) + facet_grid(year ~ .) + geom_line()
 
 # todo this better:
 #  - for a position, calculate its required lookahead
