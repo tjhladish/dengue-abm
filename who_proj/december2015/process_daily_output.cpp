@@ -11,6 +11,7 @@
 #include <glob.h>
 #include <sys/stat.h>
 #include "sqdb.h"
+#include "ranker.h"
 
 /*
 asymtomatic, mild, severe (3)
@@ -38,6 +39,8 @@ typedef map< string, vector< vector< vector< vector<double> > > > > AgType;
 const int MAX_AGE = 100;
 const int BURNIN  = 20;
 const int INTERVENTION_DURATION = 30;
+const int POSTERIOR_SIZE = 1000;
+const vector<double> QUANTILES = {0.05, 0.5, 0.95};
 
 inline vector<string> glob(const string& pat){
     glob_t glob_result;
@@ -74,7 +77,7 @@ inline string extract_seed_from_filename(const string& s) {
     //return stoul(s.substr(p + 1, pp - p - 1));
 }
 
-enum SerotypeState {SERO1, SERO2, SERO3, SERO4, NUM_OF_SEROTYPES};
+//enum SerotypeState {SERO1, SERO2, SERO3, SERO4, NUM_OF_SEROTYPES};
 enum SeverityState {ASYMPTOMATIC, MILD, SEVERE, NUM_OF_SEVERITY_TYPES};
 //enum HistoryState {PRIMARY, SECONDARY, POST_SECONDARY, NUM_OF_HISTORY_TYPES};
 
@@ -157,11 +160,10 @@ void initialize_aggregate_datastructure(map<string, Scenario*>& scenarios, AgTyp
     // dimensions: scenario, serotype, age, outcome, year
     for (auto scenario: uniqe_scenarios) {
         N[scenario] = 0;
-        ag[scenario] = vector< vector< vector< vector<double> > > >
-                       ((int) NUM_OF_SEROTYPES, vector< vector< vector<double> > >(
-                                       MAX_AGE+1, vector< vector<double> >(
-                                               (int) NUM_OF_SEVERITY_TYPES, vector<double>(
-                                                       INTERVENTION_DURATION, 0.0))));
+        ag[scenario] = vector< vector< vector< vector<double> > > >(
+                          MAX_AGE+1, vector< vector< vector<double> > >(
+                              (int) NUM_OF_SEVERITY_TYPES, vector< vector<double> >(
+                                  INTERVENTION_DURATION, vector<double>(POSTERIOR_SIZE, 0.0))));
     }
 }
 
@@ -172,8 +174,6 @@ age (100)
 by
 year (30)
 by
-serotype (4)
-by
 
 mechanism (2)
 by
@@ -183,28 +183,29 @@ intensity (5)
 */
 
 void report_average_counts(AgType& ag, map<string, int>& N, string filename) {
-    string all_output  = "serotype,age,outcome,y00,y01,y02,y03,y04,y05,";
+    string all_output  = "scenario,age,outcome,stat,y00,y01,y02,y03,y04,y05,";
            all_output += "y06,y07,y08,y09,y10,y11,y12,y13,y14,y15,y16,y17,y18,y19,y20,y21,y22,y23,y24,y25,y26,y27,y28,y29\n";
     for (auto &scenario: ag) {
-        const int divisor = N[scenario.first];
-        int sero_ct = 0;
-        for (auto &serotype: scenario.second) {
-            int age_ct = 0;
-            for (auto &age: serotype) {
-                int out_ct = 0;
-                for (auto &outcome: age) {
-                    string line = scenario.first + ","
-                                  + to_string(sero_ct) + ","
-                                  + to_string(age_ct) + ","
-                                  + to_string(out_ct);
-                    for (auto &val: outcome) { val /= divisor; line += ("," + to_string(val)); }
+        //const int divisor = N[scenario.first];
+        int age_ct = 0;
+        for (auto &age: scenario.second) {
+            int out_ct = 0;
+            for (auto &outcome: age) {
+                for (auto &quant: QUANTILES) {
+                    string line = scenario.first + "," 
+                                  + to_string(age_ct) + "," 
+                                  + to_string(out_ct) + "," 
+                                  + "q" + to_string(quant);
+                    for (auto &vals: outcome) { 
+                        const double val = quantile(vals, quant);
+                        line += ("," + to_string(val)); 
+                    }
                     all_output += (line + "\n");
-                    ++out_ct;
                 }
-                ++age_ct;
-            } 
-            ++sero_ct;
-        }
+                ++out_ct;
+            }
+            ++age_ct;
+        } 
     }
 
     if (fileExists(filename)) {
@@ -233,7 +234,7 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
     initialize_aggregate_datastructure(scenarios, ag, N);
 
     cerr << "globbed " << daily_filenames.size() << " filenames\n";
-    #pragma omp parallel for num_threads(10) 
+    #pragma omp parallel for num_threads(32) 
     for (unsigned int i = 0; i<daily_filenames.size(); ++i) {
         string daily_filename = daily_filenames[i];
         const string seed = extract_seed_from_filename(daily_filename);
@@ -245,6 +246,7 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
             cerr << file_ctr << " " << daily_filename << endl;
             Scenario* scenario = scenarios[seed];
             const string scenarioKey = scenario->asKey();
+            const int particle_idx = N[scenarioKey];
             #pragma omp atomic
             ++N[scenarioKey];
 
@@ -289,7 +291,7 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
 //                    assert(year < INTERVENTION_DURATION);
 
                     #pragma omp atomic
-                    ++ag[scenarioKey][sero][age][outcome][y];
+                    ++ag[scenarioKey][age][outcome][y][particle_idx];
 //                    cerr << "b";
                 } else {
                     continue; // Didn't process line, normal for header or EOF
@@ -301,11 +303,11 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
             ++file_ctr;
         }
 
-        stringstream output_filename_ss;
-        output_filename_ss << output_dir << "/daily_agg." << scenarios.begin()->second->asKey();
-        report_average_counts(ag, N, output_filename_ss.str());
-        cout << "read files: " << file_ctr << endl;
     }
+    stringstream output_filename_ss;
+    output_filename_ss << output_dir << "/daily_agg." << scenarios.begin()->second->asKey();
+    report_average_counts(ag, N, output_filename_ss.str());
+    cout << "read files: " << file_ctr << endl;
 }
 
 
