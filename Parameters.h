@@ -193,7 +193,7 @@ public:
     void loadAnnualSerotypes() { loadAnnualSerotypes(annualSerotypeFilename); };
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
     void writeAnnualSerotypes(std::string filename) const;
-    void loadDailyEIP(std::string dailyEIPFilename);
+    void loadDailyEIP(std::string dailyEIPFilename, int desired_size = 0);
     void loadDailyMosquitoMultipliers(std::string mosquitoMultiplierFilename, int desired_size = 0);
     void generateAnnualSerotypes(int total_num_years = -1);
     bool simulateAnnualSerotypes;

@@ -1,5 +1,5 @@
-#ifndef UTILITY_H
-#define UTILITY_H
+#ifndef DENGUE_UTILITY_H
+#define DENGUE_UTILITY_H
 
 #include <cstdlib>
 #include <sstream>
@@ -19,6 +19,55 @@ using namespace std;
 
 namespace dengue {
     namespace util {
+        vector<string> split(const string &s, char delim);
+
+        inline vector<string> read_vector_file(string filename, char sep=' ') {
+            ifstream myfile(filename.c_str());
+            if (!myfile) {
+                cerr << "ERROR: " << filename << " not found." << endl;
+                exit(116);
+            }
+
+            vector<string> V;
+            if (myfile.is_open()) {
+                string line;
+                while ( getline(myfile,line) ) {
+                    vector<string> fields = split(line, sep);
+                    if (fields.size() == 0) {
+                        cerr << "ERROR: Found line with no values in file: " << filename << " at line: " << V.size() << endl;
+                        exit(117);
+                    } else {
+                        V.push_back(fields[0]);
+                    }
+                }
+            }
+            return V;
+        }
+
+        inline vector<vector<string> > read_2D_vector_file(string filename, char sep=' ') {
+            ifstream myfile(filename.c_str());
+            if (!myfile) {
+                cerr << "ERROR: " << filename << " not found." << endl;
+                exit(118);
+            }
+
+            vector<vector<string> > M;
+            if (myfile.is_open()) {
+                string line;
+
+                while ( getline(myfile,line) ) {
+                    vector<string> fields = split(line, sep);
+
+                    vector<string> row(fields.size());
+                    for( unsigned int i=0; i < fields.size(); i++ ) {
+                            row[i] = fields[i];
+                    }
+                    M.push_back(row);
+                }
+            }
+            return M;
+        }
+
         class Fit {
             public:
                 double m;
@@ -39,8 +88,6 @@ namespace dengue {
             for (int i = 0; i < my_vector.size() - 1; i++ ) cout << my_vector[i] << sep;
             cout << my_vector.back();
         }
-
-        vector<string> split(const string &s, char delim);
 
         inline double string2double(const std::string& s){ std::istringstream i(s); double x = 0; i >> x; return x; }
 

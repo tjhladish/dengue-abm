@@ -597,82 +597,66 @@ void Parameters::generateAnnualSerotypes(int total_num_years) { // default arg v
 }
 
 
-void Parameters::loadDailyEIP(string dailyEIPfilename) {
-    ifstream iss(dailyEIPfilename.c_str());
-    if (!iss) {
-        cerr << "ERROR: " << dailyEIPfilename << " not found." << endl;
-        exit(116);
-    }
+void Parameters::loadDailyEIP(string dailyEIPfilename, int desired_size) { // default desired size == 0
+    // expecting first value on each line to be the EIP mu
+    // other, subsequent values are permitted, but ignored
+    vector<string> first_column = dengue::util::read_vector_file(dailyEIPfilename);
 
-    // get rid of anything there now
     extrinsicIncubationPeriods.clear();
-
-    char** end = NULL;
-    char sep = ' ';
-    string line;
 
     const int duration = 1;
     int start = 0;
     double value = 0;
-    while ( getline(iss,line) ) {
-        // expecting first value on each line to be the EIP for any mosquito infected on that day
-        // other, subsequent values are permitted, but ignored
-        vector<string> fields = dengue::util::split(line, sep);
+    for(string val_str: first_column) {
+        value = dengue::util::to_double(val_str);
+        if (value <= 0) {
+            cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
+            cerr << "Value read: " << value << endl;
+            cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+            exit(113);
+        }
+        extrinsicIncubationPeriods.emplace_back(start, duration, value);
+        start += duration;
+    }
 
-        if (fields.size() >= 1) {
-            value = strtod(fields[0].c_str(), end);
-            if (value <= 0) {
-                cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
-                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
-                exit(113);
-            }
+    // this allows us to repeat a sequence many times and then modify it elsewhere,
+    // e.g. for vector control modeling
+    const int orig_len = extrinsicIncubationPeriods.size();
+    while ((signed) extrinsicIncubationPeriods.size() < desired_size) {
+        for (int i = 0; i < orig_len; ++i) {
+            auto value = extrinsicIncubationPeriods[i].value;
             extrinsicIncubationPeriods.emplace_back(start, duration, value);
             start += duration;
-        } else {
-            cerr << "WARNING: Found line with no values in daily EIP file" << endl;
-            cerr << "\tFile: " << dailyEIPfilename << endl;
         }
     }
+
+    if (desired_size > 0 and (signed) extrinsicIncubationPeriods.size() > desired_size) extrinsicIncubationPeriods.resize(desired_size);
 
     return;
 }
 
 
 void Parameters::loadDailyMosquitoMultipliers(string mosquitoMultiplierFilename, int desired_size) { // default desired size == 0
-    ifstream iss(mosquitoMultiplierFilename.c_str());
-    if (!iss) {
-        cerr << "ERROR: " << mosquitoMultiplierFilename << " not found." << endl;
-        exit(116);
-    }
+    // expecting first value on each line to be the mosquito multiplier (floats on [0,1])
+    // other, subsequent values are permitted, but ignored
+    vector<string> first_column = dengue::util::read_vector_file(mosquitoMultiplierFilename);
 
-    // get rid of anything there now
     mosquitoMultipliers.clear();
-
-    char** end = NULL;
-    char sep = ' ';
-    string line;
 
     const int duration = 1;  // this assumption is what makes it daily
     int start = 0;
     double value = 0;
-    while ( getline(iss,line) ) {
-        // expecting first value on each line to be the mosquito multiplier (floats on [0,1])
-        // other, subsequent values are permitted, but ignored
-        vector<string> fields = dengue::util::split(line, sep);
+    for(string val_str: first_column) {
 
-        if (fields.size() >= 1) {
-            value = strtod(fields[0].c_str(), end);
-            if (value < 0.0 or value > 1.0) {
-                cerr << "A mosquito multiplier < 0 or > 1 was read from " << mosquitoMultiplierFilename << "." << endl;
-                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
-                exit(117);
-            }
-            mosquitoMultipliers.emplace_back(start, duration, value);
-            start += duration;
-        } else {
-            cerr << "WARNING: Found line with no values in mosquito multiplier file" << endl;
-            cerr << "\tFile: " << mosquitoMultiplierFilename << endl;
+        value = dengue::util::to_double(val_str);
+        if (value < 0.0 or value > 1.0) {
+            cerr << "A mosquito multiplier < 0 or > 1 was read from " << mosquitoMultiplierFilename << "." << endl;
+            cerr << "Value read: " << value << endl;
+            cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+            exit(119);
         }
+        mosquitoMultipliers.emplace_back(start, duration, value);
+        start += duration;
     }
 
     // this allows us to repeat a sequence many times and then modify it elsewhere,

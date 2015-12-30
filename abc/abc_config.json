@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 0.025,
     "pls_training_fraction"     : 0.8,
 
-    "database_filename"         : "new_sero-merida.sqlite",
+    "database_filename"         : "weather-merida.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",

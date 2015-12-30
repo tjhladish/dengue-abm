@@ -14,12 +14,12 @@ using dengue::util::to_string;
 using dengue::util::mean;
 using dengue::util::stdev;
 using dengue::util::max_element;
+using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
-
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
 const int FIRST_OBSERVED_YEAR = 1979;
@@ -100,13 +100,61 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     // load daily EIP
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed Merida temps
-    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
-
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
-    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
+    {
+        par->loadDailyEIP(pop_dir + "/burninEIP-24hr.txt", (DDT_START+DDT_DURATION)*365 + par->startDayOfYear);
+        string dailyEIPfilename = pop_dir + "/seriesEIP-24hr.txt";
+        vector<string> fitted_EIPs = dengue::util::read_vector_file(dailyEIPfilename);
+
+        const int duration = 1;
+        int start = par->extrinsicIncubationPeriods.back().start;
+        for(unsigned int i = par->startDayOfYear; i < fitted_EIPs.size(); ++i) {
+            string val_str = fitted_EIPs[i];
+            const double value = dengue::util::to_double(val_str);
+            start += duration;
+            if (value <= 0) {
+                cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
+                cerr << "Value read: " << value << endl;
+                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+                exit(113);
+            }
+            par->extrinsicIncubationPeriods.emplace_back(start, duration, value);
+        }
+    }
+
+    {
+        par->loadDailyMosquitoMultipliers(pop_dir + "/burnin_precipitation.txt",  (DDT_START+DDT_DURATION)*365 + par->startDayOfYear);
+        string mosquitoMultiplierFilename = pop_dir + "/series_precipitation.txt";
+        vector<string> fitted_mos_pop = dengue::util::read_vector_file(mosquitoMultiplierFilename);
+
+        const int duration = 1;
+        int start = par->mosquitoMultipliers.back().start;
+        for(unsigned int i = par->startDayOfYear; i < fitted_mos_pop.size(); ++i) {
+            string val_str = fitted_mos_pop[i];
+            const double value = dengue::util::to_double(val_str);
+            start += duration;
+            if (value < 0.0) {
+                cerr << "A mosquito multiplier < 0 was read from " << mosquitoMultiplierFilename << "." << endl;
+                cerr << "Value read: " << value << endl;
+                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+                exit(119);
+            }
+            par->mosquitoMultipliers.emplace_back(start, duration, value);
+        }
+    }
+
     assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
     for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
+
+/*assert(par->mosquitoMultipliers.size() == par->extrinsicIncubationPeriods.size());
+cout << "mm_start mm_dur mm_val ei_start ei_dur ei_val\n";
+for (unsigned int i = 0; i < par->mosquitoMultipliers.size(); ++i) {
+    auto mm = par->mosquitoMultipliers[i];
+    auto ei = par->extrinsicIncubationPeriods[i];
+    cout << mm.start << " " << mm.duration << " " << mm.value << " "
+         << ei.start << " " << ei.duration << " " << ei.value << endl;
+}*/
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     par->immunityFilename         = "";
@@ -150,7 +198,7 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
@@ -203,7 +251,7 @@ void tally_counts(const Parameters* par, Community* community, vector<int>& all_
     return;
 }
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
     // initialize bookkeeping for run
     time_t start ,end;
@@ -247,7 +295,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     const double severe_reporting = par->reportedFraction[(int) SEVERE];
 
     // convert all cases and severe fraction to reported cases
-    Col reported(all_cases.size());
+    ABC::Col reported(all_cases.size());
     const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < all_cases.size(); i++) {
         const float_type mild_reported   = (all_cases[i] - severe_cases[i]) * mild_reporting;
@@ -267,22 +315,22 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
        << par->betaMP << " | ";
 
     // metrics
-    float_type _mean             = mean(reported);
-    float_type _min              = quantile(reported, 0.00);
-    float_type _quant25          = quantile(reported, 0.25);
-    float_type _median           = quantile(reported, 0.50);
-    float_type _quant75          = quantile(reported, 0.75);
-    float_type _max              = quantile(reported, 1.00);
-    float_type _stdev            = sqrt(variance(reported, _mean));
-    float_type _skewness         = skewness(reported);
-    float_type _median_crossings = median_crossings(reported);
+    float_type _mean             = ABC::mean(reported);
+    float_type _min              = ABC::quantile(reported, 0.00);
+    float_type _quant25          = ABC::quantile(reported, 0.25);
+    float_type _median           = ABC::quantile(reported, 0.50);
+    float_type _quant75          = ABC::quantile(reported, 0.75);
+    float_type _max              = ABC::quantile(reported, 1.00);
+    float_type _stdev            = sqrt(ABC::variance(reported, _mean));
+    float_type _skewness         = ABC::skewness(reported);
+    float_type _median_crossings = ABC::median_crossings(reported);
     float_type _seropos          = seropos_87;
     float_type _severe_prev      = mean_severe;
 
     // logistic regression requires x values that are, in this case, just sequential ints
     vector<double> x(all_cases.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
 
-    LogisticFit* fit = logistic_reg(x, severe_cases, all_cases);
+    ABC::LogisticFit* fit = ABC::logistic_reg(x, severe_cases, all_cases);
     float_type _beta0, _beta1;
     if (fit->status == GSL_SUCCESS) {
         _beta0 = fit->beta0;
