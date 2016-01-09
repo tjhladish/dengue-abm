@@ -223,22 +223,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;
             symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
             severe_given_case       = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:
-            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
             symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
             severe_given_case       = _par->secondarySevereFraction[(int) serotype];
             break;
         case 2:
-            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
             symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
             severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
-            infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
             symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
             severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
             break;
@@ -249,11 +245,14 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
 
     const double effective_VEP = isVaccinated() ? _par->fVEP : 0.0;   // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
+    infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;              // may be changed below 
 
     if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {           // Is this a case?
         const double severe_rand = gsl_rng_uniform(RNG);
+        infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_MILD;                  // may yet be changed below 
         if ( severe_rand < severe_given_case or maternalAntibodyEnhancement) {                     // Is this a severe case?
             if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // Is this person unvaccinated or vaccinated but unlucky?
+                infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_SEVERE;
                 infection.severeDisease = true;
             }
         }
