@@ -86,12 +86,13 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
-    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
+    // generate introductions of serotypes based on when they were first observed in Yucatan
+    //par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
 
-    //par->simulateAnnualSerotypes = false;
-    //par->normalizeSerotypeIntros = true;
+    par->simulateAnnualSerotypes = true;
+    par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
-    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
     par->annualIntroductions = vector<double>(DDT_START, 1.0);
@@ -102,7 +103,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed Merida temps
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
-    {
+    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
+    /*{
         par->loadDailyEIP(pop_dir + "/burninEIP-24hr.txt", (DDT_START+DDT_DURATION)*365 + par->startDayOfYear);
         string dailyEIPfilename = pop_dir + "/seriesEIP-24hr.txt";
         vector<string> fitted_EIPs = dengue::util::read_vector_file(dailyEIPfilename);
@@ -121,9 +123,10 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
             }
             par->extrinsicIncubationPeriods.emplace_back(start, duration, value);
         }
-    }
+    }*/
 
-    {
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
+    /*{
         par->loadDailyMosquitoMultipliers(pop_dir + "/burnin_precipitation.txt",  (DDT_START+DDT_DURATION)*365 + par->startDayOfYear);
         string mosquitoMultiplierFilename = pop_dir + "/series_precipitation.txt";
         vector<string> fitted_mos_pop = dengue::util::read_vector_file(mosquitoMultiplierFilename);
@@ -142,7 +145,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
             }
             par->mosquitoMultipliers.emplace_back(start, duration, value);
         }
-    }
+    }*/
 
     assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
     for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
