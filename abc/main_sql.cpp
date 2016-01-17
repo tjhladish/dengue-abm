@@ -279,32 +279,41 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
 //    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
-    vector<int> all_cases;
+    vector<int> mild_cases;
     vector<int> severe_cases;
+    vector<int> all_cases;
     tally_counts(par, community, all_cases, severe_cases);
 
     // throw out everything before end of DDT period
     vector<int>(all_cases.begin()+DDT_START+DDT_DURATION, all_cases.end()).swap(all_cases);
     vector<int>(severe_cases.begin()+DDT_START+DDT_DURATION, severe_cases.end()).swap(severe_cases);
+ 
+    for (unsigned int i = 0; i < all_cases.size(); ++i) mild_cases.push_back(all_cases[i] - severe_cases[i]);
 
+    const double total_mild   = accumulate(mild_cases.begin(), mild_cases.end(), 0.0);
     const double total_severe = accumulate(severe_cases.begin(), severe_cases.end(), 0.0);
     const double total_cases  = accumulate(all_cases.begin(), all_cases.end(), 0.0);
-    const double mean_severe  = total_severe / total_cases;
 
     time (&end);
     double dif = difftime (end,start);
 
     const double mild_reporting = par->reportedFraction[(int) MILD];
     const double severe_reporting = par->reportedFraction[(int) SEVERE];
+    const double reported_mean_severe_fraction  = (total_severe*severe_reporting) / (total_mild*mild_reporting + total_severe*severe_reporting);
 
     // convert all cases and severe fraction to reported cases
-    ABC::Col reported(all_cases.size());
+    vector<int> reported_severe(all_cases.size());
+    vector<int> reported_total_cases(all_cases.size());
+    ABC::Col reported_per_cap(all_cases.size());
     const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < all_cases.size(); i++) {
         const float_type mild_reported   = (all_cases[i] - severe_cases[i]) * mild_reporting;
         const float_type severe_reported = severe_cases[i] * severe_reporting;
+        const float_type total_reported  = mild_reported + severe_reported;
+        reported_severe[i] = (int) (severe_reported + 0.5);
+        reported_total_cases[i] = (int) (total_reported + 0.5);
         // convert to reported cases per 100,000
-        reported[i] = 1e5 * (mild_reported + severe_reported) / pop_size;
+        reported_per_cap[i] = 1e5 * total_reported / pop_size;
     }
 
     stringstream ss;
@@ -318,22 +327,22 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
        << par->betaMP << " | ";
 
     // metrics
-    float_type _mean             = ABC::mean(reported);
-    float_type _min              = ABC::quantile(reported, 0.00);
-    float_type _quant25          = ABC::quantile(reported, 0.25);
-    float_type _median           = ABC::quantile(reported, 0.50);
-    float_type _quant75          = ABC::quantile(reported, 0.75);
-    float_type _max              = ABC::quantile(reported, 1.00);
-    float_type _stdev            = sqrt(ABC::variance(reported, _mean));
-    float_type _skewness         = ABC::skewness(reported);
-    float_type _median_crossings = ABC::median_crossings(reported);
+    float_type _mean             = ABC::mean(reported_per_cap);
+    float_type _min              = ABC::quantile(reported_per_cap, 0.00);
+    float_type _quant25          = ABC::quantile(reported_per_cap, 0.25);
+    float_type _median           = ABC::quantile(reported_per_cap, 0.50);
+    float_type _quant75          = ABC::quantile(reported_per_cap, 0.75);
+    float_type _max              = ABC::quantile(reported_per_cap, 1.00);
+    float_type _stdev            = sqrt(ABC::variance(reported_per_cap, _mean));
+    float_type _skewness         = ABC::skewness(reported_per_cap);
+    float_type _median_crossings = ABC::median_crossings(reported_per_cap);
     float_type _seropos          = seropos_87;
-    float_type _severe_prev      = mean_severe;
+    float_type _severe_prev      = reported_mean_severe_fraction;
 
     // logistic regression requires x values that are, in this case, just sequential ints
     vector<double> x(all_cases.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
 
-    ABC::LogisticFit* fit = ABC::logistic_reg(x, severe_cases, all_cases);
+    ABC::LogisticFit* fit = ABC::logistic_reg(x, reported_severe, reported_total_cases);
     float_type _beta0, _beta1;
     if (fit->status == GSL_SUCCESS) {
         _beta0 = fit->beta0;
