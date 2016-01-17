@@ -309,6 +309,7 @@ int seed_epidemic(const Parameters* par, Community* community, const Date &date)
         const double annual_intros_weight = par->annualIntroductionsCoef;
         const double expected_num_exposed = serotype_weight * annual_intros_weight * intros;
         if (expected_num_exposed <= 0) continue;
+        assert(expected_num_exposed <= numperson);
         const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
         for (int i=0; i<num_exposed; i++) {
             // gsl_rng_uniform_int returns on [0, numperson-1]
