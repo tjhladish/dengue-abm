@@ -23,22 +23,22 @@ const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/scratch/lfs/thladish");
 
 const int RESTART_BURNIN     =  0;
-const int FORECAST_DURATION  = 100;
+const int FORECAST_DURATION  = 50;
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    //const vector<float> beta_multipliers = {0.4, 0.8, 1.0, 1.2, 1.6};
-    const vector<float> beta_multipliers = {0.52, 0.70, 0.92, 1.25, 2.25};
+    const vector<float> beta_multipliers = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0};
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
     double _sec_severity = args[2];
-    double _exp_coef     = args[3];
-    double _nmos         = args[4];
-    double _betamp       = args[5] * beta_multipliers[(int) args[6]]; // mp and pm and not separately
-    double _betapm       = args[5] * beta_multipliers[(int) args[6]]; // identifiable, so they're the same
+    double _pss_ratio    = args[3];
+    double _exp_coef     = args[4];
+    double _nmos         = args[5];
+    double _betamp       = args[6] * beta_multipliers[(int) args[7]]; // mp and pm and not separately
+    double _betapm       = args[6] * beta_multipliers[(int) args[7]]; // identifiable, so they're the same
 
     vector<long double> abc_args(&args[0], &args[6]);
     string argstring;
@@ -63,10 +63,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->quaternaryPathogenicity = vector<double>(NUM_OF_SEROTYPES, 0.0);
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
-    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity/20); // ala Neil
-    par->secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, _sec_severity);
-    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, 0.0);
-    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, 0.0);
+    par->primarySevereFraction.clear();
+    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
+    par->secondarySevereFraction.clear();
+    par->secondarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity);
+    par->tertiarySevereFraction   = {0,0,0,0};
+    par->quaternarySevereFraction = {0,0,0,0};
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -91,7 +93,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     // load daily EIP
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed yucatan temps
-    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
+    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
 
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
@@ -140,7 +142,7 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
@@ -164,7 +166,7 @@ cerr << filename << endl;
 }
 
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     //initialize bookkeeping for run
@@ -193,13 +195,12 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     vector<int> serotested_ids = read_pop_ids(pop_dir + "/9_merida_ids.txt");
 
-    seed_epidemic(par, community);
+    //seed_epidemic(par, community);
     vector<long double> seropos_9yo = simulate_who_fitting(par, community, process_id, serotested_ids);
-
     // We might want to write the immunity and mosquito files
-    string imm_filename = "/scratch/lfs/thladish/imm_mer_who/immunity." + to_string(process_id);
-    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
-    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+    //string imm_filename = "/scratch/lfs/thladish/imm_mer_who/immunity." + to_string(process_id);
+    //write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    //write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
     time (&end);
     double dif = difftime (end,start);
