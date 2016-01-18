@@ -375,7 +375,7 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
             if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
             if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
 
-if (not par->abcVerbose and date.year() >= 20) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
+if (not par->abcVerbose and date.year() >= 50) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
     // for dec 2015 WHO results
     stringstream ss;
     ss << date.day() << ","
