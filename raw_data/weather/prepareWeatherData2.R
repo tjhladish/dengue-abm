@@ -123,13 +123,25 @@ write.table(
 
 daily_mean_EIP <- lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)][,list(EIP=muToEIP(weighted_mu, vr)), keyby=list(year, doy)]
 
+write.table(
+  daily_mean_EIP[,list(EIP,year,doy)],
+  file = "seriesEIP.csv", row.names = F, col.names = F
+)
+
+write.table(
+  lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year,doy)][between(year, 1979, 1988), list(weighted_mu=mean(weighted_mu)), keyby=doy][,list(EIP=muToEIP(weighted_mu, vr), doy)],
+  file = "burninEIP.csv", row.names = F, col.names = F
+)
+
+
 ggplot(
   daily_mean_EIP
 ) + aes(x=doy, y=EIP, group = year) +
   theme_bw() + theme(panel.border=element_blank()) +
   geom_line(alpha=0.2) +
   scale_x_continuous("day of year", breaks=seq(0,364,by=7)) +
-  scale_y_log10("mean EIP, days",breaks=c(7,14,21,28,35))
+  scale_y_log10("mean EIP, days",breaks=c(7,14,21,28,35)) +
+  geom_line(aes(color=year), daily_mean_EIP[year %% 5 == 0])
 
 
 # todo this better:
