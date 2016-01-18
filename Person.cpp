@@ -117,16 +117,16 @@ bool Person::isInfectable(Serotype serotype, int time) const {
 double Person::remainingEfficacy(const int time) const {
     double remainingFraction = 1.0;
     if (_par->linearlyWaningVaccine) {
-      // reduce by fraction of immunity duration that has waned
-      if (_par->whoWaning == NAIVE_WANING_ONLY) { // only naive individuals wane
-        if (getNumInfections() == 0) {
-          int time_since_vac = daysSinceVaccination(time);
-          remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
+        int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
+        effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
+        // reduce by fraction of immunity duration that has waned
+        if (_par->whoWaning == NAIVE_WANING_ONLY) { // only naive individuals wane
+            if (getNumInfections() == 0) {
+                remainingFraction -=  ((double) effective_time_since_vac / _par->vaccineImmunityDuration);
+            }
+        } else { // everyone wanes
+            remainingFraction -=  ((double) effective_time_since_vac / _par->vaccineImmunityDuration);
         }
-      } else { // everyone wanes
-        int time_since_vac = daysSinceVaccination(time);
-        remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration);
-      }
     }
     return remainingFraction;
 }
@@ -137,8 +137,9 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
     if (not isVaccinated()) {
         ves = 0.0;
     } else {
-        int time_since_vac = daysSinceVaccination(time);
-        if (time_since_vac > _par->vaccineImmunityDuration) {
+        int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
+        effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
+        if (effective_time_since_vac > _par->vaccineImmunityDuration) {
             ves = 0.0;
         } else {
             if (_bNaiveVaccineProtection == true) {

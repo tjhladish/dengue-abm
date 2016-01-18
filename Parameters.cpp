@@ -76,6 +76,7 @@ void Parameters::define_defaults() {
     nVaccinateAge.clear();
     fVaccinateFraction.clear();
 
+    vaccineDoseSpan = 730;
     linearlyWaningVaccine = false;
     vaccineImmunityDuration = INT_MAX;
     vaccineBoosting = false;

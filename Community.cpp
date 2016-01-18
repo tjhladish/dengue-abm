@@ -495,12 +495,12 @@ void Community::vaccinate(int time, double f, int age) {
 }
 
 
-void Community::boost(int time, double f) { // re-vaccinate people who have less than threshold immunity left
+void Community::boost(int time, double f) { // re-vaccinate people who have lost more than f of their immunity
     assert(f>=0.0 and f<=1.0);
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person + i;
         // boost if ~fraction (or more) of immunity has waned
-        if (p->isVaccinated() and (p->daysSinceVaccination(time) >= f * _par->vaccineImmunityDuration) ) {
+        if (p->isVaccinated() and (p->daysSinceVaccination(time) - _par->vaccineDoseSpan >= f * _par->vaccineImmunityDuration) ) {
             p->vaccinate(time);
         }
     }

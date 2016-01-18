@@ -293,6 +293,7 @@ public:
     int nDaysImmune;
     int nSizeVaccinate;
     bool linearlyWaningVaccine;
+    int vaccineDoseSpan;                                    // time between 1st & last doses; 3 doses 6 mo apart --> 730 days
     int vaccineImmunityDuration;
     bool vaccineBoosting;
     std::vector<int> nVaccinateYear;                        // when to vaccinate
