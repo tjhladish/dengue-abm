@@ -3,7 +3,10 @@ require(data.table)
 require(parallel)
 require(ggplot2)
 
-pop <- fread("~/Dropbox/who_dengue_data/yucatan_ages.tsv", col.names = c("pop", "age"))[,
+poppath <- "~/Dropbox/who_dengue_data/yucatan_ages.tsv"
+seropath <- "~/Downloads/auto_output/"
+
+pop <- fread(poppath, col.names = c("pop", "age"))[,
   age_category := factor(ifelse(
     age < 9, age_cats[1], ifelse(
       age < 19, age_cats[2],
@@ -179,7 +182,30 @@ reduceditems <- nonsero[,{
 reduceditems[, outcome_denominator := ifelse(variable == "averted", "per 100,000 pop at risk", "proportion averted") ]
 reduceditems[, scenario:=scn_render(scenario)]
 
-reduceditems
+reduceditems[, group:= "longini" ]
+reduceditems<-subset(reduceditems, select=-variable)
+require(bit64)
+seroscn <- setkey(subset(fread(paste0(seropath,"seroscenarios.csv")), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
+  unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
+][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
+  scenario := scn_render(paste0(V10, V11, V12, V13, V14, V15))
+][,
+  list(seed=unique(V1)), by=list(transmission_setting, scenario)
+], seed)
+
+serosrv <- setkey(fread(paste0(seropath,"seroprevalence.csv"))[,
+  list(seed=unique(seed)), keyby=list(year, vax_age, seroprevalence)
+][, year := year-50 ], seed, year)
+
+seroresults <- setcolorder(
+  serosrv[seroscn][, 
+    list(value = mean(seroprevalence), CI_low=NA, CI_high=NA, outcome="seropositive", outcome_denominator="proportion", group="longini"),
+    by=list(age=paste0(vax_age,"yrs"), transmission_setting, scenario, year)
+  ],
+  names(reduceditems)
+)
+
+saveRDS(rbind(reduceditems, seroresults), "../longini2.RData")
 
 # mort_rate <- c(symptomatic=0, severe=0.1)
 # hosp_rate <- c(symptomatic=0.111)
