@@ -116,16 +116,20 @@ bool Person::isInfectable(Serotype serotype, int time) const {
 
 double Person::remainingEfficacy(const int time) const {
     double remainingFraction = 1.0;
-    if (_par->linearlyWaningVaccine) {
-        int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
-        effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
-        // reduce by fraction of immunity duration that has waned
-        if (_par->whoWaning == NAIVE_WANING_ONLY) { // only naive individuals wane
-            if (getNumInfections() == 0) {
+    if (not isVaccinated()) {
+        remainingFraction = 0.0;
+    } else {
+        if (_par->linearlyWaningVaccine) {
+            int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
+            effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
+            // reduce by fraction of immunity duration that has waned
+            if (_par->whoWaning == NAIVE_WANING_ONLY) { // only naive individuals wane
+                if (getNumInfections() == 0) {
+                    remainingFraction -=  ((double) effective_time_since_vac / _par->vaccineImmunityDuration);
+                }
+            } else { // everyone wanes
                 remainingFraction -=  ((double) effective_time_since_vac / _par->vaccineImmunityDuration);
             }
-        } else { // everyone wanes
-            remainingFraction -=  ((double) effective_time_since_vac / _par->vaccineImmunityDuration);
         }
     }
     return remainingFraction;
@@ -162,7 +166,7 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
     if (p->getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
         // TODO-CABP: change to combine finding mom, getting immunity (probably add hasMaternalImmunity that uses findMom)
         Person* mom = p->getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
-        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
+        if (mom and mom->getImmunityBitset().any()) {           // if there is one and she has an infection history
             if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
                 effect = MATERNAL_PROTECTION;
             } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
@@ -181,91 +185,93 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
 // returns true if infection occurs
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     if (isInfectable(serotype, time)) {
-      // TODO - clarify this.  why would a person not be infectable in this scope?
-      MaternalEffect maternal_effect = _maternal_antibody_effect(this, _par, time);
-      bool maternalAntibodyEnhancement;
-      switch( maternal_effect ) {
-          case MATERNAL_PROTECTION:
-              return false;
-              break;
-          case NO_EFFECT:
-              maternalAntibodyEnhancement = false;
-              break;
-          case MATERNAL_ENHANCEMENT:
-              maternalAntibodyEnhancement = true;
-              break;
-          default:
-              cerr << "ERROR: Unknown maternal effect: " << maternal_effect << endl;
-              exit(-837);
-              break;
-      }
+        // TODO - clarify this.  why would a person not be infectable in this scope?
+        MaternalEffect maternal_effect = _maternal_antibody_effect(this, _par, time);
+        bool maternalAntibodyEnhancement;
+        switch( maternal_effect ) {
+            case MATERNAL_PROTECTION:
+                return false;
+                break;
+            case NO_EFFECT:
+                maternalAntibodyEnhancement = false;
+                break;
+            case MATERNAL_ENHANCEMENT:
+                maternalAntibodyEnhancement = true;
+                break;
+            default:
+                cerr << "ERROR: Unknown maternal effect: " << maternal_effect << endl;
+                exit(-837);
+                break;
+        }
 
-      const int numPrevInfections = getInfectionOrdinality(); // needs to be called before initializing new infection
+        const int numPrevInfections = getInfectionOrdinality();     // these both need to be called
+        const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
-       // Create a new infection record
-      Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
+        // Create a new infection record
+        Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-      double symptomatic_probability = 0.0;
-      double severe_given_case = 0.0;
-      switch (numPrevInfections) {
-          case 0:
-              infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_PRI;
-              symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-              severe_given_case       = _par->primarySevereFraction[(int) serotype];
-              break;
-          case 1:
-              infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
-              symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-              severe_given_case       = _par->secondarySevereFraction[(int) serotype];
-              break;
-          case 2:
-              infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
-              symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-              severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
-              break;
-          case 3:
-              infection.recoveryTime  = infection.infectiousTime+INFECTIOUS_PERIOD_POST_PRI;
-              symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-              severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
-              break;
-          default:
-              cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
-              exit(-838);
-      }
+        double symptomatic_probability = 0.0;
+        double severe_given_case = 0.0;
+        switch (numPrevInfections) {
+            case 0:
+                symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+                severe_given_case       = _par->primarySevereFraction[(int) serotype];
+                break;
+            case 1:
+                symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+                severe_given_case       = _par->secondarySevereFraction[(int) serotype];
+                break;
+            case 2:
+                symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+                severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
+                break;
+            case 3:
+                symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+                severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+                break;
+            default:
+                cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
+                exit(-838);
+        }
 
-      const double effective_VEP = isVaccinated() ? _par->fVEP*remainingEfficacy(time) : 0.0;
-      // reduced symptoms due to vaccine
-      symptomatic_probability *= (1.0 - effective_VEP);
+        const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;
+        // reduced symptoms due to vaccine
+        symptomatic_probability *= (1.0 - effective_VEP);
+        assert(symptomatic_probability >= 0.0);
+        assert(symptomatic_probability <= 1.0);
+        infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;            // may be changed below
 
-      if (maternalAntibodyEnhancement or (gsl_rng_uniform(RNG) < symptomatic_probability)) {           // Is this a case?
-          if (maternalAntibodyEnhancement or (gsl_rng_uniform(RNG) < severe_given_case)) { // Is this a severe case?
-              infection.severeDisease =
-                not isVaccinated() or
-                (gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time));
-                // Is this person unvaccinated or vaccinated but unlucky?
-          }
+        if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {           // Is this a case?
+            const double severe_rand = gsl_rng_uniform(RNG);
+            infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_MILD;                // may yet be changed below
+            if ( severe_rand < severe_given_case or maternalAntibodyEnhancement) {                     // Is this a severe case?
+                if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // Is this person unvaccinated or vaccinated but unlucky?
+                    infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_SEVERE;
+                    infection.severeDisease = true;
+                }
+            }
 
-          // Determine if this person withdraws (stops going to work/school)
-          infection.symptomTime = infection.infectiousTime + SYMPTOMATIC_DELAY;
-          const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
-          const int symptomatic_active_period = gsl_ran_geometric(RNG, 0.5) - 1; // min generator value is 1 trial
-          infection.withdrawnTime = symptomatic_active_period < symptomatic_duration ?
-                                    infection.symptomTime + symptomatic_active_period :
-                                    infection.withdrawnTime;
-      }
+            // Determine if this person withdraws (stops going to work/school)
+            infection.symptomTime = infection.infectiousTime + SYMPTOMATIC_DELAY;
+            const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
+            const int symptomatic_active_period = gsl_ran_geometric(RNG, 0.5) - 1; // min generator value is 1 trial
+            infection.withdrawnTime = symptomatic_active_period < symptomatic_duration ?
+                                      infection.symptomTime + symptomatic_active_period :
+                                      infection.withdrawnTime;
+        }
 
-      // Flag locations with (non-historical) infections, so that we know to look there for human->mosquito transmission
-      // Negative days are historical (pre-simulation) events, and thus we don't care about modeling transmission
-      for (int day = std::max(infection.infectiousTime, 0); day < infection.recoveryTime; day++) {
-          for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
-              Community::flagInfectedLocation(_pLocation[t], day);
-          }
-      }
+        // Flag locations with (non-historical) infections, so that we know to look there for human->mosquito transmission
+        // Negative days are historical (pre-simulation) events, and thus we don't care about modeling transmission
+        for (int day = std::max(infection.infectiousTime, 0); day < infection.recoveryTime; day++) {
+            for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                Community::flagInfectedLocation(_pLocation[t], day);
+            }
+        }
 
-      // if the antibody-primed vaccine-induced immunity can be acquired retroactively, upgrade this person from naive to mature
-      if (_par->bRetroactiveMatureVaccine) _bNaiveVaccineProtection = false;
+        // if the antibody-primed vaccine-induced immunity can be acquired retroactively, upgrade this person from naive to mature
+        if (_par->bRetroactiveMatureVaccine) _bNaiveVaccineProtection = false;
 
-      return true;
+        return true;
     } else return false;
 
 }

@@ -66,7 +66,7 @@ enum WHO_BreakthroughEffect {
     NO_BREAKTHROUGH_EFFECT,         // 1.  breakthrough infections have no effect on vaccine efficiacy
                                     // TODO(cabp): duplicates bRetroactiveMatureVaccine / _bNaiveVaccineProtection mechanism
     BREAKTHROUGH_SEROCONVERSION,    // 2.  breakthough makes vaccine behave like person is now seropositive;
-    PERFECT_BREAKTHROUGH,           // 3.  breakthrough makes vaccine have 100% efficiacy afterwards
+    PERFECT_BREAKTHROUGH,           // 3.  breakthrough makes vaccine have 100% efficacy afterwards
     NUM_OF_WHO_BREAKTHROUGH_EFFECTS
 }; // default and alt matches our current model; no changes to make use of this variable
 
@@ -86,8 +86,11 @@ static const std::vector<int> DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 3
 static const std::vector<int> END_DAY_OF_MONTH = {31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
 
 static const int SYMPTOMATIC_DELAY = 1;                       // delay of symptoms after infectious period starts
-static const int INFECTIOUS_PERIOD_PRI = 5;                   // number of days until recovery from primary infection
-static const int INFECTIOUS_PERIOD_POST_PRI = 4;              // number of days until recovery from post-primary infection
+//static const int INFECTIOUS_PERIOD_PRI = 5;                 // number of days until recovery from primary infection
+//static const int INFECTIOUS_PERIOD_POST_PRI = 4;            // number of days until recovery from post-primary infection
+static const int INFECTIOUS_PERIOD_ASYMPTOMATIC = 2;          // number of days until recovery for asymptomatic infections
+static const int INFECTIOUS_PERIOD_MILD         = 4;          // number of days until recovery for mild cases
+static const int INFECTIOUS_PERIOD_SEVERE       = 6;          // number of days until recovery for severe cases
 
 // from Person.h
 static const int NUM_AGE_CLASSES = 101;                       // maximum age+1 for a person
