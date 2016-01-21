@@ -72,41 +72,41 @@ class Person {
     public:
         Person();
         ~Person();
-        inline int getID() { return _nID; }
-        int getAge() { return _nAge; }
+        inline int getID() const { return _nID; }
+        int getAge() const { return _nAge; }
         void setAge(int n) { _nAge = n; }
-        SexType getSex() { return _sex; }
+        SexType getSex() const { return _sex; }
         void setSex(SexType sex) { _sex = sex; }
-        int getLifespan() { return _nLifespan; }
+        int getLifespan() const { return _nLifespan; }
         void setLifespan(int n) { _nLifespan = n; }
-        int getHomeID() { return _nHomeID; }
+        int getHomeID() const { return _nHomeID; }
         void setHomeID(int n) { _nHomeID = n; }
-        int getWorkID() { return _nWorkID; }
+        int getWorkID() const { return _nWorkID; }
         void setWorkID(int n) { _nWorkID = n; }
         void setImmunity(Serotype serotype) { _nImmunity[(int) serotype] = 1; }
-        const std::bitset<NUM_OF_SEROTYPES> getImmunityBitset() { return _nImmunity; }
-        const std::string getImmunityString() { return _nImmunity.to_string(); }
+        const std::bitset<NUM_OF_SEROTYPES> getImmunityBitset() const { return _nImmunity; }
+        const std::string getImmunityString() const { return _nImmunity.to_string(); }
         void copyImmunity(const Person *p);
         void resetImmunity();
         void appendToSwapProbabilities(std::pair<int, double> p) { _swap_probabilities.push_back(p); }
-        std::vector<std::pair<int, double> > getSwapProbabilities() { return _swap_probabilities; }
+        std::vector<std::pair<int, double> > getSwapProbabilities() const { return _swap_probabilities; }
 
         bool isSusceptible(Serotype serotype) const;                  // is susceptible to serotype (and is alive)
         bool isCrossProtected(int time) const;
         bool isVaccineProtected(Serotype serotype, int time) const;
 
-        inline Location* getLocation(TimePeriod timeofday) { return _pLocation[(int) timeofday]; }
+        inline Location* getLocation(TimePeriod timeofday) const { return _pLocation[(int) timeofday]; }
         inline void setLocation(Location* p, TimePeriod timeofday) { _pLocation[(int) timeofday] = p; }
 
-        inline int getInfectedByID(int infectionsago=0)    { return getInfection(infectionsago)->infectedByID; }
-        inline int getInfectedPlace(int infectionsago=0)   { return getInfection(infectionsago)->infectedPlace; }
-        inline int getInfectedTime(int infectionsago=0)    { return getInfection(infectionsago)->infectedTime; }
-        inline int getInfectiousTime(int infectionsago=0)  { return getInfection(infectionsago)->infectiousTime; }
-        inline int getSymptomTime(int infectionsago=0)     { return getInfection(infectionsago)->symptomTime; }
-        inline int getRecoveryTime(int infectionsago=0)    { return getInfection(infectionsago)->recoveryTime; }
-        inline int getWithdrawnTime(int infectionsago=0)   { return getInfection(infectionsago)->withdrawnTime; }
-        inline Serotype getSerotype(int infectionsago=0)   { return getInfection(infectionsago)->serotype(); }
-        const Infection* getInfection(int infectionsago=0) { return infectionHistory[getNumInfections() - 1 - infectionsago]; }
+        inline int getInfectedByID(int infectionsago=0) const    { return getInfection(infectionsago)->infectedByID; }
+        inline int getInfectedPlace(int infectionsago=0) const   { return getInfection(infectionsago)->infectedPlace; }
+        inline int getInfectedTime(int infectionsago=0) const    { return getInfection(infectionsago)->infectedTime; }
+        inline int getInfectiousTime(int infectionsago=0) const  { return getInfection(infectionsago)->infectiousTime; }
+        inline int getSymptomTime(int infectionsago=0) const     { return getInfection(infectionsago)->symptomTime; }
+        inline int getRecoveryTime(int infectionsago=0) const    { return getInfection(infectionsago)->recoveryTime; }
+        inline int getWithdrawnTime(int infectionsago=0) const   { return getInfection(infectionsago)->withdrawnTime; }
+        inline Serotype getSerotype(int infectionsago=0) const   { return getInfection(infectionsago)->serotype(); }
+        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumInfections() - 1 - infectionsago]; }
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
