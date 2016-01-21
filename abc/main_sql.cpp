@@ -61,10 +61,19 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
-    par->secondaryPathogenicity  = par->primaryPathogenicity;
-    par->tertiaryPathogenicity   = {0,0,0,0};
-    par->quaternaryPathogenicity = {0,0,0,0};
+    vector<double> base_pathogenicity = {1.000, 0.825, 0.833, 0.317};
+    par->primaryPathogenicity    = base_pathogenicity;
+    par->secondaryPathogenicity  = base_pathogenicity;
+    par->tertiaryPathogenicity   = base_pathogenicity;
+    par->quaternaryPathogenicity = base_pathogenicity;
+
+    for (int i = 0; i < NUM_OF_SEROTYPES; ++i) {
+        // http://www.ajtmh.org/content/38/1/172.extract ratio of 1:2 for primary:secondary pathogenicity
+        par->primaryPathogenicity[i]    *= 0.5;
+        par->tertiaryPathogenicity[i]   *= 0.1;
+        par->quaternaryPathogenicity[i] *= 0.1;
+    }
+
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     par->primarySevereFraction.clear();
