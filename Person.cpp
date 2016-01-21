@@ -165,7 +165,7 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
     if (p->getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
         // TODO-CABP: change to combine finding mom, getting immunity (probably add hasMaternalImmunity that uses findMom)
         Person* mom = p->getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
-        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
+        if (mom and mom->getImmunityBitset().any()) {           // if there is one and she has an infection history
             if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
                 effect = MATERNAL_PROTECTION;
             } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
@@ -236,6 +236,8 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;
     // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
+    assert(symptomatic_probability >= 0.0);
+    assert(symptomatic_probability <= 1.0);
     infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;            // may be changed below
 
     if (maternalAntibodyEnhancement or (gsl_rng_uniform(RNG) < symptomatic_probability)) {           // Is this a case?
