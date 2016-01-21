@@ -115,10 +115,19 @@ bool Person::isInfectable(Serotype serotype, int time) const {
 
 double Person::remainingEfficacy(const int time) const {
     double remainingFraction = 1.0;
-    if (_par->linearlyWaningVaccine) {
-        // reduce by fraction of immunity duration that has waned
-        int time_since_vac = daysSinceVaccination(time);
-        remainingFraction -=  ((double) time_since_vac / _par->vaccineImmunityDuration); 
+    if (not isVaccinated()) {
+        remainingFraction = 0.0;
+    } else {
+        if (_par->linearlyWaningVaccine) {
+            int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
+            effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
+            // reduce by fraction of immunity duration that has waned
+            if (effective_time_since_vac > _par->vaccineImmunityDuration) {
+                remainingFraction = 0.0;
+            } else {
+                remainingFraction -= ((double) effective_time_since_vac) / _par->vaccineImmunityDuration;
+            }
+        }
     }
     return remainingFraction;
 }
@@ -191,6 +200,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     }
 
     const int numPrevInfections = getNumInfections(); // needs to be called before initializing new infection
+    const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
      // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
@@ -219,15 +229,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             exit(-838);
     }
 
-    const double effective_VEP = isVaccinated() ? _par->fVEP*remainingEfficacy(time) : 0.0;        // reduced symptoms due to vaccine
+    const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;        // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
+    assert(symptomatic_probability >= 0.0);
+    assert(symptomatic_probability <= 1.0);
+
     infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;            // may be changed below 
 
-    if (gsl_rng_uniform(RNG) < symptomatic_probability or maternalAntibodyEnhancement) {           // Is this a case?
+    if ((gsl_rng_uniform(RNG) < symptomatic_probability) or maternalAntibodyEnhancement) {         // Is this a case?
         const double severe_rand = gsl_rng_uniform(RNG);
         infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_MILD;                // may yet be changed below 
         if ( severe_rand < severe_given_case or maternalAntibodyEnhancement) {                     // Is this a severe case?
-            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // Is this person unvaccinated or vaccinated but unlucky?
+            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remaining_efficacy) { // Is this person unvaccinated or vaccinated but unlucky?
                 infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_SEVERE;
                 infection.severeDisease = true;
             }
