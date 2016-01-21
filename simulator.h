@@ -441,7 +441,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 -rw-r----- 1 thladish epi  52M Aug  9 02:33 daily.3112558391.1307767146
 */
     stringstream ss_filename;
-    ss_filename << "/scratch/lfs/thladish/who-dec-2015/daily." << process_id << "." << par->randomseed;
+    ss_filename << "/scratch/lfs/thladish/who-jan-2016/daily." << process_id << "." << par->randomseed;
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
     return epi_sizes;
