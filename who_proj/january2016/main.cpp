@@ -98,9 +98,10 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     //par->hospitalizedFraction = 0.25; // fraction of cases assumed to be hospitalized
     //par->fVEH = 0.803;                // fraction of hospitalized cases prevented by vaccine
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    //par->simulateAnnualSerotypes = true;
+    //par->normalizeSerotypeIntros = true;
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
 
     par->annualIntroductions = {1.0};
 
@@ -289,8 +290,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     if (not vaccine and (catchup or boosting)) { nonsensical_parameters = true; }
     if ((vaccine_duration == -1) and boosting) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
-        // 3 is because vaccinated cases, total cases, and infections are reported
-        vector<long double> dummy(TOTAL_DURATION*NUM_OF_SEROTYPES, 0.0);
+        vector<long double> dummy(FORECAST_DURATION*NUM_OF_SEROTYPES, 0.0);
         delete par;
         return dummy;
     }
