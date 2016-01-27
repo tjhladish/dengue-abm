@@ -118,21 +118,6 @@ Community* build_community(const Parameters* par) {
         community->setNoSecondaryTransmission();
     }
 
-    if (par->fPreVaccinateFraction>0.0) {
-        community->vaccinate(0, par->fPreVaccinateFraction);
-    }
-
-    if (par->nSizePrevaccinateAge>0) {
-        for (int j=0; j<par->nSizePrevaccinateAge; j++) {
-            for (int k=par->nPrevaccinateAgeMin[j]; k<=par->nPrevaccinateAgeMax[j]; k++) {
-                community->vaccinate(0, par->fPrevaccinateAgeFraction[j], k); // first argument is time
-            }
-        }
-    }
-    
-    //for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-    //    par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
-    //}
     return community;
 }
 
@@ -282,26 +267,32 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
-    for (int i=0; i<par->nSizeVaccinate; i++) {
-        if (date.year()==par->nVaccinateYear[i]) {
-            if (not par->abcVerbose) {
-                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] 
-                     << " on day " << date.day() << endl;
-            }
-            community->vaccinate(date.day(), par->fVaccinateFraction[i], par->nVaccinateAge[i]);
+    for (VaccinationEvent ve: par->vaccinationEvents) {
+        // Normal, initial vaccination
+        if (date.day() == ve.simDay) {
+            if (not par->abcVerbose) cerr << "vaccinating " << ve.coverage*100 << "% of age " << ve.age << " on day " << ve.simDay << endl;
+            community->vaccinate(ve);
 
-vector<Person*> ageCohort = community->getAgeCohort(par->nVaccinateAge[i]);
+vector<Person*> ageCohort = community->getAgeCohort(ve.age);
 double seroprev = 0.0;
 for (auto p: ageCohort) if (p->getNumInfections() > 0) { seroprev += 1.0; }
 seroprev /= ageCohort.size();
 cerr << "seed, year, vaccine cohort age, seroprevalence: "
-     << par->randomseed << "," << date.year() << "," << par->nVaccinateAge[i] << "," << seroprev << endl;
+     << par->randomseed << "," << date.year() << "," << ve.age << "," << seroprev << endl;
 
+        } else if (date.day() > ve.simDay) {
+            // Re-vaccination via ...
+            int timeSinceVac = date.day() - ve.simDay;
+            const int doseInterval = par->vaccineDoseInterval;
+            const int boostInterval = par->vaccineBoostingInterval;
+            if (timeSinceVac % doseInterval == 0 and timeSinceVac / doseInterval <= par->numVaccineDoses) {
+                // Multi-dose vaccine
+                community->boost(date.day(), doseInterval, par->numVaccineDoses);
+            } else if (par->linearlyWaningVaccine and par->vaccineBoosting and timeSinceVac % boostInterval == 0) {
+                // Boosting
+                community->boost(date.day(), boostInterval);
+            }
         }
-    }
-    if (par->linearlyWaningVaccine and par->vaccineBoosting) {
-        double allowed_waning = 730/par->vaccineImmunityDuration; 
-        community->boost(date.day(), allowed_waning); // boost if > allowed_waning of immunity has waned
     }
 }
 
@@ -317,6 +308,7 @@ int seed_epidemic(const Parameters* par, Community* community, const Date &date)
         const double annual_intros_weight = par->annualIntroductionsCoef;
         const double expected_num_exposed = serotype_weight * annual_intros_weight * intros;
         if (expected_num_exposed <= 0) continue;
+        assert(expected_num_exposed <= numperson);
         const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
         for (int i=0; i<num_exposed; i++) {
             // gsl_rng_uniform_int returns on [0, numperson-1]
@@ -425,11 +417,11 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
-        // phased vaccination
-        if (date.julianDay() == 100) update_vaccinations(par, community, date); 
+        update_vaccinations(par, community, date); 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
 
     }
+
 /*
 -rw-r----- 1 thladish epi  44M Aug  9 02:27 daily.4220407024.-1972370385
 -rw-r----- 1 thladish epi  25M Aug  9 02:28 daily.1168277648.1260025127
@@ -444,6 +436,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     ss_filename << "/scratch/lfs/thladish/who-jan-2016/daily." << process_id << "." << par->randomseed;
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+
     return epi_sizes;
 }
 

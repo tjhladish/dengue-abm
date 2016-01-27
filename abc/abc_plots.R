@@ -1,7 +1,7 @@
 require("RSQLite")
 require(beanplot)
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "new_sero-merida.sqlite")
+db = dbConnect(drv, "who-plos-merida.sqlite")
 abc = dbGetQuery(db, 'select J.*, P.*, M.* from jobs J, parameters P, metrics M where J.serial = P.serial and J.serial = M.serial')
 extra_serials = which(names(abc)== 'serial')[-1] 
 abc = abc[,-c(extra_serials)]
@@ -23,7 +23,7 @@ par(mar=c(2.1, 4.1, 1.1, 0.5))
 for (col in par_cols) {
     colname = names(abc)[col];
     cat(paste(colname, '\n'))
-    beanplot( abc[,colname] ~ abc$post_bool*abc$smcSet, what=c(1,1,1,0), col=list(c(grey(0.3), 1,1, grey(0)), c(grey(0.9), 1,1, grey(0.7))), main='', ylab=colname, side='both')
+    beanplot( abc[,colname] ~ abc$post_bool*abc$smcSet, what=c(1,1,1,0), col=list(c(grey(0.3), 1,1, grey(0)), c(grey(0.9), 1,1, grey(0.7))), main='', ylab=colname, side='both', log='')
 }
 dev.off()
 

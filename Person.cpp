@@ -108,8 +108,8 @@ void Person::kill(int time) {
 
 bool Person::isInfectable(Serotype serotype, int time) const {
     return isSusceptible(serotype) and // is susceptible to this serotype (i.e., not immune to this serotype via previous infection)
-       !isCrossProtected(time) and // not cross-serotype protection from last infection
-       !isVaccineProtected(serotype, time); // not vaccine protected at this time
+           !isCrossProtected(time) and // not cross-serotype protection from last infection
+           !isVaccineProtected(serotype, time); // not vaccine protected at this time
 }
 
 
@@ -119,15 +119,12 @@ double Person::remainingEfficacy(const int time) const {
         remainingFraction = 0.0;
     } else {
         if (_par->linearlyWaningVaccine) {
-            int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
-            effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
+            int time_since_vac = daysSinceVaccination(time);
             // reduce by fraction of immunity duration that has waned
-            if (_par->whoWaning != NAIVE_WANING_ONLY or (_par->whoWaning == NAIVE_WANING_ONLY and getNumInfections() == 0)) {
-                if (effective_time_since_vac > _par->vaccineImmunityDuration) {
-                    remainingFraction = 0;
-                } else {
-                    remainingFraction -= ((double) effective_time_since_vac) / _par->vaccineImmunityDuration;
-                }
+            if (time_since_vac > _par->vaccineImmunityDuration) {
+                remainingFraction = 0.0;
+            } else {
+                remainingFraction -= ((double) time_since_vac) / _par->vaccineImmunityDuration;
             }
         }
     }
@@ -140,9 +137,7 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
     if (not isVaccinated()) {
         ves = 0.0;
     } else {
-        int effective_time_since_vac = daysSinceVaccination(time) - _par->vaccineDoseSpan;
-        effective_time_since_vac = effective_time_since_vac < 0 ? 0 : effective_time_since_vac;
-        if (effective_time_since_vac > _par->vaccineImmunityDuration) {
+        if (daysSinceVaccination(time) > _par->vaccineImmunityDuration) {
             ves = 0.0;
         } else {
             if (_bNaiveVaccineProtection == true) {
@@ -233,18 +228,18 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             exit(-838);
     }
 
-    const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;
-    // reduced symptoms due to vaccine
+    const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;        // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
     assert(symptomatic_probability >= 0.0);
     assert(symptomatic_probability <= 1.0);
-    infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;            // may be changed below
 
-    if (maternalAntibodyEnhancement or (gsl_rng_uniform(RNG) < symptomatic_probability)) {           // Is this a case?
+    infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_ASYMPTOMATIC;            // may be changed below 
+
+    if ((gsl_rng_uniform(RNG) < symptomatic_probability) or maternalAntibodyEnhancement) {         // Is this a case?
         const double severe_rand = gsl_rng_uniform(RNG);
-        infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_MILD;                // may yet be changed below
+        infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_MILD;                // may yet be changed below 
         if ( severe_rand < severe_given_case or maternalAntibodyEnhancement) {                     // Is this a severe case?
-            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remainingEfficacy(time)) { // Is this person unvaccinated or vaccinated but unlucky?
+            if (not isVaccinated() or gsl_rng_uniform(RNG) > _par->fVEH*remaining_efficacy) { // Is this person unvaccinated or vaccinated but unlucky?
                 infection.recoveryTime = infection.infectiousTime + INFECTIOUS_PERIOD_SEVERE;
                 infection.severeDisease = true;
             }
@@ -345,19 +340,19 @@ bool Person::isSusceptible(Serotype serotype) const {
     return !_bDead && !(_nImmunity[serotype] == 1);
 }
 
+
 bool Person::isCrossProtected(int time) const {
-    return
-      (getNumInfections() > 0) and // has any past infection
-      (infectionHistory.back()->infectedTime + _par->nDaysImmune > time); // past infection w/in x-prot time
+    return (getNumInfections() > 0) and // has any past infection
+           (infectionHistory.back()->infectedTime + _par->nDaysImmune > time); // prev. infection w/in crossprotection period 
 }
 
+
 bool Person::isVaccineProtected(Serotype serotype, int time) const {
-    return
-      isVaccinated() and
-      ( !_par->bVaccineLeaky or // if the vaccine isn't leaky
-        (gsl_rng_uniform(RNG) < vaccineProtection(serotype, time)) // or it protects (i.e., doesn't leak this time)
-      );
+    return isVaccinated() and
+           ( !_par->bVaccineLeaky or // if the vaccine isn't leaky
+            (gsl_rng_uniform(RNG) < vaccineProtection(serotype, time)) ); // or it protects (i.e., doesn't leak this time)
 }
+
 
 bool Person::fullySusceptible() const {
     bool susceptible = true;

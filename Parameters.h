@@ -211,6 +211,15 @@ struct DynamicParameter {
 };
 
 
+struct VaccinationEvent {
+    VaccinationEvent(){};
+    VaccinationEvent(int a, int s, double c): age(a), simDay(s), coverage(c) {};
+    int age;
+    int simDay;
+    double coverage;
+};
+
+
 class Parameters {
 public:
 
@@ -224,7 +233,7 @@ public:
     void loadAnnualSerotypes() { loadAnnualSerotypes(annualSerotypeFilename); };
     void loadAnnualSerotypes(std::string annualSerotypeFilename);
     void writeAnnualSerotypes(std::string filename) const;
-    void loadDailyEIP(std::string dailyEIPFilename);
+    void loadDailyEIP(std::string dailyEIPFilename, int desired_size = 0);
     void loadDailyMosquitoMultipliers(std::string mosquitoMultiplierFilename, int desired_size = 0);
     void generateAnnualSerotypes(int total_num_years = -1);
     bool simulateAnnualSerotypes;
@@ -254,7 +263,6 @@ public:
     std::vector<double> reportedFraction;                   // Probability of being reported, given asymptomatic, mild, and severe infection
     double infantImmuneProb;                                // Probability that age 0 person is uninfectable, given maternal immunity
     double infantSevereProb;                                // Probability that age 0 person experiences severe disease, given maternal immunity
-    double fPreVaccinateFraction;
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
     std::vector<int> nInitialExposed;                       // serotypes
@@ -279,7 +287,6 @@ public:
     std::string immunityFilename;
     std::string networkFilename;
     std::string locationFilename;
-    int nNumInitialSusceptible[NUM_OF_SEROTYPES];
     std::string peopleOutputFilename;
     std::string yearlyPeopleOutputFilename;
     std::string dailyOutputFilename;
@@ -294,18 +301,13 @@ public:
     bool normalizeSerotypeIntros;                           // is expected # of intros held constant, regardless of serotypes # (>0)
     bool simpleEIP;                                         // do all mosquitoes infected on day X have the same EIP? (default=F, e.g. sampled)
     int nDaysImmune;
-    int nSizeVaccinate;
     bool linearlyWaningVaccine;
-    int vaccineDoseSpan;                                    // time between 1st & last doses; 3 doses 6 mo apart --> 730 days
     int vaccineImmunityDuration;
-    bool vaccineBoosting;
-    std::vector<int> nVaccinateYear;                        // when to vaccinate
-    std::vector<int> nVaccinateAge;                         // whom to vaccinate
-    std::vector<double> fVaccinateFraction;                 // fraction of age group to vaccinate
-    int nSizePrevaccinateAge;
-    int nPrevaccinateAgeMin[100];
-    int nPrevaccinateAgeMax[100];
-    double fPrevaccinateAgeFraction[100];
+    bool vaccineBoosting;                                   // Are we re-vaccinated, either because of waning or because of multi-dose vaccine
+    int numVaccineDoses;                                    // Number of times to boost; default is INT_MAX
+    int vaccineDoseInterval;                                // How often to we re-vaccinate for initial vaccine course, in days
+    int vaccineBoostingInterval;                            // How often to we re-vaccinate for boosting, in days
+    std::vector<VaccinationEvent> vaccinationEvents;
     int startDayOfYear;
     bool dailyOutput;
     bool weeklyOutput;

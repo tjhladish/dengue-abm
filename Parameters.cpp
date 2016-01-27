@@ -26,7 +26,6 @@ void Parameters::define_defaults() {
     quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, 0.0);
     hospitalizedFraction = {0.0, 0.15, 0.9};            // rough estimates in mex
     bVaccineLeaky = false;
-    fPreVaccinateFraction = 0.0;
     nDefaultMosquitoCapacity = 50;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
@@ -43,8 +42,6 @@ void Parameters::define_defaults() {
     normalizeSerotypeIntros = false;
     annualIntroductions = {1.0};
     nDaysImmune = 365;
-    nSizeVaccinate = 0;                                 // number of parts in phased vaccination
-    nSizePrevaccinateAge = 0;
     reportedFraction = {0.0, 0.05, 1.0};                // fraction of asymptomatic, mild, and severe cases reported
     nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default: no introductions
     annualSerotypeFilename = "";
@@ -72,14 +69,14 @@ void Parameters::define_defaults() {
     infantImmuneProb = 3.0/12.0;    // given exposure and maternal antibodies, chance of resisting infection (first 3 months)
     infantSevereProb = 6.0/9.0;     // given infection and maternal antibodies, chance of severe disease (next 6 months)
 
-    nVaccinateYear.clear();
-    nVaccinateAge.clear();
-    fVaccinateFraction.clear();
+    vaccinationEvents.clear();
+    numVaccineDoses = 3;
+    vaccineDoseInterval = 182;
 
-    vaccineDoseSpan = 730;
     linearlyWaningVaccine = false;
     vaccineImmunityDuration = INT_MAX;
     vaccineBoosting = false;
+    vaccineBoostingInterval = 730;
     bRetroactiveMatureVaccine = false;
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179, 0.128, 0.123, 0.0956, 0.195, 0.777, 0.940, 0.901, 1.0, 0.491, 0.301, 0.199};
@@ -210,14 +207,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
                     running_sum += extrinsicIncubationPeriods[j].duration;
                 }
             }
-            else if (strcmp(argv[i], "-vaccinatephased")==0) {
-                nSizeVaccinate = strtol(argv[++i],end,10);
-                for (int j=0; j<nSizeVaccinate; j++) {
-                    nVaccinateYear.push_back( strtol(argv[++i],end,10) );
-                    nVaccinateAge.push_back( strtol(argv[++i],end,10) );
-                    fVaccinateFraction.push_back( strtod(argv[++i],end) );
-                }
-            }
             else if (strcmp(argv[i], "-daysimmune")==0) {
                 nDaysImmune = strtol(argv[++i],end,10);
             }
@@ -249,17 +238,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
             }
             else if (strcmp(argv[i], "-retroactivematurevaccine")==0) {
                 bRetroactiveMatureVaccine=true;
-            }
-            else if (strcmp(argv[i], "-prevaccinate")==0) {
-                fPreVaccinateFraction = strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-prevaccinateage")==0) {
-                nSizePrevaccinateAge = strtol(argv[++i],end,10);
-                for (int j=0; j<nSizePrevaccinateAge; j++) {
-                    nPrevaccinateAgeMin[j] = strtol(argv[++i],end,10);
-                    nPrevaccinateAgeMax[j] = strtol(argv[++i],end,10);
-                    fPrevaccinateAgeFraction[j] = strtod(argv[++i],end);
-                }
             }
             else if (strcmp(argv[i], "-nosecondary")==0) {
                 bSecondaryTransmission = false;
@@ -402,21 +380,6 @@ void Parameters::validate_parameters() {
                 cerr << " . . . " << endl << "\t" << extrinsicIncubationPeriods.size() - j << " more extrinsic incubation periods not displayed." << endl;
                 break;
             }
-        }
-        cerr << endl;
-    }
-    cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << endl;
-    if (nSizeVaccinate>0) {
-        cerr << "Phased vaccinate (year, age, frac) = ";
-        for (int j=0; j<nSizeVaccinate; j++) {
-            cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
-        }
-        cerr << endl;
-    }
-    if (nSizePrevaccinateAge>0) {
-        cerr << "Pre-vaccinate by age (min, max, frac) = ";
-        for (int j=0; j<nSizePrevaccinateAge; j++) {
-            cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
         }
         cerr << endl;
     }
@@ -612,82 +575,66 @@ void Parameters::generateAnnualSerotypes(int total_num_years) { // default arg v
 }
 
 
-void Parameters::loadDailyEIP(string dailyEIPfilename) {
-    ifstream iss(dailyEIPfilename.c_str());
-    if (!iss) {
-        cerr << "ERROR: " << dailyEIPfilename << " not found." << endl;
-        exit(116);
-    }
+void Parameters::loadDailyEIP(string dailyEIPfilename, int desired_size) { // default desired size == 0
+    // expecting first value on each line to be the EIP mu
+    // other, subsequent values are permitted, but ignored
+    vector<string> first_column = dengue::util::read_vector_file(dailyEIPfilename);
 
-    // get rid of anything there now
     extrinsicIncubationPeriods.clear();
-
-    char** end = NULL;
-    char sep = ' ';
-    string line;
 
     const int duration = 1;
     int start = 0;
     double value = 0;
-    while ( getline(iss,line) ) {
-        // expecting first value on each line to be the EIP for any mosquito infected on that day
-        // other, subsequent values are permitted, but ignored
-        vector<string> fields = dengue::util::split(line, sep);
+    for(string val_str: first_column) {
+        value = dengue::util::to_double(val_str);
+        if (value <= 0) {
+            cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
+            cerr << "Value read: " << value << endl;
+            cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+            exit(113);
+        }
+        extrinsicIncubationPeriods.emplace_back(start, duration, value);
+        start += duration;
+    }
 
-        if (fields.size() >= 1) {
-            value = strtod(fields[0].c_str(), end);
-            if (value <= 0) {
-                cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
-                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
-                exit(113);
-            }
+    // this allows us to repeat a sequence many times and then modify it elsewhere,
+    // e.g. for vector control modeling
+    const int orig_len = extrinsicIncubationPeriods.size();
+    while ((signed) extrinsicIncubationPeriods.size() < desired_size) {
+        for (int i = 0; i < orig_len; ++i) {
+            auto value = extrinsicIncubationPeriods[i].value;
             extrinsicIncubationPeriods.emplace_back(start, duration, value);
             start += duration;
-        } else {
-            cerr << "WARNING: Found line with no values in daily EIP file" << endl;
-            cerr << "\tFile: " << dailyEIPfilename << endl;
         }
     }
+
+    if (desired_size > 0 and (signed) extrinsicIncubationPeriods.size() > desired_size) extrinsicIncubationPeriods.resize(desired_size);
 
     return;
 }
 
 
 void Parameters::loadDailyMosquitoMultipliers(string mosquitoMultiplierFilename, int desired_size) { // default desired size == 0
-    ifstream iss(mosquitoMultiplierFilename.c_str());
-    if (!iss) {
-        cerr << "ERROR: " << mosquitoMultiplierFilename << " not found." << endl;
-        exit(116);
-    }
+    // expecting first value on each line to be the mosquito multiplier (floats on [0,1])
+    // other, subsequent values are permitted, but ignored
+    vector<string> first_column = dengue::util::read_vector_file(mosquitoMultiplierFilename);
 
-    // get rid of anything there now
     mosquitoMultipliers.clear();
-
-    char** end = NULL;
-    char sep = ' ';
-    string line;
 
     const int duration = 1;  // this assumption is what makes it daily
     int start = 0;
     double value = 0;
-    while ( getline(iss,line) ) {
-        // expecting first value on each line to be the mosquito multiplier (floats on [0,1])
-        // other, subsequent values are permitted, but ignored
-        vector<string> fields = dengue::util::split(line, sep);
+    for(string val_str: first_column) {
 
-        if (fields.size() >= 1) {
-            value = strtod(fields[0].c_str(), end);
-            if (value < 0.0 or value > 1.0) {
-                cerr << "A mosquito multiplier < 0 or > 1 was read from " << mosquitoMultiplierFilename << "." << endl;
-                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
-                exit(117);
-            }
-            mosquitoMultipliers.emplace_back(start, duration, value);
-            start += duration;
-        } else {
-            cerr << "WARNING: Found line with no values in mosquito multiplier file" << endl;
-            cerr << "\tFile: " << mosquitoMultiplierFilename << endl;
+        value = dengue::util::to_double(val_str);
+        if (value < 0.0 or value > 1.0) {
+            cerr << "A mosquito multiplier < 0 or > 1 was read from " << mosquitoMultiplierFilename << "." << endl;
+            cerr << "Value read: " << value << endl;
+            cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+            exit(119);
         }
+        mosquitoMultipliers.emplace_back(start, duration, value);
+        start += duration;
     }
 
     // this allows us to repeat a sequence many times and then modify it elsewhere,
