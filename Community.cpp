@@ -466,42 +466,30 @@ bool Community::infect(int id, Serotype serotype, int day) {
 }
 
 
-// vaccinate - vaccinate fraction f of the population
-// if age>=0, then vaccinate only those who are "age" years old
-void Community::vaccinate(int time, double f, int age) {
+void Community::vaccinate(VaccinationEvent ve) {
     // This approach to vaccination is somewhat problematic.  Age classes can be vaccinated multiple times,
-    // so the probability of an individual being vaccinated becomes 1 - (1 - f)^n, where n is the number
+    // so the probability of an individual being vaccinated becomes 1 - (1 - ve.coverage)^n, where n is the number
     // of times an age class is specified, either explicitly or implicitly by using a negative value for age
-    assert(f>=0.0 and f<=1.0);
-    if (age<0) {                                                      // vaccinate everyone
-        for (int i=0; i<_nNumPerson; i++) {
-            Person p = _person[i];
-            if (!p.isVaccinated() && gsl_rng_uniform(RNG)<f) {
-                p.vaccinate(time);
-            }
-        }
-    } else {
-        // is the specified age a valid index?
-        if (age <= NUM_AGE_CLASSES - 1) {
-            for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-                Person* p = _personAgeCohort[age][pnum];
-                assert(p!=NULL);
-                if (!p->isVaccinated() && gsl_rng_uniform(RNG)<f) {
-                    p->vaccinate(time);
-                }
-            }
-        }
+
+    // Valid coverage and age?
+    assert(ve.coverage >= 0.0 and ve.coverage <= 1.0);
+    assert(ve.age <= (signed) _personAgeCohort.size());
+
+    for (Person* p: _personAgeCohort[ve.age]) {
+        assert(p != NULL);
+        if (!p->isVaccinated() && gsl_rng_uniform(RNG) < ve.coverage) p->vaccinate(ve.simDay);
     }
 }
 
 
-void Community::boost(int time, double f) { // re-vaccinate people who have less than threshold immunity left
-    assert(f>=0.0 and f<=1.0);
+void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate people who were last vaccinated interval days ago
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person + i;
-        // boost if ~fraction (or more) of immunity has waned
-        if (p->isVaccinated() and (p->daysSinceVaccination(time) >= f * _par->vaccineImmunityDuration) ) {
-            p->vaccinate(time);
+        if (p->isVaccinated()) {
+            const int timeSinceLastVaccination = p->daysSinceVaccination(time);
+            if (timeSinceLastVaccination == interval and p->getNumVaccinations() < maxDoses) {
+                p->vaccinate(time);
+            }
         }
     }
 }
