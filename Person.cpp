@@ -119,9 +119,8 @@ double Person::remainingEfficacy(const int time) const {
         remainingFraction = 0.0;
     } else {
         if (_par->linearlyWaningVaccine) {
-            int time_since_vac = daysSinceVaccination(time);
             // reduce by fraction of immunity duration that has waned
-            if (time_since_vac > _par->vaccineImmunityDuration) {
+            if (daysSinceVaccination(time) > _par->vaccineImmunityDuration) {
                 remainingFraction = 0.0;
             } else {
                 remainingFraction -= ((double) time_since_vac) / _par->vaccineImmunityDuration;
@@ -152,13 +151,10 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
 }
 
 enum MaternalEffect { MATERNAL_PROTECTION, NO_EFFECT, MATERNAL_ENHANCEMENT };
-// TODO-CABP: use as array indicies?  re-order to actual order (prot, enhance, no effect)
-// e.g., http://stackoverflow.com/questions/404231/using-an-enum-as-an-array-index
 
 MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int time) {
     MaternalEffect effect = NO_EFFECT;
     if (p->getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
-        // TODO-CABP: change to combine finding mom, getting immunity (probably add hasMaternalImmunity that uses findMom)
         Person* mom = p->getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
         if (mom and mom->getImmunityBitset().any()) {           // if there is one and she has an infection history
             if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
@@ -178,8 +174,9 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
 // if secondaryPathogenicityOddsRatio > 1, secondary infections are more often symptomatic
 // returns true if infection occurs
 bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
+    // Bail now if this person can not become infected
     // TODO - clarify this.  why would a person not be infectable in this scope?
-    if (not isInfectable(serotype, time)) { return false; }
+    if (not isInfectable(serotype, time)) return false;
     MaternalEffect maternal_effect = _maternal_antibody_effect(this, _par, time);
     bool maternalAntibodyEnhancement;
     switch( maternal_effect ) {
@@ -204,23 +201,23 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-    double symptomatic_probability = 0.0;
+    double symptomatic_probability = _par->pathogenicityRelativeRisks[(int) serotype];
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
             severe_given_case       = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:
-            symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            symptomatic_probability *= _par->basePathogenicity;
             severe_given_case       = _par->secondarySevereFraction[(int) serotype];
             break;
         case 2:
-            symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
             severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
-            symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
+            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
             severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
             break;
         default:
@@ -228,6 +225,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             exit(-838);
     }
 
+    if (symptomatic_probability > 1.0) symptomatic_probability = 1.0;
     const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;        // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
     assert(symptomatic_probability >= 0.0);

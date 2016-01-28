@@ -268,10 +268,11 @@ public:
     std::vector<int> nInitialExposed;                       // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
-    std::vector<double> primaryPathogenicity;               // serotypes
-    std::vector<double> secondaryPathogenicity;             // Grange et al 2014 doi: 10.3389/fimmu.2014.00280 suggests pri:sec odds ratio is 1
-    std::vector<double> tertiaryPathogenicity;
-    std::vector<double> quaternaryPathogenicity;
+    double basePathogenicity;                               // weighted average (over serotypes) post-primary pathogenicity (Pr{infection->symptomatic})
+    std::vector<double> pathogenicityRelativeRisks;
+    double postSecondaryRelativeRisk;                       // risk of symptoms in post-secondary infections relative to secondary infections
+    void defineSerotypeRelativeRisks();                     // should be called after reportedFractions (1/expansion factors) are set, if they're going to be
+
     int nDefaultMosquitoCapacity;
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
