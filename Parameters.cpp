@@ -57,14 +57,8 @@ void Parameters::define_defaults() {
     nInitialExposed  = vector<int>(NUM_OF_SEROTYPES, 0);
     nInitialInfected = vector<int>(NUM_OF_SEROTYPES, 0);
 
-    // values fitted in
-    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
-    // Normalized from Fc values in supplement table 2, available at
-    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
-    secondaryPathogenicity  = {1.000, 0.825, 0.833, 0.317};
-    tertiaryPathogenicity   = vector<double>(NUM_OF_SEROTYPES, 0.0);
-    quaternaryPathogenicity = vector<double>(NUM_OF_SEROTYPES, 0.0);
+    basePathogenicity = 1.0;                            // preferably this value is fit; default interpretation is Pr{symptomatic | secondary denv1 infection}
+    postSecondaryRelativeRisk = 0.1;                    // risk of symptoms in post-secondary infections relative to secondary infections
 
     // Probabilities GIVEN maternal antibodies (from random cohabitating female of reproductive age)
     // Values estimated based on Fig. 5 of Halstead et al, Dengue hemorrhagic fever in infants: research opportunities ignored, EID, 2002
@@ -127,18 +121,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
                     // This warning doesn't get thrown if -dailyexposed comes before the -annualserotypefile
                     cerr << "WARNING: Annual serotype file specified.  Ignoring daily exposed parameter.\n"; 
                 }
-            }
-            else if (strcmp(argv[i], "-primarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) primaryPathogenicity[j]=strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-secondarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) secondaryPathogenicity[j]=strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-tertiarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) tertiaryPathogenicity[j]=strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-quaternarypathogenicity")==0) {
-                for (int j=0; j<NUM_OF_SEROTYPES; j++) quaternaryPathogenicity[j]=strtod(argv[++i],end);
             }
             else if (strcmp(argv[i], "-annualintroscoef")==0) {
                 annualIntroductionsCoef = strtod(argv[++i],end);
@@ -333,14 +315,6 @@ void Parameters::validate_parameters() {
     cerr << "beta_PM = " << betaPM << endl;
     cerr << "beta_MP = " << betaMP << endl;
     cerr << "days of complete cross protection = " << nDaysImmune << endl;
-    cerr << "pathogenicity of primary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << primaryPathogenicity[i]; } cerr << endl;
-    cerr << "pathogenicity of secondary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << secondaryPathogenicity[i]; } cerr << endl;
-    cerr << "pathogenicity of tertiary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << tertiaryPathogenicity[i]; } cerr << endl;
-    cerr << "pathogenicity of quaternary infection =";
-    for (int i=0; i<NUM_OF_SEROTYPES; i++) { cerr << " " << quaternaryPathogenicity[i]; } cerr << endl;
     cerr << "mosquito move prob = " << fMosquitoMove << endl;
     cerr << "mosquito move model = " << mosquitoMoveModel << endl;
     if ( mosquitoMoveModel != "uniform" and mosquitoMoveModel != "weighted" ) {
@@ -674,4 +648,26 @@ void Parameters::loadDailyMosquitoMultipliers(string mosquitoMultiplierFilename,
     if (desired_size > 0 and (signed) mosquitoMultipliers.size() > desired_size) mosquitoMultipliers.resize(desired_size);
 
     return;
+}
+
+
+void Parameters::defineSerotypeRelativeRisks() { // should be called after reportedFractions (1/expansion factors) are set, if they're going to be
+    // values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    vector<double> reported_by_sero = {1.20, 0.99, 1.00, 0.38}; // Reich et al Table 2 Fc medians; total cases per 1,000 infections
+    vector<double> df_by_sero = {353.0/1223.0, 176.0/1477.0, 397.0/1542.0, 95.0/480.0}; // Nisalak et al http://www.ajtmh.org/content/68/2/191.full.pdf+html Table 4, p. 199
+    vector<double> dhf_by_sero;
+    for (double val: df_by_sero) dhf_by_sero.push_back(1.0 - val);
+
+    vector<double> implied_cases_by_sero;
+    for (unsigned int i = 0; i < reported_by_sero.size(); ++i) {
+        implied_cases_by_sero.push_back(reported_by_sero[i]*(df_by_sero[i]/reportedFraction[(int) MILD] + dhf_by_sero[i]/reportedFraction[(int) SEVERE]));
+    }
+
+    assert(implied_cases_by_sero[0] > 0);
+    vector<double> relative_risk_by_sero = implied_cases_by_sero;
+    for (double& val: relative_risk_by_sero) val /= implied_cases_by_sero[0];
+    pathogenicityRelativeRisks = relative_risk_by_sero;
 }

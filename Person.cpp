@@ -205,30 +205,31 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
      // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-    double symptomatic_probability = 0.0;
+    double symptomatic_probability = _par->pathogenicityRelativeRisks[(int) serotype];
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            symptomatic_probability = _par->primaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-            severe_given_case       = _par->primarySevereFraction[(int) serotype];
+            symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
+            severe_given_case        = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:
-            symptomatic_probability = _par->secondaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-            severe_given_case       = _par->secondarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->basePathogenicity;
+            severe_given_case        = _par->secondarySevereFraction[(int) serotype];
             break;
         case 2:
-            symptomatic_probability = _par->tertiaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-            severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
-            symptomatic_probability = _par->quaternaryPathogenicity[(int) serotype] * SYMPTOMATIC_BY_AGE[_nAge];
-            severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
             break;
         default:
             cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
             exit(-838);
     }
 
+    if (symptomatic_probability > 1.0) symptomatic_probability = 1.0;
     const double effective_VEP = isVaccinated() ? _par->fVEP*remaining_efficacy : 0.0;        // reduced symptoms due to vaccine
     symptomatic_probability *= (1.0 - effective_VEP);
     assert(symptomatic_probability >= 0.0);

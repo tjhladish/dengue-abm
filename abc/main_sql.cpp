@@ -35,17 +35,20 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
     double _sec_severity = args[2];
-    double _pss_ratio    = args[3];
-    double _exp_coef     = args[4];
-    double _nmos         = args[5];
-    double _betamp       = args[6]; // mp and pm and not separately
-    double _betapm       = args[6]; // identifiable, so they're the same
+    double _base_path    = args[3];
+    double _pss_ratio    = args[4];
+    double _exp_coef     = args[5];
+    double _nmos         = args[6];
+    double _betamp       = args[7]; // mp and pm and not separately
+    double _betapm       = args[7]; // identifiable, so they're the same
+
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
     string output_dir = "/scratch/lfs/thladish";
 
-    vector<long double> abc_args(&args[0], &args[6]);
+    vector<long double> abc_args(&args[0], &args[7]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
@@ -61,27 +64,14 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    vector<double> base_pathogenicity = {1.000, 0.825, 0.833, 0.317};
-    par->primaryPathogenicity    = base_pathogenicity;
-    par->secondaryPathogenicity  = base_pathogenicity;
-    par->tertiaryPathogenicity   = base_pathogenicity;
-    par->quaternaryPathogenicity = base_pathogenicity;
+    par->defineSerotypeRelativeRisks();
+    par->basePathogenicity = _base_path;
+    par->postSecondaryRelativeRisk = 0.1;
 
-    for (int i = 0; i < NUM_OF_SEROTYPES; ++i) {
-        // http://www.ajtmh.org/content/38/1/172.extract ratio of 1:2 for primary:secondary pathogenicity
-        par->primaryPathogenicity[i]    *= 0.5;
-        par->tertiaryPathogenicity[i]   *= 0.1;
-        par->quaternaryPathogenicity[i] *= 0.1;
-    }
-
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
-
-    par->primarySevereFraction.clear();
-    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
-    par->secondarySevereFraction.clear();
-    par->secondarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity);
-    par->tertiarySevereFraction   = {0,0,0,0};
-    par->quaternarySevereFraction = {0,0,0,0};
+    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
+    par->secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, _sec_severity);
+    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
+    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -301,7 +291,6 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     const double total_mild   = accumulate(mild_cases.begin(), mild_cases.end(), 0.0);
     const double total_severe = accumulate(severe_cases.begin(), severe_cases.end(), 0.0);
-    const double total_cases  = accumulate(all_cases.begin(), all_cases.end(), 0.0);
 
     time (&end);
     double dif = difftime (end,start);
@@ -316,7 +305,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     ABC::Col reported_per_cap(all_cases.size());
     const int pop_size = community->getNumPerson();
     for (unsigned int i = 0; i < all_cases.size(); i++) {
-        const float_type mild_reported   = (all_cases[i] - severe_cases[i]) * mild_reporting;
+        const float_type mild_reported   = mild_cases[i] * mild_reporting;
         const float_type severe_reported = severe_cases[i] * severe_reporting;
         const float_type total_reported  = mild_reported + severe_reported;
         reported_severe[i] = (int) (severe_reported + 0.5);
