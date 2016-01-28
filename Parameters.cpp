@@ -26,7 +26,6 @@ void Parameters::define_defaults() {
     quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, 0.0);
     hospitalizedFraction = {0.0, 0.15, 0.9};            // rough estimates in mex
     bVaccineLeaky = false;
-    fPreVaccinateFraction = 0.0;
     nDefaultMosquitoCapacity = 50;                      // mosquitoes per location
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
@@ -43,8 +42,6 @@ void Parameters::define_defaults() {
     normalizeSerotypeIntros = false;
     annualIntroductions = {1.0};
     nDaysImmune = 365;
-    nSizeVaccinate = 0;                                 // number of parts in phased vaccination
-    nSizePrevaccinateAge = 0;
     reportedFraction = {0.0, 0.05, 1.0};                // fraction of asymptomatic, mild, and severe cases reported
     nDailyExposed.push_back(vector<float>(NUM_OF_SEROTYPES, 0.0)); // default: no introductions
     annualSerotypeFilename = "";
@@ -66,13 +63,14 @@ void Parameters::define_defaults() {
     infantImmuneProb = 3.0/12.0;    // given exposure and maternal antibodies, chance of resisting infection (first 3 months)
     infantSevereProb = 6.0/9.0;     // given infection and maternal antibodies, chance of severe disease (next 6 months)
 
-    nVaccinateYear.clear();
-    nVaccinateAge.clear();
-    fVaccinateFraction.clear();
+    vaccinationEvents.clear();
+    numVaccineDoses = 3;
+    vaccineDoseInterval = 182;
 
     linearlyWaningVaccine = false;
     vaccineImmunityDuration = INT_MAX;
     vaccineBoosting = false;
+    vaccineBoostingInterval = 730;
     bRetroactiveMatureVaccine = false;
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179, 0.128, 0.123, 0.0956, 0.195, 0.777, 0.940, 0.901, 1.0, 0.491, 0.301, 0.199};
@@ -178,14 +176,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
                     running_sum += extrinsicIncubationPeriods[j].duration;
                 }
             }
-            else if (strcmp(argv[i], "-vaccinatephased")==0) {
-                nSizeVaccinate = strtol(argv[++i],end,10);
-                for (int j=0; j<nSizeVaccinate; j++) {
-                    nVaccinateYear.push_back( strtol(argv[++i],end,10) );
-                    nVaccinateAge.push_back( strtol(argv[++i],end,10) );
-                    fVaccinateFraction.push_back( strtod(argv[++i],end) );
-                }
-            }
             else if (strcmp(argv[i], "-daysimmune")==0) {
                 nDaysImmune = strtol(argv[++i],end,10);
             }
@@ -217,17 +207,6 @@ void Parameters::readParameters(int argc, char* argv[]) {
             }
             else if (strcmp(argv[i], "-retroactivematurevaccine")==0) {
                 bRetroactiveMatureVaccine=true;
-            }
-            else if (strcmp(argv[i], "-prevaccinate")==0) {
-                fPreVaccinateFraction = strtod(argv[++i],end);
-            }
-            else if (strcmp(argv[i], "-prevaccinateage")==0) {
-                nSizePrevaccinateAge = strtol(argv[++i],end,10);
-                for (int j=0; j<nSizePrevaccinateAge; j++) {
-                    nPrevaccinateAgeMin[j] = strtol(argv[++i],end,10);
-                    nPrevaccinateAgeMax[j] = strtol(argv[++i],end,10);
-                    fPrevaccinateAgeFraction[j] = strtod(argv[++i],end);
-                }
             }
             else if (strcmp(argv[i], "-nosecondary")==0) {
                 bSecondaryTransmission = false;
@@ -362,21 +341,6 @@ void Parameters::validate_parameters() {
                 cerr << " . . . " << endl << "\t" << extrinsicIncubationPeriods.size() - j << " more extrinsic incubation periods not displayed." << endl;
                 break;
             }
-        }
-        cerr << endl;
-    }
-    cerr << "Pre-vaccinate fraction = " << fPreVaccinateFraction << endl;
-    if (nSizeVaccinate>0) {
-        cerr << "Phased vaccinate (year, age, frac) = ";
-        for (int j=0; j<nSizeVaccinate; j++) {
-            cerr << " (" << nVaccinateYear[j] << "," << nVaccinateAge[j]  << "," << fVaccinateFraction[j] << ")";
-        }
-        cerr << endl;
-    }
-    if (nSizePrevaccinateAge>0) {
-        cerr << "Pre-vaccinate by age (min, max, frac) = ";
-        for (int j=0; j<nSizePrevaccinateAge; j++) {
-            cerr << " (" << nPrevaccinateAgeMin[j] << "," << nPrevaccinateAgeMax[j]  << "," << fPrevaccinateAgeFraction[j] << ")";
         }
         cerr << endl;
     }

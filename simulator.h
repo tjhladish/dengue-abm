@@ -118,21 +118,6 @@ Community* build_community(const Parameters* par) {
         community->setNoSecondaryTransmission();
     }
 
-    if (par->fPreVaccinateFraction>0.0) {
-        community->vaccinate(0, par->fPreVaccinateFraction);
-    }
-
-    if (par->nSizePrevaccinateAge>0) {
-        for (int j=0; j<par->nSizePrevaccinateAge; j++) {
-            for (int k=par->nPrevaccinateAgeMin[j]; k<=par->nPrevaccinateAgeMax[j]; k++) {
-                community->vaccinate(0, par->fPrevaccinateAgeFraction[j], k); // first argument is time
-            }
-        }
-    }
-    
-    //for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
-    //    par->nNumInitialSusceptible[serotype] = community->getNumSusceptible((Serotype) serotype);
-    //}
     return community;
 }
 
@@ -282,18 +267,24 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
-    for (int i=0; i<par->nSizeVaccinate; i++) {
-        if (date.year()==par->nVaccinateYear[i]) {
-            if (not par->abcVerbose) {
-                cerr << "vaccinating " << par->fVaccinateFraction[i]*100 << "% of age " << par->nVaccinateAge[i] 
-                     << " on day " << date.day() << endl;
+    for (VaccinationEvent ve: par->vaccinationEvents) {
+        // Normal, initial vaccination
+        if (date.day() == ve.simDay) {
+            if (not par->abcVerbose) cerr << "vaccinating " << ve.coverage*100 << "% of age " << ve.age << " on day " << ve.simDay << endl;
+            community->vaccinate(ve);
+        } else if (date.day() > ve.simDay) {
+            // Re-vaccination via ...
+            int timeSinceVac = date.day() - ve.simDay;
+            const int doseInterval = par->vaccineDoseInterval;
+            const int boostInterval = par->vaccineBoostingInterval;
+            if (timeSinceVac % doseInterval == 0 and timeSinceVac / doseInterval <= par->numVaccineDoses) {
+                // Multi-dose vaccine
+                community->boost(date.day(), doseInterval, par->numVaccineDoses);
+            } else if (par->linearlyWaningVaccine and par->vaccineBoosting and timeSinceVac % boostInterval == 0) {
+                // Boosting
+                community->boost(date.day(), boostInterval);
             }
-            community->vaccinate(date.day(), par->fVaccinateFraction[i],par->nVaccinateAge[i]);
         }
-    }
-    if (par->linearlyWaningVaccine and par->vaccineBoosting) {
-        double allowed_waning = 730/par->vaccineImmunityDuration; 
-        community->boost(date.day(), allowed_waning); // boost if > allowed_waning of immunity has waned
     }
 }
 
@@ -402,8 +393,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
-        // phased vaccination
-        if (date.julianDay() == 100) update_vaccinations(par, community, date); 
+        update_vaccinations(par, community, date); 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 
