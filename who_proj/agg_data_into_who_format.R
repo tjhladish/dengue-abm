@@ -1,18 +1,43 @@
+rm(list=ls())
 require(reshape2)
 require(data.table)
 require(parallel)
-require(ggplot2)
+# require(ggplot2)
 
-poppath <- "~/Dropbox/who_dengue_data/yucatan_ages.tsv"
-seropath <- "~/Downloads/auto_output/"
+tar <- "~/Downloads/who-jan-2016-aggregated/"
+setwd(tar)
 
-pop <- fread(poppath, col.names = c("pop", "age"))[,
+poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+seropath <- "~/Downloads/auto_output/" # path to serostatus processed logs - run process
+
+age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
+
+pop <- fread(poppath)[,list(pop=.N),keyby=age][,
   age_category := factor(ifelse(
     age < 9, age_cats[1], ifelse(
       age < 19, age_cats[2],
       age_cats[3]
     )), levels = age_cats, ordered = TRUE)
 ]
+
+vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
+
+bg9files <- list.files(pattern = "^[0-4]0+\\.")
+
+econdata <- subset(merge(
+  dcast.data.table(melt(
+    rbindlist(lapply(c(vacfiles, bg9files), fread, colClasses = c(scenario="character"))),
+      id.vars = c("serial","scenario","age","outcome"), variable.name = "year", value.name = "count"
+    )[outcome != 0][,
+      year := as.integer(gsub("y", "", year))
+    ][,
+      outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
+    ], serial + scenario + age + year ~ outcome, value.var = "count"
+  ), pop, by = "age"), select=-age_category)
+
+bg16files <- list.files(pattern = "^[01]0+\\.")
+vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")
+vac16files <- list.files(pattern = "^[01][01]{2}11[01]{2}\\.")
 
 pop_ref <- pop[,list(pop=sum(pop)/1e5),by=age_category]
 pop_ref <- rbind(pop_ref, pop_ref[,list(pop=sum(pop), age_category="overall")])
@@ -25,8 +50,6 @@ cohort5 <- pop[age >= 9][1:26, list(pop, year=4:29, age="cohort5")]
 
 cohorts <- rbind(cohort1, cohort2, cohort3, cohort4, cohort5)
 cohorts[, year:=factor(year)][,pop:=pop/1e5]
-
-age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
 
 munger <- function(fname, vacage=9, xmis_setting=seq(10,90,by=20)) {
   long <- subset(melt(fread(fname, colClasses = c(scenario="character")),
@@ -77,9 +100,6 @@ munger <- function(fname, vacage=9, xmis_setting=seq(10,90,by=20)) {
   ))
 }
 
-bg9files <- list.files(pattern = "^[0-4]0+\\.")
-bg16files <- list.files(pattern = "^[01]0+\\.")
-
 backgroundRead <- function(files, va=9) setkey(
   rbindlist(mclapply(
     files, munger, vacage=va, mc.cores = detectCores()-1
@@ -87,9 +107,6 @@ backgroundRead <- function(files, va=9) setkey(
 
 bg9 <- subset(backgroundRead(bg9files), select=-scenario)
 bg16 <- subset(backgroundRead(bg16files, va=16), select=-scenario)
-
-vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")
-vac16files <- list.files(pattern = "^[01][01]{2}11[01]{2}\\.")
 
 vac9 <- backgroundRead(vac9files)
 vac16 <- backgroundRead(vac16files, va=16)
@@ -204,6 +221,10 @@ seroresults <- setcolorder(
   ],
   names(reduceditems)
 )
+
+## TODO using baseline case data, determine proportion of symptomatic + hospitalized cases by age, averaged over...saaaay...10 years?
+##  then turn that into cumulative cases by those ages
+##  outcome = symptomatic | hospitalised cases, outcome_denominator == cumulative proportion at baseline?
 
 saveRDS(rbind(reduceditems, seroresults), "../longini2.RData")
 

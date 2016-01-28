@@ -9,6 +9,7 @@
 #path_code="C:\\Users\\Stefan Flasche\\Documents\\GitHub\\CMDVI---Analysis"
 #path_data="Data/"
 path_figures="../"
+output <- "png"
 #setwd("H:\\My Documents\\_Projects\\WHO\\WHO - Dengue\\AnalysisII\\")
 #setwd("C:\\Users\\Stefan Flasche\\Documents\\Work\\WHO - Dengue\\AnalysisII")
 
@@ -57,7 +58,7 @@ df <- readRDS("../longini2.RData")
         scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
         
       #print(p)
-      ggsave(paste(path_figures,"VaccineImpact_",my_outcome_denominator,"_",my_year,".tiff",sep=""),p,dpi=300,compression="lzw",units="cm",width=20, height=15)
+      ggsave(paste(path_figures,"VaccineImpact_",my_outcome_denominator,"_",my_year,".",output,sep=""),p,dpi=300,units="cm",width=20, height=15)
     }
   }
     
@@ -78,7 +79,7 @@ df <- readRDS("../longini2.RData")
     theme_bw() +
     scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
   #print(p)
-  ggsave(paste(path_figures,"VaccineEffectsInVaccCohort_",my_age,".tiff",sep=""),p,dpi=300,compression="lzw",units="cm",width=20, height=14)
+  ggsave(paste(path_figures,"VaccineEffectsInVaccCohort_",my_age,".",output,sep=""),p,dpi=300,units="cm",width=20, height=14)
 
   
   #change in vaccine impact over time
@@ -97,7 +98,7 @@ df <- readRDS("../longini2.RData")
     scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
 
   #print(p)
-  ggsave(paste(path_figures,"VaccineEffectsInPopulation.tiff",sep=""),p,dpi=300,compression="lzw",units="cm",width=20, height=14)
+  ggsave(paste(path_figures,"VaccineEffectsInPopulation.",output,sep=""),p,dpi=300,units="cm",width=20, height=14)
   
   
   #change in serostatus in the targeted age group over time
@@ -115,7 +116,7 @@ df <- readRDS("../longini2.RData")
     theme_bw() +
     scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
   
-  ggsave(paste(path_figures,"VaccineEffectsOnSeropositivity.tiff",sep=""),p,dpi=300,compression="lzw",units="cm",width=20, height=8)
+  ggsave(paste(path_figures,"VaccineEffectsOnSeropositivity.",output,sep=""),p,dpi=300,units="cm",width=20, height=8)
   
   
 
