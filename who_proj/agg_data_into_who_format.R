@@ -24,6 +24,39 @@ vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
 
 bg9files <- list.files(pattern = "^[0-4]0+\\.")
 
+scn_render <- function(scnstr) {
+  vacmech <- ifelse(substr(scnstr,2,2) == "0", "baseline", "altvac")
+  catchup <- ifelse(substr(scnstr,1,1) == "1", paste0("catchup=>", ifelse(substr(scnstr,5,5) == "0", 17, 30)), "")
+  routine <- ifelse(substr(scnstr,4,4) == "0", "", "routine=16yo")
+  vaxrate <- ifelse(substr(scnstr,6,6) == "0", "coverage=50", "")
+  gsub(",$","",gsub(",+",",",paste(vacmech, catchup, routine, vaxrate, sep=",")))
+}
+
+# rr_severity_sec_vs_pri = 20
+# 
+# ph1 = 0.111
+# ph2 = ph1*1.88
+# ps2 = 20*ps1
+# ph1 = phs*ps1 + phc*pc1
+# ph2 = phs*ps2 + phc*pc2
+# 
+# ph1 = 0.111
+# ph2 = 0.111*1.88
+# ps2 = 20*ps1
+# 
+# 0.111 = phs*ps1 + phc*(1-ps1)
+# 0.111*1.88 = phs*20*ps1 + phc*(1-20*ps1)
+
+# assume phs ~ 1
+# (0.111 - ps1)/(1-ps1) = phc
+# 0.111*1.88 = 20*ps1 + phc*(1-20*ps1)
+# 0.111*(1-1.88) = -19*ps1 - 0.111*1.88*ps1 + 20*0.111*ps1
+ps1 = 0.005749711
+# ps2 = 20*ps1 = 0.1149942
+# pc1 = 1 - ps1
+# pc2 = 1 - ps2
+phc = (0.111 - ps1)/(1-ps1)
+
 econdata <- subset(merge(
   dcast.data.table(melt(
     rbindlist(lapply(c(vacfiles, bg9files), fread, colClasses = c(scenario="character"))),
@@ -33,8 +66,47 @@ econdata <- subset(merge(
     ][,
       outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
     ], serial + scenario + age + year ~ outcome, value.var = "count"
-  ), pop, by = "age"), select=-age_category)
+  ), pop, by = "age"), select=-age_category)[,
+  particle_id := floor(serial/80)
+][,
+  symptomatic := round(mild*(1-phc))
+][,
+  amb := symptomatic
+][,
+  hosp := round(((mild-amb)+severe)*(1-.00078))
+][,
+  death := (mild + severe) - (amb+hosp)
+][,
+  transmission_level := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
+][,
+  vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
+]
 
+# scenario
+#  1transmission level
+#  2catchup?
+#  3vac mechanism
+#  4vaccination?
+#  5target age
+#  6catch age
+#  7coverage
+
+econdata[vacc_coverage == 0.0, scn := "noVaccine"]
+econdata[vacc_coverage == 0.5, scn := "coverageAT50%"]
+econdata[substr(scenario,3,3) == "1", scn := "altVaccine" ]
+econdata[substr(scenario,2,2) == "1", scn := "catchUp"]
+econdata[substr(scenario,6,6) == "1", scn := paste0(scn,"To30")]
+econdata[grepl("^[0-4]0{2}10{2}1",scenario), scn := "reference"]
+econdata[substr(scenario,5,5) == "1", scn := "routineAT16"]
+
+econdata[, vac := 0]
+econdata[age==9 & scn != "routineAT16", vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:17) & scn == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:30) & scn == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age==16 & scn == "routineAT16", vac := round(vacc_coverage*pop)]
+
+econfinal <- subset(econdata, select=c(particle_id, scn, transmission_level, year, age, vac, amb, hosp, death))
+setkey(econfinal, particle_id, scn, transmission_level, year, age)
 bg16files <- list.files(pattern = "^[01]0+\\.")
 vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")
 vac16files <- list.files(pattern = "^[01][01]{2}11[01]{2}\\.")
@@ -111,14 +183,6 @@ bg16 <- subset(backgroundRead(bg16files, va=16), select=-scenario)
 vac9 <- backgroundRead(vac9files)
 vac16 <- backgroundRead(vac16files, va=16)
 
-scn_render <- function(scnstr) {
-  vacmech <- ifelse(substr(scnstr,2,2) == "0", "baseline", "altvac")
-  catchup <- ifelse(substr(scnstr,1,1) == "1", paste0("catchup=>", ifelse(substr(scnstr,5,5) == "0", 17, 30)), "")
-  routine <- ifelse(substr(scnstr,4,4) == "0", "", "routine=16yo")
-  vaxrate <- ifelse(substr(scnstr,6,6) == "0", "coverage=50", "")
-  gsub(",$","",gsub(",+",",",paste(vacmech, catchup, routine, vaxrate, sep=",")))
-}
-
 items <- rbind(vac9[bg9], vac16[bg16])[
   ## convert asymptomatics to infections
   ## convert symptomatics -> infections vs hospitalizations
@@ -129,31 +193,6 @@ items <- rbind(vac9[bg9], vac16[bg16])[
 ]
 class(items$vs) <- "double"
 items[vs == 0 & !(age %in% c("cohort1","cohort2","cohort3","cohort4","cohort5")), vs := 1e-1]
-
-# rr_severity_sec_vs_pri = 20
-# 
-# ph1 = 0.111
-# ph2 = ph1*1.88
-# ps2 = 20*ps1
-# ph1 = phs*ps1 + phc*pc1
-# ph2 = phs*ps2 + phc*pc2
-# 
-# ph1 = 0.111
-# ph2 = 0.111*1.88
-# ps2 = 20*ps1
-# 
-# 0.111 = phs*ps1 + phc*(1-ps1)
-# 0.111*1.88 = phs*20*ps1 + phc*(1-20*ps1)
-
-# assume phs ~ 1
-# (0.111 - ps1)/(1-ps1) = phc
-# 0.111*1.88 = 20*ps1 + phc*(1-20*ps1)
-# 0.111*(1-1.88) = -19*ps1 - 0.111*1.88*ps1 + 20*0.111*ps1
-ps1 = 0.005749711
-# ps2 = 20*ps1 = 0.1149942
-# pc1 = 1 - ps1
-# pc2 = 1 - ps2
-phc = (0.111 - ps1)/(1-ps1)
 
 hosp <- items[event != "asymptomatic",
   list(
@@ -225,6 +264,8 @@ seroresults <- setcolorder(
 ## TODO using baseline case data, determine proportion of symptomatic + hospitalized cases by age, averaged over...saaaay...10 years?
 ##  then turn that into cumulative cases by those ages
 ##  outcome = symptomatic | hospitalised cases, outcome_denominator == cumulative proportion at baseline?
+
+## TODO do cumulative X_averted for everything, rbind it, have outcome_denom = "cumulative - per 100,000 pop at risk"
 
 saveRDS(rbind(reduceditems, seroresults), "../longini2.RData")
 
