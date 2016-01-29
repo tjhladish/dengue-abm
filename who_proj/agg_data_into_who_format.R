@@ -77,7 +77,7 @@ econdata <- subset(merge(
 ][,
   death := (mild + severe) - (amb+hosp)
 ][,
-  transmission_level := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
+  transmission_setting := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
 ][,
   vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
 ]
@@ -91,22 +91,25 @@ econdata <- subset(merge(
 #  6catch age
 #  7coverage
 
-econdata[vacc_coverage == 0.0, scn := "noVaccine"]
-econdata[vacc_coverage == 0.5, scn := "coverageAT50%"]
-econdata[substr(scenario,3,3) == "1", scn := "altVaccine" ]
-econdata[substr(scenario,2,2) == "1", scn := "catchUp"]
-econdata[substr(scenario,6,6) == "1", scn := paste0(scn,"To30")]
-econdata[grepl("^[0-4]0{2}10{2}1",scenario), scn := "reference"]
-econdata[substr(scenario,5,5) == "1", scn := "routineAT16"]
+econdata[vacc_coverage == 0.0, scen := "noVaccine"]
+econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
+econdata[substr(scenario,3,3) == "1", scen := "altVaccine" ]
+econdata[substr(scenario,2,2) == "1", scen := "catchUp"]
+econdata[substr(scenario,6,6) == "1", scen := paste0(scn,"To30")]
+econdata[grepl("^[0-4]0{2}10{2}1",scenario), scen := "reference"]
+econdata[substr(scenario,5,5) == "1", scen := "routineAT16"]
 
 econdata[, vac := 0]
-econdata[age==9 & scn != "routineAT16", vac := round(vacc_coverage*pop)]
-econdata[age %in% (10:17) & scn == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age %in% (10:30) & scn == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age==16 & scn == "routineAT16", vac := round(vacc_coverage*pop)]
+econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
 
-econfinal <- subset(econdata, select=c(particle_id, scn, transmission_level, year, age, vac, amb, hosp, death))
-setkey(econfinal, particle_id, scn, transmission_level, year, age)
+econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
+setkey(econfinal, particle_id, scen, transmission_setting, year, age)
+
+saveRDS(econfinal, "~/Downloads/econref.rds")
+
 bg16files <- list.files(pattern = "^[01]0+\\.")
 vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")
 vac16files <- list.files(pattern = "^[01][01]{2}11[01]{2}\\.")
