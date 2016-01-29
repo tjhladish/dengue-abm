@@ -355,6 +355,44 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
+const int BURNIN = 50;
+if (date.year() >= BURNIN and par->vaccinationEvents.size() > 0) {
+    const int TARGET_AGE = par->vaccinationEvents.back().age;  // UGLY WHO HACK
+    const int VACC_START_DAY = BURNIN*365;
+    if (date.julianDay() == par->startDayOfYear - 1) {
+        // Dims: serostatus (neg/pos), vaccinated (F,T), severity(no infection, asymptomatic, mild, severe)
+        vector< vector< vector<int> > > tally = {{{0,0,0,0},{0,0,0,0}},{{0,0,0,0},{0,0,0,0}}};
+        const int year_of_intervention = date.year() - BURNIN;
+        for (int i=community->getNumPerson()-1; i>=0; i--) {
+            Person *p = community->getPerson(i);
+            if (p->getAge() == year_of_intervention + TARGET_AGE) {
+                const bool ever_infected = p->getNumInfections() > 0 ? true : false;
+                const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
+                const bool vaccinated = p->isVaccinated();
+                int severity = 0; // default = no infection in past year
+                if (ever_infected and date.day() - p->getInfectionHistory().back()->getInfectedTime() < 365) {
+                    const Infection* infec = p->getInfectionHistory().back();
+                    if ((const bool) infec->isSevere()) {
+                        severity = 3;
+                    } else if ((const bool) infec->isSymptomatic()) {
+                        severity = 2;
+                    } else {
+                        severity = 1;
+                    }
+                }
+                tally[(int) serostatus][(int) vaccinated][severity]++;
+            }
+        }
+        for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
+            for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
+                for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
+                    cerr << "COHORT," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << endl;
+                }
+            }
+        }
+    }
+}
+
     community->tick(date.day());
 
     // TODO - make it cleaner to iterate through pop
@@ -367,7 +405,7 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
             if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
             if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
 
-if (not par->abcVerbose and date.year() >= 50) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
+if (not par->abcVerbose and date.year() >= BURNIN) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
     // for dec 2015 WHO results
     stringstream ss;
     ss << date.day() << ","
@@ -433,7 +471,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 -rw-r----- 1 thladish epi  52M Aug  9 02:33 daily.3112558391.1307767146
 */
     stringstream ss_filename;
-    ss_filename << "/scratch/lfs/thladish/who-jan-2016/daily." << process_id << "." << par->randomseed;
+    ss_filename << "/scratch/lfs/thladish/who-feb-2016/daily." << process_id << "." << par->randomseed;
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
 
