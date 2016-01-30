@@ -2,7 +2,50 @@ rm(list=ls())
 require(reshape2)
 require(data.table)
 require(parallel)
+
+#  scenario [0-4][01]{6}
+#  1transmission level
+#  2catchup?
+#  3vac mechanism
+#  4vaccination?
+#  5target age
+#  6catch age
+#  7coverage
+
+translate_scenario <- function(dt) { # assumes transmission already separated
+  ky <- key(dt)
+  dt[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
+  dt[substr(scenario,2,2) == "1", scen := "altVaccine" ]
+  dt[substr(scenario,1,1) == "1", scen := "catchUp"]
+  dt[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
+  dt[grepl("^0{2}10{2}1",scenario), scen := "reference"]
+  dt[substr(scenario,4,4) == "1", scen := "routineAT16"]
+  dt[substr(scenario,3,3) == "0", scen := "noVaccine"]
+  setkeyv(subset(dt[, scenario:=scen ], select=-scen), ky)
+}
+
+rr_severity_sec_vs_pri = 20
+ph1 = 0.111
+ph2 = ph1*1.88
+phs = 1
+# ps2 = rr_severity_sec_vs_pri*ps1
+# ph1 = phs*ps1 + phc*pc1
+# ph2 = phs*ps2 + phc*pc2
+# 
+# 0.111 = phs*ps1 + phc*(1-ps1)
+# 0.111*1.88 = phs*20*ps1 + phc*(1-20*ps1)
+# 0.111*1.88 = 20*ps1 + phc*(1-20*ps1)
+# 0.111*(1-1.88) = -19*ps1 - 0.111*1.88*ps1 + 20*0.111*ps1
+# 0.111*(1-1.88) = (-19 - 0.111*1.88 + 20*0.111)*ps1
+ps1 = ph1*(1-1.88) / (-(rr_severity_sec_vs_pri-1) - ph1*1.88 + rr_severity_sec_vs_pri*ph1)
+# ps2 = 20*ps1 = 0.1149942
+# pc1 = 1 - ps1
+# pc2 = 1 - ps2
+phc = (0.111 - ps1)/(1-ps1)
+
 # require(ggplot2)
+
+cfr <- .00078
 
 tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 setwd(tar)
@@ -29,37 +72,108 @@ seedkey <- setkey(rbindlist(lapply(vacfiles, function(nm) {
 })), seed)[, particle_id := floor(serial/80) ]
 
 cohortdata <- setkey(subset(
-  setkey(fread("../cohort.out", col.names = c("seed","year","serostatus","vaccination","severity","count")), seed, serostatus, vaccination, severity)[seedkey],
+  setkey(fread("../cohort.out", col.names = c("seed","year","serostatus","vaccination","severity","count")), seed, serostatus, severity, vaccination)[seedkey],
   select = -c(seed, serial)
-), particle_id, scenario, year, serostatus, vaccination, severity)
+)[,
+  `:=`(
+    transmission_setting = seq(10,90,20)[as.integer(substr(scenario,1,1))+1],
+    scenario = substr(scenario,2,7)
+  )                                                                 
+], particle_id, scenario, transmission_setting, year, vaccination, serostatus, severity)[,
+  `:=`(
+    infections = 0,
+    symptomatic_cases = 0,
+    hospitalised_cases = 0,
+    deaths = 0
+  )                                                                                       
+]
 
-overpop <- cohortdata[,list(pop=sum(count)),keyby=list(particle_id, scenario, year)]
+cohortdata <- translate_scenario(cohortdata)
 
-cohortres <- cohortdata[overpop][, attack_rate := count/pop ]
-# rr_severity_sec_vs_pri = 20
-# 
-# ph1 = 0.111
-# ph2 = ph1*1.88
-# ps2 = 20*ps1
-# ph1 = phs*ps1 + phc*pc1
-# ph2 = phs*ps2 + phc*pc2
-# 
-# ph1 = 0.111
-# ph2 = 0.111*1.88
-# ps2 = 20*ps1
-# 
-# 0.111 = phs*ps1 + phc*(1-ps1)
-# 0.111*1.88 = phs*20*ps1 + phc*(1-20*ps1)
+cohortdata[severity!=0, infections := count]
+cohortdata[severity>1, symptomatic_cases := count ]
+cohortdata[severity>2, hospitalised_cases := count ]
+cohortdata[severity==2, c("hospitalised_cases","deaths") := {
+  h = rbinom(.N, count, phc)
+  d = rbinom(.N, h, cfr)
+  list(h,d)
+}]
+cohortdata[severity==3, deaths := rbinom(.N, hospitalised_cases, cfr)]
 
-# assume phs ~ 1
-# (0.111 - ps1)/(1-ps1) = phc
-# 0.111*1.88 = 20*ps1 + phc*(1-20*ps1)
-# 0.111*(1-1.88) = -19*ps1 - 0.111*1.88*ps1 + 20*0.111*ps1
-ps1 = 0.005749711
-# ps2 = 20*ps1 = 0.1149942
-# pc1 = 1 - ps1
-# pc2 = 1 - ps2
-phc = (0.111 - ps1)/(1-ps1)
+overpop <- cohortdata[,list(pop=sum(count)),keyby=list(particle_id, scenario, transmission_setting, year, vaccination, serostatus)]
+cohortres <- cohortdata[overpop][severity != 0,
+  list(
+    pop100k=pop[1]/1e5,
+    infections=sum(infections), symptomatic_cases=sum(symptomatic_cases),
+    hospitalised_cases=sum(hospitalised_cases), deaths=sum(deaths)
+  ), keyby = list(scenario, transmission_setting, particle_id, year, serostatus, vaccination)
+]
+
+vacpop <- cohortdata[vaccination==1,list(vacpop=sum(count)),keyby=list(particle_id, scenario, transmission_setting, year)][overpop][,list(vac_percent=vacpop/pop),keyby=list(particle_id, scenario, transmission_setting, year)]
+
+overallcohort <- cohortres[,
+  list(
+    infections=sum(infections), symptomatic_cases=sum(symptomatic_cases),
+    hospitalised_cases=sum(hospitalised_cases), deaths=sum(deaths), pop100k=sum(pop100k)),
+  keyby=list(particle_id, transmission_setting, year, scenario)
+]
+
+fakeoverall <- setkey(overallcohort[year == 0, list(infections, symptomatic_cases, hospitalised_cases, deaths) ,keyby=key(overallcohort)][,{
+  infs  = sample(infections, 30, rep=T)
+  symps = rbinom()
+  hosps = rbinom(30, symps, 0.5)
+  dea = rbinom(30, hosps, cfr)
+  list(year=0:29, infections=infs, symptomatic_cases=sample(symptomatic_cases, 30, rep=T),
+       hospitalised_cases=sample(hospitalised_cases, 30, rep=T), deaths=sample(deaths, 30, rep=T)) 
+}, keyby=list(particle_id, transmission_setting)
+], particle_id, transmission_setting, year)
+
+overallcohortres <- overallcohort[fakeoverall][,
+  list(
+    infections_averted = (i.infections - infections)/pop100k,
+    symptomatic_cases_averted = (i.symptomatic_cases - symptomatic_cases)/pop100k,
+    hospitalised_cases_averted = (i.hospitalised_cases - hospitalised_cases)/pop100k,
+    deaths_averted = (i.deaths - deaths)/pop100k
+  ),
+  keyby=key(overallcohort)
+][,
+  list(year,
+    infections_averted = cumsum(infections_averted),
+    symptomatic_cases_averted = cumsum(symptomatic_cases_averted),
+    hospitalised_cases_averted = cumsum(hospitalised_cases_averted),
+    deaths_averted = cumsum(deaths_averted)
+  ),
+  keyby=list(particle_id, transmission_setting, scenario)
+]
+
+
+melt(, id.vars = key(overallcohort), variable.name = "outcome")[,{
+  
+    list(age="cohort_overall", outcome_denominator="cumulative - per 100,000 pop at risk")
+  },
+  keyby=list(scenario, transmission_setting, year, outcome)
+]
+
+
+
+cohortslice <- function(dt, agelab, ...) subset(dt[...][, age:=agelab ], select=-c(serostatus, vaccination))
+
+negun <- cohortslice(cohortres, "cohort_vaccneg_seroneg", serostatus==0 & vaccination==0)
+posun <- cohortslice(cohortres, "cohort_vaccneg_seropos", serostatus==1 & vaccination==0)
+negvac <- cohortslice(cohortres, "cohort_vaccpos_seroneg",serostatus==0 & vaccination==1)
+posvac <- cohortslice(cohortres, "cohort_vaccpos_seropos",serostatus==1 & vaccination==1)
+## TODO replace this with real data
+# chort <- cohortres[
+#   year == 0, count, keyby=list(scenario, transmission_setting, particle_id, serostatus, severity, vaccination)
+# ][,
+#   list(count=sum(count)), keyby=list(scenario, transmission_setting, particle_id, serostatus, severity)
+# ][,
+#   list(count, year=0:29), keyby=key(chort)
+# ]
+
+
+cohortres[,list(year, cumsum(count)/cumsum(pop)),keyby=list(scenario, particle_id, serostatus, vaccination, severity)]
+
 
 econdata <- subset(merge(
   dcast.data.table(melt(
@@ -77,7 +191,7 @@ econdata <- subset(merge(
 ][,
   amb := symptomatic
 ][,
-  hosp := round(((mild-amb)+severe)*(1-.00078))
+  hosp := round(((mild-amb)+severe)*(1-cfr))
 ][,
   death := (mild + severe) - (amb+hosp)
 ][,
@@ -86,14 +200,7 @@ econdata <- subset(merge(
   vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
 ]
 
-# scenario
-#  1transmission level
-#  2catchup?
-#  3vac mechanism
-#  4vaccination?
-#  5target age
-#  6catch age
-#  7coverage
+
 
 econdata[vacc_coverage == 0.0, scen := "noVaccine"]
 econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
@@ -215,8 +322,8 @@ hosp <- items[event != "asymptomatic",
 death <- items[year %in% c("cum10","cum30") & event != "asymptomatic",
   list(
     outcome="deaths_averted",
-    averted=sum(averted)*.00078,
-    vs=sum(vs)*.00078
+    averted=sum(averted)*cfr,
+    vs=sum(vs)*cfr
   ),
   by=list(particle_id, transmission_setting, scenario, year, age)
 ]
@@ -247,15 +354,7 @@ reduceditems <- nonsero[,{
 
 reduceditems[, outcome_denominator := ifelse(variable == "averted", "per 100,000 pop at risk", "proportion averted") ]
 
-reduceditems[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
-reduceditems[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-reduceditems[substr(scenario,1,1) == "1", scen := "catchUp"]
-reduceditems[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-reduceditems[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-reduceditems[substr(scenario,4,4) == "1", scen := "routineAT16"]
-reduceditems[substr(scenario,3,3) == "0", scen := "noVaccine"]
-
-reduceditems[, scenario:=scen ]
+translate_scenario(reduceditems)
 
 reduceditems[, group:= "longini" ]
 reduceditems<-subset(reduceditems, select=-c(variable, scen))
