@@ -356,37 +356,44 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
 const int BURNIN = 50;
-if (date.year() >= BURNIN and par->vaccinationEvents.size() > 0) {
-    const int TARGET_AGE = par->vaccinationEvents.back().age;  // UGLY WHO HACK
-    const int VACC_START_DAY = BURNIN*365;
-    if (date.julianDay() == par->startDayOfYear - 1) {
-        // Dims: serostatus (neg/pos), vaccinated (F,T), severity(no infection, asymptomatic, mild, severe)
-        vector< vector< vector<int> > > tally = {{{0,0,0,0},{0,0,0,0}},{{0,0,0,0},{0,0,0,0}}};
-        const int year_of_intervention = date.year() - BURNIN;
-        for (int i=community->getNumPerson()-1; i>=0; i--) {
-            Person *p = community->getPerson(i);
-            if (p->getAge() == year_of_intervention + TARGET_AGE) {
-                const bool ever_infected = p->getNumInfections() > 0 ? true : false;
-                const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
-                const bool vaccinated = p->isVaccinated();
-                int severity = 0; // default = no infection in past year
-                if (ever_infected and date.day() - p->getInfectionHistory().back()->getInfectedTime() < 365) {
-                    const Infection* infec = p->getInfectionHistory().back();
-                    if ((const bool) infec->isSevere()) {
-                        severity = 3;
-                    } else if ((const bool) infec->isSymptomatic()) {
-                        severity = 2;
-                    } else {
-                        severity = 1;
+if (date.year() >= BURNIN) {
+    vector<int> target_ages;
+    if (par->vaccinationEvents.size() > 0) {
+        target_ages.push_back(par->vaccinationEvents.back().age);
+    } else {
+        target_ages = {9, 16};
+    }
+    for (int target_age: target_ages) {
+        const int VACC_START_DAY = BURNIN*365;
+        if (date.julianDay() == par->startDayOfYear - 1) {
+            // Dims: serostatus (neg/pos), vaccinated (F,T), severity(no infection, asymptomatic, mild, severe)
+            vector< vector< vector<int> > > tally = {{{0,0,0,0},{0,0,0,0}},{{0,0,0,0},{0,0,0,0}}};
+            const int year_of_intervention = date.year() - BURNIN;
+            for (int i=community->getNumPerson()-1; i>=0; i--) {
+                Person *p = community->getPerson(i);
+                if (p->getAge() == year_of_intervention + target_age) {
+                    const bool ever_infected = p->getNumInfections() > 0 ? true : false;
+                    const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
+                    const bool vaccinated = p->isVaccinated();
+                    int severity = 0; // default = no infection in past year
+                    if (ever_infected and date.day() - p->getInfectionHistory().back()->getInfectedTime() < 365) {
+                        const Infection* infec = p->getInfectionHistory().back();
+                        if ((const bool) infec->isSevere()) {
+                            severity = 3;
+                        } else if ((const bool) infec->isSymptomatic()) {
+                            severity = 2;
+                        } else {
+                            severity = 1;
+                        }
                     }
+                    tally[(int) serostatus][(int) vaccinated][severity]++;
                 }
-                tally[(int) serostatus][(int) vaccinated][severity]++;
             }
-        }
-        for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
-            for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
-                for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
-                    cerr << "COHORT," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << endl;
+            for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
+                for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
+                    for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
+                        cerr << "COHORT," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << "," << target_age << endl;
+                    }
                 }
             }
         }
