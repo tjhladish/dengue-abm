@@ -39,8 +39,6 @@ require(data.table)
 tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 setwd(tar)
 
-poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt"
-
 bgfiles <- list.files(pattern = "^[0-4]0+\\.")
 
 ref <- dcast.data.table(melt(
@@ -70,34 +68,35 @@ tmp <- ref[, {
   list(age=age, hospitalised_cases=cumsum(hospitalised), symptomatic_cases=cumsum(symptomatic))
 }, keyby=list(scenario, particle_id, transmission_setting)]
 
-exclude <- setkey(tmp[age == 100 & symptomatic_cases == 0, list(particle_id, transmission_setting)], particle_id, transmission_setting)
+#tmp[age == 100 & symptomatic_cases == 0, symptomatic_cases := 1]
+#tmp[age == 100 & hospitalised_cases == 0, hospitalised_cases := 1]
 
-tmp[!exclude]
+mlt <- melt(tmp[,
+  list(age=age, hospitalised_cases=hospitalised_cases/max(hospitalised_cases[.N],1), symptomatic_cases=symptomatic_cases/max(symptomatic_cases[.N],1)),
+  keyby=list(scenario, particle_id, transmission_setting)
+], measure.vars = c("hospitalised_cases", "symptomatic_cases"))
 
-# mlt <- melt([,
-#   list(age=age, hospitalised_cases=hospitalised_cases/hospitalised_cases[.N], symptomatic_cases=symptomatic_cases/symptomatic_cases[.N]),
-#   keyby=list(scenario, particle_id, transmission_setting)
-# ], measure.vars = c("hospitalised_cases", "symptomatic_cases"))
-
-mlt[,{
+combo <- mlt[,{
     mn = mean(value)
     se = sd(value)/sqrt(.N)
-    browser()
     list(value=mn, CI_low=mn-se, CI_high=mn+se)
   },
   keyby=list(scenario, transmission_setting, age, variable)  
-]
+][, outcome := gsub("_"," ",variable)][, group := "longini"][, outcome_denominator := NA][, year:=0 ]
+
+saveRDS(combo, "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-baseline-age-distro.rds")
 
 ## translate into symptomatic + hospitalised (overlapping)
 
-df_tmp=subset(df, outcome %in% c("symptomatic cases","hospitalised cases"))
-df_tmp$age=as.numeric(as.character(df_tmp$age))
-table(df_tmp$age>100,df_tmp$group)
-
-p<-ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
-  geom_step(direction="hv") +
-  facet_grid(outcome~transmission_setting, scale="free_y") +
-  xlab("Age (yrs)") +
-  ylab("cumulative proportion at baseline") +
-  theme_bw() +
-  scale_color_manual(values=cbPalette) 
+# df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
+# df_tmp$age=as.numeric(as.character(df_tmp$age))
+# table(df_tmp$age>100,df_tmp$group)
+# 
+# p<-ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
+#   geom_step(direction="hv") +
+#   facet_grid(outcome~transmission_setting, scale="free_y") +
+#   xlab("Age (yrs)") +
+#   ylab("cumulative proportion at baseline") +
+#   theme_bw() +
+#   scale_color_manual(values=c("red","green","blue")) 
+# p

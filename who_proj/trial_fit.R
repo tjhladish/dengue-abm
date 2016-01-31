@@ -10,7 +10,7 @@ getMetrics <- function(sqlite) {
   result
 }
 
-init <- getMetrics("~/Downloads/cyd14_match.sqlite")[beta_multiplier == 4] #, select=-c(serial, seed, seed, mild_EF, severe_EF, base_path, sec_sev, pss_ratio, exp_coef, num_mos, beta, beta_multiplier)
+init <- subset(getMetrics("~/Downloads/who-feb-2016/cyd14_match.sqlite")[beta_multiplier == 4], select=-c(serial, seed, seed, mild_EF, severe_EF, base_path, sec_sev, pss_ratio, exp_coef, num_mos, beta, beta_multiplier))
 
 ps1 = 0.005749711
 phc = (0.111 - ps1)/(1-ps1)
@@ -37,7 +37,7 @@ mlt[grepl("hosp", variable), value, by=list(serial, severity=gsub(".+(severe|mil
 
 wider <- mlt[,{
   mn = mean(value)
-  se = sd(value)/sqrt(.N)
+  se = 2*sd(value)/sqrt(.N)
   list(mean=mn, lower=mn-se, upper=mn+se, Groups="longini")
 }, keyby=list(Trial = paste0("CYD", CYD), variable)]
 
