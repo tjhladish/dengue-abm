@@ -1,21 +1,30 @@
+#!/usr/bin/env Rscript
 ## read in sim outputs
 ## out format: Groups Trial    Description    Arm       Strata        mean       lower       upper
 
 rm(list=ls())
 
-df_data=read.csv("~/Dropbox/CMDVI/Phase II analysis/Data/_Fit/FitData.Rdata.csv")
+args <- commandArgs(trailingOnly = T)
+sqlpath <- ifelse(is.na(args[1]), "~/Downloads/who-feb-2016/cyd14_match.sqlite", args[1])
+store <- !is.na(args[2])
+dbpath <- ifelse(is.na(args[3]), "~/Dropbox", args[3])
+
+cat("loading from: ",sqlpath,"\n")
+cat("storing? ", store, "\n")
+cat("dropbox path\n", dbpath,"\n")
 
 require(RSQLite)
 require(data.table)
+require(ggplot2)
 
 getMetrics <- function(sqlite) {
   db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlite)
-  result <- data.table(RSQLite::dbGetQuery(db, "select seed, * from metrics m, parameters p where m.serial = p.serial;"))
+  result <- data.table(RSQLite::dbGetQuery(db, "select m.*, p.beta_multiplier, p.seed from metrics m, parameters p, jobs j where m.serial = p.serial and j.serial = m.serial and j.status == 'D';"))
   RSQLite::dbDisconnect(db)
   result
 }
 
-init <- subset(getMetrics("~/Downloads/who-feb-2016/cyd14_match.sqlite")[beta_multiplier == 4], select=-c(serial, seed, seed, mild_EF, severe_EF, base_path, sec_sev, pss_ratio, exp_coef, num_mos, beta, beta_multiplier))
+init <- subset(getMetrics(sqlpath)[beta_multiplier == 4], select=-beta_multiplier)[,CYD:=14]
 
 ps1 = 0.005749711
 phc = (0.111 - ps1)/(1-ps1)
@@ -59,7 +68,16 @@ wider[grepl("hosp", variable), Description := "LTFUY1"]
 wider[grepl("Sero",Strata), Description := "Immuno"]
 wider[grepl("Sero",Arm), Description := "Immuno_seropos"]
 
-saveRDS(subset(wider,select=-variable)[,Groups:="UF"][, N:=NA ][, Cases:=NA ], "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")
+output <- subset(wider,select=-variable)[,Groups:="UF"][, N:=NA ][, Cases:=NA ]
+
+outpath <- paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")
+
+if (store) saveRDS(output, outpath)
+
+#create.plots(df15,"CYD15",agegps15)
+df_data=read.csv(paste0(dbpath, "/CMDVI/Phase II analysis/Data/_Fit/FitData.Rdata.csv"))
+df_UF <- output[,names(df_data), with=F]
+df = rbind(df_data, df_UF)
 
 cbPalette <- c("Hopkins/UF"="#999999",
                "Imperial"="#E69F00",
@@ -73,10 +91,6 @@ cbPalette <- c("Hopkins/UF"="#999999",
 
 agegps14=c("2-5y", "6-11y", "12-14y")
 agegps15=c("9-11y", "12-16y")
-
-#create.plots(df15,"CYD15",agegps15)
-df_UF <- readRDS("~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")[,names(df_data), with=F]
-df = rbind(df_data, df_UF)
 
 create.plots<-function(df,name,agegps,save=T){
   
