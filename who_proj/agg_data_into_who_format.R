@@ -1,3 +1,6 @@
+tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
+setwd(tar)
+
 rm(list=ls())
 require(reshape2)
 require(data.table)
@@ -47,9 +50,6 @@ phc = (0.111 - ps1)/(1-ps1)
 
 cfr <- .00078
 
-tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
-setwd(tar)
-
 poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
 seropath <- "~/Downloads/who-feb-2016/auto_output/" # path to serostatus processed logs - run process
 
@@ -63,163 +63,7 @@ pop <- fread(poppath)[,list(pop=.N),keyby=age][,
     )), levels = age_cats, ordered = TRUE)
 ]
 
-vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
 
-bg9files <- list.files(pattern = "^[0-4]0+\\.")
-
-seedkey <- setkey(rbindlist(lapply(vacfiles, function(nm) {
-  c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
-})), seed)[, particle_id := floor(serial/80) ]
-
-cohortdata <- setkey(subset(
-  setkey(fread("../cohort.out", col.names = c("seed","year","serostatus","vaccination","severity","count")), seed, serostatus, severity, vaccination)[seedkey],
-  select = -c(seed, serial)
-)[,
-  `:=`(
-    transmission_setting = seq(10,90,20)[as.integer(substr(scenario,1,1))+1],
-    scenario = substr(scenario,2,7)
-  )                                                                 
-], particle_id, scenario, transmission_setting, year, vaccination, serostatus, severity)[,
-  `:=`(
-    infections = 0,
-    symptomatic_cases = 0,
-    hospitalised_cases = 0,
-    deaths = 0
-  )                                                                                       
-]
-
-cohortdata <- translate_scenario(cohortdata)
-
-cohortdata[severity!=0, infections := count]
-cohortdata[severity>1, symptomatic_cases := count ]
-cohortdata[severity>2, hospitalised_cases := count ]
-cohortdata[severity==2, c("hospitalised_cases","deaths") := {
-  h = rbinom(.N, count, phc)
-  d = rbinom(.N, h, cfr)
-  list(h,d)
-}]
-cohortdata[severity==3, deaths := rbinom(.N, hospitalised_cases, cfr)]
-
-overpop <- cohortdata[,list(pop=sum(count)),keyby=list(particle_id, scenario, transmission_setting, year, vaccination, serostatus)]
-cohortres <- cohortdata[overpop][severity != 0,
-  list(
-    pop100k=pop[1]/1e5,
-    infections=sum(infections), symptomatic_cases=sum(symptomatic_cases),
-    hospitalised_cases=sum(hospitalised_cases), deaths=sum(deaths)
-  ), keyby = list(scenario, transmission_setting, particle_id, year, serostatus, vaccination)
-]
-
-vacpop <- cohortdata[vaccination==1,list(vacpop=sum(count)),keyby=list(particle_id, scenario, transmission_setting, year)][overpop][,list(vac_percent=vacpop/pop),keyby=list(particle_id, scenario, transmission_setting, year)]
-
-overallcohort <- cohortres[,
-  list(
-    infections=sum(infections), symptomatic_cases=sum(symptomatic_cases),
-    hospitalised_cases=sum(hospitalised_cases), deaths=sum(deaths), pop100k=sum(pop100k)),
-  keyby=list(particle_id, transmission_setting, year, scenario)
-]
-
-fakeoverall <- setkey(overallcohort[year == 0, list(infections, symptomatic_cases, hospitalised_cases, deaths) ,keyby=key(overallcohort)][,{
-  infs  = sample(infections, 30, rep=T)
-  symps = rbinom()
-  hosps = rbinom(30, symps, 0.5)
-  dea = rbinom(30, hosps, cfr)
-  list(year=0:29, infections=infs, symptomatic_cases=sample(symptomatic_cases, 30, rep=T),
-       hospitalised_cases=sample(hospitalised_cases, 30, rep=T), deaths=sample(deaths, 30, rep=T)) 
-}, keyby=list(particle_id, transmission_setting)
-], particle_id, transmission_setting, year)
-
-overallcohortres <- overallcohort[fakeoverall][,
-  list(
-    infections_averted = (i.infections - infections)/pop100k,
-    symptomatic_cases_averted = (i.symptomatic_cases - symptomatic_cases)/pop100k,
-    hospitalised_cases_averted = (i.hospitalised_cases - hospitalised_cases)/pop100k,
-    deaths_averted = (i.deaths - deaths)/pop100k
-  ),
-  keyby=key(overallcohort)
-][,
-  list(year,
-    infections_averted = cumsum(infections_averted),
-    symptomatic_cases_averted = cumsum(symptomatic_cases_averted),
-    hospitalised_cases_averted = cumsum(hospitalised_cases_averted),
-    deaths_averted = cumsum(deaths_averted)
-  ),
-  keyby=list(particle_id, transmission_setting, scenario)
-]
-
-
-melt(, id.vars = key(overallcohort), variable.name = "outcome")[,{
-  
-    list(age="cohort_overall", outcome_denominator="cumulative - per 100,000 pop at risk")
-  },
-  keyby=list(scenario, transmission_setting, year, outcome)
-]
-
-
-
-cohortslice <- function(dt, agelab, ...) subset(dt[...][, age:=agelab ], select=-c(serostatus, vaccination))
-
-negun <- cohortslice(cohortres, "cohort_vaccneg_seroneg", serostatus==0 & vaccination==0)
-posun <- cohortslice(cohortres, "cohort_vaccneg_seropos", serostatus==1 & vaccination==0)
-negvac <- cohortslice(cohortres, "cohort_vaccpos_seroneg",serostatus==0 & vaccination==1)
-posvac <- cohortslice(cohortres, "cohort_vaccpos_seropos",serostatus==1 & vaccination==1)
-## TODO replace this with real data
-# chort <- cohortres[
-#   year == 0, count, keyby=list(scenario, transmission_setting, particle_id, serostatus, severity, vaccination)
-# ][,
-#   list(count=sum(count)), keyby=list(scenario, transmission_setting, particle_id, serostatus, severity)
-# ][,
-#   list(count, year=0:29), keyby=key(chort)
-# ]
-
-
-cohortres[,list(year, cumsum(count)/cumsum(pop)),keyby=list(scenario, particle_id, serostatus, vaccination, severity)]
-
-
-econdata <- subset(merge(
-  dcast.data.table(melt(
-    rbindlist(lapply(c(vacfiles, bg9files), fread, colClasses = c(scenario="character"))),
-      id.vars = c("serial","scenario","age","outcome"), variable.name = "year", value.name = "count"
-    )[outcome != 0][,
-      year := as.integer(gsub("y", "", year))
-    ][,
-      outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
-    ], serial + scenario + age + year ~ outcome, value.var = "count"
-  ), pop, by = "age"), select=-age_category)[,
-  particle_id := floor(serial/80)
-][,
-  symptomatic := round(mild*(1-phc))
-][,
-  amb := symptomatic
-][,
-  hosp := round(((mild-amb)+severe)*(1-cfr))
-][,
-  death := (mild + severe) - (amb+hosp)
-][,
-  transmission_setting := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
-][,
-  vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
-]
-
-
-
-econdata[vacc_coverage == 0.0, scen := "noVaccine"]
-econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
-econdata[substr(scenario,3,3) == "1", scen := "altVaccine" ]
-econdata[substr(scenario,2,2) == "1", scen := "catchUp"]
-econdata[substr(scenario,6,6) == "1", scen := paste0(scen,"To30")]
-econdata[grepl("^[0-4]0{2}10{2}1",scenario), scen := "reference"]
-econdata[substr(scenario,5,5) == "1", scen := "routineAT16"]
-
-econdata[, vac := 0]
-econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
-econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
-
-econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
-setkey(econfinal, particle_id, scen, transmission_setting, year, age)
-
-saveRDS(econfinal, "~/Downloads/econref.rds")
 
 bg16files <- list.files(pattern = "^[01]0+\\.")
 vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")

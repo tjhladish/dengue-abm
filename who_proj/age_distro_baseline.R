@@ -1,5 +1,8 @@
 ## calculate age distribution at time of vaccine
 
+tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
+setwd(tar)
+
 rm(list=ls())
 
 translate_scenario <- function(dt) { # assumes transmission already separated
@@ -35,9 +38,6 @@ phc = (0.111 - ps1)/(1-ps1)
 
 require(reshape2)
 require(data.table)
-
-tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
-setwd(tar)
 
 bgfiles <- list.files(pattern = "^[0-4]0+\\.")
 
@@ -88,15 +88,14 @@ saveRDS(combo, "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-baseli
 
 ## translate into symptomatic + hospitalised (overlapping)
 
-# df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
-# df_tmp$age=as.numeric(as.character(df_tmp$age))
-# table(df_tmp$age>100,df_tmp$group)
-# 
-# p<-ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
-#   geom_step(direction="hv") +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("Age (yrs)") +
-#   ylab("cumulative proportion at baseline") +
-#   theme_bw() +
-#   scale_color_manual(values=c("red","green","blue")) 
-# p
+df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
+df_tmp$age=as.numeric(as.character(df_tmp$age))
+table(df_tmp$age>100,df_tmp$group)
+
+ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
+  geom_step(direction="hv") +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("Age (yrs)") +
+  ylab("cumulative proportion at baseline") +
+  theme_bw() +
+  scale_color_manual(values=c("red","green","blue")) 

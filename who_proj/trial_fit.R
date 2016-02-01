@@ -1,7 +1,12 @@
 ## read in sim outputs
 ## out format: Groups Trial    Description    Arm       Strata        mean       lower       upper
 
+rm(list=ls())
+
+df_data=read.csv("~/Dropbox/CMDVI/Phase II analysis/Data/_Fit/FitData.Rdata.csv")
+
 require(RSQLite)
+require(data.table)
 
 getMetrics <- function(sqlite) {
   db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlite)
@@ -54,4 +59,79 @@ wider[grepl("hosp", variable), Description := "LTFUY1"]
 wider[grepl("Sero",Strata), Description := "Immuno"]
 wider[grepl("Sero",Arm), Description := "Immuno_seropos"]
 
-saveRDS(subset(wider,select=-variable)[,Groups:="longini"], "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")
+saveRDS(subset(wider,select=-variable)[,Groups:="UF"][, N:=NA ][, Cases:=NA ], "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")
+
+cbPalette <- c("Hopkins/UF"="#999999",
+               "Imperial"="#E69F00",
+               "Duke"="#56B4E9",
+               "Notre Dame"="#009E73",
+               "UF"="#F0E442",
+               "Exceter/Oxford"="#0072B2",
+               "Sanofi Pasteur"="#D55E00",
+               "UWA"="#CC79A7",
+               "Data"="black"); 
+
+agegps14=c("2-5y", "6-11y", "12-14y")
+agegps15=c("9-11y", "12-16y")
+
+#create.plots(df15,"CYD15",agegps15)
+df_UF <- readRDS("~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-fit.rds")[,names(df_data), with=F]
+df = rbind(df_data, df_UF)
+
+create.plots<-function(df,name,agegps,save=T){
+  
+  # Proportion Seronegative
+  df_tmp=subset(df, Description=="Immuno_seropos" & Strata!="All")
+  df_tmp$Strata = factor(df_tmp$Strata,agegps)
+  p=ggplot(df_tmp, aes(x=Strata, y=mean, ymin=lower, ymax=upper, color=Groups)) +
+    geom_pointrange(position=position_dodge(.2)) +
+    scale_y_continuous("proportion seronegative \nat vaccination") +
+    expand_limits(y = 0) +
+    scale_x_discrete("Age group") +
+    theme_bw() + scale_color_manual(values=cbPalette) 
+  if (save) {
+    ggsave(paste(path_figures,name,"Proportion_Seronegative",plot_type,sep=""),p,dpi=dpi_out,units="cm",width=20, height=8)
+  } else print(p)
+  # Attack rate by serostatus
+  df_tmp=subset(df, Description=="Immuno")
+  p=ggplot(df_tmp, aes(x=Arm, y=mean, ymin=lower, ymax=upper, color=Groups)) +
+    geom_pointrange(position=position_dodge(.3)) +
+    facet_grid(.~Strata) +
+    scale_y_continuous( "Attack rate") +
+    expand_limits(y = 0) +
+    scale_x_discrete("") +
+    theme_bw() + scale_color_manual(values=cbPalette)
+  if (save) {
+    ggsave(paste(path_figures,name,"Attack_rate_sero",plot_type,sep=""),p,dpi=dpi_out,units="cm",width=20, height=8)
+  } else print(p)
+  # Attack rate by age
+  df_tmp=subset(df, Description=="Full_trial")
+  df_tmp$Strata = factor(df_tmp$Strata,agegps)
+  p=ggplot(df_tmp, aes(x=Arm, y=mean, ymin=lower, ymax=upper, color=Groups)) +
+    geom_pointrange(position=position_dodge(.3)) +
+    facet_grid(.~Strata) +
+    scale_y_continuous("Attack rate") +
+    expand_limits(y = 0) +
+    scale_x_discrete("") +
+    theme_bw() + scale_color_manual(values=cbPalette)
+  if (save) {
+    ggsave(paste(path_figures,name,"Attack_rate_age",plot_type,sep=""),p,dpi=dpi_out,units="cm",width=20, height=8)
+  } else print(p)
+  
+  
+  # Hospital phase attack rate
+  df_tmp=subset(df, Description=="LTFUY1")
+  df_tmp$Strata = factor(df_tmp$Strata,agegps)
+  p=ggplot(df_tmp, aes(x=Arm, y=mean, ymin=lower, ymax=upper, color=Groups)) +
+    geom_pointrange(position=position_dodge(.2)) +
+    facet_grid(.~Strata) +
+    scale_y_continuous("Attack rate \n in passive hospital surveillance") +
+    expand_limits(y = 0) +
+    scale_x_discrete("") +
+    theme_bw() + scale_color_manual(values=cbPalette)
+  if (save) {
+    ggsave(paste(path_figures,name,"Hospital_phase_attack_rate",plot_type,sep=""),p,dpi=dpi_out,units="cm",width=20, height=8)
+  } else print(p)
+} 
+
+create.plots(df,"CYD14",agegps14, save = F)

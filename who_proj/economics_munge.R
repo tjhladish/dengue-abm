@@ -1,0 +1,286 @@
+## economics calcs
+
+tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
+setwd(tar)
+
+rm(list=ls())
+
+srcfiles <- list.files(pattern = "^[0-4].+\\.")
+
+econdata <- subset(merge(
+  dcast.data.table(melt(
+    rbindlist(lapply(srcfiles, fread, colClasses = c(scenario="character"))),
+    id.vars = c("serial","scenario","age","outcome"), variable.name = "year", value.name = "count"
+  )[outcome != 0][,
+    year := as.integer(gsub("y", "", year))
+  ][,
+    outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
+  ], serial + scenario + age + year ~ outcome, value.var = "count"
+), pop, by = "age"), select=-age_category)[,
+   particle_id := floor(serial/80)
+ ][,
+   symptomatic := round(mild*(1-phc))
+ ][,
+   amb := symptomatic
+ ][,
+   hosp := round(((mild-amb)+severe)*(1-cfr))
+ ][,
+   death := (mild + severe) - (amb+hosp)
+ ][,
+   transmission_setting := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
+ ][,
+   vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
+ ]
+
+econdata[vacc_coverage == 0.0, scen := "noVaccine"]
+econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
+econdata[substr(scenario,3,3) == "1", scen := "altVaccine" ]
+econdata[substr(scenario,2,2) == "1", scen := "catchUp"]
+econdata[substr(scenario,6,6) == "1", scen := paste0(scen,"To30")]
+econdata[grepl("^[0-4]0{2}10{2}1",scenario), scen := "reference"]
+econdata[substr(scenario,5,5) == "1", scen := "routineAT16"]
+
+econdata[, vac := 0]
+econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
+econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
+
+econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
+setkey(econfinal, particle_id, scen, transmission_setting, year, age)
+
+load("~/Downloads/lifeTablesMX.Rdata")
+## from https://en.wikipedia.org/wiki/Demographics_of_Mexico 28 Jan 2016
+# At birth	1.04 male(s)/female
+# Under 15	1.05 male(s)/female
+# 15–64 years	0.94 male(s)/female
+# 65 and over	0.81 male(s)/female
+genderratio <- data.table(
+  ms=c(1.04, rep(1.05, 14), rep(0.94, 64-15+1), rep(0.81, 100-65+1)))[,
+  age:=0:(.N-1)
+][,
+  `:=`(
+    mp = ms/(ms+1),
+    fp = 1/(ms+1)
+  )
+][,list(mp, fp), keyby=age]
+
+age.max <- 100
+mort <- data.table(femaleLT)[,prob.die,keyby=list(age=min.age)][data.table(maleLT)[,prob.die,keyby=list(age=min.age)]][genderratio][,list(p.death=fp*prob.die+mp*i.prob.die),keyby=age]$p.death
+mort[age.max+1] <- 1
+
+#Based on...but with substantial refactoring
+#Cost-effectiveness calculations for WHO dengue vaccine modelling consortium
+#(c) Mark Jit and Stefan Flasche 2016
+#mark.jit@lshtm.ac.uk; January 2016; version 2
+#changelog v2
+#*Added societal perspective scenarios for reference case
+#*Changed main outcome from ICER to net monetary benefit
+#*Catchup now compared to reference rather than no vacc
+#*Threshold for CE set to 2000, 4000, ..., 10000
+
+require(tidyr)
+require(dplyr)
+
+#############################################
+# input from modellers
+#############################################
+n.group="longini"
+
+# #############################################
+# # Economic parameters and scenarios
+# #############################################
+# 
+#   econ.scenarios=c("PHL","nodisc","society")
+
+disc.cost = 0.03	#discount rate for costs
+disc.daly = 0.03	#discount rate for dalys
+persp = 0			#perspective 0=health care provider, 1=society
+thresholds=(1:5)*2000  #threshold for cost-effectiveness
+
+econ.para.bra=list(
+  c=list(
+    cvac = 30.50,	#HCP cost of vaccination
+    camb = 60,		#HCP cost of treating VCD case
+    chosp = 200,		#HCP cost of treating hospitalised VCD case
+    cdeath= 0		#HCP cost of dengue death
+  ),
+  
+  sc=list(
+    cvac = 30.50,	#societal cost of vaccination
+    camb = 200,		#societal cost of treating VCD case
+    chosp = 500,	#societal cost of treating hospitalised VCD case
+    cdeath = 11000 #societal cost of dengue death
+  ),	
+  
+  d=list(
+    d.vac = 0,			#dalys due to vaccination
+    d.amb = 0.545*4/365,	#dalys due to ambulatory case
+    d.hosp = 0.545*14/365	#dalys due to hospitalised case
+  )
+)
+
+econ.para.phl=list(
+  c=list(
+    cvac = 30.50,	#HCP cost of vaccination
+    camb = 40,		#HCP cost of treating VCD case
+    chosp = 600,		#HCP cost of treating hospitalised VCD case
+    cdeath = 0		#HCP cost of dengue death
+  ),
+  sc=list(
+    cvac = 30.50,	#societal cost of vaccination
+    camb = 100,		#societal cost of treating VCD case
+    chosp = 700,	#societal cost of treating hospitalised VCD case
+    cdeath = 3000	#societal cost of treating hospitalised VCD case
+  ),
+  d=list(
+    d.vac = 0,		#dalys due to vaccination
+    d.amb = 0.545*4/365,	#dalys due to ambulatory case
+    d.hosp = 0.545*14/365	#dalys due to hospitalised case
+  )
+)
+
+############################################# 
+# calcuate outcomes
+############################################# 
+
+calcLifExp = function(age.max, mort, disc.daly){
+  surv=rep(0,age.max+1)		#survival
+  disc.surv=rep(0,age.max+1)	#discounted survival
+  life.exp=rep(0,age.max+1)	#life expectancy
+  disc.life.exp=rep(0,age.max+1)#discounted life expectancy
+  surv[1]=1
+  disc.surv[1]=1
+  for(a in 1:age.max){
+    surv[a+1] = surv[a] * (1-mort[a])
+    disc.surv[a+1] = disc.surv[a] * (1-mort[a])/(1+disc.daly)
+  }
+  for(a in 0:age.max){
+    life.exp[a+1]=sum(surv[(a+1):(age.max+1)])/surv[a+1]
+    disc.life.exp[a+1]=sum(disc.surv[(a+1):(age.max+1)])/disc.surv[a+1]
+  }
+  return(cbind(survival=disc.surv, lifeExp=disc.life.exp))
+}
+
+out=calcLifExp(age.max, mort, disc.daly)
+#  disc.surv=out[,"survival"] # unused
+disc.life.exp=out[,"lifeExp"]
+
+year.max=econdata[,max(year)]
+
+econfinalBRAInd <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
+setkeyv(econfinalBRAInd, c("thresh", key(econdata)))
+econfinalBRASoc <- copy(econfinalBRAInd)
+econfinalPHLInd <- copy(econfinalBRAInd)
+econfinalPHLSoc <- copy(econfinalBRAInd)
+
+disc.cost.vec = 1/rep(disc.cost+1, year.max+1)^(0:year.max)
+disc.daly.vec = 1/rep(disc.daly+1, year.max+1)^(0:year.max)
+nodisc = rep(1, length(disc.cost.vec))
+
+precomputeCost <- function(tardt, costsrc, wh="c") with(c(costsrc[[wh]], costsrc$d), {
+  tardt[,`:=`(
+    n.vac = vac,
+    cost.vac = vac * cvac,
+    cost.treat = (amb*camb + hosp*chosp + death*cdeath),
+    daly.vac = vac * d.vac,
+    daly.treat = (amb*d.amb + hosp*d.hosp),
+    daly.death = death
+  )]
+})
+
+precomputeCost(econfinalBRAInd, econ.para.bra)
+precomputeCost(econfinalBRASoc, econ.para.bra, "sc")
+precomputeCost(econfinalPHLInd, econ.para.phl)
+precomputeCost(econfinalPHLSoc, econ.para.phl, "sc")
+
+slice <- function(base) base[,list(n.vac, cost.vac, cost.treat, daly.vac, daly.treat, daly.death), keyby=list(thresh, transmission_setting, particle_id, age, year, scen)]
+
+econfinalBRAInd <- slice(econfinalBRAInd)
+econfinalBRASoc <- slice(econfinalBRASoc)
+econfinalPHLInd <- slice(econfinalPHLInd)
+econfinalPHLSoc <- slice(econfinalPHLSoc)
+
+extract_ref <- function(dt, wh) subset(dt[scen == wh], select=-scen)
+
+econfinalBRAIndref <- extract_ref(econfinalBRAInd, "reference")
+econfinalBRAIndnoVac <- extract_ref(econfinalBRAInd, "noVaccine")
+econfinalBRASocref <- extract_ref(econfinalBRASoc, "reference")
+econfinalBRASocnoVac <- extract_ref(econfinalBRASoc, "noVaccine")
+
+econfinalPHLIndref <- extract_ref(econfinalPHLInd, "reference")
+econfinalPHLIndnoVac <- extract_ref(econfinalPHLInd, "noVaccine")
+econfinalPHLSocref <- extract_ref(econfinalPHLSoc, "reference")
+econfinalPHLSocnoVac <- extract_ref(econfinalPHLSoc, "noVaccine")
+
+calc <- function(.SD, cst.disc, d.disc, thresh) with(.SD, {
+  net.cost=sum((cost.vac-i.cost.vac+cost.treat-i.cost.treat)*cst.disc[year+1])
+  net.daly=sum((daly.vac-i.daly.vac+daly.treat-i.daly.treat+(daly.death-i.daly.death)*disc.life.exp[age+1])*d.disc[year+1])
+  net.cost.treat=sum((cost.treat-i.cost.treat)*cst.disc[year+1])
+  net.n.vac=sum((n.vac-i.n.vac)*cst.disc[year+1])
+  icer = -net.cost/net.daly	#Incremental cost per DALY averted
+  nmb = -(net.cost+net.daly*thresh) 
+  nmbpp = nmb/net.n.vac
+  threshold.cost = -(net.cost.treat + net.daly * thresh)/net.n.vac	#Threshold cost per person vaccinated
+  
+  # manually correct for rounding errors
+  if(abs(net.cost)<.1) icer=0
+  if(abs(net.cost)<.1 & abs(net.daly)<.1) threshold.cost=0
+  
+  list(Cost=net.cost, DALY=net.daly, ICER=icer, ThresholdCosts=threshold.cost, NMB=nmb, NMBpp=nmbpp)
+})
+
+agg <- function(base, ref, discc, discd, ...) base[...][ref][,
+                                                             calc(.SD, discc, discd, thresh),
+                                                             by=list(thresh, scen, transmission_setting, particle_id)
+                                                             ][,
+                                                               {
+                                                                 qThresholds <- quantile(ThresholdCosts,probs=c(0.025, 0.975))
+                                                                 names(qThresholds) <- c("CI_low.thresh","CI_high.thresh")
+                                                                 qNMBpp <- quantile(NMBpp, probs=c(0.025, 0.975))
+                                                                 names(qNMBpp) <- c("CI_low.nmbpp","CI_high.nmbpp")
+                                                                 qICER <- quantile(ICER, probs=c(0.025, 0.975))
+                                                                 names(qICER) <- c("CI_low.icer","CI_high.icer")
+                                                                 c( list(value.thresh=mean(ThresholdCosts), value.nmbpp=mean(NMBpp), value.icer=mean(ICER)), as.list(qThresholds), as.list(qNMBpp), as.list(qICER) )
+                                                               },
+                                                               by=list(thresh, scen, transmission_setting)
+                                                               ]
+
+joins <- function(base, ref, noVac, region, typ) {
+  rbind(
+    agg(base, ref, disc.cost.vec, disc.daly.vec, scen %in% c("catchUp","catchupTo30"))[, disc := TRUE ],
+    agg(base, ref, nodisc, nodisc, scen %in% c("catchUp","catchupTo30"))[, disc := FALSE ],
+    agg(base, noVac, disc.cost.vec, disc.daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := TRUE ],
+    agg(base, noVac, nodisc, nodisc, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := FALSE ]
+  )[, reg := region ][, cost := typ ]
+}
+
+allres <- rbind(
+  joins(econfinalBRAInd, econfinalBRAIndref, econfinalBRAIndnoVac, "BRA", "ind"),
+  joins(econfinalBRASoc, econfinalBRASocref, econfinalBRASocnoVac, "BRA", "soc"),
+  joins(econfinalPHLInd, econfinalPHLIndref, econfinalPHLIndnoVac, "PHL", "ind"),
+  joins(econfinalPHLSoc, econfinalPHLSocref, econfinalPHLSocnoVac, "PHL", "soc")
+)[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "longini" ][,
+                                                                                    scenario := paste(scen,reg,cost,ifelse(disc,"disc","nodisc"),sep="-")
+                                                                                    ]
+
+econres <- rbind(allres[,
+                        list(outcome=paste0("NMBpp-",thresh), value=value.nmbpp, CI_low=CI_low.nmbpp, CI_high=CI_high.nmbpp, outcome_denominator=NA, year, age="overall"),
+                        by=list(transmission_setting, group, scenario)
+                        ],
+                 allres[,
+                        list(outcome=paste0("ThreshholdCost-",thresh), value=value.thresh, CI_low=CI_low.thresh, CI_high=CI_high.thresh, outcome_denominator=NA, year, age="overall"),
+                        by=list(transmission_setting, group, scenario)
+                        ],
+                 allres[,
+                        list(outcome="ICER", value=unique(value.icer), CI_low=unique(CI_low.icer), CI_high=unique(CI_high.icer), outcome_denominator=NA, year=unique(year), age="overall"),
+                        by=list(transmission_setting, group, scenario)
+                        ])
+
+setcolorder(econres, c("transmission_setting","scenario","year","outcome","age","value","CI_low","CI_high","outcome_denominator","group"))
+
+saveRDS(econres,"~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds")
+
+#         n.group,Transmission_intensity,scenario_name_econ,paste("NMB-",thresholds[thresh_num],incrm,sep=""),NA,"overall",
+#         paste0("cum",year.max+1),
+#         res_icer))
