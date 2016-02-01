@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 8,
-    "num_samples"    : 10000,
-    "predictive_prior_fraction" : 0.025,
+    "num_samples"    : 25000,
+    "predictive_prior_fraction" : 0.01,
     "pls_training_fraction"     : 0.8,
 
-    "database_filename"         : "merida-newprior.sqlite",
+    "database_filename"         : "merida-par_order.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
@@ -54,13 +54,13 @@
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 20,
-         "par2"       : 120},
+         "par2"       : 100},
 
         {"name"       : "beta",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
          "par1"       : 0.1,
-         "par2"       : 0.3}
+         "par2"       : 0.25}
     ],
 
     "metrics" : [

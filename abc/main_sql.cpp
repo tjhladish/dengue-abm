@@ -34,8 +34,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
-    double _sec_severity = args[2];
-    double _base_path    = args[3];
+    double _base_path    = args[2];
+    double _sec_severity = args[3];
     double _pss_ratio    = args[4];
     double _exp_coef     = args[5];
     double _nmos         = args[6];
