@@ -50,7 +50,7 @@ phc = (0.111 - ps1)/(1-ps1)
 
 cfr <- .00078
 
-poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+poppath <- "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
 seropath <- "~/Downloads/who-feb-2016/auto_output/" # path to serostatus processed logs - run process
 
 age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
@@ -63,174 +63,202 @@ pop <- fread(poppath)[,list(pop=.N),keyby=age][,
     )), levels = age_cats, ordered = TRUE)
 ]
 
+srcfiles <- list.files(pattern = "^[0-4].+\\..+")
 
-
-bg16files <- list.files(pattern = "^[01]0+\\.")
-vac9files <- list.files(pattern = "^[0-4][01]{2}10[01]{2}\\.")
-vac16files <- list.files(pattern = "^[01][01]{2}11[01]{2}\\.")
-
-pop_ref <- pop[,list(pop=sum(pop)/1e5),by=age_category]
-pop_ref <- rbind(pop_ref, pop_ref[,list(pop=sum(pop), age_category="overall")])
-
-# cohort1 <- pop[age >= 9][1:30, list(pop, year=0:29, age="cohort1")]
-# cohort2 <- pop[age >= 9][1:29, list(pop, year=1:29, age="cohort2")]
-# cohort3 <- pop[age >= 9][1:28, list(pop, year=2:29, age="cohort3")]
-# cohort4 <- pop[age >= 9][1:27, list(pop, year=3:29, age="cohort4")]
-# cohort5 <- pop[age >= 9][1:26, list(pop, year=4:29, age="cohort5")]
-
-# cohorts <- cohort1 # rbind(cohort1, cohort2, cohort3, cohort4, cohort5)
-# cohorts[, year:=factor(year)][,pop:=pop/1e5]
-
-## TODO get sample size, divide CIs by sqrt sample size == should be basically /10
-
-munger <- function(fname, vacage=9, xmis_setting=seq(10,90,by=20)) {
-  long <- subset(melt(fread(fname, colClasses = c(scenario="character")),
-   id.vars = c("serial","scenario","age","outcome"),
-   variable.name = "year", value.name = "count")[,
-   year := as.integer(gsub("y","",year))
+src <- subset(merge(
+  dcast.data.table(melt(
+    rbindlist(lapply(srcfiles, fread, colClasses = c(scenario="character"))),
+    id.vars = c("serial","scenario","age","outcome"), variable.name = "year", value.name = "count"
+  )[,
+    year := as.integer(gsub("y", "", year))
   ][,
-    event := factor(
-      c("asymptomatic","symptomatic","severe")[outcome+1],
-      levels = c("asymptomatic","symptomatic","severe"), ordered = T
-    )
-  ][,
+    outcome := factor(c("infection","mild","severe")[outcome+1], levels=c("infection","mild","severe"), ordered = T)
+  ], serial + scenario + age + year ~ outcome, value.var = "count"
+), pop, by = "age"), select=-age_category)[,
     particle_id := floor(serial/80)
   ][,
-    transmission_setting := xmis_setting[as.integer(substr(fname,1,1))+1]
-  ], select = -serial)[,
-    scenario := substr(scenario,2,7)
+    `:=`(
+      infections = infection + mild + severe,
+      symptomatic_cases = mild + severe,
+      hospitalised_cases = mild*phc + severe
+    ) 
+  ][,
+    deaths := hospitalised_cases * cfr
+  ][,
+    `:=`(
+      transmission_setting = seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1],
+      scenario = substr(scenario,2,7)
+    )
   ]
-  
-  imp_breakdown <- long[,
-    age_category := factor(ifelse(
-      age < 9, age_cats[1], ifelse(
-        age < 19, age_cats[2],
-        age_cats[3]
-      )), levels = age_cats, ordered = TRUE)
-    ][,list(count=sum(count)),by=list(particle_id, transmission_setting, scenario, year, event, age=age_category)]
-  
-  imp_overall <- imp_breakdown[,list(age = factor(age_cats[4],levels=age_cats,ordered = T), count=sum(count)),by=list(particle_id, transmission_setting, scenario, year, event)]
-  
-  impact <- rbind(imp_breakdown, imp_overall)
-  # ref$impact - impact == cases averted
-  # del / ref$impact == proportion
-#   long[,cohort:="none"]
-#   long[age-year == vacage, cohort := "cohort1"]
-#   long[age-year == vacage-1 & year > 0, cohort := "cohort2"]
-#   long[age-year == vacage-2 & year > 1, cohort := "cohort3"]
-#   long[age-year == vacage-3 & year > 2, cohort := "cohort4"]
-#   long[age-year == vacage-4 & year > 3, cohort := "cohort5"]
-#   cohorts <- long[cohort != "none",count,by=list(particle_id, transmission_setting, scenario,year,event,age=cohort)]
-  
-  rbindlist(list(
-    overall_allyears = impact[age=="overall", ],
-    cum1030=setcolorder(melt(impact[,
-        list(cum10=sum(count[year<10]), cum30=sum(count)),
-        by = list(particle_id, transmission_setting, scenario, event, age)
-      ], measure.vars = c("cum10","cum30"), variable.name = "year", value.name = "count"),
-      c("particle_id", "transmission_setting", "scenario","year","event","age","count")) #,
-    #cohorts = cohorts
-  ))
+
+translate_scenario(src)
+slc <- function(dt, ...) dt[...,
+  list(infections, symptomatic_cases, hospitalised_cases, deaths),
+  keyby=list(age, year, pop, particle_id, transmission_setting, scenario)
+]
+
+ref <- subset(slc(src, scenario == "noVaccine"), select=-scenario)
+forecasts <- slc(src, scenario != "noVaccine")
+
+mvars = c("infections", "symptomatic_cases", "hospitalised_cases", "deaths")
+mlt.ref <- melt(ref, measure.vars = mvars, variable.name = "outcome")
+setkeyv(mlt.ref, grep("value", names(mlt.ref), value = T, invert = T))
+mlt.fore <- setkeyv(
+  melt(forecasts, measure.vars = mvars, variable.name = "outcome"),
+  c(key(mlt.ref),"scenario")
+)
+
+agetrans <- pop[,age_category,keyby=age]
+cached_res <- mlt.fore[mlt.ref][agetrans] # cached_res <- readRDS("~/Downloads/who-rawpre.rds")
+
+saveRDS(cached_res, "~/Downloads/who-rawpre.rds")
+
+cumulative_events <- setkeyv(cached_res[,
+  list(year=paste0("cum", year+1), value=cumsum(value), i.value=cumsum(i.value)),
+  keyby=eval(grep("year", key(cached_res), invert = T, value=T))
+][, averted := i.value - value ][, outcome := paste0(outcome, "_averted")], key(cached_res))
+
+tarevents <- cumulative_events[year %in% c("cum10","cum30")][,
+  list(div=sum(i.value), averted=sum(averted), pop=sum(pop)),
+  keyby=eval(c(grep("(age|pop)",key(cumulative_events),invert=T,value=T),"age_category"))
+]
+
+propevents <- tarevents[
+  div!=0 | (div==0 & averted==0), {
+    vs = averted/div
+    vs[is.na(vs)] <- 0
+    mn = mean(vs)
+    se = 2*sd(vs)/sqrt(.N)
+    list(value=mn, CI_low=mn-se, CI_high=mn+se)
+  },
+  keyby=eval(grep("particle_id", key(tarevents), invert=T, value=T))
+]
+
+df=subset(df_all, scenario==scen )
+
+#vaccine impact
+for (my_year in c("cum10","cum30")){
+  for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
+    
+    df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
+                    outcome_denominator==my_outcome_denominator)
+    dodge=position_dodge(width=.6)
+    
+    p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
+      geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
+      geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
+      facet_grid(outcome~transmission_setting, scale="free_y") +
+      xlab("age group") +
+      ylab(my_outcome_denominator) +
+      theme_bw() +
+      theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+      scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
+    
+    if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
+    
+    p
+  }
 }
 
-backgroundRead <- function(files, va=9) setkey(
-  rbindlist(mclapply(
-    files, munger, vacage=va, mc.cores = detectCores()-1
-  )), particle_id, transmission_setting, year, event, age, scenario)
 
-bg9 <- subset(backgroundRead(bg9files), select=-scenario)
-bg16 <- subset(backgroundRead(bg16files, va=16), select=-scenario)
-
-vac9 <- backgroundRead(vac9files)
-vac16 <- backgroundRead(vac16files, va=16)
-
-items <- rbind(vac9[bg9], vac16[bg16])[
-  ## convert asymptomatics to infections
-  ## convert symptomatics -> infections vs hospitalizations
-  ## convert severe -> hospitalizations
-][,
-  list(averted=i.count-count, vs=i.count),
-  by=list(particle_id, transmission_setting, scenario, year, event, age)
-]
-class(items$vs) <- "double"
-items[vs == 0 & !(age %in% c("cohort1","cohort2","cohort3","cohort4","cohort5")), vs := 1e-1]
-
-hosp <- items[event != "asymptomatic",
-  list(
-    outcome="hospitalised_cases_averted",
-    averted=sum(averted*ifelse(event == "symptomatic", phc, 1)),
-    vs=sum(vs*ifelse(event == "symptomatic", phc, 1))
-  ),
-  by=list(particle_id, transmission_setting, scenario, year, age)
-]
-death <- items[year %in% c("cum10","cum30") & event != "asymptomatic",
-  list(
-    outcome="deaths_averted",
-    averted=sum(averted)*cfr,
-    vs=sum(vs)*cfr
-  ),
-  by=list(particle_id, transmission_setting, scenario, year, age)
-]
-
-newitems <- rbind(
-  items[, list(outcome="infections_averted", averted=sum(averted), vs=sum(vs)), by=list(particle_id, transmission_setting, scenario, year, age)],
-  items[event != "asymptomatic", list(outcome="symptomatic_cases_averted", averted=sum(averted), vs=sum(vs)), list(particle_id, transmission_setting, scenario, year, age)],
-  hosp,
-  death
-)
-
-newitems[year %in% c("cum10","cum30"), vs := averted/vs ]
-newitems[!(year %in% c("cum10","cum30")), vs := NA ]
-
-moltenitems <- melt(newitems, measure.vars = c("averted", "vs"))[!is.na(value)]
-nonsero <- rbind(
-  subset(merge(moltenitems[variable=="averted"], pop_ref[,pop,keyby=list(age=age_category)], by="age")[, value := value/pop ], select=-pop),
-  #subset(merge(moltenitems[variable=="averted"], cohorts, by=c("age","year"))[, value := value/pop ], select=-pop),
-  setcolorder(moltenitems[variable != "averted"], c("age", "particle_id", "transmission_setting", "scenario", "year", "outcome", "variable", "value"))
-)
-# reduce population here
-
-reduceditems <- nonsero[,{
-  v = mean(value)
-  sdv = sd(value)
-  list(value=v,CI_low=v-sdv,CI_high=v+sdv)
-},by=list(transmission_setting, scenario, year, outcome, age, variable)]
-
-reduceditems[, outcome_denominator := ifelse(variable == "averted", "per 100,000 pop at risk", "proportion averted") ]
-
-translate_scenario(reduceditems)
-
-reduceditems[, group:= "longini" ]
-reduceditems<-subset(reduceditems, select=-c(variable, scen))
-require(bit64)
-seroscn <- setkey(subset(fread(paste0(seropath,"seroscenarios.csv")), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
-  unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
-][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
-  scenario := paste0(V10, V11, V12, V13, V14, V15)
-][,
-  list(seed=unique(V1)), by=list(transmission_setting, scenario)
-], seed)
-
-seroscn[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
-seroscn[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-seroscn[substr(scenario,1,1) == "1", scen := "catchUp"]
-seroscn[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-seroscn[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-seroscn[substr(scenario,4,4) == "1", scen := "routineAT16"]
-seroscn[substr(scenario,3,3) == "0", scen := "noVaccine"]
-seroscn[, scenario:=scen ]
-
-serosrv <- setkey(fread(paste0(seropath,"seroprevalence.csv"))[,
-  list(seed=unique(seed)), keyby=list(year, vax_age, seroprevalence)
-][, year := year-50 ], seed, year)
-
-seroresults <- setcolorder(
-  serosrv[seroscn][, 
-    list(value = mean(seroprevalence), CI_low=NA, CI_high=NA, outcome="seropositive", outcome_denominator="proportion", group="longini"),
-    by=list(age=paste0(vax_age,"yrs"), transmission_setting, scenario, year)
-  ],
-  names(reduceditems)
-)
+# backgroundRead <- function(files, va=9) setkey(
+#   rbindlist(mclapply(
+#     files, munger, vacage=va, mc.cores = detectCores()-1
+#   )), particle_id, transmission_setting, year, event, age, scenario)
+# 
+# bg9 <- subset(backgroundRead(bg9files), select=-scenario)
+# bg16 <- subset(backgroundRead(bg16files, va=16), select=-scenario)
+# 
+# vac9 <- backgroundRead(vac9files)
+# vac16 <- backgroundRead(vac16files, va=16)
+# 
+# items <- rbind(vac9[bg9], vac16[bg16])[
+#   ## convert asymptomatics to infections
+#   ## convert symptomatics -> infections vs hospitalizations
+#   ## convert severe -> hospitalizations
+# ][,
+#   list(averted=i.count-count, vs=i.count),
+#   by=list(particle_id, transmission_setting, scenario, year, event, age)
+# ]
+# class(items$vs) <- "double"
+# items[vs == 0 & !(age %in% c("cohort1","cohort2","cohort3","cohort4","cohort5")), vs := 1e-1]
+# 
+# hosp <- items[event != "asymptomatic",
+#   list(
+#     outcome="hospitalised_cases_averted",
+#     averted=sum(averted*ifelse(event == "symptomatic", phc, 1)),
+#     vs=sum(vs*ifelse(event == "symptomatic", phc, 1))
+#   ),
+#   by=list(particle_id, transmission_setting, scenario, year, age)
+# ]
+# death <- items[year %in% c("cum10","cum30") & event != "asymptomatic",
+#   list(
+#     outcome="deaths_averted",
+#     averted=sum(averted)*cfr,
+#     vs=sum(vs)*cfr
+#   ),
+#   by=list(particle_id, transmission_setting, scenario, year, age)
+# ]
+# 
+# newitems <- rbind(
+#   items[, list(outcome="infections_averted", averted=sum(averted), vs=sum(vs)), by=list(particle_id, transmission_setting, scenario, year, age)],
+#   items[event != "asymptomatic", list(outcome="symptomatic_cases_averted", averted=sum(averted), vs=sum(vs)), list(particle_id, transmission_setting, scenario, year, age)],
+#   hosp,
+#   death
+# )
+# 
+# newitems[year %in% c("cum10","cum30"), vs := averted/vs ]
+# newitems[!(year %in% c("cum10","cum30")), vs := NA ]
+# 
+# moltenitems <- melt(newitems, measure.vars = c("averted", "vs"))[!is.na(value)]
+# nonsero <- rbind(
+#   subset(merge(moltenitems[variable=="averted"], pop_ref[,pop,keyby=list(age=age_category)], by="age")[, value := value/pop ], select=-pop),
+#   #subset(merge(moltenitems[variable=="averted"], cohorts, by=c("age","year"))[, value := value/pop ], select=-pop),
+#   setcolorder(moltenitems[variable != "averted"], c("age", "particle_id", "transmission_setting", "scenario", "year", "outcome", "variable", "value"))
+# )
+# # reduce population here
+# 
+# reduceditems <- nonsero[,{
+#   v = mean(value)
+#   sdv = sd(value)
+#   list(value=v,CI_low=v-sdv,CI_high=v+sdv)
+# },by=list(transmission_setting, scenario, year, outcome, age, variable)]
+# 
+# reduceditems[, outcome_denominator := ifelse(variable == "averted", "per 100,000 pop at risk", "proportion averted") ]
+# 
+# translate_scenario(reduceditems)
+# 
+# reduceditems[, group:= "longini" ]
+# reduceditems<-subset(reduceditems, select=-c(variable, scen))
+# require(bit64)
+# seroscn <- setkey(subset(fread(paste0(seropath,"seroscenarios.csv")), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
+#   unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
+# ][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
+#   scenario := paste0(V10, V11, V12, V13, V14, V15)
+# ][,
+#   list(seed=unique(V1)), by=list(transmission_setting, scenario)
+# ], seed)
+# 
+# seroscn[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
+# seroscn[substr(scenario,2,2) == "1", scen := "altVaccine" ]
+# seroscn[substr(scenario,1,1) == "1", scen := "catchUp"]
+# seroscn[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
+# seroscn[grepl("^0{2}10{2}1",scenario), scen := "reference"]
+# seroscn[substr(scenario,4,4) == "1", scen := "routineAT16"]
+# seroscn[substr(scenario,3,3) == "0", scen := "noVaccine"]
+# seroscn[, scenario:=scen ]
+# 
+# serosrv <- setkey(fread(paste0(seropath,"seroprevalence.csv"))[,
+#   list(seed=unique(seed)), keyby=list(year, vax_age, seroprevalence)
+# ][, year := year-50 ], seed, year)
+# 
+# seroresults <- setcolorder(
+#   serosrv[seroscn][, 
+#     list(value = mean(seroprevalence), CI_low=NA, CI_high=NA, outcome="seropositive", outcome_denominator="proportion", group="longini"),
+#     by=list(age=paste0(vax_age,"yrs"), transmission_setting, scenario, year)
+#   ],
+#   names(reduceditems)
+# )
 
 ## TODO using baseline case data, determine proportion of symptomatic + hospitalized cases by age, averaged over...saaaay...10 years?
 ##  then turn that into cumulative cases by those ages
@@ -238,55 +266,6 @@ seroresults <- setcolorder(
 
 ## TODO do cumulative X_averted for everything, rbind it, have outcome_denom = "cumulative - per 100,000 pop at risk"
 
-saveRDS(rbind(reduceditems, seroresults), "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini2.RData")
+#saveRDS(rbind(reduceditems, seroresults), "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini2.RData")
 
-# mort_rate <- c(symptomatic=0, severe=0.1)
-# hosp_rate <- c(symptomatic=0.111)
-# hosp|symp = hosp|symp,pri + symp,sec = 
-# hosp|severe = hosp|sev,pri + sev,sec
-# hosp|pri = hosp | pri,symp + pri,severe
-# hosp|sec = 1.88*hosp|pri = hosp | sec,symp + sec,severe
 
-## some checks
-# bg <- melt(bg9[year %in% 0:29 & age == "overall",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))[variable=="med"][, scn := "background" ]
-# fg80 <- melt(vac9[year %in% 0:29 & age == "overall" & scenario == "001001",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))[variable=="med"][, scn := "foreground_80" ]
-# fg80_catchup <- melt(vac9[year %in% 0:29 & age == "overall" & scenario == "101001",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))[variable=="med"][, scn := "foreground_80_catchup" ]
-# 
-# fg80_catchup30 <- melt(vac9[year %in% 0:29 & age == "overall" & scenario == "101011",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))[variable=="med"][, scn := "foreground_80_catchup30" ]
-# 
-# fg50 <- melt(vac9[year %in% 0:29 & age == "overall" & scenario == "001000",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))[variable=="med"][, scn := "foreground_50" ]
-# 
-# ggplot(rbind(bg,fg80, fg80_catchup, fg80_catchup30, fg50)) +
-#   theme_bw() +
-#   aes(x=as.numeric(year), y=value, color=scn) +
-#   facet_grid(event ~ transmission_setting, scales = "free_y") + geom_line() +
-#   stat_smooth(method="lm", se = F)
-# 
-# ggplot(melt(vac9[year %in% 0:29 & age == "overall" & scenario == "001001",{
-#   res <- as.list(quantile(count, probs = c(.1,.5,.9), names=F))
-#   names(res) <- c("low","med","hi")
-#   res
-# }, by=list(transmission_setting, event, year)], measure.vars = c("low","med","hi"))) +
-#   theme_bw() +
-#   aes(x=as.numeric(year), y=value) +
-#   facet_grid(event ~ transmission_setting, scales = "free_y") + geom_line()
