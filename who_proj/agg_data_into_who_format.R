@@ -1,7 +1,21 @@
+#!/usr/bin/env Rscript
+# must be run in aggregated files directory
 tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 setwd(tar)
 
 rm(list=ls())
+
+args <- commandArgs(trailingOnly = T)
+poppath <- ifelse(is.na(args[1]), "~/git/dengue/pop-merida/pop-merida/population-merida.txt", args[1])
+dbpath <- ifelse(is.na(args[2]), "~/Dropbox", args[2])
+
+cat("loading pop from: ",poppath,"\n")
+cat("dropbox path\n", dbpath,"\n")
+
+srcfiles <- list.files(pattern = "^[0-4].+\\..+")
+
+if(length(srcfiles) == 0) stop("no source files")
+
 require(reshape2)
 require(data.table)
 require(parallel)
@@ -50,9 +64,6 @@ phc = (0.111 - ps1)/(1-ps1)
 
 cfr <- .00078
 
-poppath <- "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
-seropath <- "~/Downloads/who-feb-2016/auto_output/" # path to serostatus processed logs - run process
-
 age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
 
 pop <- fread(poppath)[,list(pop=.N),keyby=age][,
@@ -62,8 +73,6 @@ pop <- fread(poppath)[,list(pop=.N),keyby=age][,
       age_cats[3]
     )), levels = age_cats, ordered = TRUE)
 ]
-
-srcfiles <- list.files(pattern = "^[0-4].+\\..+")
 
 src <- subset(merge(
   dcast.data.table(melt(
@@ -110,8 +119,7 @@ mlt.fore <- setkeyv(
 
 agetrans <- pop[,age_category,keyby=age]
 cached_res <- mlt.fore[mlt.ref][agetrans] # cached_res <- readRDS("~/Downloads/who-rawpre.rds")
-
-saveRDS(cached_res, "~/Downloads/who-rawpre.rds")
+setkeyv(cached_res, c(key(cached_res), "age_category"))
 
 cumulative_events <- setkeyv(cached_res[,
   list(year=paste0("cum", year+1), value=cumsum(value), i.value=cumsum(i.value)),
@@ -123,6 +131,13 @@ tarevents <- cumulative_events[year %in% c("cum10","cum30")][,
   keyby=eval(c(grep("(age|pop)",key(cumulative_events),invert=T,value=T),"age_category"))
 ]
 
+tareventsoverall <- tarevents[,
+  list(averted=sum(averted), div=sum(div), age_category="overall", pop=sum(pop)),
+  keyby=eval(grep("age_category", key(tarevents), invert=T, value=T))
+]
+
+tarevents <- setnames(setkeyv(rbind(tarevents, tareventsoverall), key(tarevents)), "age_category", "age")
+
 propevents <- tarevents[
   div!=0 | (div==0 & averted==0), {
     vs = averted/div
@@ -132,140 +147,56 @@ propevents <- tarevents[
     list(value=mn, CI_low=mn-se, CI_high=mn+se)
   },
   keyby=eval(grep("particle_id", key(tarevents), invert=T, value=T))
-]
+][, group:="UF" ][, outcome_denominator := "proportion averted"]
 
-df=subset(df_all, scenario==scen )
+percapevents <- tarevents[, {
+    mn = mean(averted/pop*1e5)
+    se = 2*sd(averted/pop*1e5)/sqrt(.N)
+    list(value=mn, CI_low=mn-se, CI_high=mn+se)
+  },
+  keyby=eval(grep("particle_id", key(tarevents), invert=T, value=T))
+][, group:="UF" ][, outcome_denominator := "per 100,000 pop at risk"]
 
-#vaccine impact
-for (my_year in c("cum10","cum30")){
-  for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
-    
-    df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
-                    outcome_denominator==my_outcome_denominator)
-    dodge=position_dodge(width=.6)
-    
-    p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
-      geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
-      geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
-      facet_grid(outcome~transmission_setting, scale="free_y") +
-      xlab("age group") +
-      ylab(my_outcome_denominator) +
-      theme_bw() +
-      theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-      scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
-    
-    if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
-    
-    p
-  }
-}
+saveRDS(rbind(propevents,percapevents),paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-vacimpact.rds"))
 
-
-# backgroundRead <- function(files, va=9) setkey(
-#   rbindlist(mclapply(
-#     files, munger, vacage=va, mc.cores = detectCores()-1
-#   )), particle_id, transmission_setting, year, event, age, scenario)
+# rm(ls=list())
+# cbPalette <- c("Hopkins/UF"="#999999",
+#                "Imperial"="#E69F00",
+#                "Duke"="#56B4E9",
+#                "Notre Dame"="#009E73",
+#                "UF"="#F0E442",
+#                "Exeter/Oxford"="#0072B2",
+#                "Sanofi Pasteur"="#D55E00",
+#                "UWA"="#CC79A7",
+#                "A"="white",
+#                "Longini-ODE"="black"); 
 # 
-# bg9 <- subset(backgroundRead(bg9files), select=-scenario)
-# bg16 <- subset(backgroundRead(bg16files, va=16), select=-scenario)
+# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
 # 
-# vac9 <- backgroundRead(vac9files)
-# vac16 <- backgroundRead(vac16files, va=16)
+# scen="reference"
+# df=subset(rbind(propevents,percapevents), scenario==scen )
 # 
-# items <- rbind(vac9[bg9], vac16[bg16])[
-#   ## convert asymptomatics to infections
-#   ## convert symptomatics -> infections vs hospitalizations
-#   ## convert severe -> hospitalizations
-# ][,
-#   list(averted=i.count-count, vs=i.count),
-#   by=list(particle_id, transmission_setting, scenario, year, event, age)
-# ]
-# class(items$vs) <- "double"
-# items[vs == 0 & !(age %in% c("cohort1","cohort2","cohort3","cohort4","cohort5")), vs := 1e-1]
-# 
-# hosp <- items[event != "asymptomatic",
-#   list(
-#     outcome="hospitalised_cases_averted",
-#     averted=sum(averted*ifelse(event == "symptomatic", phc, 1)),
-#     vs=sum(vs*ifelse(event == "symptomatic", phc, 1))
-#   ),
-#   by=list(particle_id, transmission_setting, scenario, year, age)
-# ]
-# death <- items[year %in% c("cum10","cum30") & event != "asymptomatic",
-#   list(
-#     outcome="deaths_averted",
-#     averted=sum(averted)*cfr,
-#     vs=sum(vs)*cfr
-#   ),
-#   by=list(particle_id, transmission_setting, scenario, year, age)
-# ]
-# 
-# newitems <- rbind(
-#   items[, list(outcome="infections_averted", averted=sum(averted), vs=sum(vs)), by=list(particle_id, transmission_setting, scenario, year, age)],
-#   items[event != "asymptomatic", list(outcome="symptomatic_cases_averted", averted=sum(averted), vs=sum(vs)), list(particle_id, transmission_setting, scenario, year, age)],
-#   hosp,
-#   death
-# )
-# 
-# newitems[year %in% c("cum10","cum30"), vs := averted/vs ]
-# newitems[!(year %in% c("cum10","cum30")), vs := NA ]
-# 
-# moltenitems <- melt(newitems, measure.vars = c("averted", "vs"))[!is.na(value)]
-# nonsero <- rbind(
-#   subset(merge(moltenitems[variable=="averted"], pop_ref[,pop,keyby=list(age=age_category)], by="age")[, value := value/pop ], select=-pop),
-#   #subset(merge(moltenitems[variable=="averted"], cohorts, by=c("age","year"))[, value := value/pop ], select=-pop),
-#   setcolorder(moltenitems[variable != "averted"], c("age", "particle_id", "transmission_setting", "scenario", "year", "outcome", "variable", "value"))
-# )
-# # reduce population here
-# 
-# reduceditems <- nonsero[,{
-#   v = mean(value)
-#   sdv = sd(value)
-#   list(value=v,CI_low=v-sdv,CI_high=v+sdv)
-# },by=list(transmission_setting, scenario, year, outcome, age, variable)]
-# 
-# reduceditems[, outcome_denominator := ifelse(variable == "averted", "per 100,000 pop at risk", "proportion averted") ]
-# 
-# translate_scenario(reduceditems)
-# 
-# reduceditems[, group:= "longini" ]
-# reduceditems<-subset(reduceditems, select=-c(variable, scen))
-# require(bit64)
-# seroscn <- setkey(subset(fread(paste0(seropath,"seroscenarios.csv")), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
-#   unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
-# ][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
-#   scenario := paste0(V10, V11, V12, V13, V14, V15)
-# ][,
-#   list(seed=unique(V1)), by=list(transmission_setting, scenario)
-# ], seed)
-# 
-# seroscn[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
-# seroscn[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-# seroscn[substr(scenario,1,1) == "1", scen := "catchUp"]
-# seroscn[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-# seroscn[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-# seroscn[substr(scenario,4,4) == "1", scen := "routineAT16"]
-# seroscn[substr(scenario,3,3) == "0", scen := "noVaccine"]
-# seroscn[, scenario:=scen ]
-# 
-# serosrv <- setkey(fread(paste0(seropath,"seroprevalence.csv"))[,
-#   list(seed=unique(seed)), keyby=list(year, vax_age, seroprevalence)
-# ][, year := year-50 ], seed, year)
-# 
-# seroresults <- setcolorder(
-#   serosrv[seroscn][, 
-#     list(value = mean(seroprevalence), CI_low=NA, CI_high=NA, outcome="seropositive", outcome_denominator="proportion", group="longini"),
-#     by=list(age=paste0(vax_age,"yrs"), transmission_setting, scenario, year)
-#   ],
-#   names(reduceditems)
-# )
-
-## TODO using baseline case data, determine proportion of symptomatic + hospitalized cases by age, averaged over...saaaay...10 years?
-##  then turn that into cumulative cases by those ages
-##  outcome = symptomatic | hospitalised cases, outcome_denominator == cumulative proportion at baseline?
-
-## TODO do cumulative X_averted for everything, rbind it, have outcome_denom = "cumulative - per 100,000 pop at risk"
-
-#saveRDS(rbind(reduceditems, seroresults), "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini2.RData")
-
-
+# #vaccine impact
+# for (my_year in c("cum10","cum30")){
+#   #my_outcome_denominator <- "proportion averted"
+#   for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
+#     
+#     df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
+#                     outcome_denominator==my_outcome_denominator)
+#     dodge=position_dodge(width=.6)
+#     
+#     p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
+#       geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
+#       geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
+#       facet_grid(outcome~transmission_setting, scale="free_y") +
+#       xlab("age group") +
+#       ylab(my_outcome_denominator) +
+#       theme_bw() +
+#       theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+#       scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) + ggtitle(my_year)
+#     
+#     if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
+#     
+#     print(p)
+#   }
+# }
