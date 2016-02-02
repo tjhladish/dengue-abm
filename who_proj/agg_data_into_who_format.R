@@ -1,7 +1,5 @@
 #!/usr/bin/env Rscript
 # must be run in aggregated files directory
-tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
-setwd(tar)
 
 rm(list=ls())
 
@@ -14,7 +12,7 @@ cat("dropbox path\n", dbpath,"\n")
 
 srcfiles <- list.files(pattern = "^[0-4].+\\..+")
 
-if(length(srcfiles) == 0) stop("no source files")
+if(length(srcfiles) == 0) stop("no source files in ", getwd())
 
 require(reshape2)
 require(data.table)
