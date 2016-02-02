@@ -1,9 +1,34 @@
 ## economics calcs
 
+require(reshape2)
+require(data.table)
+
 tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 setwd(tar)
 
 rm(list=ls())
+
+poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
+
+rr_severity_sec_vs_pri = 20
+ph1 = 0.111
+ph2 = ph1*1.88
+phs = 1
+ps1 = ph1*(1-1.88) / (-(rr_severity_sec_vs_pri-1) - ph1*1.88 + rr_severity_sec_vs_pri*ph1)
+# ps2 = 20*ps1 = 0.1149942
+# pc1 = 1 - ps1
+# pc2 = 1 - ps2
+phc = (0.111 - ps1)/(1-ps1)
+cfr <- .00078
+
+pop <- fread(poppath)[,list(pop=.N),keyby=age][,
+  age_category := factor(ifelse(
+    age < 9, age_cats[1], ifelse(
+    age < 19, age_cats[2],
+    age_cats[3]
+  )), levels = age_cats, ordered = TRUE)
+]
 
 srcfiles <- list.files(pattern = "^[0-4].+\\.")
 
@@ -85,7 +110,7 @@ require(dplyr)
 #############################################
 # input from modellers
 #############################################
-n.group="longini"
+# n.group="UF"
 
 # #############################################
 # # Economic parameters and scenarios
@@ -230,21 +255,29 @@ calc <- function(.SD, cst.disc, d.disc, thresh) with(.SD, {
   list(Cost=net.cost, DALY=net.daly, ICER=icer, ThresholdCosts=threshold.cost, NMB=nmb, NMBpp=nmbpp)
 })
 
+quan <- function(var, nm, n) {
+  mn = mean(var)
+  se = 2*sd(var)/sqrt(n)
+  qres = c(mn, mn-se, mn+se)
+  names(qres) <- paste0(c("value","CI_low.","CI_high."), nm)
+  as.list(qres)
+}
+
 agg <- function(base, ref, discc, discd, ...) base[...][ref][,
-                                                             calc(.SD, discc, discd, thresh),
-                                                             by=list(thresh, scen, transmission_setting, particle_id)
-                                                             ][,
-                                                               {
-                                                                 qThresholds <- quantile(ThresholdCosts,probs=c(0.025, 0.975))
-                                                                 names(qThresholds) <- c("CI_low.thresh","CI_high.thresh")
-                                                                 qNMBpp <- quantile(NMBpp, probs=c(0.025, 0.975))
-                                                                 names(qNMBpp) <- c("CI_low.nmbpp","CI_high.nmbpp")
-                                                                 qICER <- quantile(ICER, probs=c(0.025, 0.975))
-                                                                 names(qICER) <- c("CI_low.icer","CI_high.icer")
-                                                                 c( list(value.thresh=mean(ThresholdCosts), value.nmbpp=mean(NMBpp), value.icer=mean(ICER)), as.list(qThresholds), as.list(qNMBpp), as.list(qICER) )
-                                                               },
-                                                               by=list(thresh, scen, transmission_setting)
-                                                               ]
+  calc(.SD, discc, discd, thresh),
+  by=list(thresh, scen, transmission_setting, particle_id)
+][,{
+    qThresholds <- quan(ThresholdCosts, "thresh", .N)
+    qNMBpp <- quan(NMBpp, "nmbpp", .N)
+    qICER <- quan(NMBpp, "icer", .N)
+    qNMB <- quan(NMB, "nmb", .N)
+    c(
+      list(value.thresh=mean(ThresholdCosts), value.nmbpp=mean(NMBpp), value.NMB=mean(NMB), value.icer=mean(ICER)),
+      qThresholds, qNMBpp, qICER, qNMB
+    )
+  },
+  by=list(thresh, scen, transmission_setting)
+]
 
 joins <- function(base, ref, noVac, region, typ) {
   rbind(
@@ -260,27 +293,79 @@ allres <- rbind(
   joins(econfinalBRASoc, econfinalBRASocref, econfinalBRASocnoVac, "BRA", "soc"),
   joins(econfinalPHLInd, econfinalPHLIndref, econfinalPHLIndnoVac, "PHL", "ind"),
   joins(econfinalPHLSoc, econfinalPHLSocref, econfinalPHLSocnoVac, "PHL", "soc")
-)[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "longini" ][,
-                                                                                    scenario := paste(scen,reg,cost,ifelse(disc,"disc","nodisc"),sep="-")
-                                                                                    ]
+)[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "UF" ][,
+  scenario := paste(scen,reg,cost,ifelse(disc,"disc","nodisc"), sep="-")
+]
 
-econres <- rbind(allres[,
-                        list(outcome=paste0("NMBpp-",thresh), value=value.nmbpp, CI_low=CI_low.nmbpp, CI_high=CI_high.nmbpp, outcome_denominator=NA, year, age="overall"),
-                        by=list(transmission_setting, group, scenario)
-                        ],
-                 allres[,
-                        list(outcome=paste0("ThreshholdCost-",thresh), value=value.thresh, CI_low=CI_low.thresh, CI_high=CI_high.thresh, outcome_denominator=NA, year, age="overall"),
-                        by=list(transmission_setting, group, scenario)
-                        ],
-                 allres[,
-                        list(outcome="ICER", value=unique(value.icer), CI_low=unique(CI_low.icer), CI_high=unique(CI_high.icer), outcome_denominator=NA, year=unique(year), age="overall"),
-                        by=list(transmission_setting, group, scenario)
-                        ])
+econres <- rbind(
+  allres[,
+    list(outcome=paste0("NMBpp-",thresh), value=value.nmbpp, CI_low=CI_low.nmbpp, CI_high=CI_high.nmbpp, outcome_denominator=NA, year, age="overall"),
+    by=list(transmission_setting, group, scenario)
+  ],
+  allres[,
+    list(outcome=paste0("NMB-",thresh), value=value.nmbpp, CI_low=CI_low.nmbpp, CI_high=CI_high.nmbpp, outcome_denominator=NA, year, age="overall"),
+    by=list(transmission_setting, group, scenario)
+  ],
+  allres[,
+    list(outcome=paste0("ThreshholdCost-",thresh), value=value.thresh, CI_low=CI_low.thresh, CI_high=CI_high.thresh, outcome_denominator=NA, year, age="overall"),
+    by=list(transmission_setting, group, scenario)
+  ],
+  allres[,
+    list(outcome="ICER", value=unique(value.icer), CI_low=unique(CI_low.icer), CI_high=unique(CI_high.icer), outcome_denominator=NA, year=unique(year), age="overall"),
+    by=list(transmission_setting, group, scenario)
+  ]
+)
 
 setcolorder(econres, c("transmission_setting","scenario","year","outcome","age","value","CI_low","CI_high","outcome_denominator","group"))
 
 saveRDS(econres,"~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds")
 
-#         n.group,Transmission_intensity,scenario_name_econ,paste("NMB-",thresholds[thresh_num],incrm,sep=""),NA,"overall",
-#         paste0("cum",year.max+1),
-#         res_icer))
+# df <- within(econres,{
+#   scenario=gsub("-BRA-soc-disc","-society",scenario)
+#   scenario=gsub("-PHL-ind-disc","-PHL",scenario)
+#   scenario=gsub("-BRA-ind-nodisc","-nodisc",scenario)
+#   scenario=gsub("-BRA-ind-disc","",scenario)
+#   outcome = gsub("ThreshholdCost", "ThresholdPrice" ,outcome)
+# })
+# 
+# 
+# df_tmp=subset(df, (grepl("NMB-",outcome) | grepl("NMBpp-",outcome) | grepl("ThresholdPrice-",outcome)) & (year=="cum30") & (scenario == "reference"))
+# df_tmp$Threshold=as.numeric(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[2,])
+# df_tmp$outcome=(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[1,])
+# 
+# cbPalette <- c("Hopkins/UF"="#999999",
+#                "Imperial"="#E69F00",
+#                "Duke"="#56B4E9",
+#                "Notre Dame"="#009E73",
+#                "UF"="#F0E442",
+#                "Exeter/Oxford"="#0072B2",
+#                "Sanofi Pasteur"="#D55E00",
+#                "UWA"="#CC79A7",
+#                "A"="white"); 
+# 
+# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+# 
+# ggplot(df_tmp,aes(x=Threshold, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group))+
+#   geom_point(alpha=0.6) +
+#   geom_line(alpha=0.6) +
+#   geom_ribbon(alpha=0.2, color=NA) +
+#   facet_grid(outcome~transmission_setting, scale="free_y") +
+#   xlab("Cost-effectiveness threshold (Costs per DALY)") +
+#   ylab("Net monetary benefit") +
+#   theme_bw() +
+#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+#   scale_color_manual(values=cbPalette)+ scale_fill_manual(values=cbPalette) 
+# 
+# df_tmp=subset(df, (scenario %in% c("reference","reference-PHL", "reference-nodisc","reference-society")) & 
+#                 (age=="overall") & 
+#                 (year=="cum30") &
+#                 (outcome %in% c("ThresholdPrice-2000"))) 
+# 
+# ggplot(df_tmp, aes(x=group, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario)) +
+#   geom_pointrange(alpha=0.6,position=position_dodge(.5)) +
+#   facet_grid(outcome~transmission_setting, scale="free_y") +
+#   xlab("") +
+#   ylab("") +
+#   theme_bw() +
+#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+#   scale_color_manual(values=noGroup_cbPalette) 

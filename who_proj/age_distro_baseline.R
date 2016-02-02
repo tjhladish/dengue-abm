@@ -82,20 +82,52 @@ combo <- mlt[,{
     list(value=mn, CI_low=mn-se, CI_high=mn+se)
   },
   keyby=list(scenario, transmission_setting, age, variable)  
-][, outcome := gsub("_"," ",variable)][, group := "longini"][, outcome_denominator := NA][, year:=0 ]
+][, outcome := gsub("_"," ",variable)][, group := "UF"][, outcome_denominator := "cumulative_proportion_at_baseline" ][, year:=0 ]
 
 saveRDS(combo, "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-baseline-age-distro.rds")
 
 ## translate into symptomatic + hospitalised (overlapping)
 
-df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
-df_tmp$age=as.numeric(as.character(df_tmp$age))
-table(df_tmp$age>100,df_tmp$group)
-
-ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
-  geom_step(direction="hv") +
-  facet_grid(outcome~transmission_setting, scale="free_y") +
-  xlab("Age (yrs)") +
-  ylab("cumulative proportion at baseline") +
-  theme_bw() +
-  scale_color_manual(values=c("red","green","blue")) 
+# require("ggplot2")
+# require("tidyr")
+# require("dplyr")
+# require("scales")
+# 
+# cbPalette <- c("Hopkins/UF"="#999999",
+#                "Imperial"="#E69F00",
+#                "Duke"="#56B4E9",
+#                "Notre Dame"="#009E73",
+#                "UF"="#F0E442",
+#                "Exeter/Oxford"="#0072B2",
+#                "Sanofi Pasteur"="#D55E00",
+#                "UWA"="#CC79A7",
+#                "A"="white",
+#                "Longini-ODE"="black"); 
+# 
+# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+# 
+# # cumulatage distribution of cases at baseline (assume that value is for age at birthday
+# # e.g.: age=4, value=0.5 -> 50% of cases are <4 yrs old) 
+# df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
+# df_tmp$age=as.numeric(as.character(df_tmp$age))
+# 
+# ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
+#   geom_step(direction="hv") +
+#   facet_grid(outcome~transmission_setting, scale="free_y") +
+#   xlab("Age (yrs)") +
+#   ylab("cumulative proportion at baseline") +
+#   theme_bw() +
+#   scale_color_manual(values=cbPalette) +
+#   coord_cartesian( xlim =c(0,60))
+# 
+# # age up to which 50% of cases are reported (not quite accurate for models with age groups)
+# tmp <- df_tmp %>% group_by(group, transmission_setting, scenario, outcome)
+# Age50percentCases <- tmp %>% summarise(minAge=min(age[value>0.5])-1) 
+# ggplot(subset(Age50percentCases, minAge<100),aes(x=group, y=minAge, color=group, fill=group)) +
+#   geom_bar(stat="identity", alpha=0.5, color=NA) +
+#   facet_grid(outcome~transmission_setting, scale="free_y") +
+#   xlab("") +
+#   ylab("Age up tp which 50% of cases occur") +
+#   theme_bw() +
+#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+#   scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
