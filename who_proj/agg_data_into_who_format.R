@@ -119,12 +119,13 @@ agetrans <- pop[,age_category,keyby=age]
 cached_res <- mlt.fore[mlt.ref][agetrans] # cached_res <- readRDS("~/Downloads/who-rawpre.rds")
 setkeyv(cached_res, c(key(cached_res), "age_category"))
 
+## TODO back here, get out cumulative results
 cumulative_events <- setkeyv(cached_res[,
-  list(year=paste0("cum", year+1), value=cumsum(value), i.value=cumsum(i.value)),
+  list(year, value=cumsum(value), i.value=cumsum(i.value)),
   keyby=eval(grep("year", key(cached_res), invert = T, value=T))
 ][, averted := i.value - value ][, outcome := paste0(outcome, "_averted")], key(cached_res))
 
-tarevents <- cumulative_events[year %in% c("cum10","cum30")][,
+tarevents <- cumulative_events[,
   list(div=sum(i.value), averted=sum(averted), pop=sum(pop)),
   keyby=eval(c(grep("(age|pop)",key(cumulative_events),invert=T,value=T),"age_category"))
 ]
@@ -134,7 +135,20 @@ tareventsoverall <- tarevents[,
   keyby=eval(grep("age_category", key(tarevents), invert=T, value=T))
 ]
 
-tarevents <- setnames(setkeyv(rbind(tarevents, tareventsoverall), key(tarevents)), "age_category", "age")
+ky <- key(tarevents)
+
+tarevents <- setnames(setkeyv(
+  rbind(tarevents, tareventsoverall)[(year==9)| (year == 29)][, year:=paste0("cum",year+1)],
+  ky
+), "age_category", "age")
+
+overall <- tareventsoverall[, {
+    mn = mean(averted/pop*1e5)
+    se = 2*sd(averted/pop*1e5)/sqrt(.N)
+    list(value=mn, CI_low=mn-se, CI_high=mn+se)
+  },
+  keyby=eval(grep("particle_id", key(tareventsoverall), invert=T, value=T))
+][, group := "UF" ][, outcome_denominator := "cumulative - per 100,000 pop at risk" ][, year:=year+1 ][, age:="overall" ]
 
 propevents <- tarevents[
   div!=0 | (div==0 & averted==0), {
@@ -155,46 +169,61 @@ percapevents <- tarevents[, {
   keyby=eval(grep("particle_id", key(tarevents), invert=T, value=T))
 ][, group:="UF" ][, outcome_denominator := "per 100,000 pop at risk"]
 
-saveRDS(rbind(propevents,percapevents),paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-vacimpact.rds"))
+res <- rbind(propevents,percapevents,overall)
 
-# rm(ls=list())
-# cbPalette <- c("Hopkins/UF"="#999999",
-#                "Imperial"="#E69F00",
-#                "Duke"="#56B4E9",
-#                "Notre Dame"="#009E73",
-#                "UF"="#F0E442",
-#                "Exeter/Oxford"="#0072B2",
-#                "Sanofi Pasteur"="#D55E00",
-#                "UWA"="#CC79A7",
-#                "A"="white",
-#                "Longini-ODE"="black"); 
-# 
-# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
-# 
-# scen="reference"
-# df=subset(rbind(propevents,percapevents), scenario==scen )
-# 
-# #vaccine impact
-# for (my_year in c("cum10","cum30")){
-#   #my_outcome_denominator <- "proportion averted"
-#   for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
-#     
-#     df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
-#                     outcome_denominator==my_outcome_denominator)
-#     dodge=position_dodge(width=.6)
-#     
-#     p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
-#       geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
-#       geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
-#       facet_grid(outcome~transmission_setting, scale="free_y") +
-#       xlab("age group") +
-#       ylab(my_outcome_denominator) +
-#       theme_bw() +
-#       theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-#       scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) + ggtitle(my_year)
-#     
-#     if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
-#     
-#     print(p)
-#   }
-# }
+saveRDS(res, paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-vacimpact.rds"))
+
+stop()
+
+cbPalette <- c("Hopkins/UF"="#999999",
+               "Imperial"="#E69F00",
+               "Duke"="#56B4E9",
+               "Notre Dame"="#009E73",
+               "UF"="#F0E442",
+               "Exeter/Oxford"="#0072B2",
+               "Sanofi Pasteur"="#D55E00",
+               "UWA"="#CC79A7",
+               "A"="white",
+               "Longini-ODE"="black"); 
+
+noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+
+scen="reference"
+df=subset(res, scenario==scen )
+
+#vaccine impact
+for (my_year in c("cum10","cum30")){
+  for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
+    
+    df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
+                    outcome_denominator==my_outcome_denominator)
+    dodge=position_dodge(width=.6)
+    
+    p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
+      geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
+      geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
+      facet_grid(outcome~transmission_setting, scale="free_y") +
+      xlab("age group") +
+      ylab(my_outcome_denominator) +
+      theme_bw() +
+      theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+      scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) + ggtitle(my_year)
+    
+    if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
+    
+    print(p)
+  }
+  
+  df_tmp=subset(df, (age == "overall") & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% as.character(1:30))
+  df_tmp$year=as.numeric((as.character(df_tmp$year)))
+  
+  p=ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
+    geom_line() +
+    geom_ribbon(alpha=0.2, color=NA) +
+    facet_grid(outcome~transmission_setting, scale="free_y") +
+    xlab("time after introduction of CYD (years)") +
+    ylab("cumulative - per 100,000 pop at risk") +
+    theme_bw() +
+    scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
+  print(p)
+}
