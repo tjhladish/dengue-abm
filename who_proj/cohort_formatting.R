@@ -1,7 +1,7 @@
 ## cohort review
 
-wd <- "~/Dropbox/who-feb-2016/who-feb-2016-aggregated"
-setwd(wd)
+#wd <- "~/Dropbox/who-feb-2016/who-feb-2016-aggregated"
+#setwd(wd)
 
 rm(list=ls(all.names = T))
 
@@ -81,17 +81,19 @@ readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccina
   res
 }
 
-cohortdata <- readInCohort("../processed_logs/cohort.csv", seedkey)
-refcohortdata <- cohortdata[grepl("^[0-4]0+$", scenario)]
-cohortdata <- cohortdata[!grepl("^[0-4]0+$", scenario)]
-
 process_severity <- function(tar) {
   tar[severity!=0, infections := count] # 0 == non infection
   tar[severity>1, symptomatic_cases := count ] # 1 == asymptomatic infection
   tar[severity==2, hospitalised_cases := count*phc ] # 2 == mild disease, possible hosp
   tar[severity==3, hospitalised_cases := count ] # 3 == severe disease, assume hosp
   tar[severity>=2, deaths := hospitalised_cases*cfr] # death is % of hosp
+  tar
 }
+
+precohortdata <- process_severity(translate_scenario(readInCohort("../processed_logs/cohort.csv", seedkey)))
+
+refcohortdata <- copy(precohortdata[scenario == "noVaccine"])
+cohortdata <- copy(precohortdata[scenario != "noVaccine"])
 
 cohortify <- function(src) {
   pop <- src[,
@@ -107,8 +109,7 @@ cohortify <- function(src) {
   ][pop]
 }
 
-fincohortdata <- cohortify(translate_scenario(process_severity(cohortdata)))
-refcohortdata <- translate_scenario(process_severity(refcohortdata))
+fincohortdata <- cohortify(cohortdata)
 
 ## duplicate refcohort data, with vaccine == 1
 repcohdata <- copy(refcohortdata)[, vaccination := 1 ]
