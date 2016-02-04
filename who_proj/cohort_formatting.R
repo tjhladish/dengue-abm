@@ -42,18 +42,25 @@ require(reshape2)
 require(data.table)
 require(bit64)
 
-vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
-bgfiles <- list.files(pattern = "^[0-4]0+\\.")
+srcfiles <- list.files(pattern = "^[0-4].+\\..+")
 
-seedkeyFG <- setkey(rbindlist(lapply(vacfiles, function(nm) {
+# vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
+# bgfiles <- list.files(pattern = "^[0-4]0+\\.")
+
+# seedkeyFG <- setkey(rbindlist(lapply(vacfiles, function(nm) {
+#   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
+# })), seed)[, particle_id := floor(serial/80) ]
+# 
+# seedkeyBG <- setkey(rbindlist(lapply(bgfiles, function(nm) {
+#   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
+# })), seed)[, particle_id := floor(serial/80) ]
+
+seedkey <- setkey(rbindlist(lapply(srcfiles, function(nm) {
   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
 })), seed)[, particle_id := floor(serial/80) ]
 
-seedkeyBG <- setkey(rbindlist(lapply(bgfiles, function(nm) {
-  c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
-})), seed)[, particle_id := floor(serial/80) ]
 
-readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccination","severity","count")) {
+readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccination","severity","count", "routineage")) {
   res <- setkey(subset(
     setkey(fread(src, col.names = cnames), seed, serostatus, severity, vaccination)[sk],
     select = -c(seed, serial)
@@ -74,11 +81,9 @@ readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccina
   res
 }
 
-cohortdata <- readInCohort("../cohort/cohort.vaccinations", seedkeyFG)
-refcohortdata <- readInCohort(
-  "../cohort/cohort.no-vaccinations", seedkeyBG,
-  c("seed","year","serostatus","vaccination","severity","count","routineage")
-)[vaccination == 0]
+cohortdata <- readInCohort("../processed_logs/cohort.csv", seedkey)
+refcohortdata <- cohortdata[grepl("^[0-4]0+$", scenario)]
+cohortdata <- cohortdata[!grepl("^[0-4]0+$", scenario)]
 
 process_severity <- function(tar) {
   tar[severity!=0, infections := count] # 0 == non infection
