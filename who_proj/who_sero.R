@@ -6,13 +6,12 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-poppath <- ifelse(is.na(args[1]), "~/git/dengue/pop-merida/pop-merida/population-merida.txt", args[1])
-dbpath <- ifelse(is.na(args[2]), "~/Dropbox", args[2])
+dbpath <- ifelse(is.na(args[1]), "~/Dropbox", args[2])
 
+require(bit64)
 require(data.table)
 require(reshape2)
 
-cat("loading pop from: ",poppath,"\n")
 cat("dropbox path: ", dbpath,"\n")
 
 # age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
@@ -84,18 +83,18 @@ cbPalette <- c("Hopkins/UF"="#999999",
 
 noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
 scenarios=c("reference","catchUp","routineAT16","coverageAT50","noVaccine")
-for (scen in scenarios){
-  df=subset(seroresults, (scenario==scen) & (age=="9yo") )
+#for (scen in scenarios){
+  df=subset(seroresults, age=="9yo" )
   df_tmp=subset(df, outcome=="seropositive")
   df_tmp$year=as.numeric((as.character(df_tmp$year)))
   
-  p<-ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
+  p<-ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
     geom_line() + ggtitle(scen) +
-    geom_ribbon(alpha=0.2, color=NA) +
+    geom_ribbon(alpha=0.05, color=NA) +
     facet_grid(.~transmission_setting, scale="free_y") +
     xlab("time after introduction of CYD (years)") +
     ylab("proportion seropositive\nat 9yrs of age") +
     theme_bw() + scale_y_continuous(breaks=c(0,10,30,50,70,90,100)/100, limits=c(0,1)) +
-    scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
+    scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette)
   print(p)
-}
+#}
