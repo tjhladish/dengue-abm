@@ -1,14 +1,15 @@
 ## economics calcs
 
-require(reshape2)
-require(data.table)
-
 tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 setwd(tar)
 
-rm(list=ls())
+rm(list=ls(all.names = T))
 
-poppath <- "~/git/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+require(reshape2)
+require(data.table)
+require(parallel)
+
+poppath <- "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
 age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
 
 rr_severity_sec_vs_pri = 20
@@ -71,8 +72,10 @@ econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_cov
 econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
 econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
 
-econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
-setkey(econfinal, particle_id, scen, transmission_setting, year, age)
+# econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
+# setkey(econfinal, particle_id, scen, transmission_setting, year, age)
+
+econdata <- subset(econdata, select=-c(mild, severe, symptomatic, scenario, serial))
 
 load("~/Downloads/lifeTablesMX.Rdata")
 ## from https://en.wikipedia.org/wiki/Demographics_of_Mexico 28 Jan 2016
@@ -193,12 +196,6 @@ disc.life.exp=out[,"lifeExp"]
 
 year.max=econdata[,max(year)]
 
-econfinalBRAInd <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
-setkeyv(econfinalBRAInd, c("thresh", key(econdata)))
-econfinalBRASoc <- copy(econfinalBRAInd)
-econfinalPHLInd <- copy(econfinalBRAInd)
-econfinalPHLSoc <- copy(econfinalBRAInd)
-
 disc.cost.vec = 1/rep(disc.cost+1, year.max+1)^(0:year.max)
 disc.daly.vec = 1/rep(disc.daly+1, year.max+1)^(0:year.max)
 nodisc = rep(1, length(disc.cost.vec))
@@ -214,29 +211,22 @@ precomputeCost <- function(tardt, costsrc, wh="c") with(c(costsrc[[wh]], costsrc
   )]
 })
 
-precomputeCost(econfinalBRAInd, econ.para.bra)
-precomputeCost(econfinalBRASoc, econ.para.bra, "sc")
-precomputeCost(econfinalPHLInd, econ.para.phl)
-precomputeCost(econfinalPHLSoc, econ.para.phl, "sc")
-
 slice <- function(base) base[,list(n.vac, cost.vac, cost.treat, daly.vac, daly.treat, daly.death), keyby=list(thresh, transmission_setting, particle_id, age, year, scen)]
-
-econfinalBRAInd <- slice(econfinalBRAInd)
-econfinalBRASoc <- slice(econfinalBRASoc)
-econfinalPHLInd <- slice(econfinalPHLInd)
-econfinalPHLSoc <- slice(econfinalPHLSoc)
-
 extract_ref <- function(dt, wh) subset(dt[scen == wh], select=-scen)
 
-econfinalBRAIndref <- extract_ref(econfinalBRAInd, "reference")
-econfinalBRAIndnoVac <- extract_ref(econfinalBRAInd, "noVaccine")
-econfinalBRASocref <- extract_ref(econfinalBRASoc, "reference")
-econfinalBRASocnoVac <- extract_ref(econfinalBRASoc, "noVaccine")
 
-econfinalPHLIndref <- extract_ref(econfinalPHLInd, "reference")
-econfinalPHLIndnoVac <- extract_ref(econfinalPHLInd, "noVaccine")
-econfinalPHLSocref <- extract_ref(econfinalPHLSoc, "reference")
-econfinalPHLSocnoVac <- extract_ref(econfinalPHLSoc, "noVaccine")
+econfinalBRAInd <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
+setkeyv(econfinalBRAInd, c("thresh", key(econdata)))
+econfinalBRASoc <- copy(econfinalBRAInd)
+econfinalPHLInd <- copy(econfinalBRAInd)
+econfinalPHLSoc <- copy(econfinalBRAInd)
+
+fun <- function(init, para, basis, reg) {
+  cont <- slice(precomputeCost(init, para, basis))
+  refed <- extract_ref(econfinalBRAInd, "reference")
+  novaced <- extract_ref(econfinalBRAInd, "noVaccine")
+  joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"))
+}
 
 calc <- function(.SD, cst.disc, d.disc, thresh) with(.SD, {
   net.cost=sum((cost.vac-i.cost.vac+cost.treat-i.cost.treat)*cst.disc[year+1])
@@ -288,14 +278,43 @@ joins <- function(base, ref, noVac, region, typ) {
   )[, reg := region ][, cost := typ ]
 }
 
-allres <- rbind(
-  joins(econfinalBRAInd, econfinalBRAIndref, econfinalBRAIndnoVac, "BRA", "ind"),
-  joins(econfinalBRASoc, econfinalBRASocref, econfinalBRASocnoVac, "BRA", "soc"),
-  joins(econfinalPHLInd, econfinalPHLIndref, econfinalPHLIndnoVac, "PHL", "ind"),
-  joins(econfinalPHLSoc, econfinalPHLSocref, econfinalPHLSocnoVac, "PHL", "soc")
+allres <- rbindlist(mcmapply(
+  fun,
+  init=list(econfinalBRAInd, econfinalBRASoc, econfinalPHLInd, econfinalPHLSoc),
+  para=list(econ.para.bra,econ.para.bra,econ.para.phl,econ.para.phl),
+  basis=list("c","sc","c","sc"),
+  reg=list("BRA","BRA","PHL","PHL"),
+  mc.cores = detectCores()-1
+)
+#   joins(econfinalBRAInd, econfinalBRAIndref, econfinalBRAIndnoVac, "BRA", "ind"),
+#   joins(econfinalBRASoc, econfinalBRASocref, econfinalBRASocnoVac, "BRA", "soc"),
+#   joins(econfinalPHLInd, econfinalPHLIndref, econfinalPHLIndnoVac, "PHL", "ind"),
+#   joins(econfinalPHLSoc, econfinalPHLSocref, econfinalPHLSocnoVac, "PHL", "soc")
 )[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "UF" ][,
   scenario := paste(scen,reg,cost,ifelse(disc,"disc","nodisc"), sep="-")
 ]
+
+# precomputeCost(econfinalBRAInd, econ.para.bra, "c")
+# precomputeCost(econfinalBRASoc, econ.para.bra, "sc")
+# precomputeCost(econfinalPHLInd, econ.para.phl, "c")
+# precomputeCost(econfinalPHLSoc, econ.para.phl, "sc")
+# 
+# econfinalBRAInd <- slice(econfinalBRAInd)
+# econfinalBRASoc <- slice(econfinalBRASoc)
+# econfinalPHLInd <- slice(econfinalPHLInd)
+# econfinalPHLSoc <- slice(econfinalPHLSoc)
+# 
+# econfinalBRAIndref <- extract_ref(econfinalBRAInd, "reference")
+# econfinalBRAIndnoVac <- extract_ref(econfinalBRAInd, "noVaccine")
+# econfinalBRASocref <- extract_ref(econfinalBRASoc, "reference")
+# econfinalBRASocnoVac <- extract_ref(econfinalBRASoc, "noVaccine")
+# 
+# econfinalPHLIndref <- extract_ref(econfinalPHLInd, "reference")
+# econfinalPHLIndnoVac <- extract_ref(econfinalPHLInd, "noVaccine")
+# econfinalPHLSocref <- extract_ref(econfinalPHLSoc, "reference")
+# econfinalPHLSocnoVac <- extract_ref(econfinalPHLSoc, "noVaccine")
+
+
 
 econres <- rbind(
   allres[,
@@ -320,18 +339,20 @@ setcolorder(econres, c("transmission_setting","scenario","year","outcome","age",
 
 saveRDS(econres,"~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds")
 
-# df <- within(econres,{
-#   scenario=gsub("-BRA-soc-disc","-society",scenario)
-#   scenario=gsub("-PHL-ind-disc","-PHL",scenario)
-#   scenario=gsub("-BRA-ind-nodisc","-nodisc",scenario)
-#   scenario=gsub("-BRA-ind-disc","",scenario)
-#   outcome = gsub("ThreshholdCost", "ThresholdPrice" ,outcome)
-# })
+stop("run script in rstudio if you want to pick out plots")
+
+df <- within(econres,{
+  scenario=gsub("-BRA-soc-disc","-society",scenario)
+  scenario=gsub("-PHL-ind-disc","-PHL",scenario)
+  scenario=gsub("-BRA-ind-nodisc","-nodisc",scenario)
+  scenario=gsub("-BRA-ind-disc","",scenario)
+  outcome = gsub("ThreshholdCost", "ThresholdPrice" ,outcome)
+})
 # 
 # 
-# df_tmp=subset(df, (grepl("NMB-",outcome) | grepl("NMBpp-",outcome) | grepl("ThresholdPrice-",outcome)) & (year=="cum30") & (scenario == "reference"))
-# df_tmp$Threshold=as.numeric(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[2,])
-# df_tmp$outcome=(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[1,])
+df_tmp=subset(df, (grepl("NMB-",outcome) | grepl("NMBpp-",outcome) | grepl("ThresholdPrice-",outcome)) & (year=="cum30") & (scenario == "reference"))
+df_tmp$Threshold=as.numeric(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[2,])
+df_tmp$outcome=(matrix(unlist(strsplit(as.character(df_tmp$outcome),"-")),2)[1,])
 # 
 # cbPalette <- c("Hopkins/UF"="#999999",
 #                "Imperial"="#E69F00",
@@ -343,29 +364,29 @@ saveRDS(econres,"~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.
 #                "UWA"="#CC79A7",
 #                "A"="white"); 
 # 
-# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
 # 
-# ggplot(df_tmp,aes(x=Threshold, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group))+
-#   geom_point(alpha=0.6) +
-#   geom_line(alpha=0.6) +
-#   geom_ribbon(alpha=0.2, color=NA) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("Cost-effectiveness threshold (Costs per DALY)") +
-#   ylab("Net monetary benefit") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-#   scale_color_manual(values=cbPalette)+ scale_fill_manual(values=cbPalette) 
-# 
-# df_tmp=subset(df, (scenario %in% c("reference","reference-PHL", "reference-nodisc","reference-society")) & 
-#                 (age=="overall") & 
-#                 (year=="cum30") &
-#                 (outcome %in% c("ThresholdPrice-2000"))) 
-# 
-# ggplot(df_tmp, aes(x=group, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario)) +
-#   geom_pointrange(alpha=0.6,position=position_dodge(.5)) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("") +
-#   ylab("") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-#   scale_color_manual(values=noGroup_cbPalette) 
+ggplot(df_tmp,aes(x=Threshold, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario))+
+  geom_point(alpha=0.6) +
+  geom_line(alpha=0.6) +
+  geom_ribbon(alpha=0.2, color=NA) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("Cost-effectiveness threshold (Costs per DALY)") +
+  ylab("Net monetary benefit") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  scale_color_manual(values=noGroup_cbPalette)+ scale_fill_manual(values=noGroup_cbPalette) 
+
+df_tmp=subset(df, (scenario %in% c("reference","reference-PHL", "reference-nodisc","reference-society")) & 
+                (age=="overall") & 
+                (year=="cum30") &
+                (outcome %in% c("ThresholdPrice-2000"))) 
+
+ggplot(df_tmp, aes(x=group, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario)) +
+  geom_pointrange(alpha=0.6,position=position_dodge(.5)) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("") +
+  ylab("") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  scale_color_manual(values=noGroup_cbPalette) 

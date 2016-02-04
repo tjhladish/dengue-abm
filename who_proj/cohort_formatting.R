@@ -3,7 +3,7 @@
 wd <- "~/Dropbox/who-feb-2016/who-feb-2016-aggregated"
 setwd(wd)
 
-rm(list=ls())
+rm(list=ls(all.names = T))
 
 translate_scenario <- function(dt) { # assumes transmission already separated
   ky <- key(dt)
@@ -171,32 +171,34 @@ output <- rbind(
 
 saveRDS(output, "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-cohort.rds")
 
-# my_age= "cohort_complete"; cbPalette <- c("red","green","blue")
-# df_tmp=subset(output, age == my_age & (outcome_denominator=="cumulative - per 100,000 pop at risk") & scenario == "reference" & year %in% 1:30 )
-# df_tmp$year=as.numeric(as.character(df_tmp$year))
-# 
-# ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
-#   geom_line() +
-#   geom_ribbon(alpha=0.2, color=NA) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("time after introduction of CYD (years)") +
-#   ylab("cumulative - per 100,000 pop at risk") +
-#   theme_bw() +
-#   scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
-# 
-# #vaccine effects in vaccinated cohort split up
-# df_tmp=subset(output, (age %in% c("cohort_complete","cohort_vaccpos_seropos","cohort_vaccpos_seroneg","cohort_vaccneg_seropos","cohort_vaccneg_seroneg")) & 
-#                 (outcome_denominator=="cumulative - per 100,000 pop at risk") & (year %in% c("cum10","cum30") & scenario == "reference") )
-# df_tmp$age=gsub("cohort_complete","complete\ncohort",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccpos_seropos","vaccinated\nseropositive",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccpos_seroneg","vaccinated\nseronegative",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccneg_seropos","unvaccinated\nseropositive",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccneg_seroneg","unvaccinated\nseronegative",df_tmp$age)
-# ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, shape=year, linetype=year)) +
-#   geom_pointrange(position=position_dodge(.5)) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("first vaccine eligible cohort") +
-#   ylab("per 100,000 pop at risk") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-#   scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
+stop()
+
+my_age= "cohort_complete"; cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+df_tmp=subset(output, age == my_age & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% 1:30 )
+df_tmp$year=as.numeric(as.character(df_tmp$year))
+
+ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
+  geom_line() +
+  geom_ribbon(alpha=0.2, color=NA) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("time after introduction of CYD (years)") +
+  ylab("cumulative - per 100,000 pop at risk") +
+  theme_bw() +
+  scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
+
+#vaccine effects in vaccinated cohort split up
+df_tmp=subset(output, (age %in% c("cohort_complete","cohort_vaccpos_seropos","cohort_vaccpos_seroneg","cohort_vaccneg_seropos","cohort_vaccneg_seroneg")) & 
+                (outcome_denominator=="cumulative - per 100,000 pop at risk") & (year %in% c("cum10","cum30") ) )
+df_tmp$age=gsub("cohort_complete","complete\ncohort",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccpos_seropos","vaccinated\nseropositive",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccpos_seroneg","vaccinated\nseronegative",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccneg_seropos","unvaccinated\nseropositive",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccneg_seroneg","unvaccinated\nseronegative",df_tmp$age)
+ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario, shape=year, linetype=year)) +
+  geom_pointrange(position=position_dodge(.5)) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("first vaccine eligible cohort") +
+  ylab("per 100,000 pop at risk") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
