@@ -272,14 +272,6 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
         if (date.day() == ve.simDay) {
             if (not par->abcVerbose) cerr << "vaccinating " << ve.coverage*100 << "% of age " << ve.age << " on day " << ve.simDay << endl;
             community->vaccinate(ve);
-
-vector<Person*> ageCohort = community->getAgeCohort(ve.age);
-double seroprev = 0.0;
-for (auto p: ageCohort) if (p->getNumInfections() > 0) { seroprev += 1.0; }
-seroprev /= ageCohort.size();
-cerr << "seed, year, vaccine cohort age, seroprevalence: "
-     << par->randomseed << "," << date.year() << "," << ve.age << "," << seroprev << endl;
-
         } else if (date.day() > ve.simDay) {
             // Re-vaccination via ...
             int timeSinceVac = date.day() - ve.simDay;
@@ -392,7 +384,7 @@ if (date.year() >= BURNIN) {
             for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
                 for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
                     for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
-                        cerr << "COHORT," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << "," << target_age << endl;
+                        cerr << "COHORT," << par->randomseed << "," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << "," << target_age << endl;
                     }
                 }
             }
@@ -462,6 +454,17 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
+
+const int BURNIN = 50;
+if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
+    vector<Person*> ageCohort = community->getAgeCohort(9);
+    double seroprev = 0.0;
+    for (auto p: ageCohort) if (p->getNumInfections() > 0) { seroprev += 1.0; }
+    //seroprev /= ageCohort.size();
+    cerr << "seed, year, vaccine cohort age, seroprevalence: "
+         << par->randomseed << "," << date.year() << "," << 9 << "," << seroprev << "," << ageCohort.size() << endl;
+}
+
         update_vaccinations(par, community, date); 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
 
