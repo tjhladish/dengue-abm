@@ -74,8 +74,8 @@ const std::vector<double> INCUBATION_CDF = { 0,0,0.03590193,0.5070053,0.8248687,
 
 // from Community
                                                               // probability of biting at 3 different times of day (as defined in Location.h)
-static const float DAILY_BITING_PDF[(int) NUM_OF_TIME_PERIODS] = {0.08, 0.76, 0.16};  
- 
+static const float DAILY_BITING_PDF[(int) NUM_OF_TIME_PERIODS] = {0.08, 0.76, 0.16};
+
 // from Mosquito
 static const int MAX_MOSQUITO_AGE = 60;                       // maximum age of mosquito in days
 
@@ -116,11 +116,11 @@ static const std::vector<double> SYMPTOMATIC_BY_AGE = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
-//       RUNS 1979-2014 
+//       RUNS 1979-2014
 // DENV1:  7  11  1  10
 // DENV2:  1  1  6  14
 // DENV3:  2  1  2  1
-// DENV4:  1  1  2  1  3   
+// DENV4:  1  1  2  1  3
 //
 //       GAPS 1979-2014
 // DENV1:  1  4  2
@@ -135,7 +135,7 @@ static const std::vector<double> MEAN_GAP_LENGTH = { 3.33, 6.36, 11.10, 9.43 };
 // Fraction of days with precipitation in each month, aggregated over 1979-2013
 // Derived from NOAA data for airport in Merida
 // Jan        Feb        Mar        Apr        May        Jun
-// 0.14774282 0.10505319 0.10095012 0.07866667 0.16069057 0.63969171 
+// 0.14774282 0.10505319 0.10095012 0.07866667 0.16069057 0.63969171
 // Jul        Aug        Sep        Oct        Nov        Dec
 // 0.77393075 0.74148297 0.82327586 0.40394089 0.24817518 0.16411683
 
