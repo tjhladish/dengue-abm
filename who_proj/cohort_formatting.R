@@ -1,9 +1,9 @@
 ## cohort review
 
-wd <- "~/Dropbox/who-feb-2016/who-feb-2016-aggregated"
-setwd(wd)
+#wd <- "~/Dropbox/who-feb-2016/who-feb-2016-aggregated"
+#setwd(wd)
 
-rm(list=ls())
+rm(list=ls(all.names = T))
 
 translate_scenario <- function(dt) { # assumes transmission already separated
   ky <- key(dt)
@@ -42,18 +42,25 @@ require(reshape2)
 require(data.table)
 require(bit64)
 
-vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
-bgfiles <- list.files(pattern = "^[0-4]0+\\.")
+srcfiles <- list.files(pattern = "^[0-4].+\\..+")
 
-seedkeyFG <- setkey(rbindlist(lapply(vacfiles, function(nm) {
+# vacfiles <- list.files(pattern = "^[0-4][01]{2}1[01]{3}\\.")
+# bgfiles <- list.files(pattern = "^[0-4]0+\\.")
+
+# seedkeyFG <- setkey(rbindlist(lapply(vacfiles, function(nm) {
+#   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
+# })), seed)[, particle_id := floor(serial/80) ]
+# 
+# seedkeyBG <- setkey(rbindlist(lapply(bgfiles, function(nm) {
+#   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
+# })), seed)[, particle_id := floor(serial/80) ]
+
+seedkey <- setkey(rbindlist(lapply(srcfiles, function(nm) {
   c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
 })), seed)[, particle_id := floor(serial/80) ]
 
-seedkeyBG <- setkey(rbindlist(lapply(bgfiles, function(nm) {
-  c(list(seed=as.numeric(gsub(".+\\.","", nm))), fread(nm, nrows = 1, colClasses = c(scenario="character"))[,list(serial, scenario)])
-})), seed)[, particle_id := floor(serial/80) ]
 
-readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccination","severity","count")) {
+readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccination","severity","count", "routineage")) {
   res <- setkey(subset(
     setkey(fread(src, col.names = cnames), seed, serostatus, severity, vaccination)[sk],
     select = -c(seed, serial)
@@ -74,19 +81,19 @@ readInCohort <- function(src, sk, cnames = c("seed","year","serostatus","vaccina
   res
 }
 
-cohortdata <- readInCohort("../cohort/cohort.vaccinations", seedkeyFG)
-refcohortdata <- readInCohort(
-  "../cohort/cohort.no-vaccinations", seedkeyBG,
-  c("seed","year","serostatus","vaccination","severity","count","routineage")
-)[vaccination == 0]
-
 process_severity <- function(tar) {
   tar[severity!=0, infections := count] # 0 == non infection
   tar[severity>1, symptomatic_cases := count ] # 1 == asymptomatic infection
   tar[severity==2, hospitalised_cases := count*phc ] # 2 == mild disease, possible hosp
   tar[severity==3, hospitalised_cases := count ] # 3 == severe disease, assume hosp
   tar[severity>=2, deaths := hospitalised_cases*cfr] # death is % of hosp
+  tar
 }
+
+precohortdata <- process_severity(translate_scenario(readInCohort("../processed_logs/cohort.csv", seedkey)))
+
+refcohortdata <- copy(precohortdata[scenario == "noVaccine"])
+cohortdata <- copy(precohortdata[scenario != "noVaccine"])
 
 cohortify <- function(src) {
   pop <- src[,
@@ -102,8 +109,7 @@ cohortify <- function(src) {
   ][pop]
 }
 
-fincohortdata <- cohortify(translate_scenario(process_severity(cohortdata)))
-refcohortdata <- translate_scenario(process_severity(refcohortdata))
+fincohortdata <- cohortify(cohortdata)
 
 ## duplicate refcohort data, with vaccine == 1
 repcohdata <- copy(refcohortdata)[, vaccination := 1 ]
@@ -166,32 +172,34 @@ output <- rbind(
 
 saveRDS(output, "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-cohort.rds")
 
-# my_age= "cohort_complete"; cbPalette <- c("red","green","blue")
-# df_tmp=subset(output, age == my_age & (outcome_denominator=="cumulative - per 100,000 pop at risk") & scenario == "reference" & year %in% 1:30 )
-# df_tmp$year=as.numeric(as.character(df_tmp$year))
-# 
-# ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
-#   geom_line() +
-#   geom_ribbon(alpha=0.2, color=NA) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("time after introduction of CYD (years)") +
-#   ylab("cumulative - per 100,000 pop at risk") +
-#   theme_bw() +
-#   scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
-# 
-# #vaccine effects in vaccinated cohort split up
-# df_tmp=subset(output, (age %in% c("cohort_complete","cohort_vaccpos_seropos","cohort_vaccpos_seroneg","cohort_vaccneg_seropos","cohort_vaccneg_seroneg")) & 
-#                 (outcome_denominator=="cumulative - per 100,000 pop at risk") & (year %in% c("cum10","cum30") & scenario == "reference") )
-# df_tmp$age=gsub("cohort_complete","complete\ncohort",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccpos_seropos","vaccinated\nseropositive",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccpos_seroneg","vaccinated\nseronegative",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccneg_seropos","unvaccinated\nseropositive",df_tmp$age)
-# df_tmp$age=gsub("cohort_vaccneg_seroneg","unvaccinated\nseronegative",df_tmp$age)
-# ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, shape=year, linetype=year)) +
-#   geom_pointrange(position=position_dodge(.5)) +
-#   facet_grid(outcome~transmission_setting, scale="free_y") +
-#   xlab("first vaccine eligible cohort") +
-#   ylab("per 100,000 pop at risk") +
-#   theme_bw() +
-#   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-#   scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
+stop()
+
+my_age= "cohort_complete"; cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+df_tmp=subset(output, age == my_age & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% 1:30 )
+df_tmp$year=as.numeric(as.character(df_tmp$year))
+
+ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
+  geom_line() +
+  geom_ribbon(alpha=0.2, color=NA) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("time after introduction of CYD (years)") +
+  ylab("cumulative - per 100,000 pop at risk") +
+  theme_bw() +
+  scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
+
+#vaccine effects in vaccinated cohort split up
+df_tmp=subset(output, (age %in% c("cohort_complete","cohort_vaccpos_seropos","cohort_vaccpos_seroneg","cohort_vaccneg_seropos","cohort_vaccneg_seroneg")) & 
+                (outcome_denominator=="cumulative - per 100,000 pop at risk") & (year %in% c("cum10","cum30") ) )
+df_tmp$age=gsub("cohort_complete","complete\ncohort",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccpos_seropos","vaccinated\nseropositive",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccpos_seroneg","vaccinated\nseronegative",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccneg_seropos","unvaccinated\nseropositive",df_tmp$age)
+df_tmp$age=gsub("cohort_vaccneg_seroneg","unvaccinated\nseronegative",df_tmp$age)
+ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario, shape=year, linetype=year)) +
+  geom_pointrange(position=position_dodge(.5)) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("first vaccine eligible cohort") +
+  ylab("per 100,000 pop at risk") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 

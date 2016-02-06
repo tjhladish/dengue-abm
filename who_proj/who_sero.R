@@ -1,35 +1,34 @@
 ## seroprev data for who
 
-#seropath <- "~/Downloads/who-feb-2016/auto_output/" # path to serostatus processed logs - run process
+#seropath <- "~/Downloads/who-feb-2016/processed_logs/" # path to serostatus processed logs - run process
 #setwd(seropath)
 
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-poppath <- ifelse(is.na(args[1]), "~/git/dengue/pop-merida/pop-merida/population-merida.txt", args[1])
-dbpath <- ifelse(is.na(args[2]), "~/Dropbox", args[2])
+dbpath <- ifelse(is.na(args[1]), "~/Dropbox", args[2])
 
+require(bit64)
 require(data.table)
 require(reshape2)
 
-cat("loading pop from: ",poppath,"\n")
 cat("dropbox path: ", dbpath,"\n")
 
-age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
+# age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
+# 
+# pop <- fread(poppath)[,list(pop=.N),keyby=age][,
+#   age_category := factor(ifelse(
+#     age < 9, age_cats[1], ifelse(
+#      age < 19, age_cats[2],
+#      age_cats[3]
+#     )), levels = age_cats, ordered = TRUE
+#   )
+# ]
 
-pop <- fread(poppath)[,list(pop=.N),keyby=age][,
-  age_category := factor(ifelse(
-    age < 9, age_cats[1], ifelse(
-     age < 19, age_cats[2],
-     age_cats[3]
-    )), levels = age_cats, ordered = TRUE
-  )
-]
-
-seroscn <- setkey(subset(fread("seroscenarios.csv"), select=c(V1, V9, V10, V11, V12, V13, V14, V15, V16))[,
-  unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15,V16)
-][, transmission_setting := seq(10,90,by=20)[V10+1] ][,
-  scenario := paste0(V11, V12, V13, V14, V15, V16)
+seroscn <- setkey(subset(fread("seroscenarios.csv"), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
+  unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
+][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
+  scenario := paste0(V10, V11, V12, V13, V14, V15)
 ][,
   list(seed=unique(V1)), keyby=list(transmission_setting, scenario)
 ], seed)
@@ -49,18 +48,16 @@ translate_scenario <- function(dt) { # assumes transmission already separated
 translate_scenario(seroscn)
 
 serosrv <- setkey(fread("seroprevalence.csv")[,
-  list(seed=unique(seed)), keyby=list(year, vax_age, seroprevalence)
+  list(seed=unique(seed)), keyby=list(year, vax_age, seropositive, pop)
 ][, year := year-50 ], seed, year)
 
-preseroresults <- setnames(subset(serosrv[seroscn[scenario!="noVaccine"]], select=-c(scen,seed)), "vax_age", "age")
+preseroresults <- setnames(subset(serosrv[seroscn], select=-c(scen,seed)), "vax_age", "age")
 setkey(preseroresults, age, scenario, transmission_setting, year)
 
-seroresults <- pop[preseroresults][,{
-    ni <- sum(round(seroprevalence*pop))
-    nt <- sum(pop)
-    with(binom.test(ni,nt,ni/nt,conf.level = .9),{
-      list(value=estimate, CI_low=conf.int[1], CI_high=conf.int[2])
-    })
+seroresults <- preseroresults[,{
+    mn <- mean(seropositive/pop)
+    se <- sqrt(mn*(1-mn)/.N)
+    list(value=mn, CI_low=mn-se, CI_high=mn+se)
   },
   keyby=list(scenario, transmission_setting, year, age)
 ]
@@ -85,19 +82,19 @@ cbPalette <- c("Hopkins/UF"="#999999",
                "Longini-ODE"="black"); 
 
 noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
-scenarios=c("reference","catchUp","routineAT16","coverageAT50")
-for (scen in scenarios){
-  df=subset(seroresults, (scenario==scen) & (age=="9yo") )
+scenarios=c("reference","catchUp","routineAT16","coverageAT50","noVaccine")
+#for (scen in scenarios){
+  df=subset(seroresults, age=="9yo" )
   df_tmp=subset(df, outcome=="seropositive")
   df_tmp$year=as.numeric((as.character(df_tmp$year)))
   
-  p<-ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
+  p<-ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
     geom_line() + ggtitle(scen) +
-    geom_ribbon(alpha=0.5) +
+    geom_ribbon(alpha=0.05, color=NA) +
     facet_grid(.~transmission_setting, scale="free_y") +
     xlab("time after introduction of CYD (years)") +
     ylab("proportion seropositive\nat 9yrs of age") +
-    theme_bw() + scale_y_continuous(breaks=c(10,30,50,70,90)/100) +
-    scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
+    theme_bw() + scale_y_continuous(breaks=c(0,10,30,50,70,90,100)/100, limits=c(0,1)) +
+    scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette)
   print(p)
-}
+#}

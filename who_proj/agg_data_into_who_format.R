@@ -4,7 +4,7 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-poppath <- ifelse(is.na(args[1]), "~/git/dengue/pop-merida/pop-merida/population-merida.txt", args[1])
+poppath <- ifelse(is.na(args[1]), "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt", args[1])
 dbpath <- ifelse(is.na(args[2]), "~/Dropbox", args[2])
 
 cat("loading pop from: ",poppath,"\n")
@@ -175,6 +175,10 @@ saveRDS(res, paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-vac
 
 stop()
 
+.res <- res
+
+rm(list=ls())
+
 cbPalette <- c("Hopkins/UF"="#999999",
                "Imperial"="#E69F00",
                "Duke"="#56B4E9",
@@ -188,10 +192,10 @@ cbPalette <- c("Hopkins/UF"="#999999",
 
 noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
 
-scen="reference"
-df=subset(res, scenario==scen )
+df=.res
 
 #vaccine impact
+
 for (my_year in c("cum10","cum30")){
   for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
     
@@ -199,31 +203,33 @@ for (my_year in c("cum10","cum30")){
                     outcome_denominator==my_outcome_denominator)
     dodge=position_dodge(width=.6)
     
-    p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group)) +
+    p=ggplot(df_tmp, aes(x=age, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario)) +
       geom_bar(stat="identity", position=dodge, alpha=0.5, color=NA) +
       geom_errorbar(stat="identity", position=dodge, alpha=0.8, width=0, size=0.33) +
       facet_grid(outcome~transmission_setting, scale="free_y") +
       xlab("age group") +
       ylab(my_outcome_denominator) +
-      theme_bw() +
+      theme_bw() + ggtitle(my_year) +
       theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-      scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) + ggtitle(my_year)
+      scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette) + ggtitle(my_year)
     
     if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
     
     print(p)
   }
   
-  df_tmp=subset(df, (age == "overall") & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% as.character(1:30))
-  df_tmp$year=as.numeric((as.character(df_tmp$year)))
   
-  p=ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=group, color=group, group=group)) +
-    geom_line() +
-    geom_ribbon(alpha=0.2, color=NA) +
-    facet_grid(outcome~transmission_setting, scale="free_y") +
-    xlab("time after introduction of CYD (years)") +
-    ylab("cumulative - per 100,000 pop at risk") +
-    theme_bw() +
-    scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette)
-  print(p)
 }
+
+df_tmp=subset(df, (age == "overall") & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% as.character(1:30))
+df_tmp$year=as.numeric((as.character(df_tmp$year)))
+
+p=ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
+  geom_line() +
+  geom_ribbon(alpha=0.05, color=NA) +
+  facet_grid(outcome~transmission_setting, scale="free_y") +
+  xlab("time after introduction of CYD (years)") +
+  ylab("cumulative - per 100,000 pop at risk") +
+  theme_bw() +
+  scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette)
+print(p)

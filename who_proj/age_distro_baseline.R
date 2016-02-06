@@ -4,7 +4,7 @@
 #tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
 #setwd(tar)
 
-rm(list=ls())
+rm(list=ls(all.names = T))
 
 args <- commandArgs(trailingOnly = T)
 dbpath <- ifelse(is.na(args[1]), "~/Dropbox", args[1])
@@ -125,26 +125,26 @@ noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B
 
 # cumulatage distribution of cases at baseline (assume that value is for age at birthday
 # e.g.: age=4, value=0.5 -> 50% of cases are <4 yrs old) 
-df_tmp=subset(combo, outcome %in% c("symptomatic cases","hospitalised cases"))
+df_tmp=subset(fin, outcome %in% c("symptomatic cases","hospitalised cases"))
 df_tmp$age=as.numeric(as.character(df_tmp$age))
 
-ggplot(df_tmp, aes(x=age, y=value, group=group, color=group)) +
+ggplot(df_tmp, aes(x=age, y=value, group=scenario, color=scenario)) +
   geom_step(direction="hv") +
   facet_grid(outcome~transmission_setting, scale="free_y") +
   xlab("Age (yrs)") +
   ylab("cumulative proportion at baseline") +
   theme_bw() +
-  scale_color_manual(values=cbPalette) +
+  scale_color_manual(values=noGroup_cbPalette) +
   coord_cartesian( xlim =c(0,60))
 
 # age up to which 50% of cases are reported (not quite accurate for models with age groups)
 tmp <- df_tmp %>% group_by(group, transmission_setting, scenario, outcome)
 Age50percentCases <- tmp %>% summarise(minAge=min(age[value>0.5])-1) 
-ggplot(subset(Age50percentCases, minAge<100),aes(x=group, y=minAge, color=group, fill=group)) +
-  geom_bar(stat="identity", alpha=0.5, color=NA) +
+ggplot(subset(Age50percentCases, minAge<100),aes(x=group, y=minAge, color=scenario, fill=scenario)) +
+  geom_bar(stat="identity", alpha=0.5, color=NA, position = "dodge") +
   facet_grid(outcome~transmission_setting, scale="free_y") +
   xlab("") +
   ylab("Age up tp which 50% of cases occur") +
   theme_bw() +
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-  scale_fill_manual(values=cbPalette) + scale_color_manual(values=cbPalette) 
+  scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette) 

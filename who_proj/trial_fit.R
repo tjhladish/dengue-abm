@@ -5,7 +5,7 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-sqlpath <- ifelse(is.na(args[1]), "~/Downloads/who-feb-2016/cyd14_match.sqlite", args[1])
+sqlpath <- ifelse(is.na(args[1]), "~/Downloads/who-feb-2016/cyd14_match-path_tuning3.sqlite", args[1])
 store <- !is.na(args[2])
 dbpath <- ifelse(is.na(args[3]), "~/Dropbox", args[3])
 
@@ -19,7 +19,9 @@ require(ggplot2)
 
 getMetrics <- function(sqlite) {
   db <- RSQLite::dbConnect(RSQLite::SQLite(), sqlite)
-  result <- data.table(RSQLite::dbGetQuery(db, "select m.*, p.beta_multiplier, p.seed from metrics m, parameters p, jobs j where m.serial = p.serial and j.serial = m.serial and j.status == 'D';"))
+  result <- data.table(RSQLite::dbGetQuery(db,
+    "select m.*, p.beta_multiplier, p.seed from metrics m, parameters p, jobs j where m.serial = p.serial and j.serial = m.serial and j.status == 'D';"
+  ))
   RSQLite::dbDisconnect(db)
   result
 }
@@ -53,7 +55,7 @@ wider <- mlt[,{
   mn = mean(value)
   se = 2*sd(value)/sqrt(.N)
   list(mean=mn, lower=mn-se, upper=mn+se, Groups="longini")
-}, keyby=list(Trial = paste0("CYD", CYD), variable)]
+}, keyby=list(Trial = paste0("CYD", CYD), variable)][!grepl("infec", variable)]
 
 wider[, Arm := "Seronegative"]
 wider[grepl("placebo",variable), Arm:="Placebo"]
