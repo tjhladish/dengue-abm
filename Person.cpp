@@ -221,6 +221,10 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
             severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
             break;
+        case 4: // NEEDED IF VACCINE COUNTS AS INFECTION
+            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
+            severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+            break;
         default:
             cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
             exit(-838);
