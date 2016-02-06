@@ -202,11 +202,15 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-    double symptomatic_probability = _par->pathogenicityRelativeRisks[(int) serotype];
+    double symptomatic_probability = _par->serotypePathogenicityRelativeRisks[(int) serotype];
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
+            if (_par->useAgeStructuredPrimaryPathogenicity) {
+                symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
+            } else {
+                symptomatic_probability *= _par->basePathogenicity * _par->primaryRelativeRisk;
+            }
             severe_given_case       = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:

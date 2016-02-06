@@ -347,7 +347,7 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
-const int BURNIN = 50;
+const int BURNIN = 80;
 if (date.year() >= BURNIN) {
     vector<int> target_ages;
     if (par->vaccinationEvents.size() > 0) {
@@ -455,7 +455,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     for (; date.day() < par->nRunLength; date.increment()) {
 
-const int BURNIN = 50;
+const int BURNIN = 80;
 if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
     vector<Person*> ageCohort = community->getAgeCohort(9);
     double seroprev = 0.0;

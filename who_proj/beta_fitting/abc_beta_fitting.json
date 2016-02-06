@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 2000,
+    "num_samples"    : 2500,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "dengue_beta_fit-jan2016.sqlite",
+    "database_filename"             : "dengue_beta_fit-feb2016.sqlite",
     "posterior_database_filename"   : "who-plos-tmp-posterior.sqlite",
 
     "parameters" : [
@@ -22,12 +22,19 @@
          "par1"       : 0,
          "par2"       : 99},
 
+        {"name"       : "base_pathogenicity",
+         "short_name" : "base_path",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.6,
+         "par2"       : 0.6},
+
         {"name"       : "secondary_severity",
          "short_name" : "sec_sev",
-         "dist_type"  : "POSTERIOR",
+         "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 0,
-         "par2"       : 99},
+         "par1"       : 0.13,
+         "par2"       : 0.13},
 
         {"name"       : "primary_secondary_severity_ratio",
          "short_name" : "pss_ratio",
@@ -58,62 +65,13 @@
 
         {"name"       : "beta_multiplier",
          "dist_type"  : "PSEUDO",
-         "num_type"   : "INT",
-         "par1"       : 0,
-         "par2"       : 19}
+         "num_type"   : "FLOAT",
+         "par1"       : 0.1,
+         "par2"       : 2.5,
+         "step"       : 0.1}
     ],
 
     "metrics" : [
-        {"name" : "sp9yo00", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo01", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo02", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo03", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo04", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo05", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo06", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo07", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo08", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo09", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo10", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo11", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo12", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo13", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo14", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo15", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo16", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo17", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo18", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo19", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo20", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo21", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo22", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo23", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo24", "num_type" : "FLOAT", "value" : 0},
-
-        {"name" : "sp9yo25", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo26", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo27", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo28", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo29", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo30", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo31", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo32", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo33", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo34", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo35", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo36", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo37", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo38", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo39", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo40", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo41", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo42", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo43", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo44", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo45", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo46", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo47", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo48", "num_type" : "FLOAT", "value" : 0},
-        {"name" : "sp9yo49", "num_type" : "FLOAT", "value" : 0}
+        {"name" : "sp9yo", "num_type" : "FLOAT", "value" : 0}
     ]
 }

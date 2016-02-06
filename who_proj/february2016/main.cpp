@@ -22,12 +22,44 @@ const string HOME(std::getenv("HOME"));
 const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/scratch/lfs/thladish");
 
-const int RESTART_BURNIN     = 80;
-const int FORECAST_DURATION  = 10;
+const int RESTART_BURNIN    = 80;
+const int FORECAST_DURATION = 30;
+const int TOTAL_DURATION    = RESTART_BURNIN + FORECAST_DURATION;
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
+
+//  0 mildEF real,
+//  1 severeEF real,
+//  2 sec_sev real,
+//  3 base_path real,
+//  3 pss_ratio real,
+//  4 exp_coef real,
+//  5 num_mos real,
+//  6 beta real,
+//
+//  Pseudo pars
+//  7 beta_multiplier real,
+
+    // The following FOI targets are the needed product of # mosquitoes * beta in order to achieve 9 yo equillibrium seroprevalences
+    // of 10, 30, 50, 70, and 90%
+    //    vector<float> foi_targets = {6.5, 7.5, 9, 12, 20}; // NEEDS TO BE UPDATED IF TRANSMISSION MODEL CHANGES
+    //const vector<float> foi_targets = {6.2, 8.4, 10.4, 12.5, 20}; // NEEDS TO BE UPDATED IF TRANSMISSION MODEL CHANGES
+    const vector<float> foi_targets = {5.7, 7.8, 10.0, 13.5, 21}; // NEEDS TO BE UPDATED IF TRANSMISSION MODEL CHANGES
+
+//0.11739814169|0.0
+//0.33525855234|1.0
+//0.5314984042|2.0
+//0.646959106000001|3.0
+//0.868876936|4.0
+
+
+//0.111192782416|0.0
+//0.20122664603|1.0
+//0.3716522091|2.0
+//0.668049612|3.0
+//0.894214538|4.0
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
@@ -36,20 +68,19 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _pss_ratio    = args[4];
     double _exp_coef     = args[5];
     double _nmos         = args[6];
-
-    double _beta_mult    = args[8];
-    double _betamp       = args[7] * _beta_mult; // mp and pm and not separately
-    double _betapm       = args[7] * _beta_mult; // identifiable, so they're the same
+    double _betamp       = foi_targets[(int) args[7]] / _nmos;   // mp and pm and not separately
+    double _betapm       = _betamp;                              // identifiable, so they're the same
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
-    vector<long double> abc_args(&args[0], &args[7]);
+    vector<long double> abc_args(&args[0], &args[6]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
+    par->monthlyOutput           = false;
     par->yearlyOutput            = true;
-    par->abcVerbose              = true;
+    par->abcVerbose              = false; // needs to be false to get WHO daily output
     const int runLengthYears     = RESTART_BURNIN + FORECAST_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
@@ -149,20 +180,67 @@ const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_
     const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << dif << " " << start_time << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
     return process_id;
 }
 
+void append_if_finite(vector<long double> &vec, double val) {
+    if (isfinite(val)) { 
+        vec.push_back((long double) val);
+    } else {
+        vec.push_back(0);
+    }
+}
 
-vector<int> read_pop_ids (string filename) {
-cerr << filename << endl;
-    ifstream is(filename);
-    istream_iterator<double> start(is), end;
-    vector<int> ids(start, end);
-    return ids;
+
+vector<long double> tally_counts(const Parameters* par, Community* community) {
+    const int discard_days = 365*RESTART_BURNIN;
+    vector< vector<int> > infected    = community->getNumNewlyInfected();
+    const int num_years = FORECAST_DURATION;
+    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
+
+    vector<long double> metrics(num_years, 0.0);
+    for (int t=discard_days; t<par->nRunLength; t++) {
+        // use epidemic years, instead of calendar years
+        const int y = (t-discard_days)/365;
+        for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+            i_tally[s][y] += infected[s][t];
+        }
+    }
+    for (int s=0; s<NUM_OF_SEROTYPES; s++) {
+        for (int y = 0; y<num_years; ++y) {
+            metrics[y] += i_tally[s][y];
+        }
+    }
+
+    vector<int> pop_sizes  = vector<int>(10,0);
+    vector<double> seropos = vector<double>(10,0.0); // seronegative at vaccination time
+
+    for (int i=community->getNumPerson()-1; i>=0; i--) {
+        Person *p = community->getPerson(i);
+        const int final_age  = p->getAge();
+        const int age_at_vac_start = final_age - FORECAST_DURATION;
+        if (age_at_vac_start >= 9 and age_at_vac_start <= 18) {
+            int age_class = age_at_vac_start - 9;
+
+            const int serosurvey_day = (RESTART_BURNIN - age_class)*365;
+            const bool ever_infected = p->getNumInfections() > 0 ? true : false;
+            const bool isSeropos = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < serosurvey_day;
+            ++pop_sizes[age_class];
+            if (isSeropos) ++seropos[age_class];
+        }
+    }
+
+    long double seroprev_mean = 0.0;
+    for (unsigned int i = 0; i < seropos.size(); ++i) seroprev_mean += seropos[i] / pop_sizes[i];
+    assert(seropos.size() > 0);
+    seroprev_mean /= seropos.size();
+
+    metrics.push_back(seroprev_mean);
+    return metrics;
 }
 
 
@@ -170,15 +248,16 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     //initialize bookkeeping for run
-    time_t start ,end;
+    time_t start, end;
     time (&start);
     const unsigned int process_id = report_process_id(args, mp, start);
 
+    cerr << "SCENARIO " << rng_seed;
+    for (auto _p: args) cerr << " " << _p; cerr << endl;
+
     Parameters* par = define_simulator_parameters(args, rng_seed);
 
-    string sero_filename = "/scratch/lfs/thladish/sero_mer_who/annual_serotypes." + to_string(process_id);
-    par->writeAnnualSerotypes(sero_filename);
-
+    //vector<int> vaccine_durations = {-1, 10*365};
 //  Posterior pars
 //  0 mildEF real,
 //  1 severeEF real,
@@ -187,53 +266,113 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //  4 pss_ratio real
 //  5 exp_coef real,
 //  6 num_mos real,
-//  7 beta real,
 //
 //  Pseudo pars
-//  8 beta_multiplier real,
+//  7 foi_target real,
+//  8 catchup int,
+//  9 vaccine_mechanism int,
+//  10 vaccine int,
+//  11 target int,
+//  12 catchup_to int,
+//  13 coverage int 
+
+    vector<int> target_ages = {9, 16};           // default 9
+    vector<int> catchup_ages = {17, 30};         // default 17
+    vector<double> coverage_levels = {0.5, 0.8}; // default 0.8
+
+    bool catchup           = (bool) args[8];
+    int vaccine_mechanism  = (int) args[9];
+
+    bool vaccine           = (bool) args[10];
+    int target             = target_ages[(int) args[11]];
+    int catchup_to         = catchup_ages[(int) args[12]];
+    double coverage        = coverage_levels[(int) args[13]];
+
+    bool nonsensical_parameters = false;
+    // only run a non-vaccination campaign if all the vaccine parameters are 0
+    // TODO - this should be reworked with new "catchup-to" parameter
+    if (not vaccine and catchup) { nonsensical_parameters = true; }
+    if (nonsensical_parameters) {
+        vector<long double> dummy(FORECAST_DURATION + 1, 0.0);
+        delete par;
+        return dummy;
+    }
 
     Community* community = build_community(par);
-    //community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
-    vector<int> serotested_ids = read_pop_ids(pop_dir + "/9_merida_ids.txt");
+    if (vaccine) {
+        double target_coverage  = coverage;
+        double catchup_coverage = coverage;
 
-    //seed_epidemic(par, community);
-    vector<long double> seropos_9yo = simulate_who_fitting(par, community, process_id, serotested_ids);
-    // We might want to write the immunity and mosquito files
-    //string imm_filename = "/scratch/lfs/thladish/imm_mer_who/immunity." + to_string(process_id);
-    //write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
-    //write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+        // perfect efficacy that wanes rapidly
+        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = true;
+        par->vaccineImmunityDuration = 2*365;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 3;
+        par->vaccineDoseInterval     = 182;
+        par->vaccineBoosting         = false;
+        if (catchup) {
+            for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
+                par->vaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
+            }
+        } 
 
-    // calculated mean seropositivitiy in 9 year olds over the last simulated decade 
-    long double seropos_mean = 0.0;
-    for (unsigned int i = RESTART_BURNIN; i < seropos_9yo.size(); ++i) seropos_mean += seropos_9yo[i];
-    assert((signed) seropos_9yo.size() > RESTART_BURNIN);
-    seropos_mean /= (seropos_9yo.size() - RESTART_BURNIN);
+        for (int vacc_year = RESTART_BURNIN; vacc_year < TOTAL_DURATION; vacc_year++) {
+            par->vaccinationEvents.emplace_back(target, vacc_year*365, target_coverage);
+        }
+    }
+
+    if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
+        par->whoDiseaseOutcome = INC_NUM_INFECTIONS;
+        par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
+        par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
+    } else if (vaccine_mechanism == 1) { // also want A1 + B2 + C3a
+        par->whoDiseaseOutcome = VAC_ISNT_INFECTION;
+        par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
+        par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
+    } else {
+        cerr << "Unsupported vaccine mechanism: " << vaccine_mechanism << endl;
+        exit(-152);
+    }
+
+    seed_epidemic(par, community);
+    simulate_epidemic(par, community, process_id);
+    //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);
     double dif = difftime (end,start);
+
+    vector<long double> metrics = tally_counts(par, community);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
 
     for (auto i: args) ss << i << " ";
-    for (auto i: seropos_9yo) ss << i << " ";
+    for (auto i: metrics) ss << i << " ";
     ss << endl;
 
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
+    /*const int pop_size = community->getNumPerson();
+    for (unsigned int i = 0; i < epi_sizes.size(); i++) { 
+        // convert infections to cases per 1,000
+        metrics[i] = ((long double) 1e3*epi_sizes[i])/pop_size; 
+    }*/
+
     delete par;
     delete community;
-
-    return vector<long double> (1, seropos_mean);
+    return metrics;
 }
-
 
 void usage() {
     cerr << "\n\tUsage: ./abc_sql abc_config_sql.json --process\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate -n <number of simulations per database write>\n\n";
+
 }
 
 

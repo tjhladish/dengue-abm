@@ -57,6 +57,9 @@ void Parameters::define_defaults() {
     basePathogenicity = 1.0;                            // preferably this value is fit; default interpretation is Pr{symptomatic | secondary denv1 infection}
     postSecondaryRelativeRisk = 0.1;                    // risk of symptoms in post-secondary infections relative to secondary infections
 
+    useAgeStructuredPrimaryPathogenicity = false;
+    primaryRelativeRisk= 0.5;
+
     // Probabilities GIVEN maternal antibodies (from random cohabitating female of reproductive age)
     // Values estimated based on Fig. 5 of Halstead et al, Dengue hemorrhagic fever in infants: research opportunities ignored, EID, 2002
     // http://stacks.cdc.gov/view/cdc/13972/cdc_13972_DS1.pdf
@@ -638,5 +641,5 @@ void Parameters::defineSerotypeRelativeRisks() { // should be called after repor
     assert(implied_cases_by_sero[0] > 0);
     vector<double> relative_risk_by_sero = implied_cases_by_sero;
     for (double& val: relative_risk_by_sero) val /= implied_cases_by_sero[0];
-    pathogenicityRelativeRisks = relative_risk_by_sero;
+    serotypePathogenicityRelativeRisks = relative_risk_by_sero;
 }
