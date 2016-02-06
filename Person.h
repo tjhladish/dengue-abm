@@ -63,6 +63,7 @@ class Infection {
 
   public:
 
+    int getInfectedTime() const { return infectedTime; }
     bool isSymptomatic() const { return symptomTime > infectedTime; }
     bool isSevere()      const { return severeDisease; }
     Serotype serotype()  const { return _serotype; }
@@ -113,6 +114,8 @@ class Person {
         inline int getNumInfections() const { return infectionHistory.size(); }
 
         int getNumVaccinations() const { return vaccineHistory.size(); }
+        const std::vector<int>& getVaccinationHistory() const { return vaccineHistory; }
+        const std::vector<Infection*>& getInfectionHistory() const { return infectionHistory; }
         int daysSinceVaccination(int time) const { assert( vaccineHistory.size() > 0); return time - vaccineHistory.back(); } // isVaccinated() should be called first
         double vaccineProtection(const Serotype serotype, const int time) const;
 

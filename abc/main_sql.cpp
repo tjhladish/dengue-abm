@@ -66,6 +66,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
     par->defineSerotypeRelativeRisks();
     par->basePathogenicity = _base_path;
+    par->useAgeStructuredPrimaryPathogenicity = true;
     par->postSecondaryRelativeRisk = 0.1;
 
     par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);

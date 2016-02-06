@@ -119,8 +119,8 @@ double Person::remainingEfficacy(const int time) const {
         remainingFraction = 0.0;
     } else {
         if (_par->linearlyWaningVaccine) {
-            int time_since_vac = daysSinceVaccination(time);
             // reduce by fraction of immunity duration that has waned
+            int time_since_vac = daysSinceVaccination(time);
             if (time_since_vac > _par->vaccineImmunityDuration) {
                 remainingFraction = 0.0;
             } else {
@@ -137,8 +137,7 @@ double Person::vaccineProtection(const Serotype serotype, const int time) const 
     if (not isVaccinated()) {
         ves = 0.0;
     } else {
-        int time_since_vac = daysSinceVaccination(time);
-        if (time_since_vac > _par->vaccineImmunityDuration) {
+        if (daysSinceVaccination(time) > _par->vaccineImmunityDuration) {
             ves = 0.0;
         } else {
             if (_bNaiveVaccineProtection == true) {
@@ -158,7 +157,7 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
     MaternalEffect effect = NO_EFFECT;
     if (p->getAge() == 0 and time >= 0) {                       // this is an infant, and we aren't reloading an infection history
         Person* mom = p->getLocation(HOME_NIGHT)->findMom();    // find a cohabitating female of reproductive age
-        if (mom and mom->getImmunityBitset().any()) {        // if there is one and she has an infection history
+        if (mom and mom->getImmunityBitset().any()) {           // if there is one and she has an infection history
             if (gsl_rng_uniform(RNG) < _par->infantImmuneProb) {
                 effect = MATERNAL_PROTECTION;
             } else if (gsl_rng_uniform(RNG) < _par->infantSevereProb) {
@@ -201,26 +200,30 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     const int numPrevInfections = getNumInfections(); // needs to be called before initializing new infection
     const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
-     // Create a new infection record
+    // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-    double symptomatic_probability = _par->pathogenicityRelativeRisks[(int) serotype];
+    double symptomatic_probability = _par->serotypePathogenicityRelativeRisks[(int) serotype] * _par->basePathogenicity;
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
+            if (_par->useAgeStructuredPrimaryPathogenicity) {
+                symptomatic_probability *=  SYMPTOMATIC_BY_AGE[_nAge];
+            } else {
+                symptomatic_probability *= _par->primaryRelativeRisk;
+            }
             severe_given_case        = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:
-            symptomatic_probability *= _par->basePathogenicity;
+            //symptomatic_probability -- no change
             severe_given_case        = _par->secondarySevereFraction[(int) serotype];
             break;
         case 2:
-            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
             severe_given_case        = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
-            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
             severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
             break;
         default:

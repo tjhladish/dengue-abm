@@ -227,6 +227,7 @@ public:
     double fVEI;                                            // vaccine efficacy to reduce infectiousness
     double fVEP;                                            // vaccine efficacy for pathogenicity
     double fVEH;                                            // vaccine efficacy against hospitalization, given disease
+    bool useAgeStructuredPrimaryPathogenicity;              // use age-specific values, or constant?
     std::vector<double> primarySevereFraction;              // fraction of primary cases (symptomatic infections) that are severe
     std::vector<double> secondarySevereFraction;            // fraction of post-primary cases (symptomatic infections) that are severe
     std::vector<double> tertiarySevereFraction;             // fraction of post-primary cases (symptomatic infections) that are severe
@@ -241,7 +242,8 @@ public:
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
     double basePathogenicity;                               // weighted average (over serotypes) post-primary pathogenicity (Pr{infection->symptomatic})
-    std::vector<double> pathogenicityRelativeRisks;
+    std::vector<double> serotypePathogenicityRelativeRisks; // Relative risks of symptoms, normalized to have max of 1.0
+    double primaryRelativeRisk;                             // how much less pathogenic are primary infections relative to secondary
     double postSecondaryRelativeRisk;                       // risk of symptoms in post-secondary infections relative to secondary infections
     void defineSerotypeRelativeRisks();                     // should be called after reportedFractions (1/expansion factors) are set, if they're going to be
 
