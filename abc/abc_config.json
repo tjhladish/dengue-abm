@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 0.01,
     "pls_training_fraction"     : 0.8,
 
-    "database_filename"         : "merida-par_order.sqlite",
+    "database_filename"         : "merida-intro_retry.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
