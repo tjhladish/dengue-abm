@@ -41,6 +41,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _nmos         = args[6];
     double _betamp       = args[7]; // mp and pm and not separately
     double _betapm       = args[7]; // identifiable, so they're the same
+    //double _flav_ar      = args[8];
 
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
@@ -66,7 +67,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
     par->defineSerotypeRelativeRisks();
     par->basePathogenicity = _base_path;
-    par->useAgeStructuredPrimaryPathogenicity = true;
+    par->primaryPathogenicityModel = ORIGINAL_LOGISTIC;
+    //par->annualFlavivirusAttackRate = _flav_ar;
     par->postSecondaryRelativeRisk = 0.1;
 
     par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
@@ -87,12 +89,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
     // generate introductions of serotypes based on when they were first observed in Yucatan
-    //par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
+    par->simulateAnnualSerotypes = false;
+    //par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
     par->annualIntroductions = vector<double>(DDT_START, 1.0);

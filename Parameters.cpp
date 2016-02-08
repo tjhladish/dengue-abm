@@ -57,8 +57,9 @@ void Parameters::define_defaults() {
     basePathogenicity = 1.0;                            // preferably this value is fit; default interpretation is Pr{symptomatic | secondary denv1 infection}
     postSecondaryRelativeRisk = 0.1;                    // risk of symptoms in post-secondary infections relative to secondary infections
 
-    useAgeStructuredPrimaryPathogenicity = false;
+    primaryPathogenicityModel = ORIGINAL_LOGISTIC;
     primaryRelativeRisk= 0.5;
+    annualFlavivirusAttackRate = 0.05;                  // used for geometric pathogenicity model
 
     // Probabilities GIVEN maternal antibodies (from random cohabitating female of reproductive age)
     // Values estimated based on Fig. 5 of Halstead et al, Dengue hemorrhagic fever in infants: research opportunities ignored, EID, 2002

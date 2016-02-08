@@ -207,10 +207,12 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            if (_par->useAgeStructuredPrimaryPathogenicity) {
-                symptomatic_probability *=  SYMPTOMATIC_BY_AGE[_nAge];
-            } else {
+            if (_par->primaryPathogenicityModel == CONSTANT_PATHOGENICITY) {
                 symptomatic_probability *= _par->primaryRelativeRisk;
+            } else if (_par->primaryPathogenicityModel == ORIGINAL_LOGISTIC) {
+                symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
+            } else if (_par->primaryPathogenicityModel == GEOMETRIC_PATHOGENICITY) {
+                symptomatic_probability *= 1.0 - pow(1.0 - _par->annualFlavivirusAttackRate, getAge());
             }
             severe_given_case        = _par->primarySevereFraction[(int) serotype];
             break;
