@@ -61,7 +61,7 @@ std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rn
     for (int i = 0; i < NUM_SEROTYPES; ++i) {
         std::vector<StreakState> series;
         if (PRE_1979_CIRCULATION[i]) {
-            while (series.size() < PREHISTORY_LENGTH) {
+            while ((signed) series.size() < PREHISTORY_LENGTH) {
                 append_streak(RNG, series, p_gap[i], GAP);
                 append_streak(RNG, series, p_run[i], RUN);
             }
@@ -73,7 +73,7 @@ std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rn
         
         series.resize(series.size() + INTRO_YEARS[i], GAP);
 
-        while (series.size() < SEQUENCE_LENGTH) {
+        while ((signed) series.size() < SEQUENCE_LENGTH) {
                 append_streak(RNG, series, p_run[i], RUN);
                 append_streak(RNG, series, p_gap[i], GAP);
         }
