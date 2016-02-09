@@ -276,7 +276,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //  12 catchup_to int,
 //  13 coverage int 
 
-    vector<int> target_ages = {9, 16};           // default 9
+    //vector<int> target_ages = {9, 16};           // default 9
     vector<int> catchup_ages = {17, 30};         // default 17
     vector<double> coverage_levels = {0.5, 0.8}; // default 0.8
 
@@ -284,7 +284,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     int vaccine_mechanism  = (int) args[9];
 
     bool vaccine           = (bool) args[10];
-    int target             = target_ages[(int) args[11]];
+    int target             = (int) args[11];
     int catchup_to         = catchup_ages[(int) args[12]];
     double coverage        = coverage_levels[(int) args[13]];
 

@@ -108,12 +108,12 @@ struct Scenario {
 
     string asKey() {
         stringstream ss;
-        ss << intensity_scenario
-           << catchup_scenario
-           << mechanism_scenario 
-           << vaccine_scenario
-           << target_scenario
-           << catchup_to_scenario
+        ss << intensity_scenario << "_"
+           << catchup_scenario << "_"
+           << mechanism_scenario  << "_"
+           << vaccine_scenario << "_"
+           << target_scenario << "_"
+           << catchup_to_scenario << "_"
            << coverage_scenario;
         return ss.str();
     }
@@ -253,7 +253,7 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
 //                           11832    32    69242   15     14685        1              2            0          0
                 if (line >> day >> year >> id >> age >> location >> vaccinated >> serotype >> symptomatic >> severe) {
                     if (year < BURNIN) continue;
-                    const int sero = serotype - 1;
+                    //const int sero = serotype - 1;
                     const int y = year - BURNIN;
                     const int outcome = severe==1 ? 2 : symptomatic==1 ? 1 : 0;
 

@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 8000,
+    "num_samples"    : 4500,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "who-80.sqlite",
+    "database_filename"             : "who-80_age-sweep.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
@@ -67,7 +67,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
 
         {"name"       : "vac_mech",
          "dist_type"  : "PSEUDO",
@@ -78,14 +78,14 @@
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
         
         {"name"       : "target",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
-         "par2"       : 1},
+         "par1"       : 10,
+         "par2"       : 18},
 
         {"name"       : "catchup_to",
          "dist_type"  : "PSEUDO",
@@ -96,7 +96,7 @@
         {"name"       : "coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1}
     ],
 
