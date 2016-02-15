@@ -18,7 +18,7 @@ using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
@@ -28,9 +28,10 @@ const int DDT_START           = 1956 - FIRST_YEAR;                    // simulat
 const int DDT_DURATION        = 23;                                   // 23 years long
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
+Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
     par->define_defaults();
+    par->serial = serial;
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
@@ -55,6 +56,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
+    par->monthlyOutput           = true;
+    par->yearlyOutput            = true;
     par->abcVerbose              = true;
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
     par->nRunLength              = runLengthYears*365;
@@ -89,7 +92,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
     // generate introductions of serotypes based on when they were first observed in Yucatan
-    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR, TRANS_AND_NORM);
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, TRANS_AND_NORM);
 
     par->simulateAnnualSerotypes = false;
     //par->normalizeSerotypeIntros = true;
@@ -188,7 +191,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -203,14 +206,14 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_par* mp, const time_t start_time) {
+unsigned int report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
     const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
@@ -256,15 +259,15 @@ void tally_counts(const Parameters* par, Community* community, vector<int>& all_
     return;
 }
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const ABC::MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
     // initialize bookkeeping for run
     time_t start ,end;
     time (&start);
-    const unsigned int process_id = report_process_id(args, mp, start);
+    const unsigned int process_id = report_process_id(args, serial, mp, start);
 
     // initialize & run simulator
-    const Parameters* par = define_simulator_parameters(args, rng_seed);
+    const Parameters* par = define_simulator_parameters(args, rng_seed, serial);
 
 //    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
 //    par->writeAnnualSerotypes(sero_filename);
@@ -277,8 +280,8 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
     // We might want to write the immunity and mosquito files if this is the real posterior
-//    string imm_filename = "/scratch/lfs/thladish/imm_tmp/immunity." + to_string(process_id);
-//    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    string imm_filename = "/scratch/lfs/thladish/imm_250/immunity." + to_string(process_id);
+    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
 //    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
 
     vector<int> mild_cases;
@@ -318,7 +321,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     stringstream ss;
-    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
+    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << serial << " " << dif << " ";
     // parameters
     ss << 1.0/par->reportedFraction[(int) MILD] << " " 
        << 1.0/par->reportedFraction[(int) SEVERE] << " " 

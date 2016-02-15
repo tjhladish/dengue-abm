@@ -5,6 +5,7 @@
 #include "CCRC32.h"
 #include "Utility.h"
 #include "ImmunityGenerator.h"
+#include "yucatan_serotype_generator.h"
 #include <unordered_set>
 
 using namespace std;
@@ -13,44 +14,55 @@ using dengue::util::to_string;
 using dengue::util::mean;
 using dengue::util::stdev;
 using dengue::util::max_element;
+using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+const string SIM_POP = "merida";
 
-const int DDT_START          = 77;  // simulator year 77
-const int DDT_DURATION       = 23;  // 23 years long
-const int FITTED_DURATION    = 30;  // 35 for 1979-2013 inclusive
-const int RESTART_BURNIN     =  5;
-const int FORECAST_DURATION  = 20;
+const int FIRST_YEAR          = 1879;                                 // inclusive
+const int FIRST_OBSERVED_YEAR = 1979;
+const int LAST_YEAR           = 2013;                                 // inclusive
+const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
+const int DDT_DURATION        = 23;                                   // 23 years long
+const int HISTORICAL_DURATION = LAST_YEAR - FIRST_YEAR + 1;
+const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
+const int FORECAST_DURATION   = 20;
+const int TOTAL_DURATION      = HISTORICAL_DURATION + FORECAST_DURATION;
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
+Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
     par->define_defaults();
+    par->serial = serial;
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
-    double _sec_severity = args[2];
-    double _exp_coef     = args[3];
-    double _nmos         = args[4];
-    double _betamp       = args[5]; // mp and pm and not separately
-    double _betapm       = args[5]; // identifiable, so they're the same
+    double _base_path    = args[2];
+    double _sec_severity = args[3];
+    double _pss_ratio    = args[4];
+    double _exp_coef     = args[5];
+    double _nmos         = args[6];
+    double _betamp       = args[7]; // mp and pm and not separately
+    double _betapm       = args[7]; // identifiable, so they're the same
+    //double _flav_ar      = args[8];
+
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
-    string pop_dir(HOME + "/work/dengue/pop-yucatan");
-    string output_dir("/scratch/lfs/thladish");
-    string imm_dir(output_dir + "/imm_tmp-5");
-    string sero_dir(output_dir + "/sero_tmp-5");
-    string mos_dir(output_dir + "/mos_tmp-5");
-    string mosloc_dir(output_dir + "/mosloc_tmp-5");
-    vector<long double> abc_args(&args[0], &args[6]);
+    string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
+    //string output_dir = "/scratch/lfs/thladish";
+    //string imm_dir(output_dir + "/imm_tmp-5");
+    vector<long double> abc_args(&args[0], &args[7]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
+    par->dailyOutput             = false;
+    par->monthlyOutput           = true;
+    par->yearlyOutput            = true;
     par->abcVerbose              = true;
-    const int runLengthYears     = RESTART_BURNIN + FORECAST_DURATION;
+    const int runLengthYears     = TOTAL_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
     par->annualIntroductionsCoef = pow(10, _exp_coef);
@@ -59,13 +71,17 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
-    par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
-    par->primarySevereFraction.clear();
-    par->primarySevereFraction.resize(NUM_OF_SEROTYPES, 0.0);
-    par->secondarySevereFraction.clear();
-    par->secondarySevereFraction.resize(NUM_OF_SEROTYPES, _sec_severity);
+    par->defineSerotypeRelativeRisks();
+    par->basePathogenicity = _base_path;
+    par->primaryPathogenicityModel = ORIGINAL_LOGISTIC;
+    //par->annualFlavivirusAttackRate = _flav_ar;
+    par->postSecondaryRelativeRisk = 0.1;
+
+    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
+    par->secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, _sec_severity);
+    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
+    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
+
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -79,36 +95,36 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.clear();
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
-    //par->hospitalizedFraction = 0.25; // fraction of cases assumed to be hospitalized
-    //par->fVEH = 0.803;                // fraction of hospitalized cases prevented by vaccine
+    // generate introductions of serotypes based on when they were first observed in Yucatan
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+FORECAST_DURATION, TRANS_AND_NORM);
 
     par->simulateAnnualSerotypes = false;
-    par->normalizeSerotypeIntros = false;
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
-    par->annualSerotypeFilename = sero_dir + "/annual_serotypes." + to_string(process_id);
-    par->loadAnnualSerotypes();
-
-    // we need to throw out the serotype years that were already used during ABC
-    int abc_duration = DDT_START + DDT_DURATION + FITTED_DURATION - RESTART_BURNIN;
-    vector<vector<float> >(par->nDailyExposed.begin()+abc_duration, par->nDailyExposed.end()).swap(par->nDailyExposed);
-
-    par->annualIntroductions = {1.0};
+    //par->normalizeSerotypeIntros = true;
+    // generate some extra years of serotypes, for subsequent intervention modeling
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    // 77 year burn-in, 23 years of no dengue, then re-introduction
+    // annualIntros is indexed in terms of simulator (not calendar) years
+    par->annualIntroductions = vector<double>(DDT_START, 1.0);
+    par->annualIntroductions.resize(DDT_START+DDT_DURATION, 0.1); // 90% reduction in intros for 20 years
+    par->annualIntroductions.resize(runLengthYears, 1.0);
 
     // load daily EIP
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed yucatan temps
-    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
-
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
+    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
     par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
 
-    par->populationFilename       = pop_dir    + "/population-yucatan.txt";
-    par->immunityFilename         = imm_dir    + "/immunity." + to_string(process_id);
-    par->locationFilename         = pop_dir    + "/locations-yucatan.txt";
-    par->networkFilename          = pop_dir    + "/network-yucatan.txt";
-    par->swapProbFilename         = pop_dir    + "/swap_probabilities-yucatan.txt";
-    par->mosquitoFilename         = mos_dir    + "/mos."    + to_string(process_id);
-    par->mosquitoLocationFilename = mosloc_dir + "/mosloc." + to_string(process_id);
+    assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
+    for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
+
+    par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
+    par->immunityFilename         = "";
+    par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
+    par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
+    par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
+    //par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
+    //par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
 }
 
@@ -144,14 +160,14 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
     const unsigned int process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
@@ -168,7 +184,7 @@ void append_if_finite(vector<long double> &vec, double val) {
 }
 
 
-vector<long double> tally_counts(const Parameters* par, Community* community, const int discard_days) {
+vector<long double> tally_counts(const Parameters* par, Community* community, const int discard_days, const int output_years) {
     ///////////////////////////////////////////////////////////////////////////////////////////
     //                                  IMPORTANT:                                           //
     // Update dummy metrics vector in calling function if number of metrics is changed here! //
@@ -176,10 +192,10 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     vector< vector<int> > severe      = community->getNumSevereCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
     vector< vector<int> > infected    = community->getNumNewlyInfected();
-    const int num_years = (int) par->nRunLength/365;
-    vector<vector<int> > severe_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // +1 to handle run lengths of a non-integral number of years
-    vector<vector<int> > symptomatic_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0)); // (any extra fraction of a year will be discarded)
-    vector<vector<int> > infected_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
+    //const int num_years = (int) par->nRunLength/365;
+    vector<vector<int> > severe_tally(NUM_OF_SEROTYPES, vector<int>(output_years, 0)); // +1 to handle run lengths of a non-integral number of years
+    vector<vector<int> > symptomatic_tally(NUM_OF_SEROTYPES, vector<int>(output_years, 0)); // (any extra fraction of a year will be discarded)
+    vector<vector<int> > infected_tally(NUM_OF_SEROTYPES, vector<int>(output_years, 0));
 
     vector<long double> metrics;
     for (int t=discard_days; t<par->nRunLength; t++) {
@@ -193,61 +209,69 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     }
 
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = 0; y<output_years; ++y) {
             metrics.push_back(infected_tally[s][y]);
         }
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = 0; y<output_years; ++y) {
             metrics.push_back(symptomatic_tally[s][y] - severe_tally[s][y]);
         }
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int y = 0; y<num_years; ++y) {
+        for (int y = 0; y<output_years; ++y) {
             metrics.push_back(severe_tally[s][y]);
         }
     }
     return metrics;
 }
 
-
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
+    // initialize bookkeeping for run
+    time_t start ,end;
+    time (&start);
+    const unsigned int process_id = report_process_id(args, serial, mp, start);
 
-    Parameters* par = define_simulator_parameters(args, rng_seed);
+    // initialize & run simulator
+    Parameters* par = define_simulator_parameters(args, rng_seed, serial);
 
-    const int discard_days        = 0;
-    const int years_simulated     = 25;
-    const int vac_start_year      = 5;
-    const int vr_start_day        = vac_start_year*365;
-    const int vr_end_day          = years_simulated*365;
-    //const int vr_end_day          = (vac_start_year+10)*365;
+    // given current par combinations, these are no-intervention runs
+    // Daily output can be used for e.g. avg epi-curve plot
+    par->dailyOutput = ((serial - 4) % 1152 == 0);
+
+    const int output_years        = FORECAST_DURATION + 5;           // needs to agree with json file
+    const int discard_days        = (HISTORICAL_DURATION - 5) * 365;
+    const int vac_start_year      = HISTORICAL_DURATION;
     vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
     vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
 
-//  Posterior pars
-//  0 caseEF real,
-//  1 mos_mov real,
-//  2 exp_coef real,
-//  3 num_mos real,
-//  4 beta real,
+//  0 mild_expansion_factor
+//  1 severe_expansion_factor
+//  2 base_pathogenicity
+//  3 secondary_severity
+//  4 primary_secondary_severity_ratio
+//  5 exposures_coefficient
+//  6 mosquito_density
+//  7  beta
 //
-//  Pseudo pars
-//  5 vac real,
-//  6 catchup real,
-//  7 target real,
-//  8 catchup_to real,
-//  9 vec_control real,
-// 10 vac_waning real,
-// 11 vac_boosting real
+//  8 vac
+//  9 catchup
+// 10 target
+// 11 catchup_to
+// 12 vec_control
+// 13 vac_waning
+// 14 vac_boosting
+// 15 vec_scenario
 
-    bool vaccine                  = (bool) args[6];
-    bool catchup                  = (bool) args[7];
-    int target                    = (int) args[8];
-    int catchup_to                = (int) args[9];
-    float vector_reduction        = vector_controls[(unsigned int) args[10]];
-    int vaccine_duration          = vaccine_durations[(unsigned int) args[11]];
-    bool boosting                 = (bool) args[12];
+    bool vaccine           = (bool) args[8];
+    bool catchup           = (bool) args[9];
+    int target             = (int) args[10];
+    int catchup_to         = (int) args[11];
+    float vector_reduction = vector_controls[(unsigned int) args[12]];
+    int vaccine_duration   = vaccine_durations[(unsigned int) args[13]];
+    bool boosting          = (bool) args[14];
+    int vector_scenario    = (int) args[15];
 
     if (vaccine_duration == -1) {
         par->linearlyWaningVaccine = false;
@@ -255,7 +279,6 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     } else {
         par->linearlyWaningVaccine = true;
         par->vaccineImmunityDuration = vaccine_duration;
-        par->vaccineBoosting = boosting;
     }
 
     bool nonsensical_parameters = false;
@@ -265,13 +288,13 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     if ((vaccine_duration == -1) and boosting) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
         // 3 is because vaccinated cases, total cases, and infections are reported
-        vector<long double> dummy(years_simulated*NUM_OF_SEROTYPES*3, 0.0);
+        vector<long double> dummy(output_years*NUM_OF_SEROTYPES*3, 0.0);
         delete par;
         return dummy;
     }
 
     Community* community = build_community(par);
-    community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
+    //community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     if (vaccine) {
         double default_target_coverage = 0.8;
@@ -285,59 +308,54 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
         target_coverage = target_coverage > 1.0 ? 1.0 : target_coverage;
         catchup_coverage = catchup_coverage > 1.0 ? 1.0 : catchup_coverage;
 
-        par->bVaccineLeaky = true;
-
-        par->fVESs.clear();
-        par->fVESs = {0.6, 0.54, 0.9, 0.95};
-
-        par->fVESs_NAIVE.clear();
-        par->fVESs_NAIVE = {0.3, 0.27, 0.45, 0.48};
+        par->bVaccineLeaky       = true;
+        par->fVEH                = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->numVaccineDoses     = 3;
+        par->vaccineDoseInterval = 182;
+        par->vaccineBoosting     = boosting;
+        par->fVESs               = {0.6, 0.54, 0.9, 0.95};
+        par->fVESs_NAIVE         = {0.3, 0.27, 0.45, 0.48};
 
         if (catchup) {
             for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
-                par->nVaccinateYear.push_back(vac_start_year);
-                par->nVaccinateAge.push_back(catchup_age);
-                par->fVaccinateFraction.push_back(catchup_coverage);  // imperial used 0.5
-                par->nSizeVaccinate++;
+                par->vaccinationEvents.emplace_back(catchup_age, vac_start_year*365, catchup_coverage);
             }
         } 
 
-        for (int vacc_year = vac_start_year; vacc_year < years_simulated; vacc_year++) {
-            par->nVaccinateYear.push_back(vacc_year);
-            par->nVaccinateAge.push_back(target);
-            par->fVaccinateFraction.push_back(target_coverage);      // imperial used 0.9
-            par->nSizeVaccinate++;
+        for (int vacc_year = vac_start_year; vacc_year < TOTAL_DURATION; vacc_year++) {
+            par->vaccinationEvents.emplace_back(target, vacc_year*365, target_coverage);
         }
     }
 
-/*
-    const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179,0.128,0.123,0.0956,0.195,0.777,0.940,0.901,1.0,0.491,0.301,0.199};
-    mosquitoMultipliers.clear();
-    mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
-    int running_sum = 0;
-    for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
-        mosquitoMultipliers[j].start = running_sum;
-        mosquitoMultipliers[j].duration = DAYS_IN_MONTH[j];
-        mosquitoMultipliers[j].value = MOSQUITO_MULTIPLIER_DEFAULTS[j];
-        running_sum += DAYS_IN_MONTH[j];
+    int vr_start_day = 0;
+    int vr_end_day = 0;
+
+    switch (vector_scenario) {
+        case 0:
+            vr_start_day = vac_start_year*365;
+            vr_end_day   = TOTAL_DURATION*365;
+            break;
+        case 1:
+            vr_start_day = vac_start_year*365;
+            vr_end_day   = (vac_start_year+10)*365;
+            break;
+        case 2:
+            vr_start_day = (vac_start_year-5)*365;
+            vr_end_day   = vac_start_year*365;
+            break;
+        default:
+            cerr << "Unsupported vector scenario: " << vector_scenario << endl;
+            exit(298);
     }
-*/
 
     if (vector_reduction > 0.0) {
-        //cerr << "ERROR: vector reduction not supported yet.  need to work out how 100 day + 20 yr simulation should work\n";
-        //exit(-1834);
         assert( vector_reduction <= 1.0); 
-        assert( vr_end_day <= par->mosquitoMultipliers.size() );
+        assert( vr_end_day <= (signed) par->mosquitoMultipliers.size() );
         const float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
         for (int i = vr_start_day; i < vr_end_day; ++i) {
             par->mosquitoMultipliers[i].value *= vector_coeff;
         }
     }
-
-    //initialize bookkeeping for run
-    time_t start ,end;
-    time (&start);
-    const unsigned int process_id = report_process_id(args, mp, start);
 
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
@@ -346,10 +364,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     time (&end);
     double dif = difftime (end,start);
 
-    vector<long double> metrics = tally_counts(par, community, discard_days);
+    vector<long double> metrics = tally_counts(par, community, discard_days, output_years);
 
     stringstream ss;
-    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
+    ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << serial << " " << dif << " ";
 
     for (auto i: args) ss << i << " ";
     for (auto i: metrics) ss << i << " ";

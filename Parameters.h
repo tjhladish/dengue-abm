@@ -297,6 +297,7 @@ public:
     bool monthlyOutput;
     bool yearlyOutput;
     bool abcVerbose;
+    unsigned long int serial;
 };
 
 #endif

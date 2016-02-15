@@ -8,6 +8,7 @@
 #include <climits> // INT_MAX
 
 void Parameters::define_defaults() {
+    serial = 0;
     randomseed = 5489;
     nRunLength = 100;
     betaPM = 0.2;
