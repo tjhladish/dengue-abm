@@ -8,7 +8,7 @@ CPP:=g++-4.9
 endif
 
 MAKE     	= make --no-print-directory
-CFLAGS   	= -Wall -pedantic -std=c++11
+CFLAGS   	= -Wall -Wextra -pedantic -std=c++11
 #OPTI     	= -g
 OPTI     	= -O2
 LDFLAGS	 	= -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)
