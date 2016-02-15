@@ -487,7 +487,7 @@ void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate pe
         Person* p = _person + i;
         if (p->isVaccinated()) {
             const int timeSinceLastVaccination = p->daysSinceVaccination(time);
-            if (timeSinceLastVaccination == interval and p->getNumVaccinations() < maxDoses) {
+            if (timeSinceLastVaccination >= interval and p->getNumVaccinations() < maxDoses) {
                 p->vaccinate(time);
             }
         }
