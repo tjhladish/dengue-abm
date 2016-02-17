@@ -51,7 +51,7 @@ std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rn
 
     const int SEQUENCE_LENGTH = last_year - first_year + 1;
     const int PREHISTORY_LENGTH = first_observed_year - first_year;
-    gsl_rng_set(RNG, time(NULL) * getpid()); // seed the rng using sys time and the process id
+    //gsl_rng_set(RNG, time(NULL) * getpid()); // seed the rng using sys time and the process id
 
     const std::vector<double> p_run = {1/geo_means[0][0], 1/geo_means[1][0], 1/geo_means[2][0], 1/geo_means[3][0]};
     const std::vector<double> p_gap = {1/geo_means[0][1], 1/geo_means[1][1], 1/geo_means[2][1], 1/geo_means[3][1]};
