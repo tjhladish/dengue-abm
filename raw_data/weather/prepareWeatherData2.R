@@ -1,7 +1,7 @@
 # prepare weather data sets
 # want two data sets, of daily (TMAX, TMIN) on Date (Date obj, but YYYY-MM-DD format)
 # also want day of year, w/ leap days discarded
-
+# setwd("~/Downloads")
 rm(list=ls())
 
 require(ggplot2)
@@ -107,9 +107,46 @@ if (lookaheads[is.na(EIP), length(EIP)] != 0) {
 eipToMu <- function(EIP, vr) log(EIP) - vr/2
 muToEIP <- function(mu, vr) exp(mu + vr/2)
 lookaheads[, mu := eipToMu(EIP,vr) ]
-dayBitingPref <- .76
-weighting <- c(rep(1-dayBitingPref, 6)/12, rep(dayBitingPref, 12)/12, rep(1-dayBitingPref, 6)/12)
 
+
+saveRDS(lookaheads, "lookaheads.rds")
+
+dayBitingPref <- .76
+weighting <- c(rep(1-dayBitingPref, 9)/16, rep(dayBitingPref, 8)/8, rep(1-dayBitingPref, 7)/16)
+
+mutoTeff = function(mu, beta0, betaT) (log(mu) - beta0)/betaT
+
+weightedmu = lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)]
+dailyweightedmu = weightedmu[,list(mu=mean(weighted_mu)),keyby=doy]
+dailyweightedmu[, Teff:=mutoTeff(mu,beta0,betaT)]
+
+annualIncrement <- 0.02 # C
+ccforecast <- setkey(rbindlist(
+  lapply(1:21, function(yr) dailyweightedmu[,list(Teff=Teff+annualIncrement*yr, year=yr),keyby=doy])
+)[, EIR:=1/eipfun(Teff,beta0,betaT,vr) ][, dos := doy + (year-1)*365], dos)
+
+forelim = ccforecast[dim(ccforecast)[1]:1,list(datelim=cumsum(EIR), dos)][datelim > 1][1,dos]-1
+
+forecastaheads = ccforecast[dos < forelim, {
+  cumeir = EIR
+  today <- dos
+  slice <- ccforecast[dos > today]
+  ahead <- 0
+  while(cumeir < 1) {
+    ahead <- ahead + 1
+    day <- slice[ahead]
+    add = day$EIR
+    cumeir = cumeir + add
+  }
+  del = cumeir - 1
+  ahead + (1-del/add)
+}, keyby=dos][dos <= 365*20]
+
+forecastaheads[,year:=ceiling(dos / 365)][,doy:=dos-(year-1)*365]
+
+write.table(forecastaheads[,list(EIP=V1),keyby=list(year,doy)], file="forecastEIP.csv",row.names = F,col.names = T)
+
+ggplot(forecastaheads[,list(EIP=V1),keyby=dos]) + aes(y=EIP, x=dos) + geom_line() + theme_bw()
 
 write.table(
   lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year, doy)],
@@ -132,7 +169,30 @@ write.table(
   lookaheads[,list(weighted_mu = sum(mu*weighting)), keyby=list(year,doy)][between(year, 1979, 1988), list(weighted_mu=mean(weighted_mu)), keyby=doy][,list(EIP=muToEIP(weighted_mu, vr), doy)],
   file = "burninEIP.csv", row.names = F, col.names = F
 )
-
+# 
+# annualIncrement <- 0.02 # C
+# ccforecast <- setkey(rbindlist(
+#   lapply(1:21, function(yr) teff.dt[,list(Teff=Teff+annualIncrement*yr, year=yr),keyby=doy])
+# )[, EIR:=1/eipfun(Teff,beta0,betaT,vr)][, dos := doy + (year-1)*365], dos)
+# 
+# forelim = ccforecast[dim(ccforecast)[1]:1,list(datelim=cumsum(EIR), dos)][datelim > 1][1,dos]-1
+# 
+# forecastaheads = ccforecast[dos < forelim, {
+#   cumeir = EIR
+#   today <- dos
+#   slice <- ccforecast[dos > today]
+#   ahead <- 0
+#   while(cumeir < 1) {
+#     ahead <- ahead + 1
+#     day <- slice[ahead]
+#     add = day$EIR
+#     cumeir = cumeir + add
+#   }
+#   del = cumeir - 1
+#   ahead + (1-del/add)
+# }, keyby=dos][dos <= 365*20]
+# 
+# saveRDS(forecastaheads, "forecastTeff.rds")
 
 ggplot(
   daily_mean_EIP
