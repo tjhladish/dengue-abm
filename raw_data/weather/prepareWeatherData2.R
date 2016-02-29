@@ -27,7 +27,12 @@ lastday <- merida[!is.na(celsius), max(date)]
 
 joint <- merida[between(date, firstday, lastday)][miami[between(date, firstday, lastday)]]
 t.model <- lm(celsius ~ i.celsius, data=joint)
+#which(cooks.distance(t.model) > 1/joint[!is.na(i.celsius) & !is.na(celsius),.N])
 censor <- as.integer(names(which(abs(rstandard(t.model)) > 5)))
+cat(sprintf("%f percent missingness in merida data.\n", joint[is.na(celsius),.N]/joint[,.N]*100))
+cat(sprintf("%f percent missingness in miami data.\n", joint[is.na(i.celsius),.N]/joint[,.N]*100))
+cat(sprintf("censoring %d of %d non-missing values; aka %f percent.\n", length(censor), joint[!is.na(celsius),.N], length(censor)/joint[!is.na(celsius),.N]*100))
+
 joint[,state:=factor('original',levels=c('original','missing','outlier'))]
 joint[is.na(celsius), state := factor('missing',levels=c('original','missing','outlier'))]
 orig_outliers <- joint[censor]
