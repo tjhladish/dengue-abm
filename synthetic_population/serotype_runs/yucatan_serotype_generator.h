@@ -32,21 +32,28 @@ sqlite3 denv4.sqlite 'select avg(geo_run), avg(geo_gap) from parameters p, jobs 
 2.54990213|8.49890623599998
 */
 
+const std::vector< std::vector<StreakState> > fitting_period = {
+//  1980's               1990's               2000's               2010's
+{1, 1,1,1,1,1,1,0,1,1,1, 1,1,1,1,1,1,1,1,0,0, 0,0,1,0,0,1,1,1,1,1, 1,1,1,1},  // sero 1
+{0, 0,0,0,0,0,0,1,0,0,0, 0,1,0,0,1,1,1,1,0,0, 0,1,1,0,1,1,1,1,1,1, 1,1,1,1},  // sero 2
+{0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,1,1,0,0, 0,1,0,0,0,0,1,1,0,0, 0,0,0,1},  // sero 3
+{0, 0,0,0,0,1,0,0,0,0,0, 0,0,0,0,1,0,1,1,0,0, 0,0,0,0,0,0,0,1,0,0, 0,0,1,1}}; // sero 4
 
-void append_streak(const gsl_rng* RNG, std::vector<StreakState>& series, double prob, StreakState type) {
-    unsigned int streak = gsl_ran_geometric(RNG, prob);
+void append_streak(const gsl_rng* RNG, std::vector<StreakState>& series, double prob, StreakState type, bool include_zeroes = false) {
+    unsigned int streak = gsl_ran_geometric(RNG, prob) - (int) include_zeroes;
     series.resize(series.size() + streak, type);
 }
 
 
-std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rng* RNG, const int first_year, const int first_observed_year, const int last_year, Transformations xform = TRANS_AND_NORM) {
+std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rng* RNG, const int first_year, const int first_observed_year, const int last_year, bool use_exact_known_seros, Transformations xform = TRANS_AND_NORM) {
                                               // Runs        Gaps
     const std::vector< std::vector<double> > geo_means = {{13.8267781, 2.6959824},
                                                 {9.5339401,  8.3188512},
                                                 {3.0850108,  4.9172329},
                                                 {2.5499021,  8.4989062}};
     const int NUM_SEROTYPES = 4;
-    const std::vector<bool> PRE_1979_CIRCULATION = {true, false, false, false};
+    std::vector<bool> PRE_1979_CIRCULATION = {true, false, false, false};
+    if (use_exact_known_seros) PRE_1979_CIRCULATION = {true, true, true, true}; // this isn't known, just a different model
     const std::vector<int> INTRO_YEARS = {0, 7, 17, 5}; // First year that each serotype appears, respectively, relative to first_observed_year
 
     const int SEQUENCE_LENGTH = last_year - first_year + 1;
@@ -71,12 +78,19 @@ std::vector< std::vector<StreakState> > generate_serotype_sequences(const gsl_rn
             series.resize(PREHISTORY_LENGTH, GAP);
         }
         
-        series.resize(series.size() + INTRO_YEARS[i], GAP);
+        if (use_exact_known_seros) {
+            series.insert(series.end(), fitting_period[i].begin(), fitting_period[i].end());
+            bool include_zeroes = true;
+            append_streak(RNG, series, p_run[i], RUN, include_zeroes);
+        } else {
+            series.resize(series.size() + INTRO_YEARS[i], GAP);
+        }
 
         while ((signed) series.size() < SEQUENCE_LENGTH) {
-                append_streak(RNG, series, p_run[i], RUN);
-                append_streak(RNG, series, p_gap[i], GAP);
+            append_streak(RNG, series, p_run[i], RUN);
+            append_streak(RNG, series, p_gap[i], GAP);
         }
+
         series.resize(SEQUENCE_LENGTH);
         all_series[i] = series;
     }
