@@ -31,28 +31,37 @@ for filename in glob('../auto_output/abc_yucatan-w-daily.err-*'):
     ef_mild = 1
     ef_severe = 1
     fo = None
+    day_buffer = []
+    year_buffer = []
     for line in file(filename):
         p = line.strip().split()
         if (p[1] == 'begin'):
-            tag = p[2]
-            if (tag not in seen):
-                seen.add(tag)
-                fo = open(tag + '.err', 'w')
-                # NB: the cases column was previously, and incorrectly, called mild
-                fo.write(' '.join(['tag', 'day', 'intros', 'local', 'infec', 'cases', 'severe', 'eip', 'nmos', 'ef_mild', 'ef_severe']) + '\n')
-
-            else:
-                break
-            ef_mild = p[5]   # these used to be fileds 4 and 5; now 5 and 6
-            ef_severe = p[6] 
-        elif (p[1] == 'day:' and int(p[2]) >= day_min and int(p[2]) < day_max):
-            fo.write( ' '.join([p[0]] + p[2:] + [ef_mild, ef_severe]) + '\n' )
+            tag = p[2] + '.' + p[3]
+            ef_mild = p[5]   # these used to be fields 4 and 5; now 5 and 6
+            ef_severe = p[6]
+            day_buffer.append(' '.join(['tag', 'day', 'intros', 'local', 'infec', 'cases', 'severe', 'eip', 'nmos', 'ef_mild', 'ef_severe']) + '\n')
+            year_buffer.append(' '.join(['tag', 'year', 'intros', 'local', 'infec', 'cases', 'severe', 'ef_mild', 'ef_severe']) + '\n')
+        elif (p[2] == 'day:' and int(p[3]) >= day_min and int(p[3]) < day_max):
+            #fo.write( ' '.join([p[0]] + p[2:] + [ef_mild, ef_severe]) + '\n' )
+            day_buffer.append(' '.join([p[0]] + p[2:] + [ef_mild, ef_severe]) + '\n')
+        elif p[2] == 'year:':
+            year_buffer.append(' '.join([p[0]] + p[2:] + [ef_mild, ef_severe]) + '\n')
         elif (p[1] == 'end'):
-            fo.close()
+            if (tag not in seen):
+                print "writing", tag
+                seen.add(tag)
+                fo = open(tag + '.daily', 'w')
+                fo.writelines(day_buffer)
+                fo.close()
+                fo = open(tag + '.annual', 'w')
+                fo.writelines(year_buffer)
+                fo.close()
+            day_buffer = []
+            year_buffer = []
 
-for filename in glob('../auto_output/abc_yucatan-w-daily.out-*'):
-    fo = open(filename)
-    p = fo.readline().strip().split()
-    fo.close()
-    tag = p[0]
-    rename(filename, tag + '.out')
+#for filename in glob('../auto_output/abc_yucatan-w-daily.out-*'):
+#    fo = open(filename)
+#    p = fo.readline().strip().split()
+#    fo.close()
+#    tag = p[0]
+#    rename(filename, tag + '.out')
