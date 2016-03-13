@@ -1,19 +1,19 @@
 #!/bin/bash
 #PBS -r y
 #PBS -N dengue
-#PBS -o auto_output/junk.out
-#PBS -e auto_output/junk.err
+#PBS -o auto_output/abc_merida-sm3.out
+#PBS -e auto_output/abc_merida-sm3.err
 #PBS -m ae
 #PBS -M tjhladish@gmail.com
 #PBS -W group_list=epi
-#PBS -l walltime=30:00:00
+#PBS -l walltime=10:00:00
 #PBS -l nodes=1:ppn=1
-#PBS -l pmem=4G
-#PBS -t 1-2500
+#PBS -l pmem=3G
+#PBS -t 1-2400
 
 cd $PBS_O_WORKDIR
 module load gsl gcc/4.7.2
-for i in `seq 1 13`;
+for i in `seq 1 10`;
 do
-    ./abc_sql abc_config.json --simulate
+    ./abc_sql abc_merida-sero_model3.json --simulate
 done

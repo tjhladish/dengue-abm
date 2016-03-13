@@ -216,8 +216,10 @@ void _aggregator(map<string, vector<int> >& periodic_incidence, string key) {
 }
 
 
-void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, const string process_id, const unsigned long int serial, const string label, const int value, string key) {
-        ss << process_id << dec << " " << serial << label << value << " "; for (auto v: periodic_incidence[key]) ss << v << " ";
+void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, const Parameters* par, const string process_id, const string label, const int value, string key) {
+        ss << process_id << dec << " " << par->serial << label << value << " ";
+        for (auto v: periodic_incidence[key]) ss << v << " ";
+        for (auto v: par->reportedFraction) ss << v << " ";
 }
 
 
@@ -226,14 +228,14 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     // local transmission              = total                                  - introductions
     periodic_incidence["daily"][LOCAL] = periodic_incidence["daily"][INFECTION] - periodic_incidence["daily"][INTRO];
     if (par->dailyOutput) {
-        _reporter(ss, periodic_incidence, process_id, par->serial, " day: ", date.day(), "daily");
+        _reporter(ss, periodic_incidence, par, process_id, " day: ", date.day(), "daily");
         ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
 
     if (par->weeklyOutput) {
         _aggregator(periodic_incidence, "weekly");
         if (date.endOfWeek()) {
-            _reporter(ss, periodic_incidence, process_id, par->serial, " week: ", date.week(), "weekly"); ss << endl;
+            _reporter(ss, periodic_incidence, par, process_id, " week: ", date.week(), "weekly"); ss << endl;
             periodic_incidence["weekly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
         }
     }
@@ -241,7 +243,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     if (par->monthlyOutput) {
         _aggregator(periodic_incidence, "monthly");
         if (date.endOfMonth()) {
-            _reporter(ss, periodic_incidence, process_id, par->serial, " month: ", date.julianMonth(), "monthly"); ss << endl;
+            _reporter(ss, periodic_incidence, par, process_id, " month: ", date.julianMonth(), "monthly"); ss << endl;
             periodic_incidence["monthly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
         }
     }
@@ -257,7 +259,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-        if (par->yearlyOutput) _reporter(ss, periodic_incidence, process_id, par->serial, " year: ", date.year(), "yearly"); ss << endl;
+        if (par->yearlyOutput) _reporter(ss, periodic_incidence, par, process_id, " year: ", date.year(), "yearly"); ss << endl;
         periodic_incidence["yearly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
     }
 

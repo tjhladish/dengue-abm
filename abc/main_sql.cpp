@@ -28,8 +28,8 @@ time_t GLOBAL_START_TIME;
  */
 
 string calculate_process_id(vector< long double> &args, string &argstring);
-const string SIM_POP = "merida";
-//const string SIM_POP = "yucatan";
+//const string SIM_POP = "merida";
+const string SIM_POP = "yucatan";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
 const int FIRST_OBSERVED_YEAR = 1979;
@@ -101,11 +101,13 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     // generate introductions of serotypes based on when they were first observed in Yucatan
 //    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, TRANS_AND_NORM);
+    bool use_exact_known_seros = true;
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, use_exact_known_seros, TRANSPOSE);
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
+    par->simulateAnnualSerotypes = false;
+    //par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
 
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
@@ -197,6 +199,24 @@ vector<int> ordered(vector<int> const& values) {
     for(unsigned int i=0; i < pairs.size(); i++) indices[i] = pairs[i].second;
 
     return indices;
+}
+
+
+void prime_population(Community* community, const gsl_rng* RNG, double p_prime) { // p_prime is per-sero, yearly probability of infection
+    for (int i = 0; i < community->getNumPerson(); ++i) {
+        Person* p = community->getPerson(i);
+        const int age = p->getAge();
+        const int birthday = gsl_rng_uniform_int(RNG, 365);
+        const int age_days = age*365 + birthday;
+        if (age_days == 0) continue;
+        const double p_infec = 1.0 - pow(1.0-p_prime, age);
+        for (int s = 0; s < (int) NUM_OF_SEROTYPES; ++s) {
+            if (p_infec < gsl_rng_uniform(RNG)) {
+                const int day = -1*gsl_rng_uniform_int(RNG, age_days); // negative day == before "now"/start of simulation
+                p->infect((Serotype) s, day);
+            }
+        }
+    }
 }
 
 
@@ -305,6 +325,8 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     gsl_rng_set(RNG, rng_seed);
     Community* community = build_community(par);
+    double p_prime = 0.01; 
+    prime_population(community, RNG, p_prime);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
     vector<int> serotested_ids = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
