@@ -17,9 +17,19 @@ using dengue::util::max_element;
 using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
+/* Notes
+ *
+ * - Revert code to resuming simulation circa 2003, rather than doing entire time period
+ * - Add realization pseudo parameter to follow posterior parameters, with values 0-9
+ * - Load serotype sequences, throw out initial, unsimulated years
+ * - load immunity
+ * - filenames for both should be constructed using proccess_id based on epi pars, and the realization #
+ *
+ *
+ */
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
-const string SIM_POP = "merida";
+string calculate_process_id(vector< long double> &args, string &argstring);
+const string SIM_POP = "yucatan";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
 const int FIRST_OBSERVED_YEAR = 1979;
@@ -29,9 +39,12 @@ const int DDT_DURATION        = 23;                                   // 23 year
 const int HISTORICAL_DURATION = LAST_YEAR - FIRST_YEAR + 1;
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
 const int FORECAST_DURATION   = 20;
-const int TOTAL_DURATION      = HISTORICAL_DURATION + FORECAST_DURATION;
+const int BURNIN_YEARS        = 125;                                  // should be zero if we're running from FIRST_YEAR; 125 should correspond to resuming after 2003
+const int TOTAL_DURATION      = HISTORICAL_DURATION + FORECAST_DURATION - BURNIN_YEARS;
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
+const bool CLIMATE_CHANGE     = true;
+
+Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
     Parameters* par = new Parameters();
     par->define_defaults();
     par->serial = serial;
@@ -43,29 +56,34 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _pss_ratio    = args[4];
     double _exp_coef     = args[5];
     double _nmos         = args[6];
-    double _betamp       = args[7]; // mp and pm and not separately
-    double _betapm       = args[7]; // identifiable, so they're the same
+    double _betamp       = 0.25; // beta values from chao et al
+    double _betapm       = 0.10; //
     //double _flav_ar      = args[8];
 
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
-    //string output_dir = "/scratch/lfs/thladish";
-    //string imm_dir(output_dir + "/imm_tmp-5");
-    vector<long double> abc_args(&args[0], &args[7]);
-    string argstring;
-    const string process_id = to_string(calculate_process_id(abc_args, argstring));
+    string output_dir = "/scratch/lfs/thladish";
+    string imm_dir(output_dir + "/imm_1000_yucatan");
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
     par->monthlyOutput           = true;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
-    const int runLengthYears     = TOTAL_DURATION;
-    par->nRunLength              = runLengthYears*365;
+    //const int runLengthYears     = TOTAL_DURATION;
+    par->nRunLength              = TOTAL_DURATION*365;
     par->startDayOfYear          = 100;
+    //if ( SIM_POP == "merida") {
     par->annualIntroductionsCoef = pow(10, _exp_coef);
+    //} else if ( SIM_POP == "yucatan" ) {
+    //    // assuming parameter fitting was done on merida population 
+    //    par->annualIntroductionsCoef = pow(10, _exp_coef)*1819498.0/839660.0;
+    //} else {
+    //    cerr << "ERROR: Unknown simulation population (SIM_POP): " << SIM_POP << endl;
+    //    exit(523);
+    //}
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
@@ -82,7 +100,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
     par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
 
-
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     par->fMosquitoMove = 0.15;
@@ -96,7 +113,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
     // generate introductions of serotypes based on when they were first observed in Yucatan
-    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+FORECAST_DURATION, TRANS_AND_NORM);
+//    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+FORECAST_DURATION, TRANS_AND_NORM);
 
     par->simulateAnnualSerotypes = false;
     //par->normalizeSerotypeIntros = true;
@@ -104,22 +121,50 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
-    par->annualIntroductions = vector<double>(DDT_START, 1.0);
-    par->annualIntroductions.resize(DDT_START+DDT_DURATION, 0.1); // 90% reduction in intros for 20 years
-    par->annualIntroductions.resize(runLengthYears, 1.0);
+    string sero_filename = output_dir + "/sero/annual_serotypes." + process_id;
+    par->loadAnnualSerotypes(sero_filename);
+    vector<vector<float> >(par->nDailyExposed.begin()+BURNIN_YEARS, par->nDailyExposed.end()).swap(par->nDailyExposed);
+
+    par->annualIntroductions = vector<double>(1, 1.0);
+    //par->annualIntroductions.resize(DDT_START+DDT_DURATION, 0.1); // 90% reduction in intros for 20 years
+    //par->annualIntroductions.resize(HISTORICAL_DURATION+FORECAST_DURATION, 1.0);
 
     // load daily EIP
-    // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed yucatan temps
+    // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed Merida temps
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
-    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
-    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
+    if (CLIMATE_CHANGE) {
+        par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out", (HISTORICAL_DURATION-BURNIN_YEARS)*365 + par->startDayOfYear);
+        string dailyEIPfilename = pop_dir + "/forecast_EIP_0.02degC_per_year.out";
+        vector<string> fitted_EIPs = dengue::util::read_vector_file(dailyEIPfilename); // slurp first column from file
 
-    assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
-    for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
+        const int duration = 1;
+        int start = par->extrinsicIncubationPeriods.back().start;
+        for(unsigned int i = par->startDayOfYear; i < fitted_EIPs.size(); ++i) {
+            string val_str = fitted_EIPs[i];
+            const double value = dengue::util::to_double(val_str);
+            start += duration;
+            if (value <= 0) {
+                cerr << "An EIP <= 0 was read from " << dailyEIPfilename << "." << endl;
+                cerr << "Value read: " << value << endl;
+                cerr << "This is nonsensical and indicates a non-numerical value in the first column or an actual bad value." << endl;
+                exit(113);
+            }
+            par->extrinsicIncubationPeriods.emplace_back(start, duration, value);
+        }
+    } else {
+        par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
+    }
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
+    //par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", (365*TOTAL_DURATION) + par->startDayOfYear);
+    //assert(par->mosquitoMultipliers.size() >= (DDT_START+DDT_DURATION)*365);
+    //for (int i = DDT_START*365; i < (DDT_START+DDT_DURATION)*365; ++i) par->mosquitoMultipliers[i].value *= 0.23; // 77% reduction in mosquitoes
+    //vector<DynamicParameter>(par->mosquitoMultipliers.begin()+BURNIN_YEARS, par->mosquitoMultipliers.end()).swap(par->mosquitoMultipliers);
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
-    par->immunityFilename         = "";
+    // immunity file will be loaded when build community is called if string != ""
+    par->immunityFilename         = imm_dir    + "/immunity2003."       + process_id;
+    //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
@@ -145,7 +190,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+string calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -156,22 +201,22 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
 
-    return process_id;
+    return to_string(process_id);
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
+string report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
-    const unsigned int process_id = calculate_process_id(args, argstring);
+    const string process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
-    return process_id;
+    return to_string(process_id);
 }
 
 
@@ -231,18 +276,18 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     // initialize bookkeeping for run
     time_t start ,end;
     time (&start);
-    const unsigned int process_id = report_process_id(args, serial, mp, start);
+
+    vector<long double> abc_args(&args[0], &args[7]);
+    const unsigned int realization = (int) args[7];
+    const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
 
     // initialize & run simulator
-    Parameters* par = define_simulator_parameters(args, rng_seed, serial);
-
-    // given current par combinations, these are no-intervention runs
-    // Daily output can be used for e.g. avg epi-curve plot
-    par->dailyOutput = ((serial - 4) % 1152 == 0);
+    Parameters* par = define_simulator_parameters(args, rng_seed, serial, process_id);
 
     const int output_years        = FORECAST_DURATION + 5;           // needs to agree with json file
-    const int discard_days        = (HISTORICAL_DURATION - 5) * 365;
-    const int vac_start_year      = HISTORICAL_DURATION;
+    const int burnin_years        = 10;
+    const int discard_days        = 5*365; //(HISTORICAL_DURATION - 5) * 365;
+    const int vac_start_year      = burnin_years; //HISTORICAL_DURATION;
     vector<float> vector_controls = {0.0, 0.1, 0.25, 0.5};
     vector<int> vaccine_durations = {-1, 4*365, 10*365, 20*365};
 
@@ -253,7 +298,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //  4 primary_secondary_severity_ratio
 //  5 exposures_coefficient
 //  6 mosquito_density
-//  7  beta
+//  7 realization
 //
 //  8 vac
 //  9 catchup
@@ -272,6 +317,11 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     int vaccine_duration   = vaccine_durations[(unsigned int) args[13]];
     bool boosting          = (bool) args[14];
     int vector_scenario    = (int) args[15];
+
+    // given current par combinations, these are no-intervention runs
+    // Daily output can be used for e.g. avg epi-curve plot
+    //par->dailyOutput = ((serial - 4) % 1152 == 0);
+    par->dailyOutput = not vaccine;
 
     if (vaccine_duration == -1) {
         par->linearlyWaningVaccine = false;
