@@ -8,7 +8,7 @@ CPP:=g++-4.9
 endif
 
 #CFLAGS = -g -std=c++11 -Wall
-CFLAGS = -O2 -std=c++11 -Wall
+CFLAGS = -O2 -std=c++11 -Wall --pedantic
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o

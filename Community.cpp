@@ -20,7 +20,7 @@
 using namespace dengue::standard;
 
 const Parameters* Community::_par;
-vector< unordered_set<Location*> > Community::_isHot;
+vector< set<Location*, LocPtrComp> > Community::_isHot;
 
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
@@ -487,7 +487,7 @@ void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate pe
         Person* p = _person + i;
         if (p->isVaccinated()) {
             const int timeSinceLastVaccination = p->daysSinceVaccination(time);
-            if (timeSinceLastVaccination == interval and p->getNumVaccinations() < maxDoses) {
+            if (timeSinceLastVaccination >= interval and p->getNumVaccinations() < maxDoses) {
                 p->vaccinate(time);
             }
         }

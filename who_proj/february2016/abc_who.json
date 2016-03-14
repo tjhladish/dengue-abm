@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 4500,
+    "num_samples"    : 500,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "who-80_age-sweep.sqlite",
+    "database_filename"             : "who-80_baseline_serosurvey.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
@@ -78,14 +78,14 @@
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 1,
-         "par2"       : 1},
+         "par1"       : 0,
+         "par2"       : 0},
         
         {"name"       : "target",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 10,
-         "par2"       : 18},
+         "par2"       : 10},
 
         {"name"       : "catchup_to",
          "dist_type"  : "PSEUDO",

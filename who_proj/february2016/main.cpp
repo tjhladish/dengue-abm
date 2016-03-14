@@ -16,14 +16,14 @@ using dengue::util::max_element;
 
 time_t GLOBAL_START_TIME;
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+string calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
 const string HOME(std::getenv("HOME"));
 const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/scratch/lfs/thladish");
 
 const int RESTART_BURNIN    = 80;
-const int FORECAST_DURATION = 30;
+const int FORECAST_DURATION = 0;
 const int TOTAL_DURATION    = RESTART_BURNIN + FORECAST_DURATION;
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
@@ -74,7 +74,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     vector<long double> abc_args(&args[0], &args[6]);
     string argstring;
-    const string process_id = to_string(calculate_process_id(abc_args, argstring));
+    const string process_id = calculate_process_id(abc_args, argstring);
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
@@ -158,7 +158,7 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-const unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+string calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -169,23 +169,24 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
 
-    return process_id;
+    return to_string(process_id);
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_par* mp, const time_t start_time) {
+string report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
-    const unsigned int process_id = calculate_process_id(args, argstring);
+    const string process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << dif << " " << start_time << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
-    return process_id;
+    return to_string(process_id);
 }
+
 
 void append_if_finite(vector<long double> &vec, double val) {
     if (isfinite(val)) { 
@@ -244,13 +245,13 @@ vector<long double> tally_counts(const Parameters* par, Community* community) {
 }
 
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const ABC::MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     //initialize bookkeeping for run
     time_t start, end;
     time (&start);
-    const unsigned int process_id = report_process_id(args, mp, start);
+    const string process_id = report_process_id(args, serial, mp, start);
 
     cerr << "SCENARIO " << rng_seed;
     for (auto _p: args) cerr << " " << _p; cerr << endl;
@@ -276,7 +277,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //  12 catchup_to int,
 //  13 coverage int 
 
-    //vector<int> target_ages = {9, 16};           // default 9
+    //vector<int> target_ages = {9, 16};         // default 9
     vector<int> catchup_ages = {17, 30};         // default 17
     vector<double> coverage_levels = {0.5, 0.8}; // default 0.8
 
@@ -299,7 +300,6 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     Community* community = build_community(par);
-
     if (vaccine) {
         double target_coverage  = coverage;
         double catchup_coverage = coverage;
@@ -337,9 +337,12 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
         cerr << "Unsupported vaccine mechanism: " << vaccine_mechanism << endl;
         exit(-152);
     }
-
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);
+
+    string imm_filename = "/scratch/lfs/thladish/imm_who-baseline-seroprev/immunity." + process_id;
+    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 
     time (&end);

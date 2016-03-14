@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <unordered_set>
+#include <set>
 #include <numeric>
 #include <cmath>
 
@@ -13,6 +13,9 @@
 class Person;
 class Mosquito;
 class Location;
+
+// We use this to make sure that locations are iterated through in a well-defined order (by ID), rather than by mem address
+struct LocPtrComp { bool operator()(const Location* A, const Location* B) const { return A->getID() < B->getID(); } };
 
 class Community {
     public:
@@ -90,7 +93,7 @@ class Community {
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
         std::vector< std::vector<int> > _nNumSevereCases;
-        static std::vector<std::unordered_set<Location*> > _isHot;
+        static std::vector<std::set<Location*, LocPtrComp> > _isHot;
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 
         void expandExposedQueues();
