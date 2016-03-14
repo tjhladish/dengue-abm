@@ -66,9 +66,40 @@ seroresults[, age := paste0(age, "yo") ][, outcome := "seropositive" ][, group:=
 
 saveRDS(seroresults[age=="9yo"],paste0(dbpath, "/CMDVI/Phase II analysis/Data/UF-Longini/longini-serostatus.rds"))
 
+agesero <- setkey(
+  setnames(fread("seroneg_w_foi.sorted"), c("seed","age","seroneg","foi")),
+  seed, age
+)
+
+foikey <- agesero[,list(foi=unique(foi)),keyby=seed]
+
+zs <- data.table(expand.grid(age=0:100, seed=unique(agesero$seed)), key=c("seed","age"))
+zs$seroneg=0
+
+filledagesero <- agesero[zs][,list(seroneg=max(seroneg,i.seroneg,na.rm=T)), keyby=list(seed, age)][foikey]
+
+poppath <- "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+pop <- fread(poppath)[,list(pop=.N),keyby=age]
+withpop <- merge(filledagesero, pop, by="age")[, seropositive:=1-seroneg/pop]
+
+res <- withpop[, {
+  mn <- mean(seropositive)
+  se <- sd(seropositive)/sqrt(.N)
+  list(
+    value=mn, CI_low=mn-se, CI_high=mn+se,
+    outcome_denominator="proportion", outcome="seropositive", group="UF", scenario="reference"
+  )
+}, keyby=list(transmission_setting=c(10,30,50,70,90)[foi+1],age)]
+
+saveRDS(res, paste0(dbpath, "/CMDVI/Phase II analysis/Data/UF-Longini/longini-sero-base-age-distro.rds"))
+
 stop()
 
 require(ggplot2)
+
+ggplot(res) +
+  theme_bw() +
+  aes(x=age, y=value, ymin=CI_low, ymax=CI_high) + facet_grid(. ~ transmission_setting) + geom_line() + geom_ribbon(alpha=0.1)
 
 cbPalette <- c("Hopkins/UF"="#999999",
                "Imperial"="#E69F00",
