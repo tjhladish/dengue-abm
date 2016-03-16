@@ -1,7 +1,7 @@
 require("RSQLite")
 require(beanplot)
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "who-plos-merida.sqlite")
+db = dbConnect(drv, "merida-sero_model3.sqlite")
 abc = dbGetQuery(db, 'select J.*, P.*, M.* from jobs J, parameters P, metrics M where J.serial = P.serial and J.serial = M.serial')
 extra_serials = which(names(abc)== 'serial')[-1] 
 abc = abc[,-c(extra_serials)]
