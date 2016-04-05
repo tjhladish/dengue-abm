@@ -1,11 +1,11 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 288000,
+    "num_samples"    : 96000,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "dengue_vaccine-actual_intros.sqlite",
-    "posterior_database_filename"   : "posterior-intro_retry.sqlite",
+    "database_filename"             : "yucatan_interventions-all_historical_serotypes-climate_change.sqlite",
+    "posterior_database_filename"   : "yucatan10-posterior-all_historical_serotypes.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
@@ -13,55 +13,55 @@
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "severe_expansion_factor",
          "short_name" : "severe_EF",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "base_pathogenicity",
          "short_name" : "base_path",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "secondary_severity",
          "short_name" : "sec_sev",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
-         {"name"      : "primary_secondary_severity_ratio",
+        {"name"       : "primary_secondary_severity_ratio",
          "short_name" : "pss_ratio",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "exposures_coefficient",
          "short_name" : "exp_coef",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "mosquito_density",
          "short_name" : "num_mos",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
-        {"name"       : "beta",
+        {"name"       : "realization",
          "dist_type"  : "POSTERIOR",
-         "num_type"   : "FLOAT",
+         "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 249},
+         "par2"       : 999},
 
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
@@ -92,7 +92,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 3},
+         "par2"       : 0},
 
         {"name"       : "vac_waning",
          "dist_type"  : "PSEUDO",
@@ -110,7 +110,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 2}
+         "par2"       : 0}
     ],
 
     "metrics" : [

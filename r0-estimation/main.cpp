@@ -12,38 +12,68 @@ using dengue::util::to_string;
 using dengue::util::mean;
 using dengue::util::stdev;
 using dengue::util::max_element;
+using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
-//const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+//unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+const string SIM_POP = "yucatan";
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
+Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
     par->define_defaults();
+    par->serial = serial;
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
-    //double _sec_severity = args[2]; // not used
-    //double _exp_coef     = args[3]; // not used
-    double _nmos         = args[4];
-    double _betamp       = args[5]; // mp and pm and not separately
-    double _betapm       = args[5]; // identifiable, so they're the same
+    double _base_path    = args[2];
+    double _sec_severity = args[3];
+    double _pss_ratio    = args[4];
+    double _exp_coef     = args[5];
+    double _nmos         = args[6];
+    double _betamp       = 0.25; // beta values from chao et al
+    double _betapm       = 0.10; //
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan";
-
-    vector<long double> abc_args(&args[0], &args[6]);
+    string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
+    vector<long double> abc_args(&args[0], &args[7]);
     string argstring;
     //const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
-    par->abcVerbose = true;
-    par->nRunLength = 100;
+    par->randomseed              = rng_seed;
+    par->dailyOutput             = false;
+    par->weeklyOutput            = true;
+    par->monthlyOutput           = true;
+    par->yearlyOutput            = true;
+    par->abcVerbose              = true;
+    par->nRunLength              = 100;
     par->annualIntroductionsCoef = 0.0;
-    par->randomseed = rng_seed;
+    //if ( SIM_POP == "merida") {
+        par->annualIntroductionsCoef = 0.0;//pow(10, _exp_coef);
+    //} else if ( SIM_POP == "yucatan" ) {
+    //    // assuming parameter fitting was done on merida population 
+    //    par->annualIntroductionsCoef = pow(10, _exp_coef)*1819498.0/839660.0;
+    //} else {
+    //    cerr << "ERROR: Unknown simulation population (SIM_POP): " << SIM_POP << endl;
+    //    exit(523);
+    //}
 
-    par->primaryPathogenicity = {1.000, 0.825, 0.833, 0.317};
-    par->secondaryPathogenicityOddsRatio = {1.0, 1.0, 1.0, 1.0};
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF};
+    // pathogenicity values fitted in
+    // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
+    // Normalized from Fc values in supplement table 2, available at
+    // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
+    par->defineSerotypeRelativeRisks();
+    par->basePathogenicity = _base_path;
+    par->primaryPathogenicityModel = ORIGINAL_LOGISTIC;
+    //par->annualFlavivirusAttackRate = _flav_ar;
+    par->postSecondaryRelativeRisk = 0.1;
+
+    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
+    par->secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, _sec_severity);
+    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
+    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
+
     par->betaPM = _betapm;
     par->betaMP = _betamp;
     par->fMosquitoMove = 0.15;
@@ -53,18 +83,19 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
+    par->fVESs.clear();
+    par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
-    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
-    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
-    par->populationFilename = pop_dir + "/population-yucatan.txt";
-    par->immunityFilename   = "";
-    par->locationFilename   = pop_dir + "/locations-yucatan.txt";
-    par->networkFilename    = pop_dir + "/network-yucatan.txt";
-    par->swapProbFilename   = pop_dir + "/swap_probabilities-yucatan.txt";
+    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
+    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out"); // do not use 2-argument version for R0 estimation
+    par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
+    par->immunityFilename         = "";
+    par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
+    par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
+    par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
 
-    par->nInitialInfected = {1};
+    par->nInitialInfected = {1,0,0,0};
     par->bSecondaryTransmission = false;
-    par->weeklyOutput = true;
     return par;
 }
 
@@ -90,11 +121,13 @@ cerr << endl;
 }
 
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
+    gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
+
     time_t start ,end;
     time (&start);
 
-    Parameters* par = define_simulator_parameters(args, rng_seed);
+    Parameters* par = define_simulator_parameters(args, rng_seed, serial);
     Community* community = build_community(par);
     //const vector<int> MONTH_START = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
@@ -127,6 +160,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
     delete par;
     delete community;
+
     return metrics;
 }
 
@@ -135,7 +169,6 @@ void usage() {
     cerr << "\n\tUsage: ./abc_sql abc_config_sql.json --process\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate\n\n";
     cerr << "\t       ./abc_sql abc_config_sql.json --simulate -n <number of simulations per database write>\n\n";
-
 }
 
 

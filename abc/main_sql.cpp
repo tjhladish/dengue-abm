@@ -17,9 +17,19 @@ using dengue::util::max_element;
 using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
+/* Notes
+ *
+ * After ABC fitting with merida pop, need to run again using the posterior, presumably 100 particles.
+ * - Change to Yucatan pop
+ * - Run each particle 10x with different seeds
+ * - Output serotype sequences, and immunity as of 2003(?) -- do this in simulator.h
+ * - Add a pseudo parameter for realization #, 0-9
+ * - Exclude realization # from process_id calculation, but append to end
+ */
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring);
-const string SIM_POP = "merida";
+string calculate_process_id(vector< long double> &args, string &argstring);
+//const string SIM_POP = "merida";
+const string SIM_POP = "yucatan";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
 const int FIRST_OBSERVED_YEAR = 1979;
@@ -27,6 +37,7 @@ const int LAST_YEAR           = 2013;                                 // inclusi
 const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
 const int DDT_DURATION        = 23;                                   // 23 years long
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
+const int FORECAST_DURATION   = 0;                                    // need to run out to 2014 for immune profile comparison
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
@@ -40,8 +51,9 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _pss_ratio    = args[4];
     double _exp_coef     = args[5];
     double _nmos         = args[6];
-    double _betamp       = args[7]; // mp and pm and not separately
-    double _betapm       = args[7]; // identifiable, so they're the same
+    double _betamp       = 0.25; // beta values from chao et al
+    double _betapm       = 0.10; //
+    //int realization      = args[7]; // used for bookkeeping only
     //double _flav_ar      = args[8];
 
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
@@ -50,16 +62,12 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
     string output_dir = "/scratch/lfs/thladish";
 
-    vector<long double> abc_args(&args[0], &args[7]);
-    string argstring;
-    const string process_id = to_string(calculate_process_id(abc_args, argstring));
-
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
-    par->monthlyOutput           = true;
+    par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
-    int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION;
+    int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION + FORECAST_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
     par->annualIntroductionsCoef = pow(10, _exp_coef);
@@ -92,12 +100,15 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
 
     // generate introductions of serotypes based on when they were first observed in Yucatan
-    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, TRANS_AND_NORM);
+//    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, TRANS_AND_NORM);
+    bool use_exact_known_seros = true;
+    par->nDailyExposed = generate_serotype_sequences(RNG, FIRST_YEAR, FIRST_OBSERVED_YEAR, LAST_YEAR+20, use_exact_known_seros, TRANSPOSE);
 
     par->simulateAnnualSerotypes = false;
     //par->normalizeSerotypeIntros = true;
     // generate some extra years of serotypes, for subsequent intervention modeling
     //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes(runLengthYears+50);
+
     // 77 year burn-in, 23 years of no dengue, then re-introduction
     // annualIntros is indexed in terms of simulator (not calendar) years
     par->annualIntroductions = vector<double>(DDT_START, 1.0);
@@ -169,8 +180,8 @@ for (unsigned int i = 0; i < par->mosquitoMultipliers.size(); ++i) {
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
-    par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
-    par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
+    //par->mosquitoFilename         = output_dir + "/mos_tmp/mos."       + to_string(process_id);
+    //par->mosquitoLocationFilename = output_dir + "/mosloc_tmp/mosloc." + to_string(process_id);
     return par;
 }
 
@@ -191,7 +202,25 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-unsigned int calculate_process_id(vector< long double> &args, string &argstring) {
+void prime_population(Community* community, const gsl_rng* RNG, double p_prime) { // p_prime is per-sero, yearly probability of infection
+    for (int i = 0; i < community->getNumPerson(); ++i) {
+        Person* p = community->getPerson(i);
+        const int age = p->getAge();
+        const int birthday = gsl_rng_uniform_int(RNG, 365);
+        const int age_days = age*365 + birthday;
+        if (age_days == 0) continue;
+        const double p_infec = 1.0 - pow(1.0-p_prime, age);
+        for (int s = 0; s < (int) NUM_OF_SEROTYPES; ++s) {
+            if (p_infec < gsl_rng_uniform(RNG)) {
+                const int day = -1*gsl_rng_uniform_int(RNG, age_days); // negative day == before "now"/start of simulation
+                p->infect((Serotype) s, day);
+            }
+        }
+    }
+}
+
+
+string calculate_process_id(vector< long double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
@@ -202,22 +231,22 @@ unsigned int calculate_process_id(vector< long double> &args, string &argstring)
     const int len = argstring.length();
     const int process_id = crc32.FullCRC(argchars, len);
 
-    return process_id;
+    return to_string(process_id);
 }
 
 
-unsigned int report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
+string report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
-    const unsigned int process_id = calculate_process_id(args, argstring);
+    const string process_id = calculate_process_id(args, argstring);
 
     stringstream ss;
-    ss << mp->mpi_rank << " begin " << hex << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
+    ss << mp->mpi_rank << " begin " << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
-    return process_id;
+    return to_string(process_id);
 }
 
 
@@ -259,30 +288,55 @@ void tally_counts(const Parameters* par, Community* community, vector<int>& all_
     return;
 }
 
+
+vector<double> immune_profile(Community* community) {
+    const vector<int> age_classes = {4,9,14,19,29,39,49,59,INT_MAX};
+    vector <double> numerator(age_classes.size(), 0.0);
+    vector <double> denominator(age_classes.size(), 0.0);
+    for (int i=community->getNumPerson()-1; i>=0; i--) {
+        Person *p = community->getPerson(i);
+        const int age = p->getAge();
+        int bin = 0;
+        while (age > age_classes[bin]) ++bin;
+        ++denominator[bin];
+        if (p->getNumInfections() > 0) ++numerator[bin];
+    }
+    vector<double> profile;
+    for (unsigned int i = 0; i < age_classes.size(); ++i) profile.push_back(numerator[i]/denominator[i]);
+    return profile;
+}
+
+
 vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
     // initialize bookkeeping for run
     time_t start ,end;
     time (&start);
-    const unsigned int process_id = report_process_id(args, serial, mp, start);
+
+    vector<long double> abc_args(&args[0], &args[7]);
+    const unsigned int realization = (int) args[7];
+    const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
 
     // initialize & run simulator
     const Parameters* par = define_simulator_parameters(args, rng_seed, serial);
 
-//    string sero_filename = "/scratch/lfs/thladish/sero_tmp/annual_serotypes." + to_string(process_id);
+//    string sero_filename = "/scratch/lfs/thladish/sero/annual_serotypes." + process_id;
 //    par->writeAnnualSerotypes(sero_filename);
 
     gsl_rng_set(RNG, rng_seed);
     Community* community = build_community(par);
+    double p_prime = 0.01; 
+    prime_population(community, RNG, p_prime);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
     vector<int> serotested_ids = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
-    // We might want to write the immunity and mosquito files if this is the real posterior
-    string imm_filename = "/scratch/lfs/thladish/imm_250/immunity." + to_string(process_id);
-    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
-//    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+    // output immunity file for immunity profile comparison with empirical data
+//    string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
+//    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+
+    vector<double> profile = immune_profile(community);
 
     vector<int> mild_cases;
     vector<int> severe_cases;
@@ -368,7 +422,10 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
        << _seropos << " "
        << _severe_prev << " "
        << _beta0 << " "
-       << _beta1 << endl;
+       << _beta1 << " |";
+
+    for (double val: profile) ss << " " << val;
+    ss << endl;
 
     string output = ss.str();
     fputs(output.c_str(), stderr);

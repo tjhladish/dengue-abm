@@ -91,8 +91,8 @@ const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 // Predeclare local functions
 Community* build_community(const Parameters* par);
 void seed_epidemic(const Parameters* par, Community* community);
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id = 0);
-void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename, int runLength);
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id = "0");
+void write_immunity_file(const Parameters* par, const Community* community, const string label, string filename, int runLength);
 void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename="");
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 void write_daily_buffer( vector<string>& buffer, const int process_id, string filename);
@@ -216,24 +216,26 @@ void _aggregator(map<string, vector<int> >& periodic_incidence, string key) {
 }
 
 
-void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, const int process_id, const unsigned long int serial, const string label, const int value, string key) {
-        ss << hex << process_id << dec << " " << serial << label << value << " "; for (auto v: periodic_incidence[key]) ss << v << " ";
+void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, const Parameters* par, const string process_id, const string label, const int value, string key) {
+        ss << process_id << dec << " " << par->serial << label << value << " ";
+        for (auto v: periodic_incidence[key]) ss << v << " ";
+        for (auto v: par->reportedFraction) ss << v << " ";
 }
 
 
-void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const int process_id, vector<int>& epi_sizes) {
+void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const string process_id, vector<int>& epi_sizes) {
     stringstream ss;
     // local transmission              = total                                  - introductions
     periodic_incidence["daily"][LOCAL] = periodic_incidence["daily"][INFECTION] - periodic_incidence["daily"][INTRO];
     if (par->dailyOutput) {
-        _reporter(ss, periodic_incidence, process_id, par->serial, " day: ", date.day(), "daily");
+        _reporter(ss, periodic_incidence, par, process_id, " day: ", date.day(), "daily");
         ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
 
     if (par->weeklyOutput) {
         _aggregator(periodic_incidence, "weekly");
         if (date.endOfWeek()) {
-            _reporter(ss, periodic_incidence, process_id, par->serial, " week: ", date.week(), "weekly"); ss << endl;
+            _reporter(ss, periodic_incidence, par, process_id, " week: ", date.week(), "weekly"); ss << endl;
             periodic_incidence["weekly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
         }
     }
@@ -241,7 +243,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     if (par->monthlyOutput) {
         _aggregator(periodic_incidence, "monthly");
         if (date.endOfMonth()) {
-            _reporter(ss, periodic_incidence, process_id, par->serial, " month: ", date.julianMonth(), "monthly"); ss << endl;
+            _reporter(ss, periodic_incidence, par, process_id, " month: ", date.julianMonth(), "monthly"); ss << endl;
             periodic_incidence["monthly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
         }
     }
@@ -250,14 +252,14 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     _aggregator(periodic_incidence, "yearly");
     if (date.endOfYear()) {
         if (par->abcVerbose) {
-            cout << hex << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: "; 
+            cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: "; 
             for (auto v: periodic_incidence["yearly"]) cout << v << " "; cout << endl;
         }
 
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-        if (par->yearlyOutput) _reporter(ss, periodic_incidence, process_id, par->serial, " year: ", date.year(), "yearly"); ss << endl;
+        if (par->yearlyOutput) _reporter(ss, periodic_incidence, par, process_id, " year: ", date.year(), "yearly"); ss << endl;
         periodic_incidence["yearly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
     }
 
@@ -342,7 +344,7 @@ void update_extrinsic_incubation_period(const Parameters* par, Community* commun
 }
 
 
-void advance_simulator(const Parameters* par, Community* community, Date &date, const int process_id, map<string, vector<int> > &periodic_incidence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &epi_sizes) {
+void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &epi_sizes) {
     periodic_incidence["daily"][INTRO] += seed_epidemic(par, community, date);
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
@@ -376,7 +378,7 @@ map<string, vector<int> > construct_tally() {
 }
 
 
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const int process_id) {
+vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id) {
     vector<int> epi_sizes;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
@@ -402,7 +404,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 }
 
 
-vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids) {
+vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids) {
     assert(serotested_ids.size() > 0);
     vector<long double> metrics;
     vector<int> epi_sizes;
@@ -440,7 +442,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
 }
 
 
-vector<int> simulate_abc(const Parameters* par, Community* community, const int process_id, vector<int> &serotested_ids, double &seropos_87) {
+vector<int> simulate_abc(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids, double &seropos_87) {
     assert(serotested_ids.size() > 0);
     vector<int> epi_sizes;
     Date date(par);
@@ -467,6 +469,11 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const int 
             }
             seropos_87 /= serotested_ids.size();
         }
+
+//        if (date.day() == 125*365) {
+//            string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
+//            write_immunity_file(par, community, process_id, imm_filename, date.day());
+//        }
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
@@ -541,10 +548,10 @@ void write_immunity_by_age_file(const Parameters* par, const Community* communit
 }
 
 
-void write_immunity_file(const Parameters* par, const Community* community, const int int_label, string filename, int runLength) {
+void write_immunity_file(const Parameters* par, const Community* community, const string label, string filename, int runLength) {
     if (filename == "") {
         stringstream ss_filename;
-        ss_filename << "immunity." << int_label;
+        ss_filename << "immunity." << label;
         filename = ss_filename.str();
     }
     ofstream file;
