@@ -18,7 +18,10 @@ if len(argv) < 3:
 
 # grab IDs for people in merida
 merida_ids = set()
-for line in file('../../pop-merida/using_yucatan_location_ids/population-merida.txt'):
+#for line in file('../../pop-merida/using_yucatan_location_ids/population-merida.txt'): # if yucatan was simulated
+for line in file('../../pop-merida/population-merida.txt'): # if merida was simulated
+    if line[0:3] == 'pid':
+        continue
     p = line.strip().split()
     merida_ids.add(int(p[0]))
 
