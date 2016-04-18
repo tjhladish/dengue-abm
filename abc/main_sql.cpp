@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include "CCRC32.h"
 #include "Utility.h"
-#include "ImmunityGenerator.h"
 #include "yucatan_serotype_generator.h"
 #include <unordered_set>
 

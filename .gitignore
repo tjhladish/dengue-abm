@@ -6,11 +6,6 @@
 *.sqlite
 abc/abc_mpi
 mpi_model
-pop-yucatan/locations-yucatan.txt
-pop-yucatan/network-yucatan.txt
-pop-yucatan/population-yucatan.txt
-pop-yucatan/serotypes-yucatan.txt
-pop-yucatan/swap_probabilities-yucatan.txt
 .Rproj.user
 *.Rproj
 raw_data/weather/*.csv

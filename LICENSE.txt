@@ -1,6 +1,6 @@
 This software was developed by Dennis Chao at the Fred Hutchinson Cancer 
 Research Center, and Thomas Hladish at the University of Florida.
-Copyright 2012.
+Copyright 2012, 2013, 2014, 2015, 2016.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
