@@ -469,10 +469,10 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
             seropos_87 /= serotested_ids.size();
         }
 
-//        if (date.day() == 125*365) {
-//            string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
-//            write_immunity_file(par, community, process_id, imm_filename, date.day());
-//        }
+        if (date.day() == 125*365) {
+            string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
+            write_immunity_file(par, community, process_id, imm_filename, date.day());
+        }
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
 

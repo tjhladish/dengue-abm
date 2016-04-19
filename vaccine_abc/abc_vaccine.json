@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "yucatan_interventions-all_historical_serotypes-climate_change.sqlite",
-    "posterior_database_filename"   : "yucatan10-posterior-all_historical_serotypes.sqlite",
+    "database_filename"             : "yucatan_interventions-sm3.sqlite",
+    "posterior_database_filename"   : "yucatan-sm3-merged-posterior.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
@@ -58,10 +58,10 @@
          "par2"       : 999},
 
         {"name"       : "realization",
-         "dist_type"  : "POSTERIOR",
+         "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 999},
+         "par2"       : 9},
 
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
