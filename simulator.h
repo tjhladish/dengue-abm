@@ -95,7 +95,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 void write_immunity_file(const Parameters* par, const Community* community, const string label, string filename, int runLength);
 void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename="");
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
-void write_daily_buffer( vector<string>& buffer, const int process_id, string filename);
+void write_daily_buffer( vector<string>& buffer, const string process_id, string filename);
 
 Community* build_community(const Parameters* par) {
     Community* community = new Community(par);
@@ -453,8 +453,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
     vector<string> daily_output_buffer;
 
     if (par->bSecondaryTransmission and not par->abcVerbose) {
-        daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
-        //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+        daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severe");
     }
 
     map<string, vector<int> > periodic_incidence = construct_tally();
@@ -476,7 +475,30 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
 //        }
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+
+        /*for (int i=community->getNumPerson()-1; i>=0; i--) {
+            Person *p = community->getPerson(i);
+            // TODO - it should be sufficient to only check second conditional
+            if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
+                const Infection* infec = p->getInfection();
+
+                stringstream ss;
+                ss << date.day() << ","
+                    << date.year() << ","
+                    << p->getID() << ","
+                    << p->getAge() << ","
+                    << p->getLocation(HOME_MORNING)->getID() << ","
+                    << (int) p->isVaccinated() << ","
+                    << 1 + (int) infec->serotype() << ","
+                    << (int) infec->isSymptomatic() << ","
+                    << (int) infec->isSevere();
+                daily_output_buffer.push_back(ss.str());
+            }
+        }*/
     }
+
+    //string dailyfilename = "";
+    //write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
 
     return epi_sizes;
 }
@@ -488,7 +510,7 @@ bool fileExists(const std::string& filename) {
 }
 
 
-void write_daily_buffer( vector<string>& buffer, const int process_id, string filename = "" ) {
+void write_daily_buffer( vector<string>& buffer, const string process_id, string filename = "" ) {
     if (filename == "") {
         stringstream ss_filename;
         ss_filename << "daily_output." << process_id;
