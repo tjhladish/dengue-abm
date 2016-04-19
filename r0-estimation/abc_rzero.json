@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "rzero-all_historical_serotypes.sqlite",
-    "posterior_database_filename"   : "merida_posterior-all_historical_serotypes.sqlite",
+    "database_filename"             : "rzero-sm3.sqlite",
+    "posterior_database_filename"   : "yucatan-sm3-merged-posterior.sqlite",
 
     "parameters" : [
         {"name"       : "mild_expansion_factor",
