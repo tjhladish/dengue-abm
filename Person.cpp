@@ -197,7 +197,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             break;
     }
 
-    const int numPrevInfections = getNumInfections(); // needs to be called before initializing new infection
+    const int numPrevInfections = getEffectiveNumInfections();  // these both need to be called
     const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
     // Create a new infection record
@@ -225,6 +225,10 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             severe_given_case        = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
+            break;
+        case 4: // NEEDED IF VACCINE COUNTS AS INFECTION
             symptomatic_probability *= _par->postSecondaryRelativeRisk;
             severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
             break;

@@ -91,11 +91,16 @@ void Parameters::define_defaults() {
 
     startDayOfYear = 1;
 
-    dailyOutput = false;
-    weeklyOutput = false;
+    dailyOutput   = false;
+    weeklyOutput  = false;
     monthlyOutput = false;
-    yearlyOutput = false;
-    abcVerbose = false;
+    yearlyOutput  = false;
+    abcVerbose    = false;
+
+    // WHO vaccine mechanism variables
+    whoDiseaseOutcome = VAC_ISNT_INFECTION;
+    whoBreakthrough   = NO_BREAKTHROUGH_EFFECT;
+    whoWaning         = NO_WANING;
 }
 
 void Parameters::readParameters(int argc, char* argv[]) {

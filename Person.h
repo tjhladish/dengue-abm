@@ -111,7 +111,16 @@ class Person {
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
-        inline int getNumInfections() const { return infectionHistory.size(); }
+        inline int getNumNaturalInfections() const { return infectionHistory.size(); }
+        inline int getEffectiveNumInfections() const {
+            int order = getNumNaturalInfections();
+            if (isVaccinated()) {
+                if (_par->whoDiseaseOutcome == INC_NUM_INFECTIONS or (order == 0 and _par->whoDiseaseOutcome == INC_INFECTIONS_NAIVE)) {
+                    order += 1;
+                }
+            };
+            return order;
+        }
 
         int getNumVaccinations() const { return vaccineHistory.size(); }
         const std::vector<int>& getVaccinationHistory() const { return vaccineHistory; }
