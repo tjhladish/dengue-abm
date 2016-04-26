@@ -51,6 +51,13 @@ enum InfectionOutcome {
     NUM_OF_INFECTION_OUTCOMES
 };
 
+enum PrimaryPathogenicityModel {
+    CONSTANT_PATHOGENICITY,
+    ORIGINAL_LOGISTIC,
+    GEOMETRIC_PATHOGENICITY,
+    NUM_OF_PRIMARY_PATHOGENICITY_MODELS
+};
+
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
 // series A
@@ -255,7 +262,8 @@ public:
     double fVEI;                                            // vaccine efficacy to reduce infectiousness
     double fVEP;                                            // vaccine efficacy for pathogenicity
     double fVEH;                                            // vaccine efficacy against hospitalization, given disease
-    bool useAgeStructuredPrimaryPathogenicity;              // use age-specific values, or constant?
+    PrimaryPathogenicityModel primaryPathogenicityModel;    // use age-specific values, or constant?
+    double annualFlavivirusAttackRate;                      // used for geometric primary pathogenicity model
     std::vector<double> primarySevereFraction;              // fraction of primary cases (symptomatic infections) that are severe
     std::vector<double> secondarySevereFraction;            // fraction of post-primary cases (symptomatic infections) that are severe
     std::vector<double> tertiarySevereFraction;             // fraction of post-primary cases (symptomatic infections) that are severe

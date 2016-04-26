@@ -107,13 +107,13 @@ class Person {
         inline int getRecoveryTime(int infectionsago=0) const    { return getInfection(infectionsago)->recoveryTime; }
         inline int getWithdrawnTime(int infectionsago=0) const   { return getInfection(infectionsago)->withdrawnTime; }
         inline Serotype getSerotype(int infectionsago=0) const   { return getInfection(infectionsago)->serotype(); }
-        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumInfections() - 1 - infectionsago]; }
+        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumNaturalInfections() - 1 - infectionsago]; }
 
-        inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
+        inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumNaturalInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
-        inline int getNumInfections() const { return infectionHistory.size(); }
-        inline int getInfectionOrdinality() const {
-            int order = getNumInfections();
+        inline int getNumNaturalInfections() const { return infectionHistory.size(); }
+        inline int getEffectiveNumInfections() const {
+            int order = getNumNaturalInfections();
             if (isVaccinated()) {
                 if (_par->whoDiseaseOutcome == INC_NUM_INFECTIONS or (order == 0 and _par->whoDiseaseOutcome == INC_INFECTIONS_NAIVE)) {
                     order += 1;

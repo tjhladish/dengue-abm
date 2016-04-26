@@ -163,7 +163,7 @@ void write_yearly_people_file(const Parameters* par, const Community* community,
     yearlyPeopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4" << endl;
     for (int i=0; i<community->getNumPerson(); i++) {
         Person *p = community->getPerson(i);
-        for (int j=p->getNumInfections()-1; j>=0; j--) {
+        for (int j=p->getNumNaturalInfections()-1; j>=0; j--) {
             yearlyPeopleOutputFile << p->getID() << "," 
                 << 1 + (int) p->getSerotype(j) << "," 
                 << p->getInfectedTime(j) << "," 
@@ -366,7 +366,7 @@ if (date.year() >= BURNIN) {
             for (int i=community->getNumPerson()-1; i>=0; i--) {
                 Person *p = community->getPerson(i);
                 if (p->getAge() == year_of_intervention + target_age) {
-                    const bool ever_infected = p->getNumInfections() > 0 ? true : false;
+                    const bool ever_infected = p->getNumNaturalInfections() > 0 ? true : false;
                     const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
                     const bool vaccinated = p->isVaccinated();
                     int severity = 0; // default = no infection in past year
@@ -461,7 +461,7 @@ const int BURNIN = 80;
 if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
     vector<Person*> ageCohort = community->getAgeCohort(9);
     double seroprev = 0.0;
-    for (auto p: ageCohort) if (p->getNumInfections() > 0) { seroprev += 1.0; }
+    for (auto p: ageCohort) if (p->getNumNaturalInfections() > 0) { seroprev += 1.0; }
     //seroprev /= ageCohort.size();
     cerr << "seed, year, vaccine cohort age, seroprevalence: "
          << par->randomseed << "," << date.year() << "," << 9 << "," << seroprev << "," << ageCohort.size() << endl;
@@ -515,7 +515,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
             // calculate seroprevalence among 9 year old merida residents
             double seropos_9yo = 0.0;
             for (int id: serotested_ids) {
-                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+                const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
                 seropos_9yo += seropos;
             }
             seropos_9yo /= serotested_ids.size();
@@ -551,7 +551,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
                                                                // for a 135 year simulation
             // calculate seroprevalence among 8-14 year old merida residents
             for (int id: serotested_ids) {
-                const double seropos = community->getPersonByID(id)->getNumInfections() > 0 ? 1.0 : 0.0;
+                const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
                 seropos_87 += seropos;
             }
             seropos_87 /= serotested_ids.size();
@@ -610,7 +610,7 @@ void write_immunity_by_age_file(const Parameters* par, const Community* communit
         Person* p = community->getPerson(i);
         const int age = p->getAge();
         tally[age][0]++;
-        const int numInfections = p->getNumInfections();
+        const int numInfections = p->getNumNaturalInfections();
         for (int k = 0; k<numInfections; ++k) {
             const int s = (int) p->getSerotype(k);
             tally[age][s+1]++;
@@ -642,7 +642,7 @@ void write_immunity_file(const Parameters* par, const Community* community, cons
     for (int i = 0; i<community->getNumPerson(); ++i) {
         Person* p = community->getPerson(i);
         vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; -1 means yesterday, -2 means 2 days ago ...
-        for (int k = 0; k<p->getNumInfections(); ++k) {
+        for (int k = 0; k<p->getNumNaturalInfections(); ++k) {
             int s = (int) p->getSerotype(k);
             infection_history[s] = p->getInfectedTime(k) - runLength;
         }
@@ -807,7 +807,7 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
         peopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;
         for (int i=0; i<community->getNumPerson(); i++) {
             Person *p = community->getPerson(i);
-            for (int j=p->getNumInfections()-1; j>=0; j--) {
+            for (int j=p->getNumNaturalInfections()-1; j>=0; j--) {
                 peopleOutputFile << p->getID() << "," 
                     << 1 + (int) p->getSerotype(j) << "," 
                     << p->getInfectedTime(j) << "," 

@@ -75,7 +75,7 @@ void Person::copyImmunity(const Person* p) {
     vaccineHistory.assign(p->vaccineHistory.begin(), p->vaccineHistory.end());
 
     clearInfectionHistory();
-    for (int i=0; i < p->getNumInfections(); i++) {
+    for (int i=0; i < p->getNumNaturalInfections(); i++) {
         infectionHistory.push_back( new Infection(p->infectionHistory[i]) );
     }
 }
@@ -178,6 +178,7 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     // Bail now if this person can not become infected
     // TODO - clarify this.  why would a person not be infectable in this scope?
     if (not isInfectable(serotype, time)) return false;
+
     MaternalEffect maternal_effect = _maternal_antibody_effect(this, _par, time);
     bool maternalAntibodyEnhancement;
     switch( maternal_effect ) {
@@ -196,38 +197,40 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
             break;
     }
 
-    const int numPrevInfections = getInfectionOrdinality();     // these both need to be called
+    const int numPrevInfections = getEffectiveNumInfections();  // these both need to be called
     const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
     // Create a new infection record
     Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
 
-    double symptomatic_probability = _par->serotypePathogenicityRelativeRisks[(int) serotype];
+    double symptomatic_probability = _par->serotypePathogenicityRelativeRisks[(int) serotype] * _par->basePathogenicity;
     double severe_given_case = 0.0;
     switch (numPrevInfections) {
         case 0:
-            if (_par->useAgeStructuredPrimaryPathogenicity) {
+            if (_par->primaryPathogenicityModel == CONSTANT_PATHOGENICITY) {
+                symptomatic_probability *= _par->primaryRelativeRisk;
+            } else if (_par->primaryPathogenicityModel == ORIGINAL_LOGISTIC) {
                 symptomatic_probability *= SYMPTOMATIC_BY_AGE[_nAge];
-            } else {
-                symptomatic_probability *= _par->basePathogenicity * _par->primaryRelativeRisk;
+            } else if (_par->primaryPathogenicityModel == GEOMETRIC_PATHOGENICITY) {
+                symptomatic_probability *= 1.0 - pow(1.0 - _par->annualFlavivirusAttackRate, getAge());
             }
-            severe_given_case       = _par->primarySevereFraction[(int) serotype];
+            severe_given_case        = _par->primarySevereFraction[(int) serotype];
             break;
         case 1:
-            symptomatic_probability *= _par->basePathogenicity;
-            severe_given_case       = _par->secondarySevereFraction[(int) serotype];
+            //symptomatic_probability -- no change
+            severe_given_case        = _par->secondarySevereFraction[(int) serotype];
             break;
         case 2:
-            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
-            severe_given_case       = _par->tertiarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->tertiarySevereFraction[(int) serotype];
             break;
         case 3:
-            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
-            severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
             break;
         case 4: // NEEDED IF VACCINE COUNTS AS INFECTION
-            symptomatic_probability *= _par->basePathogenicity * _par->postSecondaryRelativeRisk;
-            severe_given_case       = _par->quaternarySevereFraction[(int) serotype];
+            symptomatic_probability *= _par->postSecondaryRelativeRisk;
+            severe_given_case        = _par->quaternarySevereFraction[(int) serotype];
             break;
         default:
             cerr << "ERROR: Unsupported number of previous infections: " << numPrevInfections << endl;
@@ -257,8 +260,8 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
         const int symptomatic_duration = infection.recoveryTime - infection.symptomTime;
         const int symptomatic_active_period = gsl_ran_geometric(RNG, 0.5) - 1; // min generator value is 1 trial
         infection.withdrawnTime = symptomatic_active_period < symptomatic_duration ?
-            infection.symptomTime + symptomatic_active_period :
-            infection.withdrawnTime;
+                                  infection.symptomTime + symptomatic_active_period :
+                                  infection.withdrawnTime;
     }
 
     // Flag locations with (non-historical) infections, so that we know to look there for human->mosquito transmission
@@ -349,7 +352,7 @@ bool Person::isSusceptible(Serotype serotype) const {
 
 
 bool Person::isCrossProtected(int time) const {
-    return (getNumInfections() > 0) and // has any past infection
+    return (getNumNaturalInfections() > 0) and // has any past infection
            (infectionHistory.back()->infectedTime + _par->nDaysImmune > time); // prev. infection w/in crossprotection period 
 }
 

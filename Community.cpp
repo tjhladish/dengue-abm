@@ -675,7 +675,7 @@ void Community::swapImmuneStates() {
             }
 
             // update map of locations with infectious people
-            if (p->getNumInfections() > 0 and p->getRecoveryTime() > _nDay) {
+            if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
                 for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
                     for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
                         flagInfectedLocation(p->getLocation((TimePeriod) t), d);
@@ -698,7 +698,7 @@ void Community::swapImmuneStates() {
 void Community::updateDiseaseStatus() {
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person+i;
-        if (p->getNumInfections() == 0) continue;
+        if (p->getNumNaturalInfections() == 0) continue;
         if (p->getSymptomTime()==_nDay) {                              // started showing symptoms today
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
             if (p->isVaccinated()) {
