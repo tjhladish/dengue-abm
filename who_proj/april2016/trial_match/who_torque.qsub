@@ -6,14 +6,15 @@
 #PBS -m ae
 #PBS -M tjhladish@gmail.com
 #PBS -W group_list=epi
-#PBS -l walltime=12:00:00
+#PBS -l walltime=18:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l pmem=4G
-#PBS -t 1-500
+#PBS -t 1-2500
 
 cd $PBS_O_WORKDIR
-module load gcc/4.7.2 gsl
+#module load gcc/5.2.0 gsl
+module load intel/2016.0.109 gsl
 for i in `seq 1 4`;
 do
-    ./abc_sql abc_who.json --simulate
+    ./trial_fit abc_trial_fitting-step_2.json --simulate
 done

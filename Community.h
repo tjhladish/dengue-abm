@@ -89,6 +89,7 @@ class Community {
         double _expectedEIP;                                          // extrinsic incubation period in days
         double _EIP_emu;                                              // e^mu for log-normal sampling of EIP, (Chan & Johanson 2012)
         static constexpr double _EIP_sigma = pow((double) 4.9, -0.5); // SD for log-normal sampling of EIP, (Chan & Johanson 2012)
+        //static const double _EIP_sigma = 0.4517539514526256;            // same as above, but to accommodate the intel compiler
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;

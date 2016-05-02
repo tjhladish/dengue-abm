@@ -482,11 +482,12 @@ if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
 -rw-r----- 1 thladish epi  44M Aug  9 02:33 daily.1243347686.2007593278
 -rw-r----- 1 thladish epi  52M Aug  9 02:33 daily.3112558391.1307767146
 */
+/*
     stringstream ss_filename;
     ss_filename << "/scratch/lfs/thladish/who-feb-2016/daily." << process_id << "." << par->randomseed;
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
-
+*/
     return epi_sizes;
 }
 

@@ -17,7 +17,7 @@ using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
-string calculate_process_id(vector< long double> &args, string &argstring);
+string calculate_process_id(vector< double> &args, string &argstring);
 const string SIM_POP = "yucatan";
 const string HOME(std::getenv("HOME"));
 const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
@@ -30,8 +30,9 @@ const int HISTORICAL_DURATION = LAST_YEAR - FIRST_YEAR + 1; // HISTORICAL == bef
 //const int RESTART_BURNIN    = 80;
 const int FORECAST_DURATION = 6;
 const int TOTAL_DURATION    = HISTORICAL_DURATION + FORECAST_DURATION;
+const int NUM_OF_ABC_PARS   = 2;
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
+Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
@@ -56,20 +57,20 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _sec_severity = 0.00557066;
     double _pss_ratio    = 0.675647;
     double _exp_coef     = -0.416732;
-    double _nmos         = 82.8077*args[0];
+    double _nmos         = 82.8077*2.3049;
     double _betamp       = 0.25;//foi_targets[(int) args[7]] / _nmos;
     double _betapm       = 0.10;//_betamp;
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
-    vector<long double> abc_args(&args[0], &args[3]);
+    vector<double> abc_args(&args[0], &args[NUM_OF_ABC_PARS]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = false;
-    par->monthlyOutput           = false;
+    //par->dailyOutput             = true;
+    par->monthlyOutput           = true;
     par->yearlyOutput            = true;
-    par->abcVerbose              = false; // needs to be false to get WHO daily output
+    par->abcVerbose              = true; // needs to be false to get WHO daily output
     par->nRunLength              = TOTAL_DURATION*365;
     par->startDayOfYear          = 100;
     par->annualIntroductionsCoef = pow(10, _exp_coef);
@@ -153,12 +154,12 @@ void prime_population(Community* community, const gsl_rng* RNG, const double tar
 
 
 
-string calculate_process_id(vector< long double> &args, string &argstring) {
+string calculate_process_id(vector< double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
 
-    for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((long double) args[i]) + " ";
+    for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((double) args[i]) + " ";
 
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
@@ -168,7 +169,7 @@ string calculate_process_id(vector< long double> &args, string &argstring) {
 }
 
 
-string report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
+string report_process_id (vector<double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
@@ -183,9 +184,9 @@ string report_process_id (vector<long double> &args, const unsigned long int ser
 }
     
 
-vector<long double> tally_counts(Parameters* par, Community* community) {
+vector<double> tally_counts(Parameters* par, Community* community) {
     const int VAC_DAY = HISTORICAL_DURATION*365;
-    vector<long double> metrics;
+    vector<double> metrics;
 
     vector< vector<int> > age_bins = {{2,5},{6,11},{12,14}};
     vector< vector<double> > infection_attack_rate_age  = {{0,0},{0,0},{0,0}}; 
@@ -232,9 +233,9 @@ vector<long double> tally_counts(Parameters* par, Community* community) {
                     // active surveillance phase
                     ++attack_rate_age[age_class][vaccinated];
                     ++attack_rate_sero[(int) seropos][vaccinated];
-                } else if (itime >= VAC_DAY + (365*2) + 28 and itime < VAC_DAY + (365*3) + 28) {
+                } else if (itime >= VAC_DAY + (365*2) + 28){// and itime < VAC_DAY + (365*3) + 28) {
                     // hospital phase
-                    const int hosp_year = (itime - VAC_DAY + (365*2) + 28) / 365;
+                    const int hosp_year = (itime - (VAC_DAY + (365*2) + 28)) / 365;
                     if ((const bool) infec->isSevere()) {
                         if (hosp_year < (signed) severe_attack_rate_hosp[age_class][vaccinated].size()) { 
                             ++severe_attack_rate_hosp[age_class][vaccinated][hosp_year];
@@ -292,18 +293,21 @@ vector<long double> tally_counts(Parameters* par, Community* community) {
 //        {"name" : "hosp_placebo_12_14", "num_type" : "FLOAT", "value" : 0.005208333},
 //        {"name" : "hosp_vaccine_12_14", "num_type" : "FLOAT", "value" : 0.001295337}
     assert(mild_attack_rate_hosp.size() == severe_attack_rate_hosp.size());
+    //cerr << "Calculating hospital attack rates\n";
     for (unsigned int i = 0; i < mild_attack_rate_hosp.size(); ++i) {
         assert(mild_attack_rate_hosp[i].size() == severe_attack_rate_hosp[i].size());
         for (unsigned int j = 0; j < mild_attack_rate_hosp[i].size(); ++j) {
             assert(mild_attack_rate_hosp[i][j].size() == severe_attack_rate_hosp[i][j].size());
             for (unsigned int y = 0; y < mild_attack_rate_hosp[i][j].size(); ++y) {
                 const double hosp_ar = severe_attack_rate_hosp[i][j][y] + (mild_attack_rate_hosp[i][j][y] * par->reportedFraction[1]);
-                metrics.push_back(hosp_ar); // we're pushing three years of hosp results, but last two will be discarded after logging
+                //cerr << "i, j, y | severe, mild, reported_frac, hosp_ar: " << i << " " << j << " " << y << " | " 
+                //     << severe_attack_rate_hosp[i][j][y] << " + " << mild_attack_rate_hosp[i][j][y] << " * " << par->reportedFraction[1] << " = " << hosp_ar << endl;
+                metrics.push_back(hosp_ar / arm_pop_sizes[i][j]); // we're pushing three years of hosp results, but last two will be discarded after logging
             }
         }
     }
 
-    // 10 more metrics, to me logged but not reported to ABC in calling function
+    // 10 more metrics, to be logged but not reported to ABC in calling function
     for (unsigned int i = 0; i < infection_attack_rate_age.size(); ++i) {
         for (unsigned int j = 0; j < infection_attack_rate_age[i].size(); ++j) metrics.push_back(infection_attack_rate_age[i][j] / arm_pop_sizes[i][j]);
     }
@@ -314,7 +318,7 @@ vector<long double> tally_counts(Parameters* par, Community* community) {
     return metrics;
 }
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
+vector<double> simulator(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     //initialize bookkeeping for run
@@ -341,11 +345,12 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     prime_population(community, RNG, target_SP9);
 
     // perfect efficacy that wanes rapidly
-    par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, args[2]);
-    par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, args[2]);
+    const double EFF = NUM_OF_ABC_PARS == 2 ? args[1] : 1.0;
+    par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, EFF);
+    par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, EFF);
     par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
     par->linearlyWaningVaccine   = true;
-    par->vaccineImmunityDuration = (int) 1/args[1];
+    par->vaccineImmunityDuration = NUM_OF_ABC_PARS > 1 ? (int) (1.0/args[0]) : 100000;
     par->bVaccineLeaky           = true;
     par->numVaccineDoses         = 3;
     par->vaccineDoseInterval     = 182;
@@ -365,7 +370,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     time (&end);
     double dif = difftime (end,start);
 
-    vector<long double> metrics = tally_counts(par, community);
+    vector<double> metrics = tally_counts(par, community);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
@@ -377,10 +382,12 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
-    metrics.resize(19); // Must equal expected number of metrics.  We are passing some extra values for logging/validation purposes
+    const int NUM_METRICS_NEEDED = NUM_OF_ABC_PARS == 1 ? 3 : 19;
+    metrics.resize(NUM_METRICS_NEEDED); // Must equal expected number of metrics.  We are passing some extra values for logging/validation purposes
 
     delete par;
     delete community;
+
     return metrics;
 }
 
