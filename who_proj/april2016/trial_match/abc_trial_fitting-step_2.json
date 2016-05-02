@@ -11,8 +11,8 @@
          "short_name" : "vw_rate",
          "dist_type"  : "UNIFORM",
          "num_type"   : "FLOAT",
-         "par1"       : 0.005555556,
-         "par2"       : 0.000456621},
+         "par1"       : 0.000456621,
+         "par2"       : 0.005555556},
 
         {"name"       : "initial_efficacy",
          "short_name" : "ini_eff",
