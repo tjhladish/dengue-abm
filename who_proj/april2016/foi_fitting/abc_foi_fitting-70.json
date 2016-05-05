@@ -1,0 +1,22 @@
+{
+    "smc_iterations" : 5,
+    "num_samples"    : 1000,
+    "predictive_prior_fraction" : 0.01,
+    "pls_training_fraction"     : 0.8,
+
+    "database_filename"             : "foi_fit_70-plos_ntd-best_particle.sqlite",
+
+    "parameters" : [
+        {"name"       : "foi_multiplier",
+         "short_name" : "foi_mult",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 2.3,
+         "par2"       : 3.5}
+    ],
+
+    "metrics" : [
+        {"name" : "seropos_0",   "num_type" : "FLOAT", "value" : 0.7},
+        {"name" : "seropos_1",   "num_type" : "FLOAT", "value" : 0.7}
+    ]
+}
