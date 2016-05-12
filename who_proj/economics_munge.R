@@ -270,8 +270,9 @@ setkeyv(econfinalBRA, c("thresh", key(econdata)))
 fun <- function(para, basis, reg, discounting, scen.name) {
   init <- copy(econfinalBRA)
   cont <- slice(precomputeCost(init, para, basis))
-  refed <- extract_ref(econfinalBRA, "reference")
-  novaced <- extract_ref(econfinalBRA, "noVaccine")
+  refed <- extract_ref(cont, "reference")
+  novaced <- extract_ref(cont, "noVaccine")
+  
   joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"), scen.name,
         if(discounting) nodisc else disc.cost.vec, if(discounting) nodisc else disc.daly.vec,
         discounting
@@ -303,7 +304,8 @@ quan <- function(var, nm, n) {
   as.list(qres)
 }
 
-agg <- function(base, ref, discc, discd, ...) base[...][ref][,
+agg <- function(base, ref, discc, discd, ...) {
+base[...][ref][,
   calc(.SD, discc, discd, thresh),
   by=list(thresh, scen, transmission_setting, particle_id)
 ][,{
@@ -318,11 +320,12 @@ agg <- function(base, ref, discc, discd, ...) base[...][ref][,
   },
   by=list(thresh, scen, transmission_setting)
 ]
+}
 
 joins <- function(base, ref, noVac, region, typ, eco, cost.vec, daly.vec, discounting) {
   rbind(
-    agg(base, ref, cost.vec, daly.vec, scen %in% c("catchUp","catchupTo30"))[, disc := discounting ],
-    agg(base, noVac, cost.vec, daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := discounting ]
+    agg(base, ref, cost.vec, daly.vec, scen %in% c("catchUp","catchupTo30")),
+    agg(base, noVac, cost.vec, daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))
   )[,
     `:=`(reg = region, cost = typ, ecoscn = eco)
   ]
@@ -344,27 +347,6 @@ allres <- rbindlist(mcmapply(
 )[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "UF" ][,
   scenario := paste(scen,reg,cost,ecoscen,sep="-")
 ]
-
-# precomputeCost(econfinalBRAInd, econ.para.bra, "c")
-# precomputeCost(econfinalBRASoc, econ.para.bra, "sc")
-# precomputeCost(econfinalPHLInd, econ.para.phl, "c")
-# precomputeCost(econfinalPHLSoc, econ.para.phl, "sc")
-# 
-# econfinalBRAInd <- slice(econfinalBRAInd)
-# econfinalBRASoc <- slice(econfinalBRASoc)
-# econfinalPHLInd <- slice(econfinalPHLInd)
-# econfinalPHLSoc <- slice(econfinalPHLSoc)
-# 
-# econfinalBRAIndref <- extract_ref(econfinalBRAInd, "reference")
-# econfinalBRAIndnoVac <- extract_ref(econfinalBRAInd, "noVaccine")
-# econfinalBRASocref <- extract_ref(econfinalBRASoc, "reference")
-# econfinalBRASocnoVac <- extract_ref(econfinalBRASoc, "noVaccine")
-# 
-# econfinalPHLIndref <- extract_ref(econfinalPHLInd, "reference")
-# econfinalPHLIndnoVac <- extract_ref(econfinalPHLInd, "noVaccine")
-# econfinalPHLSocref <- extract_ref(econfinalPHLSoc, "reference")
-# econfinalPHLSocnoVac <- extract_ref(econfinalPHLSoc, "noVaccine")
-
 
 
 econres <- rbind(
