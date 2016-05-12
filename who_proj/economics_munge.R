@@ -124,7 +124,7 @@ require(dplyr)
 disc.cost = 0.03	#discount rate for costs
 disc.daly = 0.03	#discount rate for dalys
 persp = 0			#perspective 0=health care provider, 1=society
-thresholds=(1:5)*2000  #threshold for cost-effectiveness
+thresholds=(0:5)*2000  #threshold for cost-effectiveness
 
 econ.para.bra=list(
   c=list(
@@ -151,14 +151,14 @@ econ.para.bra=list(
 econ.para.phl=list(
   c=list(
     cvac = 30.50,	#HCP cost of vaccination
-    camb = 40,		#HCP cost of treating VCD case
-    chosp = 600,		#HCP cost of treating hospitalised VCD case
+    camb = 20,		#HCP cost of treating VCD case
+    chosp = 400,		#HCP cost of treating hospitalised VCD case
     cdeath = 0		#HCP cost of dengue death
   ),
   sc=list(
     cvac = 30.50,	#societal cost of vaccination
-    camb = 100,		#societal cost of treating VCD case
-    chosp = 700,	#societal cost of treating hospitalised VCD case
+    camb = 40,		#societal cost of treating VCD case
+    chosp = 500,	#societal cost of treating hospitalised VCD case
     cdeath = 3000	#societal cost of treating hospitalised VCD case
   ),
   d=list(
@@ -167,6 +167,38 @@ econ.para.phl=list(
     d.hosp = 0.545*14/365	#dalys due to hospitalised case
   )
 )
+
+econ.scenarios=
+  c("PHL","nodisc","society",
+    "amb.lo"  , "amb.hi"  , "hosp.lo"  , "hosp.hi"  , "death.lo"  , "death.hi",
+    "amb.lo.s", "amb.hi.s", "hosp.lo.s", "hosp.hi.s", "death.lo.s", "death.hi.s")
+
+econ.para.bra.amb.lo=econ.para.bra 
+econ.para.bra.amb.hi=econ.para.bra
+econ.para.bra.hosp.lo=econ.para.bra 
+econ.para.bra.hosp.hi=econ.para.bra 
+econ.para.bra.death.lo=econ.para.bra
+econ.para.bra.death.hi=econ.para.bra
+
+econ.para.bra.amb.lo$c$camb=econ.para.bra$c$camb*0.5
+econ.para.bra.amb.hi$c$camb=econ.para.bra$c$camb*1.5
+econ.para.bra.hosp.lo$c$chosp=econ.para.bra$c$chosp*0.5
+econ.para.bra.hosp.hi$c$chosp=econ.para.bra$c$chosp*1.5
+econ.para.bra.death.lo$c$cdeath=econ.para.bra$c$cdeath*0.5
+econ.para.bra.death.hi$c$cdeath=econ.para.bra$c$cdeath*1.5
+
+econ.para.bra.amb.lo$sc$camb=econ.para.bra$sc$camb*0.5
+econ.para.bra.amb.hi$sc$camb=econ.para.bra$sc$camb*1.5
+econ.para.bra.hosp.lo$sc$chosp=econ.para.bra$sc$chosp*0.5
+econ.para.bra.hosp.hi$sc$chosp=econ.para.bra$sc$chosp*1.5
+econ.para.bra.death.lo$sc$cdeath=econ.para.bra$sc$cdeath*0.5
+econ.para.bra.death.hi$sc$cdeath=econ.para.bra$sc$cdeath*1.5
+
+
+econ.para.bra.amb.lo$d$d.amb=econ.para.bra$d$d.amb*0.5
+econ.para.bra.amb.hi$d$d.amb=econ.para.bra$d$d.amb*1.5
+econ.para.bra.hosp.lo$d$d.hosp=econ.para.bra$d$d.hosp*0.5
+econ.para.bra.hosp.hi$d$d.hosp=econ.para.bra$d$d.hosp*1.5
 
 ############################################# 
 # calcuate outcomes
@@ -214,18 +246,36 @@ precomputeCost <- function(tardt, costsrc, wh="c") with(c(costsrc[[wh]], costsrc
 slice <- function(base) base[,list(n.vac, cost.vac, cost.treat, daly.vac, daly.treat, daly.death), keyby=list(thresh, transmission_setting, particle_id, age, year, scen)]
 extract_ref <- function(dt, wh) subset(dt[scen == wh], select=-scen)
 
+# for each of these...
+econ.scenarios=
+  list(
+    "BRA"=econ.para.bra,
+    "PHL"=econ.para.phl,
+    "nodisc"=econ.para.bra, "society"=econ.para.bra, # but with different other inputs
+    "amb.lo"=econ.para.bra.amb.lo, "amb.hi"=econ.para.bra.amb.hi,
+    "hosp.lo"=econ.para.bra.hosp.lo, "hosp.hi"=econ.para.bra.hosp.hi,
+    "death.lo"=econ.para.bra.death.lo  , "death.hi"=econ.para.bra.death.hi,
+    "amb.lo.s"=econ.para.bra.amb.lo, "amb.hi.s"=econ.para.bra.amb.hi,
+    "hosp.lo.s"=econ.para.bra.hosp.lo, "hosp.hi.s"=econ.para.bra.hosp.hi,
+    "death.lo.s"=econ.para.bra.death.lo  , "death.hi.s"=econ.para.bra.death.hi)
 
-econfinalBRAInd <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
-setkeyv(econfinalBRAInd, c("thresh", key(econdata)))
-econfinalBRASoc <- copy(econfinalBRAInd)
-econfinalPHLInd <- copy(econfinalBRAInd)
-econfinalPHLSoc <- copy(econfinalBRAInd)
+bases=list("c","c","c","sc","c","c","c","c","c","c","sc","sc","sc","sc","sc","sc")
+regs=c(list("BRA","PHL"),rep("BRA",length(econ.scenarios)-2))
+discounts=c(list(F,F,T),rep(T,length(econ.scenarios)-3))
 
-fun <- function(init, para, basis, reg) {
+# need one of these
+econfinalBRA <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
+setkeyv(econfinalBRA, c("thresh", key(econdata)))
+
+fun <- function(para, basis, reg, discounting, scen.name) {
+  init <- copy(econfinalBRA)
   cont <- slice(precomputeCost(init, para, basis))
-  refed <- extract_ref(econfinalBRAInd, "reference")
-  novaced <- extract_ref(econfinalBRAInd, "noVaccine")
-  joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"))
+  refed <- extract_ref(econfinalBRA, "reference")
+  novaced <- extract_ref(econfinalBRA, "noVaccine")
+  joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"), scen.name,
+        if(discounting) nodisc else disc.cost.vec, if(discounting) nodisc else disc.daly.vec,
+        discounting
+  )
 }
 
 calc <- function(.SD, cst.disc, d.disc, thresh) with(.SD, {
@@ -269,21 +319,22 @@ agg <- function(base, ref, discc, discd, ...) base[...][ref][,
   by=list(thresh, scen, transmission_setting)
 ]
 
-joins <- function(base, ref, noVac, region, typ) {
+joins <- function(base, ref, noVac, region, typ, eco, cost.vec, daly.vec, discounting) {
   rbind(
-    agg(base, ref, disc.cost.vec, disc.daly.vec, scen %in% c("catchUp","catchupTo30"))[, disc := TRUE ],
-    agg(base, ref, nodisc, nodisc, scen %in% c("catchUp","catchupTo30"))[, disc := FALSE ],
-    agg(base, noVac, disc.cost.vec, disc.daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := TRUE ],
-    agg(base, noVac, nodisc, nodisc, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := FALSE ]
-  )[, reg := region ][, cost := typ ]
+    agg(base, ref, cost.vec, daly.vec, scen %in% c("catchUp","catchupTo30"))[, disc := discounting ],
+    agg(base, noVac, cost.vec, daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))[, disc := discounting ]
+  )[,
+    `:=`(reg = region, cost = typ, ecoscn = eco)
+  ]
 }
 
 allres <- rbindlist(mcmapply(
   fun,
-  init=list(econfinalBRAInd, econfinalBRASoc, econfinalPHLInd, econfinalPHLSoc),
-  para=list(econ.para.bra,econ.para.bra,econ.para.phl,econ.para.phl),
-  basis=list("c","sc","c","sc"),
-  reg=list("BRA","BRA","PHL","PHL"),
+  para=econ.scenarios,
+  basis=bases,
+  reg=regs,
+  discounting=discounts,
+  scen.name = names(econ.scenarios),
   mc.cores = detectCores()-1
 )
 #   joins(econfinalBRAInd, econfinalBRAIndref, econfinalBRAIndnoVac, "BRA", "ind"),
@@ -291,7 +342,7 @@ allres <- rbindlist(mcmapply(
 #   joins(econfinalPHLInd, econfinalPHLIndref, econfinalPHLIndnoVac, "PHL", "ind"),
 #   joins(econfinalPHLSoc, econfinalPHLSocref, econfinalPHLSocnoVac, "PHL", "soc")
 )[, year := paste0("cum", year.max+1) ][, age := "overall" ][, group := "UF" ][,
-  scenario := paste(scen,reg,cost,ifelse(disc,"disc","nodisc"), sep="-")
+  scenario := paste(scen,reg,cost,ecoscen,sep="-")
 ]
 
 # precomputeCost(econfinalBRAInd, econ.para.bra, "c")
