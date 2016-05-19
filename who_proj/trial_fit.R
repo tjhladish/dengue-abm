@@ -87,7 +87,8 @@ mlt <- rbind(
 wider <- mlt[,{
   mn = mean(value)
   se = 2*sd(value)/sqrt(.N)
-  list(mean=mn, lower=mn-se, upper=mn+se, Groups="longini")
+  list(mean=mn, lower=mn-se, upper=mn+se, med=median(value),
+       qlo=quantile(value,probs = 0.25), qlo=quantile(value,probs = 0.75))
 }, keyby=list(Trial = paste0("CYD", CYD), variable)][!grepl("infec", variable)]
 
 wider[, Arm := "Seronegative"]
