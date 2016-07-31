@@ -524,6 +524,7 @@ void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfect
 
 
 void Community::mosquitoFilter(vector<Mosquito*>& mosquitoes, const double survival_prob) {
+    if (survival_prob >= 1.0) return;
     const unsigned int nmos = mosquitoes.size();
     if (nmos == 0) return;
     gsl_ran_shuffle(RNG, mosquitoes.data(), nmos, sizeof(Mosquito*));
@@ -542,6 +543,20 @@ void Community::applyMosquitoMultiplier(double current) {
         for (unsigned int day = 0; day < _exposedMosquitoQueue.size(); ++day) mosquitoFilter(_exposedMosquitoQueue[day], survival_prob);
         for (unsigned int day = 0; day < _infectiousMosquitoQueue.size(); ++day) mosquitoFilter(_infectiousMosquitoQueue[day], survival_prob);
     }
+}
+
+
+void Community::applyVectorControl(VectorControlEvent vce) {
+    int campaignStart;
+    int campaignDuration;
+    float coverage;
+    float efficacy;
+    LocationType locationType;
+    LocationSelectionStrategy strategy;
+
+    for (Location* loc: getLocations()) {
+    
+    :} 
 }
 
 
@@ -675,7 +690,7 @@ void Community::swapImmuneStates() {
             }
 
             // update map of locations with infectious people
-            if (p->getNumInfections() > 0 and p->getRecoveryTime() > _nDay) {
+            if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
                 for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
                     for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
                         flagInfectedLocation(p->getLocation((TimePeriod) t), d);
@@ -698,7 +713,7 @@ void Community::swapImmuneStates() {
 void Community::updateDiseaseStatus() {
     for (int i=0; i<_nNumPerson; i++) {
         Person* p = _person+i;
-        if (p->getNumInfections() == 0) continue;
+        if (p->getNumNaturalInfections() == 0) continue;
         if (p->getSymptomTime()==_nDay) {                              // started showing symptoms today
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
             if (p->isVaccinated()) {
@@ -756,7 +771,7 @@ void Community::mosquitoToHumanTransmission() {
                     if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
                         _nNumNewlyInfected[(int) serotype][_nDay]++;
                         if (_bNoSecondaryTransmission) {
-                            p->kill(_nDay);                       // kill secondary cases so they do not transmit
+                            p->kill();                       // kill secondary cases so they do not transmit
                         }
                         else {
                             // NOTE: We are storing the location ID of infection, not person ID!!!

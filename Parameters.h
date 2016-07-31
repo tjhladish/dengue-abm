@@ -44,6 +44,19 @@ enum SexType {
     NUM_OF_SEX_TYPES
 };
 
+enum LocationType {
+    HOME,
+    WORK,
+    SCHOOL,
+    NUM_OF_LOCATION_TYPES
+};
+
+enum LocationSelectionStrategy {
+    UNIFORM,
+    MAX_MOSQUITOES,
+    NUM_OF_LOCATION_SELECTION_STRATEGY_TYPES
+};
+
 enum InfectionOutcome {
     ASYMPTOMATIC,
     MILD,
@@ -56,6 +69,7 @@ enum PrimaryPathogenicityModel {
     ORIGINAL_LOGISTIC,
     GEOMETRIC_PATHOGENICITY,
     NUM_OF_PRIMARY_PATHOGENICITY_MODELS
+};
 
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
@@ -226,6 +240,18 @@ struct VaccinationEvent {
 };
 
 
+struct VectorControlEvent {
+    VectorControlEvent(){};
+    VectorControlEvent(int s, int d, float c, float e, LocationType lt, LocationSelectionStrategy lss): campaignStart(s), campaignDuration(d), coverage(c), efficacy(e), locationType(lt), strategy(lss) {};
+    int campaignStart;
+    int campaignDuration;
+    float coverage;
+    float efficacy;
+    LocationType locationType;
+    LocationSelectionStrategy strategy;
+};
+
+
 class Parameters {
 public:
 
@@ -318,6 +344,9 @@ public:
     int vaccineDoseInterval;                                // How often to we re-vaccinate for initial vaccine course, in days
     int vaccineBoostingInterval;                            // How often to we re-vaccinate for boosting, in days
     std::vector<VaccinationEvent> vaccinationEvents;
+
+    std::vector<VectorControlEvent> vectorControlEvents;
+
     int startDayOfYear;
     bool dailyOutput;
     bool weeklyOutput;

@@ -75,7 +75,7 @@ void Person::copyImmunity(const Person* p) {
     vaccineHistory.assign(p->vaccineHistory.begin(), p->vaccineHistory.end());
 
     clearInfectionHistory();
-    for (int i=0; i < p->getNumInfections(); i++) {
+    for (int i=0; i < p->getNumNaturalInfections(); i++) {
         infectionHistory.push_back( new Infection(p->infectionHistory[i]) );
     }
 }
@@ -101,7 +101,7 @@ bool Person::naturalDeath(int t) {
 }
 
 
-void Person::kill(int time) {
+void Person::kill() {
     _bDead = true;
 }
 
@@ -352,7 +352,7 @@ bool Person::isSusceptible(Serotype serotype) const {
 
 
 bool Person::isCrossProtected(int time) const {
-    return (getNumInfections() > 0) and // has any past infection
+    return (getNumNaturalInfections() > 0) and // has any past infection
            (infectionHistory.back()->infectedTime + _par->nDaysImmune > time); // prev. infection w/in crossprotection period 
 }
 

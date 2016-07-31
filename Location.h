@@ -13,6 +13,7 @@ class Location {
         void setID(int id) { _ID = id; }
         int getID() const { return _ID; }
         int getSerial() const { return _serial; }
+        LocationType getType() const { return _type; }
         void addPerson(Person *p, int t);
         bool removePerson(Person *p, int t);
         int getNumPerson(TimePeriod timeofday) const { return _person[(int) timeofday].size(); } 
@@ -42,11 +43,18 @@ class Location {
     protected:
         int _ID;                                                      // original identifier in location file
         int _serial;                                                  // unique identifier assigned on construction
+        LocationType _type;
         std::vector< std::vector<Person*> > _person;                  // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes
         int _currentInfectedMosquitoes;
         std::vector<Location*> _neighbors;
         static int _nNextSerial;                                      // unique ID to assign to the next Location allocated
         std::pair<double, double> _coord;                             // (x,y) coordinates for location
+
+        //bool vector_control_active = false;
+
+        float vector_control_effectiveness;
+        int vector_control_start_day;
+        int vector_control_end_day;
 };
 #endif

@@ -107,9 +107,9 @@ class Person {
         inline int getRecoveryTime(int infectionsago=0) const    { return getInfection(infectionsago)->recoveryTime; }
         inline int getWithdrawnTime(int infectionsago=0) const   { return getInfection(infectionsago)->withdrawnTime; }
         inline Serotype getSerotype(int infectionsago=0) const   { return getInfection(infectionsago)->serotype(); }
-        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumInfections() - 1 - infectionsago]; }
+        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumNaturalInfections() - 1 - infectionsago]; }
 
-        inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumInfections() - 1 - infectionsago]->recoveryTime = time; }
+        inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumNaturalInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
         inline int getNumNaturalInfections() const { return infectionHistory.size(); }
         inline int getEffectiveNumInfections() const {
@@ -132,7 +132,7 @@ class Person {
         inline bool infect(Serotype serotype, int time) {return infect(INT_MIN, serotype, time, INT_MIN);}
         bool isViremic(int time) const;
 
-        void kill(int time);
+        void kill();
         bool isDead() const { return _bDead; }
         bool naturalDeath(int t);                                     // die of old age check?
 

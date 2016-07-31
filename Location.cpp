@@ -23,6 +23,9 @@ Location::Location()
     _nBaseMosquitoCapacity = 0;
     _currentInfectedMosquitoes = 0;
     _coord = make_pair(0.0, 0.0);
+    vector_control_effectiveness = 0.0;
+    vector_control_start_day = -1;
+    vector_control_end_day = -1;
 }
 
 
