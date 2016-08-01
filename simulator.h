@@ -406,7 +406,7 @@ if (date.year() >= BURNIN) {
             if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
             if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
 
-if (not par->abcVerbose and date.year() >= BURNIN) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
+if (not par->abcVerbose and date.year() >= BURNIN) {
     // for dec 2015 WHO results
     stringstream ss;
     ss << date.day() << ","
@@ -417,7 +417,8 @@ if (not par->abcVerbose and date.year() >= BURNIN) {   ////////// THIS IS A HACK
         << (int) p->isVaccinated() << ","
         << 1 + (int) infec->serotype() << ","
         << (int) infec->isSymptomatic() << ","
-        << (int) infec->isSevere();
+        << (int) infec->isSevere() << ","
+        << (int) p->getNumNaturalInfections();
     daily_output_buffer.push_back(ss.str());
 }
 
@@ -450,7 +451,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     vector<string> daily_output_buffer;
 
     if (par->bSecondaryTransmission and not par->abcVerbose) {
-        daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severity");
+        daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severity,infection_num");
     }
 
     map<string, vector<int> > periodic_incidence = construct_tally();
@@ -484,7 +485,7 @@ if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
 */
 /*
     stringstream ss_filename;
-    ss_filename << "/scratch/lfs/thladish/who-feb-2016/daily." << process_id << "." << par->randomseed;
+    ss_filename << "/ufrc/longini/tjhladish/who-jul-2016/daily." << process_id << "." << par->randomseed;
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
 */
