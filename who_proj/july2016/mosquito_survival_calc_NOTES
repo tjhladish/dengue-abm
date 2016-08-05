@@ -1,0 +1,44 @@
+mu =  [1] 0.03109522 0.03103087 0.03095702 0.03087250 0.03077550 0.03066470
+ [7] 0.03053790 0.03039310 0.03022800 0.03004010 0.02982630 0.02958380
+ [13] 0.02930930 0.02899930 0.02865010 0.02825820 0.02781960 0.02733100
+ [19] 0.02678880 0.02619040 0.02553320 0.02481570 0.02403760 0.02319950
+ [25] 0.02230360 0.02135350 0.02035470 0.01931370 0.01823920 0.01714060
+ [31] 0.01602820 0.01491330 0.01380680 0.01271960 0.01166160 0.01064190
+ [37] 0.00966800 0.00874580 0.00788000 0.00707320 0.00632700 0.00564130
+ [43] 0.00501520 0.00444650 0.00393300 0.00347090 0.00305740 0.00268810
+ [49] 0.00236000 0.00206890 0.00181160 0.00158450 0.00138460 0.00120880
+ [55] 0.00105470 0.00091950 0.00080130 0.00069780 0.00159620 0.0
+
+
+
+
+p_i = asymptotic mosquito population in age (day) cohort i
+p_i* = ibid, but w/ IRS
+mu_i = mortality prob in age cohort i // extracted from current CDF
+rho = daily IRS hazard (fit parameter)
+p_0 = emerging population
+P = asymptotic population at location
+P* = ibid, w/ IRS
+N = max age // length(mu)
+
+p_{i+1} = (1-mu_{i})*p_{i}
+
+p_1 = p_1* = p_0
+=> p_i = p_0\prod_{j=1}^{j=i-1} (1-mu_j)
+
+P = \sum_k p_k = p_0(1+\sum_k\prod_{j=1}^{j=k-1} (1-mu_j)) = p_0 \alpha // k goes from 1..N
+(if mu const, then \alpha is a simple geo series, but that's not the case for us)
+
+p_{i+1}* = (1-mu_{i})(1-rho)p_{i}*
+=> p_i* = p_0(1-rho)^{i-1}\prod_{j=1}^{j=i-1}(1-mu_j)
+P* = p_0(1+\sum_{k=2}^{N}(1-rho)^{k-1}\prod_{j=1}^{j=k-1} (1-mu_j)) = p_0 \alpha* = P(\alpha* / \alpha)
+
+P(age == i)* = p_i*/P* =  (1-rho)^{i-1}\prod_{j=1}^{j=i-1}(1-mu_j) / \alpha*
+
+write c++ code to numerically estimate rho given an IRS efficacy (==\alpha*/\alpha)
+-------------------
+run baseline to get immunity files, check sp9 values
+turn forecast on, run interventions
+figure out why process who is not producing output
+run process_who
+run cohort processing script
