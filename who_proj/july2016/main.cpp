@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 
 const int RESTART_BURNIN    = 80;
 const int FORECAST_DURATION = 30;
-const bool RUN_FORECAST = false;
+const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const vector<float> SP9_TARGETS = {0.1, 0.3, 0.5, 0.7, 0.9};
 
@@ -82,7 +82,29 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
      * 4.0|0.90672937
      */
 
-    const vector<float> foi_targets = {6.12, 8.23, 10.4, 13.6, 21.4}; // try 4
+    //const vector<float> foi_targets = {6.12, 8.23, 10.4, 13.6, 21.4}; // try 4
+    /* 0.0|0.1035124812 // these numbers now include priming the population; prev. runs did not
+     * 1.0|0.316961864
+     * 2.0|0.51068918
+     * 3.0|0.70700967
+     * 4.0|0.9058336
+     */
+
+    //const vector<float> foi_targets = {6.1, 8.2, 10.35, 13.5, 21.2}; // try 5
+    /* 0.0|0.1023000874
+     * 1.0|0.310872036
+     * 2.0|0.50085715
+     * 3.0|0.69667349
+     * 4.0|0.89898417
+     */
+
+    const vector<float> foi_targets = {6.07, 8.15, 10.35, 13.53, 21.21}; // try 6
+    /* 0.0|0.0960594171 // I don't think we can do better than this without a larger sample size
+     * 1.0|0.305756767
+     * 2.0|0.51102584
+     * 3.0|0.69006929
+     * 4.0|0.89070218
+     */
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
@@ -265,7 +287,7 @@ vector<double> tally_counts(const Parameters* par, Community* community) {
     for (int i=community->getNumPerson()-1; i>=0; i--) {
         Person *p = community->getPerson(i);
         const int final_age  = p->getAge();
-        const int age_at_vac_start = final_age - FORECAST_DURATION;
+        const int age_at_vac_start = RUN_FORECAST ? final_age - FORECAST_DURATION : final_age;
         if (age_at_vac_start >= 9 and age_at_vac_start <= 18) {
             int age_class = age_at_vac_start - 9;
 
@@ -390,7 +412,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     //string imm_filename = "/scratch/lfs/thladish/imm_who-baseline-seroprev/immunity." + process_id;
     string imm_filename = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + process_id;
-    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    //write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
 
     //vector<int> epi_sizes = simulate_epidemic(par, community, process_id);
 

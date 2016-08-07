@@ -12,10 +12,10 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
 #SBATCH --time=15:00:00
-#SBATCH --array=0-499
+#SBATCH --array=0-999
 
 module load gcc/5.2.0 gsl
 for i in `seq 1 10`;
 do
-    ./abc_sql abc_who.json --simulate
+    ./abc_sql abc_who-vaccine_forecasting.json --simulate
 done

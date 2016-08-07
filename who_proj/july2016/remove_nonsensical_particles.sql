@@ -1,7 +1,8 @@
-delete from parameters where target > 9 and catchup = 1;
-delete from parameters where coverage > 1 and catchup = 1;
-delete from parameters where coverage > 1 and target = 17;
-delete from parameters where vac = 0 and target > 9;
+delete from parameters where target != 9 and catchup = 1;
+delete from parameters where coverage != 1 and catchup = 1;
+delete from parameters where coverage != 1 and target != 9;
+delete from parameters where catchup = 0 and catchup_to > 0;
+delete from parameters where vac = 0 and target != 9;
 delete from parameters where vac = 0 and catchup_to > 0;
 delete from parameters where vac = 0 and coverage > 0;
 delete from parameters where vac = 0 and vac_mech > 0;
