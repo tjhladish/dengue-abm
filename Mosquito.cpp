@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <climits>
+#include <cmath>
 #include <iostream>
 #include <assert.h>
 #include <gsl/gsl_rng.h>
@@ -25,23 +26,29 @@ Mosquito::Mosquito() {
 }
 
 
-Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod) {
+Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod, int time) {
     _nID = _nNextID++;
     _bDead = false;
     _eSerotype = serotype;
     _nInfectedAtID = nInfectedAtID;
-    _nAgeInfected = Parameters::sampler(MOSQUITO_AGE_CDF, gsl_rng_uniform(RNG));
+    const double rho = p->getCurrentVectorControlDailyMortality(time);
+    vector<double> age_cdf = MOSQUITO_AGE_CDF;
+    if (rho > 0) {
+                                               //mortality_by_age_i* = 1 - (1 - mortality_by_age_i)(1 - rho)^i
+        for (unsigned int i = 0; i < age_cdf.size(); ++i) age_cdf[i] = 1.0 - (1.0 - MOSQUITO_AGE_CDF[i]) * pow(1.0 - rho, i);
+    }
+    _nAgeInfected = Parameters::sampler(age_cdf, gsl_rng_uniform(RNG));
     _nAgeInfectious = _nAgeInfected + nExternalIncubationPeriod;
     _nAgeDeath = _nAgeInfected; // can't be younger than this
-    double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-MOSQUITO_AGE_CDF[_nAgeInfected]));
-    _nAgeDeath = Parameters::sampler(MOSQUITO_AGE_CDF, r, _nAgeDeath);
+    double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-age_cdf[_nAgeInfected]));
+    _nAgeDeath = Parameters::sampler(age_cdf, r, _nAgeDeath);
 
     _pLocation = _pOriginLocation = p;
     _pLocation->addInfectedMosquito();
 }
 
-Mosquito::Mosquito(Location* p, Serotype s, int ageInfd, int ageInfs, int ageDead):
-    _pLocation(p), _eSerotype(s), _nAgeInfected(ageInfd), _nAgeInfectious(ageInfs), _nAgeDeath(ageDead) {
+Mosquito::Mosquito(RestoreMosquitoPars* rp):
+    _pLocation(rp->location), _eSerotype(rp->serotype), _nAgeInfected(rp->age_infected), _nAgeInfectious(rp->age_infectious), _nAgeDeath(rp->age_dead) {
     _nID = _nNextID++;
     _bDead = false;
     _nInfectedAtID = -1;

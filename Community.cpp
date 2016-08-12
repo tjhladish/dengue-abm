@@ -406,7 +406,8 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
             }
             assert(sero < NUM_OF_SEROTYPES);
             Location* loc = _location[locID];
-            Mosquito* m = new Mosquito(loc, (Serotype) sero, ageInfd, ageInfs, ageDead);
+            RestoreMosquitoPars restorePars(loc, (Serotype) sero, ageInfd, ageInfs, ageDead);
+            Mosquito* m = new Mosquito(&restorePars);
             if (queue == 'e') {
                 assert(idx < (signed) _exposedMosquitoQueue.size());
                 _exposedMosquitoQueue[idx].push_back(m);
@@ -502,7 +503,7 @@ void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfect
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
     eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
-    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip);
+    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip, _nDay);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
@@ -543,20 +544,6 @@ void Community::applyMosquitoMultiplier(double current) {
         for (unsigned int day = 0; day < _exposedMosquitoQueue.size(); ++day) mosquitoFilter(_exposedMosquitoQueue[day], survival_prob);
         for (unsigned int day = 0; day < _infectiousMosquitoQueue.size(); ++day) mosquitoFilter(_infectiousMosquitoQueue[day], survival_prob);
     }
-}
-
-
-void Community::applyVectorControl(VectorControlEvent vce) {
-    int campaignStart;
-    int campaignDuration;
-    float coverage;
-    float efficacy;
-    LocationType locationType;
-    LocationSelectionStrategy strategy;
-
-    for (Location* loc: getLocations()) {
-    
-    :} 
 }
 
 
@@ -607,17 +594,17 @@ Mosquito* Community::getExposedMosquito(int n) {
 void Community::moveMosquito(Mosquito* m) {
     double r = gsl_rng_uniform(RNG);
     if (r<_par->fMosquitoMove) {
-        if (r<_par->fMosquitoTeleport) {                               // teleport
+        if (r<_par->fMosquitoTeleport) {                // teleport
             int locID = gsl_rng_uniform_int(RNG,_location.size());
             m->updateLocation(_location[locID]);
-        } else {                                                            // move to neighbor
+        } else {                                        // move to neighbor
             Location* pLoc = m->getLocation();
             double x1 = pLoc->getX();
             double y1 = pLoc->getY();
 
             int degree = pLoc->getNumNeighbors();
-            if (degree == 0) return; // movement isn't possible; no neighbors exist
-            int neighbor=0; // neighbor is an index
+            if (degree == 0) return;                    // movement isn't possible; no neighbors exist
+            int neighbor=0;                             // neighbor is an index
 
             if (_par->mosquitoMoveModel == "weighted") {
                 vector<double> weights(degree, 0);
@@ -635,10 +622,10 @@ void Community::moveMosquito(Mosquito* m) {
                     weights[i] = w;
                 }
                 double r2 = gsl_rng_uniform(RNG);
-                neighbor = degree-1; // neighbor is (still) an index
+                neighbor = degree-1;                    // neighbor is (still) an index
                 int idx;
                 for ( idx = 0; idx < degree - 1; idx++ ) {
-                    weights[idx] /= sum_weights; // normalize prob
+                    weights[idx] /= sum_weights;        // normalize prob
                     if ( r2 < weights[idx] ) {
                         break;
                     } else {
@@ -646,8 +633,7 @@ void Community::moveMosquito(Mosquito* m) {
                     }
                 }
                 neighbor = idx; 
-            } else {
-                // Ignore actual distances
+            } else {                                    // Alternatively, ignore distances when choosing destination
                 if (degree>0) {
                     neighbor = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
                 }
@@ -656,6 +642,10 @@ void Community::moveMosquito(Mosquito* m) {
             m->updateLocation(pLoc->getNeighbor(neighbor));
         }
     }
+
+    // apply vector control if the mosquito has stayed in, or moved to a location with active VC
+    const float vc_rho = m->getLocation()->getCurrentVectorControlDailyMortality(_nDay);
+    if (vc_rho > 0 and gsl_rng_uniform(RNG) < vc_rho) delete m;
 }
 
 

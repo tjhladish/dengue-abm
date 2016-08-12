@@ -11,12 +11,21 @@ class Location;
 //Location::removeInfectedMosquito();
 //Location::addInfectedMosquito();
 
-class Mosquito
-{
+struct RestoreMosquitoPars {
+    RestoreMosquitoPars() : location(nullptr), serotype((Serotype) 0), age_infected(0), age_infectious(0), age_dead(0) {};
+    RestoreMosquitoPars(Location* l, Serotype s, int aid, int ais, int ad) : location(l), serotype(s), age_infected(aid), age_infectious(ais), age_dead(ad) {};
+    Location* location;
+    Serotype serotype;
+    int age_infected;
+    int age_infectious;
+    int age_dead;
+};
+
+class Mosquito {
     public:
         Mosquito();
-        Mosquito(Location* p, Serotype s, int nInfectedAtID, int nExternalIncubationPeriod);
-        Mosquito(Location* p, Serotype s, int ageInfd, int ageInfs, int ageDead);
+        Mosquito(Location* p, Serotype s, int nInfectedAtID, int nExternalIncubationPeriod, int time);
+        Mosquito(RestoreMosquitoPars* pars);
 
         virtual ~Mosquito();
         int getID() const { return _nID; }

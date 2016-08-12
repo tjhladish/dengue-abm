@@ -92,8 +92,8 @@ const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 Community* build_community(const Parameters* par);
 void seed_epidemic(const Parameters* par, Community* community);
 vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id = "0");
-void write_immunity_file(const Parameters* par, const Community* community, const string label, string filename, int runLength);
-void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename="");
+void write_immunity_file(const Community* community, const string label, string filename, int runLength);
+void write_immunity_by_age_file(const Community* community, const int year, string filename="");
 void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 void write_daily_buffer( vector<string>& buffer, const string process_id, string filename);
 
@@ -290,6 +290,34 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
     }
 }
 
+void update_vector_control(const Parameters* par, Community* community, const Date &date) {
+    if (not date.startOfYear()) return; // expected to be called once per simulation year, at beginning of sim year
+    for (VectorControlEvent vce: par->vectorControlEvents) {
+        if (date.day() <= vce.campaignStart and date.day() + 365 > vce.campaignStart) { // is this a campaign scheduled to start this sim year?
+            const string loc_label = vce.locationType == 0 ? "houses" : vce.locationType == 1 ? "workplaces" : vce.locationType == 2 ? "schools" : "unknown location type";
+            if (not par->abcVerbose) cerr << "will start treating " << vce.coverage*100 << "% of " << loc_label << " on day " << vce.campaignStart << endl;
+
+            double rho = par->calculate_daily_vector_control_mortality(vce.efficacy);
+
+            if (vce.strategy == UNIFORM_STRATEGY) {
+                for (Location* loc: community->getLocations() ) {
+                    if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
+                       // location will be treated
+                       const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
+                       loc->setVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
+                    }
+                }
+            } else if (vce.strategy == MAX_MOSQUITOES_STRATEGY) {
+//                TODO - implement me
+                cerr << "ERROR: MAX_MOSQUITOES_STRATEGY is not yet implemented\n";
+                exit(-831);
+            } else {
+                cerr << "ERROR: Unsupported vector control strategy\n";
+                exit(-832);
+            }
+        }
+    }
+}
 
 int seed_epidemic(const Parameters* par, Community* community, const Date &date) {
     int introduced_infection_ct = 0;
@@ -396,6 +424,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date); 
+        if (date.startOfYear()) update_vector_control(par, community, date); // plan vector control for upcoming year
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 
@@ -471,7 +500,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
 
         if (date.day() == 125*365) {
             string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
-            write_immunity_file(par, community, process_id, imm_filename, date.day());
+            write_immunity_file(community, process_id, imm_filename, date.day());
         }
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
@@ -538,7 +567,7 @@ void write_daily_buffer( vector<string>& buffer, const string process_id, string
 }
 
 
-void write_immunity_by_age_file(const Parameters* par, const Community* community, const int year, string filename) {
+void write_immunity_by_age_file(const Community* community, const int year, string filename) {
     if (filename == "") {
         stringstream ss_filename;
         ss_filename << "imm_vs_age.year" << year;
@@ -570,7 +599,7 @@ void write_immunity_by_age_file(const Parameters* par, const Community* communit
 }
 
 
-void write_immunity_file(const Parameters* par, const Community* community, const string label, string filename, int runLength) {
+void write_immunity_file(const Community* community, const string label, string filename, int runLength) {
     if (filename == "") {
         stringstream ss_filename;
         ss_filename << "immunity." << label;

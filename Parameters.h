@@ -52,8 +52,8 @@ enum LocationType {
 };
 
 enum LocationSelectionStrategy {
-    UNIFORM,
-    MAX_MOSQUITOES,
+    UNIFORM_STRATEGY,
+    MAX_MOSQUITOES_STRATEGY,
     NUM_OF_LOCATION_SELECTION_STRATEGY_TYPES
 };
 
@@ -242,11 +242,12 @@ struct VaccinationEvent {
 
 struct VectorControlEvent {
     VectorControlEvent(){};
-    VectorControlEvent(int s, int d, float c, float e, LocationType lt, LocationSelectionStrategy lss): campaignStart(s), campaignDuration(d), coverage(c), efficacy(e), locationType(lt), strategy(lss) {};
+    VectorControlEvent(int s, int d, double c, double e, int ed, LocationType lt, LocationSelectionStrategy lss): campaignStart(s), campaignDuration(d), coverage(c), efficacy(e), efficacyDuration(ed), locationType(lt), strategy(lss) {};
     int campaignStart;
     int campaignDuration;
-    float coverage;
-    float efficacy;
+    double coverage;
+    double efficacy;
+    int efficacyDuration;
     LocationType locationType;
     LocationSelectionStrategy strategy;
 };
@@ -269,6 +270,7 @@ public:
     void loadDailyMosquitoMultipliers(std::string mosquitoMultiplierFilename, int desired_size = 0);
     void generateAnnualSerotypes(int total_num_years = -1);
     bool simulateAnnualSerotypes;
+    double calculate_daily_vector_control_mortality (const float efficacy) const;
 
     static int sampler (const std::vector<double> CDF, const double rand, unsigned int index = 0) {
         while (index < CDF.size() and CDF[index] < rand) index++;

@@ -21,7 +21,16 @@ class Location {
         Person* findMom();                                            // Try to find a resident female of reproductive age
         void setBaseMosquitoCapacity(int capacity) { _nBaseMosquitoCapacity = capacity; }
         int getBaseMosquitoCapacity() const { return _nBaseMosquitoCapacity; }
-        int getCurrentInfectedMosquitoes() { return _currentInfectedMosquitoes; }
+        int getCurrentInfectedMosquitoes() const { return _currentInfectedMosquitoes; }
+        void setVectorControlEvent(const double efficacy, const double daily_mortality, const int start, const int duration) {
+            vector_control_efficacy = efficacy;
+            vector_control_daily_mortality = daily_mortality;
+            vector_control_start_day = start;
+            vector_control_end_day = start + duration; // efficacy is 0 on end day
+        }
+        double getVectorControlEfficacy() const { return vector_control_efficacy; }
+        double getCurrentVectorControlEfficacy(int time) const { return (time >= vector_control_start_day and time < vector_control_end_day) ? vector_control_efficacy : 0.0; }
+        double getCurrentVectorControlDailyMortality(int time) const { return (time >= vector_control_start_day and time < vector_control_end_day) ? vector_control_daily_mortality: 0.0; }
         void addInfectedMosquito() { _currentInfectedMosquitoes++; }
         void addInfectedMosquitoes(int n) { _currentInfectedMosquitoes += n; }
         void removeInfectedMosquito() { _currentInfectedMosquitoes--; }
@@ -51,9 +60,8 @@ class Location {
         static int _nNextSerial;                                      // unique ID to assign to the next Location allocated
         std::pair<double, double> _coord;                             // (x,y) coordinates for location
 
-        //bool vector_control_active = false;
-
-        float vector_control_effectiveness;
+        double vector_control_efficacy;                                // expected percentage reduction in mosquito pop at equillibrium
+        double vector_control_daily_mortality;                        // daily probability of mosquito death due to IRS at this location
         int vector_control_start_day;
         int vector_control_end_day;
 };
