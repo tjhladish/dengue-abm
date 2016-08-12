@@ -159,7 +159,7 @@ bool read_scenarios_from_database (string database_filename, map<string, Scenari
                                                << " and coverage = " << coverage
                                                << " and foi_target = " << beta_mult << ";";
     sqdb::Statement s = db.Query( select_ss.str().c_str() );
-
+cerr << select_ss.str() << endl;
     while (s.Next()) {
         const string seed = s.GetField(0);
         const int serial  = s.GetField(1);
@@ -208,6 +208,7 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
     vector<string> daily_filenames = glob(daily_dir + "/daily.*");
 
     cerr << "globbed " << daily_filenames.size() << " filenames\n";
+    cerr << "scenarios size: " << scenarios.size() << endl;
     #pragma omp parallel for num_threads(32) 
     for (unsigned int i = 0; i<daily_filenames.size(); ++i) {
         AgType ag;
@@ -244,14 +245,16 @@ void process_daily_files(map<string, Scenario*> scenarios, string daily_dir, str
             int serotype;
             int symptomatic;
             int severe;
+            //int ordinality; // not currently used
             while (iss) {
                 iss.getline(buffer,500);
                 line.clear();
                 string line_str(buffer);
                 replace(line_str.begin(), line_str.end(), ',', ' ');
                 line.str(line_str);
-//                           11832    32    69242   15     14685        1              2            0          0
-                if (line >> day >> year >> id >> age >> location >> vaccinated >> serotype >> symptomatic >> severe) {
+//                          11832  32      69242   15   14685       1             2           0              0
+                if (line >> day >> year >> id >> age >> location >> vaccinated >> serotype >> symptomatic >> severe >> ordinality) {
+                //if (line >> day >> year >> id >> age >> location >> vaccinated >> serotype >> symptomatic >> severe >> ordinality) {
                     if (year < BURNIN) continue;
                     //const int sero = serotype - 1;
                     const int y = year - BURNIN;
