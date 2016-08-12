@@ -20,23 +20,20 @@ const vector<double> mu =  {0.03109522, 0.03103087, 0.03095702, 0.03087250, 0.03
                             0.00105470, 0.00091950, 0.00080130, 0.00069780, 0.00159620, 0.0};
 
 double alpha_irs_expr (double rho_par, void *params) {
-    const double rho = 1.0 / (1.0 + exp(-rho_par));
-    //log(rho_par/(1.0-rho_par));
+    //const double rho = 1.0 / (1.0 + exp(-rho_par)); // logit transformation, for potentially more efficient search of par space
     double alpha_irs = *(double *) params;
 
     long double alpha_irs_guess = 1.0;
-    for (unsigned int k = 1; k < mu.size(); ++k) { // k in notation goes from 1..N, but C++ goes from 0..N-1, no?
+    for (unsigned int k = 1; k < mu.size(); ++k) {
         double partial = 1.0;
-        for (unsigned int j = 0; j < k; ++j) {       // I think indexing should match outer loop, but unsure
+        for (unsigned int j = 0; j < k; ++j) {
             partial *= 1.0 - mu[j];
         }
-        // alpha_irs ==: 1+\sum_{k=2}^{N}(1-rho)^{k-1}\prod_{j=1}^{j=k-1} (1-mu_j)
-        const long double alpha_part = pow((long double) 1.0 - rho, k) * partial;
+        //const long double alpha_part = pow((long double) 1.0 - rho, k) * partial;
+        const long double alpha_part = pow((long double) 1.0 - rho_par, k) * partial;
         alpha_irs_guess += alpha_part;
-        //cerr << k << "\t" << partial << "\t" << alpha_part << "\t" << alpha_irs_guess << endl; 
     }
-    //cerr << rho_par << "\t" << rho << " alpha_irs delta: " << alpha_irs_guess - alpha_irs << endl << endl;
-    cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
+    //cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
     return alpha_irs_guess - alpha_irs;
 }
 
@@ -46,10 +43,9 @@ int find_rho (double alpha_irs) {
     const gsl_root_fsolver_type *T;
     gsl_root_fsolver *s;
     double rho_par = 0;
-    double rho_lo = -15;
-    double rho_hi = 15;
-    //double rho_lo = numeric_limits<double>::min(), rho_hi = numeric_limits<double>::max();
-    //double rho_lo = 0.0, rho_hi = 1.0;
+    //double rho_lo = -5;
+    //double rho_hi = 5;
+    double rho_lo = 0.0, rho_hi = 1.0;
     gsl_function F;
 
     F.function = &alpha_irs_expr;
@@ -59,9 +55,9 @@ int find_rho (double alpha_irs) {
     s = gsl_root_fsolver_alloc (T);
     gsl_root_fsolver_set (s, &F, rho_lo, rho_hi);
 
-    printf ("using %s method\n", gsl_root_fsolver_name (s));
+    //printf ("using %s method\n", gsl_root_fsolver_name (s));
 
-    printf ("%5s [%9s, %9s] %9s %9s\n", "iter", "lower", "upper", "root", "err(est)");
+    //printf ("%5s [%9s, %9s] %9s %9s\n", "iter", "lower", "upper", "root", "err(est)");
 
     do {
         iter++;
@@ -73,8 +69,8 @@ int find_rho (double alpha_irs) {
 
         if (status == GSL_SUCCESS) { printf ("Converged:\n"); }
 
-        const double rho = 1.0 / (1.0 + exp(-rho_par));
-        printf ("%5d [%.7f, %.7f] %.7f %+.7f\n", iter, rho_lo, rho_hi, rho, rho_hi - rho_lo);
+     //   const double rho = 1.0 / (1.0 + exp(-rho_par));
+        printf ("%5d [%.7f, %.7f] %.7f %+.7f\n", iter, rho_lo, rho_hi, rho_par, rho_hi - rho_lo);
     } while (status == GSL_CONTINUE && iter < max_iter);
 
     gsl_root_fsolver_free (s);
@@ -106,7 +102,7 @@ int find_rho (double alpha_irs) {
 //    P(age == i)* = p_i*/P* =  (1-rho)^{i-1}\prod_{j=1}^{j=i-1}(1-mu_j) / \alpha*
 
 int main() {
-    const float efficacy = 0.97;
+    const float efficacy = 0.8;
     // calculate alpha
     double alpha = 1.0; // accounts for k == 0 term
     //cerr << mu.size() << endl;
@@ -129,6 +125,7 @@ int main() {
     }
     // calculate rho
     // alpha_irs ==: 1+\sum_{k=2}^{N}(1-rho)^{k-1}\prod_{j=1}^{j=k-1} (1-mu_j)
+    //for (unsigned int i = 0; i<100000; i++) find_rho(alpha_irs);
     find_rho(alpha_irs);
 
 }
