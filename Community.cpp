@@ -547,6 +547,36 @@ void Community::applyMosquitoMultiplier(double current) {
 }
 
 
+void Community::applyVectorControl() {
+    vector<Mosquito*> swap;
+    for (unsigned int day = 0; day < _exposedMosquitoQueue.size(); ++day) {
+        for (Mosquito* m: _exposedMosquitoQueue[day]) {
+            const float vc_rho = m->getLocation()->getCurrentVectorControlDailyMortality(_nDay);
+            if (vc_rho > 0 and gsl_rng_uniform(RNG) < vc_rho) {
+                delete m;
+            } else {
+                swap.push_back(m);
+            }
+        }
+        _exposedMosquitoQueue[day] = swap;
+        swap.clear();
+    }
+
+    for (unsigned int day = 0; day < _infectiousMosquitoQueue.size(); ++day) {
+        for (Mosquito* m: _infectiousMosquitoQueue[day]) {
+            const float vc_rho = m->getLocation()->getCurrentVectorControlDailyMortality(_nDay);
+            if (vc_rho > 0 and gsl_rng_uniform(RNG) < vc_rho) {
+                delete m;
+            } else {
+                swap.push_back(m);
+            }
+        }
+        _infectiousMosquitoQueue[day] = swap;
+        swap.clear();
+    }
+}
+
+
 int Community::getNumInfectiousMosquitoes() {
     int count = 0;
     for (unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
@@ -642,10 +672,6 @@ void Community::moveMosquito(Mosquito* m) {
             m->updateLocation(pLoc->getNeighbor(neighbor));
         }
     }
-
-    // apply vector control if the mosquito has stayed in, or moved to a location with active VC
-    const float vc_rho = m->getLocation()->getCurrentVectorControlDailyMortality(_nDay);
-    if (vc_rho > 0 and gsl_rng_uniform(RNG) < vc_rho) delete m;
 }
 
 
@@ -912,6 +938,7 @@ void Community::tick(int day) {
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
+    if (_par->vectorControlEvents.size() > 0) applyVectorControl();
     return;
 }
 

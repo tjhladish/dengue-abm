@@ -42,6 +42,7 @@ class Community {
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
         void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
         void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
+        void applyVectorControl();
         double getMosquitoMultiplier() const { return _fMosquitoCapacityMultiplier; }
 
         void setExpectedExtrinsicIncubation(double n) { _expectedEIP = n; _EIP_emu = exp(log(_expectedEIP) - (_EIP_sigma*_EIP_sigma)/2.0); }
