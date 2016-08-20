@@ -290,31 +290,26 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
     }
 }
 
-void update_vector_control(const Parameters* par, Community* community, const Date &date) {
-    if (not date.startOfYear()) return; // expected to be called once per simulation year, at beginning of sim year
+void schedule_vector_control(const Parameters* par, Community* community) {
     for (VectorControlEvent vce: par->vectorControlEvents) {
-        if (date.day() <= vce.campaignStart and date.day() + 365 > vce.campaignStart) { // is this a campaign scheduled to start this sim year?
-            const string loc_label = vce.locationType == 0 ? "houses" : vce.locationType == 1 ? "workplaces" : vce.locationType == 2 ? "schools" : "unknown location type";
-            if (not par->abcVerbose) cerr << "will start treating " << vce.coverage*100 << "% of " << loc_label << " on day " << vce.campaignStart << endl;
+        const string loc_label = vce.locationType == 0 ? "houses" : vce.locationType == 1 ? "workplaces" : vce.locationType == 2 ? "schools" : "unknown location type";
+        if (not par->abcVerbose) cerr << "will start treating " << vce.coverage*100 << "% of " << loc_label << " on day " << vce.campaignStart << endl;
 
-            double rho = par->calculate_daily_vector_control_mortality(vce.efficacy);
-
-            if (vce.strategy == UNIFORM_STRATEGY) {
-                for (Location* loc: community->getLocations() ) {
-                    if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
-                       // location will be treated
-                       const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
-                       loc->setVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
-                    }
+        double rho = par->calculate_daily_vector_control_mortality(vce.efficacy);
+        if (vce.strategy == UNIFORM_STRATEGY) {
+            for (Location* loc: community->getLocations() ) {
+                if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
+                   // location will be treated
+                   const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
+                   loc->scheduleVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
                 }
-            } else if (vce.strategy == MAX_MOSQUITOES_STRATEGY) {
-//                TODO - implement me
-                cerr << "ERROR: MAX_MOSQUITOES_STRATEGY is not yet implemented\n";
-                exit(-831);
-            } else {
-                cerr << "ERROR: Unsupported vector control strategy\n";
-                exit(-832);
             }
+        } else if (vce.strategy == MAX_MOSQUITOES_STRATEGY) { //  TODO - implement me
+            cerr << "ERROR: MAX_MOSQUITOES_STRATEGY is not yet implemented\n";
+            exit(-831);
+        } else {
+            cerr << "ERROR: Unsupported vector control strategy\n";
+            exit(-832);
         }
     }
 }
@@ -413,6 +408,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     int nextEIPindex = 0;
 
     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
+    schedule_vector_control(par, community);
     vector<string> daily_output_buffer;
 
     if (par->bSecondaryTransmission and not par->abcVerbose) {
@@ -424,7 +420,6 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date); 
-        if (date.startOfYear()) update_vector_control(par, community, date); // plan vector control for upcoming year
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 

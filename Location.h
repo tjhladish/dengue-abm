@@ -4,7 +4,23 @@
 #ifndef __LOCATION_H
 #define __LOCATION_H
 
+#include <queue>
+
 class Person;
+
+struct InsecticideTreatmentEvent {
+    InsecticideTreatmentEvent(double eff, double m, int s, int d) : efficacy(eff), daily_mortality(m), start_day(s), end_day(s+d) {};
+    double efficacy;
+    double daily_mortality;
+    int start_day;
+    int end_day; // efficacy is 0 on end day
+};
+
+
+inline bool operator<(const InsecticideTreatmentEvent& lhs, const InsecticideTreatmentEvent& rhs) {
+    return lhs.start_day > rhs.start_day;
+}
+
 
 class Location {
     public:
@@ -13,24 +29,31 @@ class Location {
         void setID(int id) { _ID = id; }
         int getID() const { return _ID; }
         int getSerial() const { return _serial; }
+        void setType(LocationType t) { _type = t; }
         LocationType getType() const { return _type; }
         void addPerson(Person *p, int t);
         bool removePerson(Person *p, int t);
-        int getNumPerson(TimePeriod timeofday) const { return _person[(int) timeofday].size(); } 
+        int getNumPerson(TimePeriod timeofday) const { return _person[(int) timeofday].size(); }
         std::vector<Person*> getResidents() { return _person[HOME_NIGHT]; }
         Person* findMom();                                            // Try to find a resident female of reproductive age
         void setBaseMosquitoCapacity(int capacity) { _nBaseMosquitoCapacity = capacity; }
+                                                                                      // not really killing of I and S mosquitoes in the same way . . .
         int getBaseMosquitoCapacity() const { return _nBaseMosquitoCapacity; }
         int getCurrentInfectedMosquitoes() const { return _currentInfectedMosquitoes; }
-        void setVectorControlEvent(const double efficacy, const double daily_mortality, const int start, const int duration) {
-            vector_control_efficacy = efficacy;
-            vector_control_daily_mortality = daily_mortality;
-            vector_control_start_day = start;
-            vector_control_end_day = start + duration; // efficacy is 0 on end day
+        void scheduleVectorControlEvent(const double efficacy, const double daily_mortality, const int start, const int duration) {
+            ITQ.emplace(efficacy, daily_mortality, start, duration);
         }
-        double getVectorControlEfficacy() const { return vector_control_efficacy; }
-        double getCurrentVectorControlEfficacy(int time) const { return (time >= vector_control_start_day and time < vector_control_end_day) ? vector_control_efficacy : 0.0; }
-        double getCurrentVectorControlDailyMortality(int time) const { return (time >= vector_control_start_day and time < vector_control_end_day) ? vector_control_daily_mortality: 0.0; }
+        const InsecticideTreatmentEvent* getCurrentVectorControl() const { return &ITQ.top(); }
+        void updateVectorControlQueue(int now) {
+            while (vectorControlScheduled() and (now >= ITQ.top().end_day)) ITQ.pop(); }
+        inline bool vectorControlScheduled() const { return (not ITQ.empty()); }
+        // vectorControlActive() assumes updateVectorControlQueue() has been called recently enough that the top element is not out-of-date
+        bool vectorControlActive(int now) const {
+            assert(ITQ.empty() or now < ITQ.top().end_day);
+            return (vectorControlScheduled() and (now >= ITQ.top().start_day) and (now < ITQ.top().end_day));
+        }
+        double getCurrentVectorControlEfficacy(int now) const { return vectorControlActive(now) ? ITQ.top().efficacy : 0.0; }
+        double getCurrentVectorControlDailyMortality(int now) const { return vectorControlActive(now) ? ITQ.top().daily_mortality : 0.0; }
         void addInfectedMosquito() { _currentInfectedMosquitoes++; }
         void addInfectedMosquitoes(int n) { _currentInfectedMosquitoes += n; }
         void removeInfectedMosquito() { _currentInfectedMosquitoes--; }
@@ -60,9 +83,6 @@ class Location {
         static int _nNextSerial;                                      // unique ID to assign to the next Location allocated
         std::pair<double, double> _coord;                             // (x,y) coordinates for location
 
-        double vector_control_efficacy;                                // expected percentage reduction in mosquito pop at equillibrium
-        double vector_control_daily_mortality;                        // daily probability of mosquito death due to IRS at this location
-        int vector_control_start_day;
-        int vector_control_end_day;
+        std::priority_queue<InsecticideTreatmentEvent> ITQ;           // insecticide treatment event priority queue
 };
 #endif

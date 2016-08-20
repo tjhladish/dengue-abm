@@ -294,7 +294,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     // End of hack
     char buffer[500];
     int locID;
-    string locType;
+    string locTypeStr;
     double locX, locY;
     istringstream line(buffer);
 
@@ -302,15 +302,22 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         iss.getline(buffer,500);
         line.clear();
         line.str(buffer);
-        if (line >> locID >> locType >> locX >> locY) {
+        if (line >> locID >> locTypeStr >> locX >> locY) {
             if (locID != (signed) _location.size()) {
                 cerr << "WARNING: Location ID's must be sequential integers" << endl;
+                return false;
+            }
+            const LocationType locType = (locTypeStr == "house") ? HOME : (locTypeStr == "work") ? WORK : (locTypeStr == "school") ? SCHOOL : NUM_OF_LOCATION_TYPES;
+            if (locType == NUM_OF_LOCATION_TYPES) {
+                cerr << "ERROR: Parsed unknown location type: " << locTypeStr << " from location file: " << locationFilename << endl;
                 return false;
             }
             Location* newLoc = new Location();
             newLoc->setID(locID);
             newLoc->setX(locX);
             newLoc->setY(locY);
+            newLoc->setType(locType);
+
             if (_par->eMosquitoDistribution==CONSTANT) {
                 // all houses have same number of mosquitoes
                 newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
@@ -548,6 +555,8 @@ void Community::applyMosquitoMultiplier(double current) {
 
 
 void Community::applyVectorControl() {
+    for (Location* loc: _location) loc->updateVectorControlQueue(_nDay); // make sure proper VC is active for tomorrow -- must be at end
+
     vector<Mosquito*> swap;
     for (unsigned int day = 0; day < _exposedMosquitoQueue.size(); ++day) {
         for (Mosquito* m: _exposedMosquitoQueue[day]) {
@@ -836,7 +845,7 @@ void Community::humanToMosquitoTransmission() {
                 sumserotype[i] /= sumviremic;
             }
             int locid = loc->getID();                   // location ID
-            int m = int(loc->getBaseMosquitoCapacity()*_fMosquitoCapacityMultiplier+0.5);  // number of mosquitoes
+            int m = int(loc->getBaseMosquitoCapacity() * (1.0-loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5);  // number of mosquitoes
             m -= loc->getCurrentInfectedMosquitoes(); // subtract off the number of already-infected mosquitos
             if (m<0) m=0; // more infected mosquitoes than the base capacity, presumable due to immigration
                                                                   // how many susceptible mosquitoes bite viremic hosts in this location?
@@ -930,6 +939,20 @@ void Community::_modelMosquitoMovement() {
 void Community::tick(int day) {
     _nDay = day;
     if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
+    if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
+    /*{
+    const Location* _l = _location[4];
+    cerr << "day " << day
+         << ", loc " << _l->getID()
+         << ", " << (int) _l->getType()
+         << ", base: " << _l->getBaseMosquitoCapacity()
+         << ", start: " << _l->getCurrentVectorControl()->start_day
+         << ", cur: " << (int)(_l->getBaseMosquitoCapacity() * (1.0-_l->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5)
+         << ", cur inf: " << _l->getCurrentInfectedMosquitoes()
+    //     << ", set eff: " << _l->getVectorControlEfficacy()
+         << ", cur eff: " << _l->getCurrentVectorControlEfficacy(_nDay)
+         << ", mortality: " << _l->getCurrentVectorControlDailyMortality(_nDay) << endl;
+    }*/
                                                                       // last day of simulator year
 
     updateDiseaseStatus();                                            // make people stay home or return to work
@@ -938,7 +961,6 @@ void Community::tick(int day) {
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
-    if (_par->vectorControlEvents.size() > 0) applyVectorControl();
     return;
 }
 
