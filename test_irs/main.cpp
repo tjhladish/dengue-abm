@@ -148,6 +148,7 @@ par->serotypePathogenicityRelativeRisks = vector<double>(NUM_OF_SEROTYPES, 1.0);
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
+    //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
@@ -353,12 +354,11 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     Community* community = build_community(par);
 
     if (vector_control) {
-        cerr << "planning vector control\n";
         const int efficacyDuration = 90;       // number of days efficacy is maintained
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
-        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-        for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+        //for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
             // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
             //const int startDate = (vec_cont_year*365) + (vc_timing - par->startDayOfYear)%365; // 151 days after Jan 1 is June 1, offset by julian startDay
             int startDate = 0;
@@ -367,7 +367,6 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
             } else {                                // start after Jan 1
                 startDate = (vec_cont_year+1)*365 + vc_timing - par->startDayOfYear;
             }
-            cerr << "start: " << startDate << endl;
             par->vectorControlEvents.emplace_back(startDate, vc_campaignDuration, vc_coverage, vc_efficacy, efficacyDuration, locType, lss);
         }
     }
