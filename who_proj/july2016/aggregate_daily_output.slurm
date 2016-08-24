@@ -15,5 +15,5 @@
 #SBATCH --array=0-69
 
 module load gcc/5.2.0 gsl
-scenario=`sed $PBS_ARRAYID'q;d' scenarios`
+scenario=`sed $SLURM_ARRAY_TASK_ID'q;d' scenarios`
 ./process_who who-80-rev-forecast-attempt2.sqlite /ufrc/longini/tjhladish/who-jul-2016 /ufrc/longini/tjhladish/who-jul-2016-aggregated $scenario
