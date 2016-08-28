@@ -22,8 +22,8 @@ const string HOME_DIR(std::getenv("HOME"));
 const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 
-const int RESTART_BURNIN    = 5;
-const int FORECAST_DURATION = 25;
+const int RESTART_BURNIN    = 25;
+const int FORECAST_DURATION = 26;
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const vector<float> SP9_TARGETS = {0.1, 0.3, 0.5, 0.7, 0.9};
@@ -148,6 +148,7 @@ par->serotypePathogenicityRelativeRisks = vector<double>(NUM_OF_SEROTYPES, 1.0);
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
+    //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
@@ -232,12 +233,12 @@ void prime_population(Community* community, const gsl_rng* RNG, double p_prime) 
 }
 
 
-vector<double> tally_counts(const Parameters* par, Community* community) {
+vector<double> tally_counts(const Parameters* par, Community* community, const int vc_timing) {
     //const int discard_days = 365*RESTART_BURNIN;
-    const int discard_days = 0;
+    const int discard_days = 365*(TOTAL_DURATION-31) + vc_timing; // aggregate based on the timing of the annual start of vector control
     vector< vector<int> > infected    = community->getNumNewlyInfected();
     //const int num_years = FORECAST_DURATION;
-    const int num_years = TOTAL_DURATION;
+    const int num_years = 30;
     vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
 
     vector<double> metrics(num_years, 0.0);
@@ -247,6 +248,7 @@ vector<double> tally_counts(const Parameters* par, Community* community) {
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
             i_tally[s][y] += infected[s][t];
         }
+        //cout << "d,i:" << t << "," << infected[0][t] + infected[1][t] + infected[2][t] + infected[3][t] << endl;
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = 0; y<num_years; ++y) {
@@ -352,14 +354,19 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     Community* community = build_community(par);
 
     if (vector_control) {
-        cerr << "planning vector control\n";
         const int efficacyDuration = 90;       // number of days efficacy is maintained
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
-        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-        for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-            // TODO - address situation where startDate could be negative if startDayOfYear is large
-            const int startDate = (vec_cont_year*365) + vc_timing - par->startDayOfYear; // 151 days after Jan 1 is June 1, offset by julian startDay
+        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+        //for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+            // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
+            //const int startDate = (vec_cont_year*365) + (vc_timing - par->startDayOfYear)%365; // 151 days after Jan 1 is June 1, offset by julian startDay
+            int startDate = 0;
+            if (vc_timing >= par->startDayOfYear) { // start before Jan 1
+                startDate = vec_cont_year*365 + vc_timing - par->startDayOfYear; // 151 days after Jan 1 is June 1, offset by julian startDay
+            } else {                                // start after Jan 1
+                startDate = (vec_cont_year+1)*365 + vc_timing - par->startDayOfYear;
+            }
             par->vectorControlEvents.emplace_back(startDate, vc_campaignDuration, vc_coverage, vc_efficacy, efficacyDuration, locType, lss);
         }
     }
@@ -416,7 +423,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time (&end);
     double dif = difftime (end,start);
 
-    vector<double> metrics = tally_counts(par, community);
+    vector<double> metrics = tally_counts(par, community, vc_timing);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

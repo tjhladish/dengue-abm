@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 800,
+    "num_samples"    : 7400,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "irs_test.sqlite",
+    "database_filename"             : "irs_timing-1_vs_90_day_campaign.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
@@ -67,7 +67,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
 
         {"name"       : "vac_mech",
          "dist_type"  : "PSEUDO",
@@ -79,7 +79,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
         
         {"name"       : "target",
          "dist_type"  : "PSEUDO",
@@ -103,32 +103,35 @@
         {"name"       : "vector_control",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "campaign_duration",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 30,
-         "par2"       : 30},
+         "par1"       : 1,
+         "par2"       : 1,
+         "step"       : 0},
 
         {"name"       : "timing",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 152,
-         "par2"       : 152},
+         "par1"       : 0,
+         "par2"       : 365,
+         "step"       : 5},
 
         {"name"       : "vc_coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 0.25,
-         "par2"       : 0.25},
+         "par1"       : 1.0,
+         "par2"       : 1.0,
+         "step"       : 0},
 
         {"name"       : "vc_efficacy",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 0.8,
-         "par2"       : 0.8}
+         "par1"       : 0.9,
+         "par2"       : 0.9}
     ],
 
     "metrics" : [

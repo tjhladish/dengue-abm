@@ -23,10 +23,7 @@ Location::Location()
     _nBaseMosquitoCapacity = 0;
     _currentInfectedMosquitoes = 0;
     _coord = make_pair(0.0, 0.0);
-    vector_control_efficacy = 0.0;
-    vector_control_daily_mortality = 0.0;
-    vector_control_start_day = -1;
-    vector_control_end_day = -1;
+    _type = NUM_OF_LOCATION_TYPES; // compileable, but not sensible value, because it must be set elsewhere
 }
 
 
