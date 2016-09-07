@@ -11,19 +11,19 @@ dbpath <- ifelse(is.na(args[1]), "~/Dropbox", args[1])
 
 cat("dropbox path\n", dbpath,"\n")
 
-bgfiles <- list.files(pattern = "^[0-4]0+\\.")
+bgfiles <- list.files(pattern = "^[0-4](_0)+_9(_0)+\\.")
 
 if(length(bgfiles) == 0) stop("no source files in ", getwd())
 
 translate_scenario <- function(dt) { # assumes transmission already separated
   ky <- key(dt)
-  dt[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
-  dt[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-  dt[substr(scenario,1,1) == "1", scen := "catchUp"]
-  dt[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-  dt[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-  dt[substr(scenario,4,4) == "1", scen := "routineAT16"]
-  dt[substr(scenario,3,3) == "0", scen := "noVaccine"]
+  dt[grepl("_0$", scenario), scen := "coverageAT50%"]
+  dt[grepl("^(0|1)_1", scenario), scen := "altVaccine" ]
+  dt[grepl("^1_", scenario), scen := "catchUp"]
+  dt[grepl("1_(0|1)$", scenario), scen := paste0(scen,"To30")]
+  dt[grepl("0_0_1_9_0_1",scenario), scen := "reference"]
+  dt[grepl("((0|1)_){3}[^9]+(_(0|1)){2}",scenario), scen := gsub("(_(1|0))+$","",gsub("^((1|0)_)+", "routineAT", scenario))]
+  dt[grepl("^((0|1)_){2}0", scenario), scen := "noVaccine"]
   setkeyv(subset(dt[, scenario:=scen ], select=-scen), ky)
 }
 
@@ -55,7 +55,7 @@ ref <- dcast.data.table(melt(
 )[outcome != 0][,
   year := as.integer(gsub("y", "", year))
 ][,
-  particle_id := floor(serial/80)
+  particle_id := floor(serial/800)
 ][,
   outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
 ], particle_id + scenario + age + year ~ outcome, value.var = "count")

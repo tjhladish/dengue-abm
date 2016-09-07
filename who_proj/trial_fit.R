@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+args <- c("~/Downloads/who_revision_data2/who-80-rev-forecast-attempt2.sqlite")
 ## read in sim outputs
 ## out format: Groups Trial    Description    Arm       Strata        mean       lower       upper
 

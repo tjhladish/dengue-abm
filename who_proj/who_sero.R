@@ -25,31 +25,31 @@ cat("dropbox path: ", dbpath,"\n")
 #   )
 # ]
 
-seroscn <- setkey(subset(fread("seroscenarios.csv"), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
+seroscn <- setkey(subset(fread("../seroscenarios.csv"), select=c(V1, V9, V10, V11, V12, V13, V14, V15))[,
   unique(V1), keyby=list(V9,V10,V11,V12,V13,V14,V15)
 ][, transmission_setting := seq(10,90,by=20)[V9+1] ][,
-  scenario := paste0(V10, V11, V12, V13, V14, V15)
+  scenario := paste(V10, V11, V12, V13, V14, V15, sep="_")
 ][,
   list(seed=unique(V1)), keyby=list(transmission_setting, scenario)
 ], seed)
 
 translate_scenario <- function(dt) { # assumes transmission already separated
   ky <- key(dt)
-  dt[substr(scenario,6,6) == "0", scen := "coverageAT50"]
-  dt[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-  dt[substr(scenario,1,1) == "1", scen := "catchUp"]
-  dt[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-  dt[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-  dt[substr(scenario,4,4) == "1", scen := "routineAT16"]
-  dt[substr(scenario,3,3) == "0", scen := "noVaccine"]
+  dt[grepl("_0$", scenario), scen := "coverageAT50%"]
+  dt[grepl("^(0|1)_1", scenario), scen := "altVaccine" ]
+  dt[grepl("^1_", scenario), scen := "catchUp"]
+  dt[grepl("1_(0|1)$", scenario), scen := paste0(scen,"To30")]
+  dt[grepl("0_0_1_9_0_1",scenario), scen := "reference"]
+  dt[grepl("((0|1)_){3}[^9]+(_(0|1)){2}",scenario), scen := gsub("(_(1|0))+$","",gsub("^((1|0)_)+", "routineAT", scenario))]
+  dt[grepl("^((0|1)_){2}0", scenario), scen := "noVaccine"]
   setkeyv(subset(dt[, scenario:=scen ], select=-scen), ky)
 }
 
 translate_scenario(seroscn)
 
-serosrv <- setkey(fread("seroprevalence.csv")[,
+serosrv <- setkey(fread("../seroprevalence.csv")[,
   list(seed=unique(seed)), keyby=list(year, vax_age, seropositive, pop)
-][, year := year-50 ], seed, year)
+][, year := year-80 ], seed, year)
 
 preseroresults <- setnames(subset(serosrv[seroscn], select=-c(scen,seed)), "vax_age", "age")
 setkey(preseroresults, age, scenario, transmission_setting, year)
@@ -62,12 +62,12 @@ seroresults <- preseroresults[,{
   keyby=list(scenario, transmission_setting, year, age)
 ]
 
-seroresults[, age := paste0(age, "yo") ][, outcome := "seropositive" ][, group:="UF" ][, outcome_denominator:="proportion" ]
+seroresults[, age := paste0(age, "yrs") ][, outcome := "seropositive" ][, group:="UF" ][, outcome_denominator:="proportion" ]
 
-saveRDS(seroresults[age=="9yo"],paste0(dbpath, "/CMDVI/Phase II analysis/Data/UF-Longini/longini-serostatus.rds"))
+saveRDS(seroresults[age=="9yrs"],paste0(dbpath, "/CMDVI/Phase II analysis/Data/UF-Longini/longini-serostatus.rds"))
 
 agesero <- setkey(
-  setnames(fread("seroneg_w_foi.sorted"), c("seed","age","seroneg","foi")),
+  setnames(fread("../seroneg_w_foi.sorted"), c("seed","age","seroneg","foi")),
   seed, age
 )
 

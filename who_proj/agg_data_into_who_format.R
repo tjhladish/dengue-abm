@@ -29,13 +29,13 @@ require(parallel)
 
 translate_scenario <- function(dt) { # assumes transmission already separated
   ky <- key(dt)
-  dt[substr(scenario,6,6) == "0", scen := "coverageAT50%"]
-  dt[substr(scenario,2,2) == "1", scen := "altVaccine" ]
-  dt[substr(scenario,1,1) == "1", scen := "catchUp"]
-  dt[substr(scenario,5,5) == "1", scen := paste0(scen,"To30")]
-  dt[grepl("^0{2}10{2}1",scenario), scen := "reference"]
-  dt[substr(scenario,4,4) == "1", scen := "routineAT16"]
-  dt[substr(scenario,3,3) == "0", scen := "noVaccine"]
+  dt[grepl("_0$", scenario), scen := "coverageAT50%"]
+  dt[grepl("^(0|1)_1", scenario), scen := "altVaccine" ]
+  dt[grepl("^1_", scenario), scen := "catchUp"]
+  dt[grepl("1_(0|1)$", scenario), scen := paste0(scen,"To30")]
+  dt[grepl("0_0_1_9_0_1",scenario), scen := "reference"]
+  dt[grepl("((0|1)_){3}[^9]+(_(0|1)){2}",scenario), scen := gsub("(_(1|0))+$","",gsub("^((1|0)_)+", "routineAT", scenario))]
+  dt[grepl("^((0|1)_){2}0", scenario), scen := "noVaccine"]
   setkeyv(subset(dt[, scenario:=scen ], select=-scen), ky)
 }
 
@@ -82,7 +82,7 @@ src <- subset(merge(
     outcome := factor(c("infection","mild","severe")[outcome+1], levels=c("infection","mild","severe"), ordered = T)
   ], serial + scenario + age + year ~ outcome, value.var = "count"
 ), pop, by = "age"), select=-age_category)[,
-    particle_id := floor(serial/80)
+    particle_id := floor(serial/800)
   ][,
     `:=`(
       infections = infection + mild + severe,
@@ -94,11 +94,14 @@ src <- subset(merge(
   ][,
     `:=`(
       transmission_setting = seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1],
-      scenario = substr(scenario,2,7)
+      scenario = substr(scenario,3,nchar(scenario))
     )
   ]
 
 translate_scenario(src)
+
+saveRDS(src, paste0(dbpath,"/CMDVI/Phase II analysis/Data/UF-Longini/longini-preanalysis.rds"))
+
 slc <- function(dt, ...) dt[...,
   list(infections, symptomatic_cases, hospitalised_cases, deaths),
   keyby=list(age, year, pop, particle_id, transmission_setting, scenario)
@@ -179,25 +182,25 @@ stop()
 
 rm(list=ls())
 
-cbPalette <- c("Hopkins/UF"="#999999",
-               "Imperial"="#E69F00",
-               "Duke"="#56B4E9",
-               "Notre Dame"="#009E73",
-               "UF"="#F0E442",
-               "Exeter/Oxford"="#0072B2",
-               "Sanofi Pasteur"="#D55E00",
-               "UWA"="#CC79A7",
-               "A"="white",
-               "Longini-ODE"="black"); 
-
-noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
+# cbPalette <- c("Hopkins/UF"="#999999",
+#                "Imperial"="#E69F00",
+#                "Duke"="#56B4E9",
+#                "Notre Dame"="#009E73",
+#                "UF"="#F0E442",
+#                "Exeter/Oxford"="#0072B2",
+#                "Sanofi Pasteur"="#D55E00",
+#                "UWA"="#CC79A7",
+#                "A"="white",
+#                "Longini-ODE"="black"); 
+# 
+# noGroup_cbPalette <- c("#999999","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","black")
 
 df=.res
 
 #vaccine impact
 
-for (my_year in c("cum10","cum30")){
-  for (my_outcome_denominator in c("proportion averted","per 100,000 pop at risk")){
+for (my_year in c("cum30")){
+  for (my_outcome_denominator in c("per 100,000 pop at risk")){
     
     df_tmp=subset(df, (age %in% c("overall", "<9yrs", "9-18yrs", "19+yrs")) & year==my_year &  
                     outcome_denominator==my_outcome_denominator)
@@ -211,7 +214,8 @@ for (my_year in c("cum10","cum30")){
       ylab(my_outcome_denominator) +
       theme_bw() + ggtitle(my_year) +
       theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
-      scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette) + ggtitle(my_year)
+      #scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette) +
+      ggtitle(my_year)
     
     if(my_outcome_denominator=="proportion averted") p <- p+ coord_cartesian( ylim =c(-0.5,0.5))
     
@@ -221,15 +225,17 @@ for (my_year in c("cum10","cum30")){
   
 }
 
-df_tmp=subset(df, (age == "overall") & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% as.character(1:30))
+df_tmp=subset(df, (age == "overall") & (outcome_denominator=="cumulative - per 100,000 pop at risk") & year %in% as.character(1:30) & !(scenario %in% c("catchUp","catchUpTo30","coverageAT50%")))
 df_tmp$year=as.numeric((as.character(df_tmp$year)))
-
-p=ggplot(df_tmp, aes(x= year, y=value, ymin=CI_low, ymax=CI_high, fill=scenario, color=scenario, group=scenario)) +
+df_tmp$routineAge = as.numeric(gsub("reference","9",gsub("routineAT", "", df_tmp$scenario)))
+df_tmp$outcome <- gsub("_[^_]+","",df_tmp$outcome)
+df_tmp[outcome == "symptomatic", outcome := "cases" ]
+p=ggplot(df_tmp[outcome %in% c("cases","infections")], aes(x= year, y=value, ymin=CI_low, ymax=CI_high, color=routineAge, group=routineAge)) +
   geom_line() +
-  geom_ribbon(alpha=0.05, color=NA) +
+  #geom_ribbon(alpha=0.05, color=NA) +
   facet_grid(outcome~transmission_setting, scale="free_y") +
   xlab("time after introduction of CYD (years)") +
-  ylab("cumulative - per 100,000 pop at risk") +
-  theme_bw() +
-  scale_fill_manual(values=noGroup_cbPalette) + scale_color_manual(values=noGroup_cbPalette)
+  ylab("cumulative averted - per 100,000 pop at risk") +
+  theme_bw() + scale_color_gradientn(colors=rainbow(5))
+ggsave("~/Desktop/plot.png", plot=p, width=9, height=7, dpi=300, units='in')
 print(p)
