@@ -1,9 +1,14 @@
 ## economics calcs
 
-tar <- "~/Downloads/who-feb-2016/who-feb-2016-aggregated/"
-setwd(tar)
-
 rm(list=ls(all.names = T))
+
+args <- commandArgs(trailingOnly = TRUE)
+
+tar <- args[1] # "~/Downloads/who_revision_data2/who-jul-2016-aggregated/"
+poppath <- args[2] # "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt"
+lftables <- args[3] # "~/Downloads/lifeTablesMX.Rdata"
+
+setwd(tar)
 
 econ.para.bra=list(
   c=list(
@@ -98,8 +103,9 @@ discounts=c(list(T,T,T,F,F),rep(T,length(econ.scenarios)-5))
 require(reshape2)
 require(data.table)
 require(parallel)
+require(bit64)
 
-poppath <- "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt" # needs to be merida instead
+load(lftables)
 age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
 
 rr_severity_sec_vs_pri = 20
@@ -167,7 +173,7 @@ econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
 
 econdata <- subset(econdata, select=-c(mild, severe, symptomatic, scenario, serial))
 
-load("~/Downloads/lifeTablesMX.Rdata")
+
 ## from https://en.wikipedia.org/wiki/Demographics_of_Mexico 28 Jan 2016
 # At birth	1.04 male(s)/female
 # Under 15	1.05 male(s)/female
@@ -333,6 +339,8 @@ joins <- function(base, ref, noVac, region, typ, eco, cost.vec, daly.vec, discou
     `:=`(reg = region, cost = typ, ecoscn = eco)
   ]
 }
+
+# browser()
 
 allres <- rbindlist(mapply(
   fun,
