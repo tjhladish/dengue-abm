@@ -7,7 +7,7 @@ args <- commandArgs(trailingOnly = TRUE)
 tar <- args[1] # "~/Downloads/who_revision_data2/who-jul-2016-aggregated/"
 poppath <- args[2] # "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt"
 lftables <- args[3] # "~/Downloads/lifeTablesMX.Rdata"
-
+dbpath <- args[4] # "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds"
 setwd(tar)
 
 econ.para.bra=list(
@@ -380,7 +380,7 @@ econres <- rbind(
 
 setcolorder(econres, c("transmission_setting","scenario","year","outcome","age","value","CI_low","CI_high","outcome_denominator","group"))
 
-saveRDS(econres,"~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds")
+saveRDS(econres, dbpath)
 
 stop("run script in rstudio if you want to pick out plots")
 
