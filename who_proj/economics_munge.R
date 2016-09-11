@@ -3,7 +3,7 @@
 rm(list=ls(all.names = T))
 
 args <- commandArgs(trailingOnly = TRUE)
-
+# args <- c("~/Downloads/who_revision_data2/who-jul-2016-aggregated/", "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt", "~/Downloads/lifeTablesMX.Rdata", "~/Dropbox/CMDVI/Phase II analysis/Data/UF-Longini/longini-econ.rds")
 tar <- args[1] # "~/Downloads/who_revision_data2/who-jul-2016-aggregated/"
 poppath <- args[2] # "/Volumes/Data/workspaces/dengue/pop-merida/pop-merida/population-merida.txt"
 lftables <- args[3] # "~/Downloads/lifeTablesMX.Rdata"
@@ -106,6 +106,7 @@ require(parallel)
 require(bit64)
 
 load(lftables)
+
 age_cats <- c("<9yrs","9-18yrs","19+yrs","overall")
 
 rr_severity_sec_vs_pri = 20
@@ -139,7 +140,7 @@ econdata <- subset(merge(
     outcome := factor(c("mild","severe")[outcome], levels=c("mild","severe"), ordered = T)
   ], serial + scenario + age + year ~ outcome, value.var = "count"
 ), pop, by = "age"), select=-age_category)[,
-   particle_id := floor(serial/80)
+   particle_id := floor(serial/800)
  ][,
    symptomatic := round(mild*(1-phc))
  ][,
@@ -151,27 +152,68 @@ econdata <- subset(merge(
  ][,
    transmission_setting := seq(10,90,20)[as.integer(substr(scenario, 1, 1))+1]
  ][,
-   vacc_coverage := ifelse(substr(scenario,4,4) == 0, 0, ifelse(substr(scenario,7,7) == 0, .5, .8))
+   scenario := substr(scenario, 3, nchar(scenario)) 
  ]
 
-econdata[vacc_coverage == 0.0, scen := "noVaccine"]
-econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
-econdata[substr(scenario,3,3) == "1", scen := "altVaccine" ]
-econdata[substr(scenario,2,2) == "1", scen := "catchUp"]
-econdata[substr(scenario,6,6) == "1", scen := paste0(scen,"To30")]
-econdata[grepl("^[0-4]0{2}10{2}1",scenario), scen := "reference"]
-econdata[substr(scenario,5,5) == "1", scen := "routineAT16"]
+# only want (1) reference and (2) no vaccine scenarios
+econdata <- econdata[
+  grepl("^((0|1)_){2}0", scenario) | grepl("0_0_1_9_0_1",scenario) | grepl("_0$", scenario) | grepl("^1_", scenario)
+]
+econdata[, scen := "noVaccine"]
+econdata[scenario == "0_0_1_9_0_1", scen := "reference"]
+econdata[grepl("_0$", scenario), scen := "coverageAT50%"]
+econdata[grepl("^1_", scenario), scen := "catchUp"]
+
+econdata[, scen := factor(scen) ]
+
+econdata[, vacc_coverage := 0]
+econdata[scen %in% c("reference","catchUp"), vacc_coverage := .8 ]
+econdata[scen == "coverageAT50%", vacc_coverage := .5 ]
 
 econdata[, vac := 0]
 econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
 econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
-econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
+#econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
+#econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
+
+# translate_scenario <- function(dt) { # assumes transmission already separated
+#   ky <- key(dt)
+#   dt[grepl("_0$", scenario), scen := "coverageAT50%"]
+#   dt[grepl("^(0|1)_1", scenario), scen := "altVaccine" ]
+#   dt[grepl("^1_", scenario), scen := "catchUp"]
+#   dt[grepl("1_(0|1)$", scenario), scen := paste0(scen,"To30")]
+#   dt[grepl("0_0_1_9_0_1",scenario), scen := "reference"]
+#   dt[grepl("((0|1)_){3}[^9]+(_(0|1)){2}",scenario), scen := gsub("(_(1|0))+$","",gsub("^((1|0)_)+", "routineAT", scenario))]
+#   dt[grepl("^((0|1)_){2}0", scenario), scen := "noVaccine"]
+#   setkeyv(subset(dt[, scenario:=scen ], select=-scen), ky)
+# }
+
+
+
+# econdata[vacc_coverage == 0.0, scen := "noVaccine"]
+# econdata[vacc_coverage == 0.5, scen := "coverageAT50%"]
+# econdata[substr(scenario,3,3) == "1", scen := "altVaccine" ]
+# econdata[substr(scenario,2,2) == "1", scen := "catchUp"]
+# econdata[substr(scenario,6,6) == "1", scen := paste0(scen,"To30")]
+# econdata[grepl("^[0-4]0{2}10{2}1",scenario), scen := "reference"]
+# econdata[substr(scenario,5,5) == "1", scen := "routineAT16"]
+
+# econdata[, vac := 0]
+# econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
+# econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
+# econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
+# econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
 
 # econfinal <- subset(econdata, select=c(particle_id, scen, transmission_setting, year, age, vac, amb, hosp, death))
 # setkey(econfinal, particle_id, scen, transmission_setting, year, age)
 
 econdata <- subset(econdata, select=-c(mild, severe, symptomatic, scenario, serial))
+setkey(econdata, particle_id, scen, transmission_setting, year, age)
+
+thresholds=(0:5)*2000  #threshold for cost-effectiveness
+# need one of these
+econfinalBRA <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
+setkeyv(econfinalBRA, c("thresh", key(econdata)))
 
 
 ## from https://en.wikipedia.org/wiki/Demographics_of_Mexico 28 Jan 2016
@@ -220,7 +262,7 @@ require(dplyr)
 disc.cost = 0.03	#discount rate for costs
 disc.daly = 0.03	#discount rate for dalys
 persp = 0			#perspective 0=health care provider, 1=society
-thresholds=(0:5)*2000  #threshold for cost-effectiveness
+
 
 
 
@@ -257,28 +299,25 @@ disc.daly.vec = 1/rep(disc.daly+1, year.max+1)^(0:year.max)
 nodisc = rep(1, length(disc.cost.vec))
 
 precomputeCost <- function(tardt, costsrc, wh="c") with(c(costsrc[[wh]], costsrc$d), {
-  tardt[,`:=`(
-    n.vac = vac,
-    cost.vac = vac * cvac,
-    cost.treat = (amb*camb + hosp*chosp + death*cdeath),
-    daly.vac = vac * d.vac,
-    daly.treat = (amb*d.amb + hosp*d.hosp),
-    daly.death = death*dm.death
-  )]
+  tardt[,list(
+      n.vac = vac,
+      cost.vac = vac * cvac,
+      cost.treat = (amb*camb + hosp*chosp + death*cdeath),
+      daly.vac = vac * d.vac,
+      daly.treat = (amb*d.amb + hosp*d.hosp),
+      daly.death = death*dm.death
+    ),
+    keyby=list(thresh, transmission_setting, particle_id, age, year, scen)
+  ]
 })
 
 slice <- function(base) base[,list(n.vac, cost.vac, cost.treat, daly.vac, daly.treat, daly.death), keyby=list(thresh, transmission_setting, particle_id, age, year, scen)]
 extract_ref <- function(dt, wh) subset(dt[scen == wh], select=-scen)
 
-# for each of these...
-
-# need one of these
-econfinalBRA <- econdata[econdata[,list(thresh=thresholds),keyby=key(econdata)], allow.cart=T]
-setkeyv(econfinalBRA, c("thresh", key(econdata)))
-
 fun <- function(para, basis, reg, discounting, scen.name) {
   init <- copy(econfinalBRA)
-  cont <- slice(precomputeCost(init, para, basis))
+  cont <- precomputeCost(init, para, basis)
+#  browser()
   refed <- extract_ref(cont, "reference")
   novaced <- extract_ref(cont, "noVaccine")
   
