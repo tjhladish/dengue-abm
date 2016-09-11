@@ -159,10 +159,11 @@ econdata <- subset(merge(
 econdata <- econdata[
   grepl("^((0|1)_){2}0", scenario) | grepl("0_0_1_9_0_1",scenario) | grepl("_0$", scenario) | grepl("^1_", scenario)
 ]
-econdata[, scen := "noVaccine"]
-econdata[scenario == "0_0_1_9_0_1", scen := "reference"]
 econdata[grepl("_0$", scenario), scen := "coverageAT50%"]
+econdata[grepl("^((0|1)_){2}0", scenario), scen := "noVaccine"]
+econdata[scenario == "0_0_1_9_0_1", scen := "reference"]
 econdata[grepl("^1_", scenario), scen := "catchUp"]
+econdata<-econdata[!grepl("1_(0|1)$", scenario)]
 
 econdata[, scen := factor(scen) ]
 
@@ -171,7 +172,7 @@ econdata[scen %in% c("reference","catchUp"), vacc_coverage := .8 ]
 econdata[scen == "coverageAT50%", vacc_coverage := .5 ]
 
 econdata[, vac := 0]
-econdata[age==9 & scen != "routineAT16", vac := round(vacc_coverage*pop)]
+econdata[age==9, vac := round(vacc_coverage*pop)]
 econdata[age %in% (10:17) & scen == "catchUp" & year == 0, vac := round(vacc_coverage*pop)]
 #econdata[age %in% (10:30) & scen == "catchUpTo30" & year == 0, vac := round(vacc_coverage*pop)]
 #econdata[age==16 & scen == "routineAT16", vac := round(vacc_coverage*pop)]
@@ -314,17 +315,24 @@ precomputeCost <- function(tardt, costsrc, wh="c") with(c(costsrc[[wh]], costsrc
 slice <- function(base) base[,list(n.vac, cost.vac, cost.treat, daly.vac, daly.treat, daly.death), keyby=list(thresh, transmission_setting, particle_id, age, year, scen)]
 extract_ref <- function(dt, wh) subset(dt[scen == wh], select=-scen)
 
-fun <- function(para, basis, reg, discounting, scen.name) {
-  init <- copy(econfinalBRA)
-  cont <- precomputeCost(init, para, basis)
-#  browser()
-  refed <- extract_ref(cont, "reference")
-  novaced <- extract_ref(cont, "noVaccine")
-  
-  joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"), scen.name,
-        disc.cost.vec, if (discounting) nodisc else disc.daly.vec,
-        discounting
-  )
+combs <- expand.grid(
+  thr = unique(econfinalBRA$thresh),
+  setn= unique(econfinalBRA$transmission_setting)
+)
+
+fun <- function(para, basis, reg, discounting, scen.name, verbose=F) {
+  rbindlist(mapply(function(thr, setn){
+    vw <- copy(econfinalBRA[thresh==thr & transmission_setting == setn])
+    cont <- precomputeCost(vw, para, basis)
+    refed <- extract_ref(cont, "reference")
+    novaced <- extract_ref(cont, "noVaccine")
+    ret <- joins(cont, refed, novaced, reg, ifelse(basis=="c","ind","soc"), scen.name,
+          disc.cost.vec, if (discounting) nodisc else disc.daly.vec,
+          discounting
+    )
+    if (verbose) cat("completed",thr,setn,"\n")
+    ret
+  }, combs$thr, combs$setn, SIMPLIFY = F))
 }
 
 calc <- function(.SD, cst.disc, d.disc, thresh) with(.SD, {
@@ -372,8 +380,8 @@ base[...][ref][,
 
 joins <- function(base, ref, noVac, region, typ, eco, cost.vec, daly.vec, discounting) {
   rbind(
-    agg(base, ref, cost.vec, daly.vec, scen %in% c("catchUp","catchupTo30")),
-    agg(base, noVac, cost.vec, daly.vec, !(scen %in% c("catchUp","catchupTo30","noVaccine")))
+    agg(base, ref, cost.vec, daly.vec, scen %in% c("catchUp")),
+    agg(base, noVac, cost.vec, daly.vec, !(scen %in% c("catchUp","noVaccine")))
   )[,
     `:=`(reg = region, cost = typ, ecoscn = eco)
   ]
@@ -388,6 +396,7 @@ allres <- rbindlist(mapply(
   reg=regs,
   discounting=discounts,
   scen.name = names(econ.scenarios)
+  ,MoreArgs = list(verbose=T)
 )
 #   joins(econfinalBRAInd, econfinalBRAIndref, econfinalBRAIndnoVac, "BRA", "ind"),
 #   joins(econfinalBRASoc, econfinalBRASocref, econfinalBRASocnoVac, "BRA", "soc"),
