@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 12000,
+    "num_samples"    : 4,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "vec-halt.sqlite",
+    "database_filename"             : "vec-halt-test.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
@@ -66,8 +66,8 @@
         {"name"       : "catchup",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
-         "par2"       : 0},
+         "par1"       : 1,
+         "par2"       : 1},
 
         {"name"       : "vac_mech",
          "dist_type"  : "PSEUDO",
@@ -79,7 +79,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 0},
+         "par2"       : 1},
         
         {"name"       : "target",
          "dist_type"  : "PSEUDO",
@@ -123,9 +123,9 @@
         {"name"       : "vc_coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 0.25,
+         "par1"       : 0.75,
          "par2"       : 0.75,
-         "step"       : 0.25},
+         "step"       : 0},
 
         {"name"       : "vc_efficacy",
          "dist_type"  : "PSEUDO",
@@ -137,8 +137,8 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
          "par1"       : 10,
-         "par2"       : 30,
-         "step"       : 20}
+         "par2"       : 10,
+         "step"       : 0}
     ],
 
     "metrics" : [

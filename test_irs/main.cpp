@@ -17,12 +17,12 @@ using dengue::util::max_element;
 time_t GLOBAL_START_TIME;
 
 string calculate_process_id(vector<double> &args, string &argstring);
-const string SIM_POP = "merida";
+const string SIM_POP = "yucatan";
 const string HOME_DIR(std::getenv("HOME"));
 const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 
-const int RESTART_BURNIN    = 25;
+const int RESTART_BURNIN    = 5;
 const int FORECAST_DURATION = 25;
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
@@ -147,8 +147,8 @@ par->serotypePathogenicityRelativeRisks = vector<double>(NUM_OF_SEROTYPES, 1.0);
     par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
-    par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
-    //par->immunityFilename         = "";
+    //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
+    par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
@@ -342,17 +342,18 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const int vc_campaignDuration = (int) args[15]; // number of days to achieve coverage
     const int vc_timing           = (int) args[16]; 
     const double vc_coverage      = args[17];
-    const double vc_efficacy       = args[18];       // expected % reduction in equillibrium mosquito population in treated houses
+    const double vc_efficacy      = args[18];       // expected % reduction in equillibrium mosquito population in treated houses
+    const int vc_years            = args[19];       // number of years to do vector control (e.g. to test effects of stopping)
 
     bool nonsensical_parameters = false;
     // only run a non-vaccination campaign if all the vaccine parameters are 0
     // TODO - this should be reworked with new "catchup-to" parameter
     if (not vaccine and catchup) { nonsensical_parameters = true; }
-    if (nonsensical_parameters) {
+/*    if (nonsensical_parameters) {
         vector<double> dummy(FORECAST_DURATION + 1, 0.0);
         delete par;
         return dummy;
-    }
+    }*/
 
     Community* community = build_community(par);
 
@@ -360,8 +361,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         const int efficacyDuration = 90;       // number of days efficacy is maintained
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
-        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-        //for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
+        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
             // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
             //const int startDate = (vec_cont_year*365) + (vc_timing - par->startDayOfYear)%365; // 151 days after Jan 1 is June 1, offset by julian startDay
             int startDate = 0;
@@ -412,10 +413,10 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         exit(-152);
     }
 
-    //const double AR   = 1.0 - pow(1.0 - SP9_TARGETS[(int) args[7]], 1.0/9.0); // Overall target attack rate
-    //const double AR_S = 1.0 - pow(1.0 - AR, 1.0/4.0);         // Per-serotype target AR
+    const double AR   = 1.0 - pow(1.0 - SP9_TARGETS[(int) args[7]], 1.0/9.0); // Overall target attack rate
+    const double AR_S = 1.0 - pow(1.0 - AR, 1.0/4.0);         // Per-serotype target AR
 
-    //prime_population(community, RNG, AR_S);
+    prime_population(community, RNG, AR_S);
 
     seed_epidemic(par, community);
     simulate_epidemic(par, community, process_id);

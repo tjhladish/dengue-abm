@@ -421,9 +421,29 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date); 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+
+{
+        for (int i=community->getNumPerson()-1; i>=0; i--) { // for website animation
+            Person *p = community->getPerson(i);
+            // TODO - it should be sufficient to only check second conditional
+            if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
+                const Infection* infec = p->getInfection();
+                //time,id,location,serotype,symtomatic_bool
+                stringstream ss;
+                ss << date.day() << ","
+                    << p->getID() << ","
+                    << p->getLocation(HOME_MORNING)->getID() << ","
+                    << 1 + (int) infec->serotype() << ","
+                    << (int) infec->isSymptomatic();
+                daily_output_buffer.push_back(ss.str());
+            }
+        }
+}
+
     }
 
-    // write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+    string dailyfilename = "";
+    write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
     return epi_sizes;
 }
 
@@ -500,7 +520,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
 
-        /*for (int i=community->getNumPerson()-1; i>=0; i--) {
+        /*for (int i=community->getNumPerson()-1; i>=0; i--) { // for WHO work
             Person *p = community->getPerson(i);
             // TODO - it should be sufficient to only check second conditional
             if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
