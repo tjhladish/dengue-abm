@@ -31,12 +31,13 @@ Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExter
     _bDead = false;
     _eSerotype = serotype;
     _nInfectedAtID = nInfectedAtID;
-    const double rho = p->getCurrentVectorControlDailyMortality(time);
+    //const double rho = p->getCurrentVectorControlDailyMortality(time);
     vector<double> age_cdf = MOSQUITO_AGE_CDF;
-    if (rho > 0) {
+    // no longer adjusting CDF -- mosquitoes at location already have increased mortality in Community::applyVectorControl()
+    /*if (rho > 0) {
                                                //mortality_by_age_i* = 1 - (1 - mortality_by_age_i)(1 - rho)^i
         for (unsigned int i = 0; i < age_cdf.size(); ++i) age_cdf[i] = 1.0 - (1.0 - MOSQUITO_AGE_CDF[i]) * pow(1.0 - rho, i);
-    }
+    }*/
     _nAgeInfected = Parameters::sampler(age_cdf, gsl_rng_uniform(RNG));
     _nAgeInfectious = _nAgeInfected + nExternalIncubationPeriod;
     _nAgeDeath = _nAgeInfected; // can't be younger than this
