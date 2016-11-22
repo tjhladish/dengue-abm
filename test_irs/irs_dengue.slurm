@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=who-dengue
-#SBATCH --output=./auto_output/reg_%A_%a-debug.out
-#SBATCH --error=./auto_output/reg_%A_%a-debug.err
+#SBATCH --output=./auto_output/reg_%A_%a-vv.out
+#SBATCH --error=./auto_output/reg_%A_%a-vv.err
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tjhladish@gmail.com
@@ -17,5 +17,5 @@
 module load gcc/5.2.0 gsl
 for i in `seq 1 50`;
 do
-    ./abc_sql abc_config.json --simulate
+    ./abc_sql abc_vacvec.json --simulate
 done

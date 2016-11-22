@@ -23,7 +23,7 @@ const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 
 const int RESTART_BURNIN    = 25;
-const int FORECAST_DURATION = 26;
+const int FORECAST_DURATION = 25;
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const vector<float> SP9_TARGETS = {0.1, 0.3, 0.5, 0.7, 0.9};
@@ -234,28 +234,32 @@ void prime_population(Community* community, const gsl_rng* RNG, double p_prime) 
 
 
 vector<double> tally_counts(const Parameters* par, Community* community, const int vc_timing) {
-    //const int discard_days = 365*RESTART_BURNIN;
-    const int discard_days = 365*(TOTAL_DURATION-31) + vc_timing; // aggregate based on the timing of the annual start of vector control
-    vector< vector<int> > infected    = community->getNumNewlyInfected();
+    const int discard_days = 365*(RESTART_BURNIN-5);
+    //const int discard_days = 365*(TOTAL_DURATION-31) + vc_timing; // aggregate based on the timing of the annual start of vector control
+    //vector< vector<int> > severe      = community->getNumSevereCases();
+    vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
+
+    //vector< vector<int> > infected    = community->getNumNewlyInfected();
     //const int num_years = FORECAST_DURATION;
     const int num_years = 30;
-    vector<vector<int> > i_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
+    vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
 
     vector<double> metrics(num_years, 0.0);
     for (int t=discard_days; t<par->nRunLength; t++) {
         // use epidemic years, instead of calendar years
         const int y = (t-discard_days)/365;
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            i_tally[s][y] += infected[s][t];
+            s_tally[s][y] += symptomatic[s][t];
         }
         //cout << "d,i:" << t << "," << infected[0][t] + infected[1][t] + infected[2][t] + infected[3][t] << endl;
     }
     for (int s=0; s<NUM_OF_SEROTYPES; s++) {
         for (int y = 0; y<num_years; ++y) {
-            metrics[y] += i_tally[s][y];
+            metrics[y] += s_tally[s][y];
         }
     }
 
+/*
     vector<int> pop_sizes  = vector<int>(10,0);
     vector<double> seropos = vector<double>(10,0.0); // seronegative at vaccination time
 
@@ -273,7 +277,6 @@ vector<double> tally_counts(const Parameters* par, Community* community, const i
             if (isSeropos) ++seropos[age_class];
         }
     }
-/*
     double seroprev_mean = 0.0;
     for (unsigned int i = 0; i < seropos.size(); ++i) seroprev_mean += seropos[i] / pop_sizes[i];
     assert(seropos.size() > 0);
