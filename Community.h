@@ -25,7 +25,7 @@ class Community {
         bool loadLocations(std::string szLocs,std::string szNet);
         bool loadMosquitoes(std::string moslocFilename, std::string mosFilename);
         int getNumPerson() const { return _nNumPerson; }
-        Person *getPerson(int n) const { return _person+n; }
+        std::vector<Person*> getPeople() const { return _people; }
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
         std::vector<int> getNumSusceptible();
@@ -73,7 +73,7 @@ class Community {
 
     protected:
         static const Parameters* _par;
-        Person *_person;                                              // the array index is equal to the ID
+        std::vector<Person*> _people;                                 // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
         int _nPersonAgeCohortSizes[NUM_AGE_CLASSES];                  // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0

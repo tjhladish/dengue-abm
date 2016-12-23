@@ -63,6 +63,7 @@ class Infection {
 
   public:
 
+    bool isLocallyAcquired() const { return infectedByID != -1; }
     int getInfectedTime() const { return infectedTime; }
     bool isSymptomatic() const { return symptomTime > infectedTime; }
     bool isSevere()      const { return severeDisease; }
