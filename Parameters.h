@@ -279,7 +279,7 @@ public:
 
     unsigned long int randomseed;
     int nRunLength;
-    int birthdayFrequency;                                  // 1 == birthdays occur daily, so 1/365 of people age each day; default = 7 (weekly)
+    int birthdayInterval;                                   // 1 == birthdays occur daily, so 1/365 of people age each day; default = 7 (weekly)
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration

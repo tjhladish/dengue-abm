@@ -17,6 +17,9 @@ class Location;
 // We use this to make sure that locations are iterated through in a well-defined order (by ID), rather than by mem address
 struct LocPtrComp { bool operator()(const Location* A, const Location* B) const { return A->getID() < B->getID(); } };
 
+// We use this to created a vector of people, sorted by decreasing age.  Used for aging/immunity swapping.
+struct PerPtrComp { bool operator()(const Person* A, const Person* B) const { return A->getAge() > B->getAge(); } };
+
 class Community {
     public:
         Community(const Parameters* parameters);
@@ -95,6 +98,7 @@ class Community {
         std::vector< std::vector<int> > _nNumVaccinatedCases;
         std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::set<Location*, LocPtrComp> > _isHot;
+        static std::vector<Person*> _peopleByAge;
 
         static std::vector<std::set<Location*, LocPtrComp> > _vectorControlStartDates;
         static std::set<Location*, LocPtrComp> _vectorControlLocations; // Locations that currently have vector control measures in place
