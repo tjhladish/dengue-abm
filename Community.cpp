@@ -22,6 +22,7 @@ using namespace dengue::standard;
 const Parameters* Community::_par;
 vector< set<Location*, LocPtrComp> > Community::_isHot;
 vector<Person*> Community::_peopleByAge;
+map<int, set<pair<Person*,Person*> > > Community::_delayedBirthdays;
 
 int mod(int k, int n) { return ((k %= n) < 0) ? k+n : k; } // correct for non-negative n
 
@@ -673,6 +674,77 @@ void Community::moveMosquito(Mosquito* m) {
 }
 
 
+void Community::_processBirthday(Person* p) {
+    Person* donor;
+    if (p->getAge() == 0) {
+        //p->resetImmunity();
+        donor = nullptr;
+    } else if (_uniformSwap == true) {
+        // For people of age x, copy immune status from people of age x-1
+        // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
+        const int donor_age = p->getAge() - 1;
+        int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[donor_age]);
+        donor = _personAgeCohort[donor_age][r];
+    } else {
+        // Same as above, but use weighted sampling based on swap probs from file
+        double r = gsl_rng_uniform(RNG);
+        const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
+        int n;
+        for (n = 0; n < (signed) swap_probs.size() - 1; n++) {
+            if (r < swap_probs[n].second) {
+                break;
+            } else {
+                r -= swap_probs[n].second;
+            }
+        }
+        const int id = swap_probs[n].first;
+        donor = getPersonByID(id);
+    }
+    _swapIfNeitherInfected(p, donor);
+/*
+    // update map of locations with infectious people -- not necessary if birthdays are delayed until after infection resolves
+    if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
+        // if this is a historical infection, person may have neg values for
+        // infectious dates that we don't need to deal with--they're in the past
+        const int start_date = p->getInfectiousTime() > 0 ? p->getInfectiousTime() : 0;
+        for (int d = start_date; d < p->getRecoveryTime(); d++) {
+            for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                flagInfectedLocation(p->getLocation((TimePeriod) t), d);
+            }
+        }
+    }*/
+}
+
+
+void Community::_swapIfNeitherInfected(Person* p, Person* donor) {
+    int process_date = p->isInfected(_nDay) ? p->getRecoveryTime() : _nDay; // delay birthday is p is infected
+    process_date = donor and donor->isInfected(_nDay) ? std::max(process_date, donor->getRecoveryTime()) : process_date; // and/or delay if donor is infected
+    if (process_date == _nDay) {
+        if (donor) {
+            p->copyImmunity(donor);
+        } else {
+            p->resetImmunity();
+        }
+    } else {
+        if (_delayedBirthdays.count(process_date) == 0) _delayedBirthdays[process_date] = set<pair< Person*, Person*> >();
+        _delayedBirthdays[process_date].insert(make_pair(p, donor));
+    }
+}
+
+
+void Community::_processDelayedBirthdays() {
+    if (_delayedBirthdays.count(_nDay) > 0) {
+        for (pair<Person*, Person*> recip_donor: _delayedBirthdays[_nDay]) {
+            Person* p     = recip_donor.first;
+            Person* donor = recip_donor.second;
+            _swapIfNeitherInfected(p, donor);
+        }
+        _delayedBirthdays.erase(_nDay);
+    }
+}
+
+// 1.) Process delayed birthdays every day -- need to handle runs where normal birthdays are handled with interval > 1
+// 2.) Test delayed birthdays with having birthdays once per year on Julian day 100
 void Community::swapImmuneStates() {
     const int julian = _nDay % 365;
     const int bday_ivl = _par->birthdayInterval;
@@ -684,41 +756,7 @@ void Community::swapImmuneStates() {
         for (int pidx = minval; pidx <= maxval; ++pidx) {
             Person* p = _peopleByAge[pidx];
             assert(p!=NULL);
-            if (p->getAge() == 0) {
-                p->resetImmunity();
-            } else if (_uniformSwap == true) {
-                // For people of age x, copy immune status from people of age x-1
-                // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
-                const int donor_age = p->getAge() - 1;
-                int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[donor_age]);
-                p->copyImmunity(_personAgeCohort[donor_age][r]);
-            } else {
-                // Same as above, but use weighted sampling based on swap probs from file
-                double r = gsl_rng_uniform(RNG);
-                const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
-                int n;
-                for (n = 0; n < (signed) swap_probs.size() - 1; n++) {
-                    if (r < swap_probs[n].second) {
-                        break;
-                    } else {
-                        r -= swap_probs[n].second;
-                    }
-                }
-                const int id = swap_probs[n].first;
-                p->copyImmunity(getPersonByID(id));
-            }
-
-            // update map of locations with infectious people
-            if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
-                // if this is a historical infection, person may have neg values for
-                // infectious dates that we don't need to deal with--they're in the past
-                const int start_date = p->getInfectiousTime() > 0 ? p->getInfectiousTime() : 0;
-                for (int d = start_date; d < p->getRecoveryTime(); d++) {
-                    for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
-                        flagInfectedLocation(p->getLocation((TimePeriod) t), d);
-                    }
-                }
-            }
+            _processBirthday(p);
         }
     }
     return;
@@ -928,6 +966,7 @@ void Community::_modelMosquitoMovement() {
 void Community::tick(int day) {
     _nDay = day;
     //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
+    _processDelayedBirthdays();
     if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
     if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
     /*{

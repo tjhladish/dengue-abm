@@ -6,9 +6,10 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <utility>
 #include <numeric>
 #include <cmath>
-
+#include <algorithm>
 
 class Person;
 class Mosquito;
@@ -99,6 +100,7 @@ class Community {
         std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::set<Location*, LocPtrComp> > _isHot;
         static std::vector<Person*> _peopleByAge;
+        static std::map<int, std::set<std::pair<Person*, Person*> > > _delayedBirthdays;
 
         static std::vector<std::set<Location*, LocPtrComp> > _vectorControlStartDates;
         static std::set<Location*, LocPtrComp> _vectorControlLocations; // Locations that currently have vector control measures in place
@@ -110,5 +112,8 @@ class Community {
         void mosquitoFilter(std::vector<Mosquito*>& mosquitoes, const double survival_prob);
         void _advanceTimers();
         void _modelMosquitoMovement();
+        void _processBirthday(Person* p);
+        void _processDelayedBirthdays();
+        void _swapIfNeitherInfected(Person* p, Person* donor);
 };
 #endif
