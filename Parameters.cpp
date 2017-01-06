@@ -95,6 +95,8 @@ void Parameters::define_defaults() {
     startDayOfYear = 1;
 
     dailyOutput   = false;
+    periodicOutput  = false;
+    periodicOutputInterval  = 5;
     weeklyOutput  = false;
     monthlyOutput = false;
     yearlyOutput  = false;

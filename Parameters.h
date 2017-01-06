@@ -351,6 +351,8 @@ public:
 
     int startDayOfYear;
     bool dailyOutput;
+    bool periodicOutput;
+    int periodicOutputInterval;
     bool weeklyOutput;
     bool monthlyOutput;
     bool yearlyOutput;

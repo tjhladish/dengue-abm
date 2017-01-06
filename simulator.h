@@ -39,7 +39,8 @@ class Date {
     int dayOfMonth()         const { return julianMonth() == 1 ?              // [1, {29,30,31}]
                                             julianDay() :
                                             julianDay() - END_DAY_OF_MONTH[julianMonth()-2]; }
-    int week()               const { return (int) day()/7 ; }                 // [0, ...]
+    int nDayPeriod(int n)    const { return (int) day()/n; }                  // [0, ...]
+    int week()               const { return (int) day()/7; }                  // [0, ...]
     int julianWeek()         const { return (int) ((julianDay()-1)/7) + 1; }  // [1, 53]
     int month()              const { return _month_ct; }                      // [0, ...]
     int julianMonth()        const {                                          // [1, 12]
@@ -52,6 +53,7 @@ class Date {
     string monthName()       const { return MONTH_NAMES[julianMonth()-1]; }
     int year()               const { return (int) (day()/365); }
 
+    bool endOfPeriod(int n)  const { return (day()+1) % n == 0; }
     bool endOfWeek()         const { return (day()+1) % 7 == 0; }
     bool endOfMonth()        const {
         vector<int>::const_iterator it;
@@ -232,6 +234,15 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
 
+     if (par->periodicOutput) {
+        _aggregator(periodic_incidence, "n_day");
+        const int n = par->periodicOutputInterval;
+        if (date.endOfPeriod(n)) {
+            _reporter(ss, periodic_incidence, par, process_id, " " + to_string(n) + "_day: ", date.nDayPeriod(n), "n_day"); ss << endl;
+            periodic_incidence["n_day"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
+        }
+    }
+
     if (par->weeklyOutput) {
         _aggregator(periodic_incidence, "weekly");
         if (date.endOfWeek()) {
@@ -265,7 +276,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 
     periodic_incidence["daily"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
     string output = ss.str();
-    fputs(output.c_str(), stderr);
+    //fputs(output.c_str(), stderr);
+    fputs(output.c_str(), stdout);
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
@@ -394,6 +406,7 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
 map<string, vector<int> > construct_tally() {
     // { introductions, local transmission, total, case, severe}
     map<string, vector<int> > periodic_incidence { {"daily", vector<int>(NUM_OF_REPORTING_TYPES,0)},
+                                                   {"n_day", vector<int>(NUM_OF_REPORTING_TYPES,0)},
                                                    {"weekly", vector<int>(NUM_OF_REPORTING_TYPES,0)},
                                                    {"monthly", vector<int>(NUM_OF_REPORTING_TYPES,0)},
                                                    {"yearly", vector<int>(NUM_OF_REPORTING_TYPES,0)} };
