@@ -23,7 +23,7 @@ const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 
 const int RESTART_BURNIN    = 25;
-const int FORECAST_DURATION = 25;
+const int FORECAST_DURATION = 51;
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const vector<float> SP9_TARGETS = {0.1, 0.3, 0.5, 0.7, 0.9};
@@ -93,6 +93,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
+    par->weekyOutput             = true;
     par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
@@ -234,14 +235,20 @@ void prime_population(Community* community, const gsl_rng* RNG, double p_prime) 
 
 
 vector<double> tally_counts(const Parameters* par, Community* community, const int vc_timing) {
-    const int discard_days = 365*(RESTART_BURNIN-5);
-    //const int discard_days = 365*(TOTAL_DURATION-31) + vc_timing; // aggregate based on the timing of the annual start of vector control
+    // aggregate based on the timing of the annual start of vector control
+    int discard_days = INT_MAX;
+    for (VectorControlEvent vce: par->vectorControlEvents) {
+        discard_days = discard_days < vce->campaignStart ? discard_days : vce->campaignStart;
+    }
+    const int pre_intervention_output = 5; // years
+    discard_days = discard_days==INT_MAX ? 365*(RESTART_BURNIN-pre_intervention_output) : discard_days - (365*pre_intervention_output);
+
     //vector< vector<int> > severe      = community->getNumSevereCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
 
     //vector< vector<int> > infected    = community->getNumNewlyInfected();
     //const int num_years = FORECAST_DURATION;
-    const int num_years = 30;
+    const int num_years = 55;
     vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
 
     vector<double> metrics(num_years, 0.0);
@@ -329,6 +336,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     //vector<int> target_ages = {9, 16};         // default 9
     vector<int> catchup_ages = {17, 30};         // default 17
     vector<double> coverage_levels = {0.5, 0.8}; // default 0.8
+    vector<int> vc_campaign_duration_levels = {1, 90, 365};
 
     bool catchup           = (bool) args[8];
     int vaccine_mechanism  = (int) args[9];
@@ -339,7 +347,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     double coverage        = coverage_levels[(int) args[13]];
 
     const bool vector_control     = (bool) args[14];
-    const int vc_campaignDuration = (int) args[15]; // number of days to achieve coverage
+    //const int vc_campaignDuration = (int) args[15]; // number of days to achieve coverage
+    const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[15]]; // number of days to achieve coverage
     const int vc_timing           = (int) args[16]; 
     const double vc_coverage      = args[17];
     const double vc_efficacy       = args[18];       // expected % reduction in equillibrium mosquito population in treated houses
@@ -378,16 +387,6 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         double target_coverage  = coverage;
         double catchup_coverage = coverage;
 
-        // perfect efficacy that wanes rapidly
-        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
-        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);
-        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
-        par->linearlyWaningVaccine   = true;
-        par->vaccineImmunityDuration = 2*365;
-        par->bVaccineLeaky           = true;
-        par->numVaccineDoses         = 3;
-        par->vaccineDoseInterval     = 182;
-        par->vaccineBoosting         = false;
         if (catchup) {
             for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
                 par->vaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
@@ -400,10 +399,33 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
+        // perfect efficacy that wanes rapidly -- most benefit comes from vaccine-as-infection assumption
+        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = true;
+        par->vaccineImmunityDuration = 2*365;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 3;
+        par->vaccineDoseInterval     = 182;
+        par->vaccineBoosting         = false;
+
         par->whoDiseaseOutcome = INC_NUM_INFECTIONS;
         par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
         par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
     } else if (vaccine_mechanism == 1) { // also want A1 + B2 + C3a
+        // imperfect efficacy that does not wane
+        par->fVESs = {0.6, 0.54, 0.9, 0.95};
+        par->fVESs_NAIVE = {0.3, 0.27, 0.45, 0.48};
+
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = false;
+        par->vaccineImmunityDuration = INT_MAX;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 3;
+        par->vaccineDoseInterval     = 182;
+        par->vaccineBoosting         = false;
+
         par->whoDiseaseOutcome = VAC_ISNT_INFECTION;
         par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
         par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
@@ -490,6 +512,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (simulate_db) {
+        cerr << "simulate db\n";
         time(&GLOBAL_START_TIME);
         abc->set_simulator(simulator);
         abc->simulate_next_particles(buffer_size);

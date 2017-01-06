@@ -60,10 +60,10 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
+    par->dailyOutput             = false;
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
-    par->weeklyOutput            = false;
+    par->weeklyOutput            = true;
     par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
@@ -71,6 +71,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
     par->birthdayInterval        = 365; // process birthdays daily
+    par->delayBirthdayIfInfected = false;
     par->annualIntroductionsCoef = pow(10, _exp_coef);
 
     // pathogenicity values fitted in

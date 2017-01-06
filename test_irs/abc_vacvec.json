@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 32000,
+    "num_samples"    : 95400,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "vacvec-10x-plosntd_model.sqlite",
+    "database_filename"             : "prelim_irs_timing.sqlite",
     "posterior_database_filename"   : "posterior.sqlite",
 
     "parameters" : [
@@ -67,7 +67,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
 
         {"name"       : "vac_mech",
          "dist_type"  : "PSEUDO",
@@ -79,7 +79,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
         
         {"name"       : "target",
          "dist_type"  : "PSEUDO",
@@ -92,7 +92,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 1},
+         "par2"       : 0},
 
         {"name"       : "coverage",
          "dist_type"  : "PSEUDO",
@@ -109,22 +109,22 @@
         {"name"       : "campaign_duration",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 90,
-         "par2"       : 90,
-         "step"       : 0},
+         "par1"       : 0,
+         "par2"       : 2,
+         "step"       : 1},
 
         {"name"       : "timing",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 180,
-         "par2"       : 180,
-         "step"       : 0},
+         "par1"       : 0,
+         "par2"       : 364,
+         "step"       : 7},
 
         {"name"       : "vc_coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
          "par1"       : 0.25,
-         "par2"       : 0.50,
+         "par2"       : 0.75,
          "step"       : 0.25},
 
         {"name"       : "vc_efficacy",
@@ -135,6 +135,12 @@
     ],
 
     "metrics" : [
+        {"name" : "s_5", "num_type" : "INT", "value" : 0},
+        {"name" : "s_4", "num_type" : "INT", "value" : 0},
+        {"name" : "s_3", "num_type" : "INT", "value" : 0},
+        {"name" : "s_2", "num_type" : "INT", "value" : 0},
+        {"name" : "s_1", "num_type" : "INT", "value" : 0},
+        {"name" : "s00", "num_type" : "INT", "value" : 0},
         {"name" : "s01", "num_type" : "INT", "value" : 0},
         {"name" : "s02", "num_type" : "INT", "value" : 0},
         {"name" : "s03", "num_type" : "INT", "value" : 0},
@@ -164,6 +170,25 @@
         {"name" : "s27", "num_type" : "INT", "value" : 0},
         {"name" : "s28", "num_type" : "INT", "value" : 0},
         {"name" : "s29", "num_type" : "INT", "value" : 0},
-        {"name" : "s30", "num_type" : "INT", "value" : 0}
-    ]
+        {"name" : "s30", "num_type" : "INT", "value" : 0},
+        {"name" : "s31", "num_type" : "INT", "value" : 0},
+        {"name" : "s32", "num_type" : "INT", "value" : 0},
+        {"name" : "s33", "num_type" : "INT", "value" : 0},
+        {"name" : "s34", "num_type" : "INT", "value" : 0},
+        {"name" : "s35", "num_type" : "INT", "value" : 0},
+        {"name" : "s36", "num_type" : "INT", "value" : 0},
+        {"name" : "s37", "num_type" : "INT", "value" : 0},
+        {"name" : "s38", "num_type" : "INT", "value" : 0},
+        {"name" : "s39", "num_type" : "INT", "value" : 0},
+        {"name" : "s40", "num_type" : "INT", "value" : 0},
+        {"name" : "s41", "num_type" : "INT", "value" : 0},
+        {"name" : "s42", "num_type" : "INT", "value" : 0},
+        {"name" : "s43", "num_type" : "INT", "value" : 0},
+        {"name" : "s44", "num_type" : "INT", "value" : 0},
+        {"name" : "s45", "num_type" : "INT", "value" : 0},
+        {"name" : "s46", "num_type" : "INT", "value" : 0},
+        {"name" : "s47", "num_type" : "INT", "value" : 0},
+        {"name" : "s48", "num_type" : "INT", "value" : 0},
+        {"name" : "s49", "num_type" : "INT", "value" : 0}
+     ]
 }
