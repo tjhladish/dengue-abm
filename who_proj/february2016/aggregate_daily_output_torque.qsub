@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -r y
+#PBS -N agg25
+#PBS -o agg_output/junk.out
+#PBS -e agg_output/junk.err
+#PBS -m ae
+#PBS -M tjhladish@gmail.com
+#PBS -W group_list=epi
+#PBS -l walltime=2:00:00
+#PBS -l nodes=1:ppn=10
+#PBS -l pmem=4G
+#PBS -t 1-40
+
+cd $PBS_O_WORKDIR
+module load gcc/4.7.2 gsl
+scenario=`sed $PBS_ARRAYID'q;d' scenarios_age-sweep`
+./process_who who-80_age-sweep.sqlite /scratch/lfs/thladish/who-feb-2016 /scratch/lfs/thladish/who-feb-2016-aggregated $scenario

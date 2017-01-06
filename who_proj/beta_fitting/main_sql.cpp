@@ -22,25 +22,27 @@ const string HOME(std::getenv("HOME"));
 const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/scratch/lfs/thladish");
 
-const int RESTART_BURNIN     =  0;
-const int FORECAST_DURATION  = 100;
+const int RESTART_BURNIN     = 80;
+const int FORECAST_DURATION  = 10;
 
 Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed) {
     Parameters* par = new Parameters();
     par->define_defaults();
 
-    //const vector<float> beta_multipliers = {0.4, 0.8, 1.0, 1.2, 1.6};
-    const vector<float> beta_multipliers = {0.52, 0.70, 0.92, 1.25, 2.25};
-
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
-    double _sec_severity = args[2];
-    double _exp_coef     = args[3];
-    double _nmos         = args[4];
-    double _betamp       = args[5] * beta_multipliers[(int) args[6]]; // mp and pm and not separately
-    double _betapm       = args[5] * beta_multipliers[(int) args[6]]; // identifiable, so they're the same
+    double _base_path    = args[2];
+    double _sec_severity = args[3];
+    double _pss_ratio    = args[4];
+    double _exp_coef     = args[5];
+    double _nmos         = args[6];
 
-    vector<long double> abc_args(&args[0], &args[6]);
+    double _beta_mult    = args[8];
+    double _betamp       = args[7] * _beta_mult; // mp and pm and not separately
+    double _betapm       = args[7] * _beta_mult; // identifiable, so they're the same
+    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+
+    vector<long double> abc_args(&args[0], &args[7]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
@@ -57,16 +59,17 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
     // Normalized from Fc values in supplement table 2, available at
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
-    par->primaryPathogenicity    = {1.000, 0.825, 0.833, 0.317};
-    par->secondaryPathogenicity  = {1.000, 0.825, 0.833, 0.317};
-    par->tertiaryPathogenicity   = vector<double>(NUM_OF_SEROTYPES, 0.0);
-    par->quaternaryPathogenicity = vector<double>(NUM_OF_SEROTYPES, 0.0);
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+//par->defineSerotypeRelativeRisks();
+par->serotypePathogenicityRelativeRisks = vector<double>(NUM_OF_SEROTYPES, 1.0);
+    par->useAgeStructuredPrimaryPathogenicity = false;
+    par->basePathogenicity = _base_path;
+    par->primaryRelativeRisk = 0.45/_base_path;
+    par->postSecondaryRelativeRisk = 1.0/6.0;
 
-    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity/20); // ala Neil
+    par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
     par->secondarySevereFraction  = vector<double>(NUM_OF_SEROTYPES, _sec_severity);
-    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, 0.0);
-    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, 0.0);
+    par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/4.0);
+    par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/4.0);
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
@@ -77,21 +80,20 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
-    par->fVESs.clear();
-    par->fVESs.resize(NUM_OF_SEROTYPES, 0);
+    par->fVESs = vector<double>(NUM_OF_SEROTYPES, 0.0);
 
     //par->hospitalizedFraction = 0.25; // fraction of cases assumed to be hospitalized
-    //par->fVEH = 0.803;                // fraction of hospitalized cases prevented by vaccine
 
-    par->simulateAnnualSerotypes = true;
-    par->normalizeSerotypeIntros = true;
-    if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    //par->simulateAnnualSerotypes = true;
+    //par->normalizeSerotypeIntros = true;
+    //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
+    par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
 
     par->annualIntroductions = {1.0};
 
     // load daily EIP
     // EIPs calculated by ../raw_data/weather/calculate_daily_eip.R, based on reconstructed yucatan temps
-    par->loadDailyEIP(pop_dir + "/seasonal_avg_eip.out");
+    par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
 
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
@@ -102,8 +104,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
     par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
-    par->mosquitoFilename         = output_dir + "/mos_mer_who/mos."       + to_string(process_id);
-    par->mosquitoLocationFilename = output_dir + "/mosloc_mer_who/mosloc." + to_string(process_id);
+    //par->mosquitoFilename         = output_dir + "/mos_mer_who/mos."       + to_string(process_id);
+    //par->mosquitoLocationFilename = output_dir + "/mosloc_mer_who/mosloc." + to_string(process_id);
 
     return par;
 }
@@ -140,7 +142,7 @@ const unsigned int calculate_process_id(vector< long double> &args, string &args
 }
 
 
-const unsigned int report_process_id (vector<long double> &args, const MPI_par* mp, const time_t start_time) {
+const unsigned int report_process_id (vector<long double> &args, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
@@ -164,7 +166,7 @@ cerr << filename << endl;
 }
 
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     //initialize bookkeeping for run
@@ -180,26 +182,33 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 //  Posterior pars
 //  0 mildEF real,
 //  1 severeEF real,
-//  2 sec_sev real,
-//  3 exp_coef real,
-//  4 num_mos real,
-//  5 beta real,
+//  2 base_path real
+//  3 sec_sev real,
+//  4 pss_ratio real
+//  5 exp_coef real,
+//  6 num_mos real,
+//  7 beta real,
 //
 //  Pseudo pars
-//  6 beta_multiplier real,
+//  8 beta_multiplier real,
 
     Community* community = build_community(par);
     //community->loadMosquitoes(par->mosquitoLocationFilename, par->mosquitoFilename);
 
     vector<int> serotested_ids = read_pop_ids(pop_dir + "/9_merida_ids.txt");
 
-    seed_epidemic(par, community);
+    //seed_epidemic(par, community);
     vector<long double> seropos_9yo = simulate_who_fitting(par, community, process_id, serotested_ids);
-
     // We might want to write the immunity and mosquito files
-    string imm_filename = "/scratch/lfs/thladish/imm_mer_who/immunity." + to_string(process_id);
-    write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
-    write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+    //string imm_filename = "/scratch/lfs/thladish/imm_mer_who/immunity." + to_string(process_id);
+    //write_immunity_file(par, community, process_id, imm_filename, par->nRunLength);
+    //write_mosquito_location_data(community, par->mosquitoFilename, par->mosquitoLocationFilename);
+
+    // calculated mean seropositivitiy in 9 year olds over the last simulated decade 
+    long double seropos_mean = 0.0;
+    for (unsigned int i = RESTART_BURNIN; i < seropos_9yo.size(); ++i) seropos_mean += seropos_9yo[i];
+    assert((signed) seropos_9yo.size() > RESTART_BURNIN);
+    seropos_mean /= (seropos_9yo.size() - RESTART_BURNIN);
 
     time (&end);
     double dif = difftime (end,start);
@@ -217,7 +226,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     delete par;
     delete community;
 
-    return seropos_9yo;
+    return vector<long double> (1, seropos_mean);
 }
 
 

@@ -384,6 +384,51 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
+const int BURNIN = 80;
+if (date.year() >= BURNIN) {
+    vector<int> target_ages;
+    if (par->vaccinationEvents.size() > 0) {
+        target_ages.push_back(par->vaccinationEvents.back().age);
+    } else {
+        target_ages = {9, 16};
+    }
+    for (int target_age: target_ages) {
+        const int VACC_START_DAY = BURNIN*365;
+        if (date.julianDay() == par->startDayOfYear - 1) {
+            // Dims: serostatus (neg/pos), vaccinated (F,T), severity(no infection, asymptomatic, mild, severe)
+            vector< vector< vector<int> > > tally = {{{0,0,0,0},{0,0,0,0}},{{0,0,0,0},{0,0,0,0}}};
+            const int year_of_intervention = date.year() - BURNIN;
+            for (int i=community->getNumPerson()-1; i>=0; i--) {
+                Person *p = community->getPerson(i);
+                if (p->getAge() == year_of_intervention + target_age) {
+                    const bool ever_infected = p->getNumNaturalInfections() > 0 ? true : false;
+                    const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
+                    const bool vaccinated = p->isVaccinated();
+                    int severity = 0; // default = no infection in past year
+                    if (ever_infected and date.day() - p->getInfectionHistory().back()->getInfectedTime() < 365) {
+                        const Infection* infec = p->getInfectionHistory().back();
+                        if ((const bool) infec->isSevere()) {
+                            severity = 3;
+                        } else if ((const bool) infec->isSymptomatic()) {
+                            severity = 2;
+                        } else {
+                            severity = 1;
+                        }
+                    }
+                    tally[(int) serostatus][(int) vaccinated][severity]++;
+                }
+            }
+            for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
+                for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
+                    for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
+                        cerr << "COHORT," << par->randomseed << "," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << "," << target_age << endl;
+                    }
+                }
+            }
+        }
+    }
+}
+
     community->tick(date.day());
 
     // TODO - make it cleaner to iterate through pop
@@ -395,12 +440,29 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
             const Infection* infec = p->getInfection();
             if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
             if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
+
+if (not par->abcVerbose and date.year() >= BURNIN) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
+    // for dec 2015 WHO results
+    stringstream ss;
+    ss << date.day() << ","
+        << date.year() << ","
+        << p->getID() << ","
+        << p->getAge() << ","
+        << p->getLocation(HOME_MORNING)->getID() << ","
+        << (int) p->isVaccinated() << ","
+        << 1 + (int) infec->serotype() << ","
+        << (int) infec->isSymptomatic() << ","
+        << (int) infec->isSevere();
+    daily_output_buffer.push_back(ss.str());
+}
+
         }
     }
 
     periodic_output(par, community, periodic_incidence, date, process_id, epi_sizes);
     return;
 }
+
 
 
 map<string, vector<int> > construct_tally() {
@@ -425,18 +487,44 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     vector<string> daily_output_buffer;
 
     if (par->bSecondaryTransmission and not par->abcVerbose) {
-        //daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
-        //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+        daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severity");
     }
 
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
+
+const int BURNIN = 80;
+if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
+    vector<Person*> ageCohort = community->getAgeCohort(9);
+    double seroprev = 0.0;
+    for (auto p: ageCohort) if (p->getNumNaturalInfections() > 0) { seroprev += 1.0; }
+    //seroprev /= ageCohort.size();
+    cerr << "seed, year, vaccine cohort age, seroprevalence: "
+         << par->randomseed << "," << date.year() << "," << 9 << "," << seroprev << "," << ageCohort.size() << endl;
+}
+
         update_vaccinations(par, community, date); 
-        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
+
     }
 
-    // write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+/*
+-rw-r----- 1 thladish epi  44M Aug  9 02:27 daily.4220407024.-1972370385
+-rw-r----- 1 thladish epi  25M Aug  9 02:28 daily.1168277648.1260025127
+-rw-r----- 1 thladish epi  32M Aug  9 02:28 daily.1069115341.1599071460
+-rw-r----- 1 thladish epi  67M Aug  9 02:28 daily.3291867037.1716086275
+-rw-r----- 1 thladish epi  29M Aug  9 02:30 daily.1080289073.-1994576236
+-rw-r----- 1 thladish epi  47M Aug  9 02:31 daily.2284626189.-1860021420
+-rw-r----- 1 thladish epi  44M Aug  9 02:33 daily.1243347686.2007593278
+-rw-r----- 1 thladish epi  52M Aug  9 02:33 daily.3112558391.1307767146
+*/
+/*
+    stringstream ss_filename;
+    ss_filename << "/scratch/lfs/thladish/who-feb-2016/daily." << process_id << "." << par->randomseed;
+    string dailyfilename = ss_filename.str();
+    write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+*/
     return epi_sizes;
 }
 
@@ -472,7 +560,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
             metrics.push_back(seropos_9yo);
         }
 
-        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
     }
 
     return metrics;
@@ -506,32 +594,13 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
             seropos_87 /= serotested_ids.size();
         }
 
-        if (date.day() == 125*365) {
-            string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
-            write_immunity_file(community, process_id, imm_filename, date.day());
-        }
+        //if (date.day() == 125*365) {
+        //    string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
+        //    write_immunity_file(community, process_id, imm_filename, date.day());
+        //}
 
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
 
-        /*for (int i=community->getNumPerson()-1; i>=0; i--) {
-            Person *p = community->getPerson(i);
-            // TODO - it should be sufficient to only check second conditional
-            if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
-                const Infection* infec = p->getInfection();
-
-                stringstream ss;
-                ss << date.day() << ","
-                    << date.year() << ","
-                    << p->getID() << ","
-                    << p->getAge() << ","
-                    << p->getLocation(HOME_MORNING)->getID() << ","
-                    << (int) p->isVaccinated() << ","
-                    << 1 + (int) infec->serotype() << ","
-                    << (int) infec->isSymptomatic() << ","
-                    << (int) infec->isSevere();
-                daily_output_buffer.push_back(ss.str());
-            }
-        }*/
     }
 
     //string dailyfilename = "";

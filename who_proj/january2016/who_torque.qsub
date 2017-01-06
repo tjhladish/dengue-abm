@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -r y
-#PBS -N who_beta 
+#PBS -N dengue
 #PBS -o auto_output/junk.out
 #PBS -e auto_output/junk.err
 #PBS -m ae
@@ -12,8 +12,8 @@
 #PBS -t 1-2500
 
 cd $PBS_O_WORKDIR
-module load gsl gcc/4.7.2
+module load gsl
 for i in `seq 1 2`;
 do
-    ./abc_sql abc_beta_fitting.json --simulate
+    ./abc_sql abc_who.json --simulate
 done
