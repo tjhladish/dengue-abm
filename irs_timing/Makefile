@@ -7,13 +7,12 @@ else
 CPP:=g++-4.9
 endif
 
-#CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations
-CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations
+#CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
+CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
-SERDIR = $(DENDIR)/synthetic_population/serotype_runs
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
 
@@ -34,19 +33,17 @@ libabc:
 	$(MAKE) -C $(ABCDIR) -f Makefile
 
 dengue:
-	$(MAKE) -C $(DENDIR) -f Makefile model
+	$(MAKE) -C $(DENDIR) -f Makefile
 
-abc_sql: libabc dengue main_sql.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+abc_sql: libabc dengue main.cpp
+	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
-find_rho: find_irs_mortality.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) find_irs_mortality.cpp -o find_rho $(GSL_LIB)
-
-test_sql: libabc_no_mpi dengue_no_mpi test_sql.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+process_who: libabc process_daily_output.cpp
+	#$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
+	$(CPP) $(CFLAGS) -fopenmp $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean
 	$(MAKE) -C $(DENDIR) -f Makefile clean
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
-	rm -f abc abc_mpi
+	rm -f abc abc_sql

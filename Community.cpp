@@ -21,6 +21,10 @@ using namespace dengue::standard;
 
 const Parameters* Community::_par;
 vector< set<Location*, LocPtrComp> > Community::_isHot;
+vector<Person*> Community::_peopleByAge;
+map<int, set<pair<Person*,Person*> > > Community::_delayedBirthdays;
+
+int mod(int k, int n) { return ((k %= n) < 0) ? k+n : k; } // correct for non-negative n
 
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
@@ -36,7 +40,6 @@ Community::Community(const Parameters* parameters) :
     _par = parameters;
     _nDay = 0;
     _nNumPerson = 0;
-    _person = NULL;
     _fMosquitoCapacityMultiplier = 1.0;
     _expectedEIP = -1;
     _EIP_emu = -1;
@@ -50,10 +53,9 @@ Community::Community(const Parameters* parameters) :
 
 void Community::reset() { // used for r-zero calculations, to reset pop after a single intro
     // reset people
-    for (int i=0; i<_nNumPerson; i++) {
-        Person* p = _person+i;
+    for (Person* p: _people) {
         if (p->isWithdrawn(_nDay)) {
-            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);                        // goes back to work
+            p->getLocation(WORK_DAY)->addPerson(p,WORK_DAY);                    // goes back to work
             p->getLocation(HOME_MORNING)->removePerson(p,WORK_DAY);             // stops staying at home
         }
         p->resetImmunity(); // no past infections, not dead, not vaccinated
@@ -93,8 +95,7 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
 
 
 Community::~Community() {
-    if (_person)
-        delete [] _person;
+    if (_people.size() > 0) { for (Person* p: _people) delete p; }
 
     Person::reset_ID_counter();
 
@@ -114,7 +115,7 @@ Community::~Community() {
 
     for (unsigned int i = 0; i < _personAgeCohort.size(); i++ ) _personAgeCohort[i].clear();
     _personAgeCohort.clear();
-    
+
     for (unsigned int i = 0; i < _nNumNewlyInfected.size(); i++ ) _nNumNewlyInfected[i].clear();
     _nNumNewlyInfected.clear();
 
@@ -134,19 +135,8 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         cerr << "ERROR: " << populationFilename << " not found." << endl;
         return false;
     }
-    // count lines
-    int maxPerson = -1; // header line isn't a person
-    char buffer[500];
-    while (iss) {
-        iss.getline(buffer,500);
-        if (iss) maxPerson++;
-    }
-    iss.close();
-
-    iss.open(populationFilename.c_str());
+    string buffer;
     _nNumPerson=0;
-    _person = new Person[maxPerson];
-
     int agecounts[NUM_AGE_CLASSES];
     for (int i=0; i<NUM_AGE_CLASSES; i++) agecounts[i] = 0;
 
@@ -155,9 +145,8 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     string hh_serial;
     int pernum;
     int sex; // per IPUMS, expecting 1 for male, 2 for female
-    while (iss) {
-        iss.getline(buffer,500);
-        line.clear(); 
+    while ( getline(iss,buffer) ) {
+        line.clear();
         line.str(buffer);
         /*
         pid hid age sex hh_serial pernum workid
@@ -168,21 +157,26 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         5 2 30 2 2748114000 2 396166
         */
         if (line >> id >> house >> age >> sex >> hh_serial >> pernum >> work) {
-            _person[_nNumPerson].setAge(age);
-            _person[_nNumPerson].setSex((SexType) sex);
-            _person[_nNumPerson].setHomeID(house);
-            _person[_nNumPerson].setLocation(_location[house], HOME_MORNING);
-            _person[_nNumPerson].setLocation(_location[work], WORK_DAY);
-            _person[_nNumPerson].setLocation(_location[house], HOME_NIGHT);
-            _location[house]->addPerson(_person+_nNumPerson, HOME_MORNING);
-            _location[work]->addPerson(_person+_nNumPerson, WORK_DAY);
-            _location[house]->addPerson(_person+_nNumPerson, HOME_NIGHT);
+            Person* p = new Person();
+            _people.push_back(p);
+            p->setAge(age);
+            p->setSex((SexType) sex);
+            p->setHomeID(house);
+            p->setLocation(_location[house], HOME_MORNING);
+            p->setLocation(_location[work], WORK_DAY);
+            p->setLocation(_location[house], HOME_NIGHT);
+            _location[house]->addPerson(p, HOME_MORNING);
+            _location[work]->addPerson(p, WORK_DAY);
+            _location[house]->addPerson(p, HOME_NIGHT);
             assert(age<NUM_AGE_CLASSES);
             agecounts[age]++;
             _nNumPerson++;
         }
     }
     iss.close();
+
+    _peopleByAge = _people;
+    sort(_peopleByAge.begin(), _peopleByAge.end(), PerPtrComp());
 
     if (immunityFilename.length()>0) {
         ifstream immiss(immunityFilename.c_str());
@@ -194,10 +188,9 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         vector<int> parts;
         istringstream line;
         int line_no = 0;
-        while (immiss) {
+        while ( getline(immiss,buffer) ) {
             line_no++;
-            immiss.getline(buffer,500);
-            line.clear(); 
+            line.clear();
             line.str(buffer);
             while (line >> part) parts.push_back(part);
 
@@ -242,10 +235,10 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     _personAgeCohort.clear();
     _personAgeCohort.resize(NUM_AGE_CLASSES, vector<Person*>(0));
 
-    for (int i=0; i<_nNumPerson; i++) {
-        int age = _person[i].getAge();
+    for (Person* p: _people) {
+        int age = p->getAge();
         assert(age<NUM_AGE_CLASSES);
-        _personAgeCohort[age].push_back(_person + i);
+        _personAgeCohort[age].push_back(p);
         _nPersonAgeCohortSizes[age]++;
     }
 
@@ -261,9 +254,9 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         int id1, id2;
         double prob;
         istringstream line;
-        while (iss) {
-            iss.getline(buffer,500);
-            line.clear(); 
+
+        while ( getline(iss, buffer) ) {
+            line.clear();
             line.str(buffer);
 
             if (line >> id1 >> id2 >> prob) {
@@ -274,7 +267,6 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         iss.close();
         _uniformSwap = false;
     }
-
     return true;
 }
 
@@ -286,10 +278,10 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         return false;
     }
     _location.clear();
- 
+
     // This is a hack for backward compatibility.  Indices should start at zero.
     Location* dummy = new Location();
-    dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+    dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
     _location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
     char buffer[500];
@@ -320,7 +312,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
 
             if (_par->eMosquitoDistribution==CONSTANT) {
                 // all houses have same number of mosquitoes
-                newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity); 
+                newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
             } else if (_par->eMosquitoDistribution==EXPONENTIAL) {
                 // exponential distribution of mosquitoes -dlc
                 // gsl takes the 1/lambda (== the expected value) as the parameter for the exp RNG
@@ -444,13 +436,13 @@ Person* Community::getPersonByID(int id) {
 
     int i = 0;
     Person* person = NULL;
-    if (_person[id-1].getID()==id) {
+    if (_people[id-1]->getID()==id) {
         i = id-1;
-        person = &_person[i];
+        person = _people[i];
     } else {
-        for (i=0; i<_nNumPerson; i++) {
-            if (_person[i].getID()==id) {
-                person = &_person[i];
+        for (Person* p: _people) {
+            if (p->getID()==id) {
+                person = p;
                 break;
             }
         }
@@ -491,8 +483,7 @@ void Community::vaccinate(VaccinationEvent ve) {
 
 
 void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate people who were last vaccinated interval days ago
-    for (int i=0; i<_nNumPerson; i++) {
-        Person* p = _person + i;
+    for (Person* p: _people) {
         if (p->isVaccinated()) {
             const int timeSinceLastVaccination = p->daysSinceVaccination(time);
             if (timeSinceLastVaccination >= interval and p->getNumVaccinations() < maxDoses) {
@@ -542,7 +533,6 @@ void Community::mosquitoFilter(vector<Mosquito*>& mosquitoes, const double survi
 }
 
 
-//void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
 void Community::applyMosquitoMultiplier(double current) {
     const double prev = getMosquitoMultiplier();
     setMosquitoMultiplier(current);
@@ -610,7 +600,7 @@ Mosquito* Community::getInfectiousMosquito(int n) {
         if (n >= bin_size) {
             n -= bin_size;
         } else {
-            return _infectiousMosquitoQueue[i][n]; 
+            return _infectiousMosquitoQueue[i][n];
         }
     }
     return NULL;
@@ -623,7 +613,7 @@ Mosquito* Community::getExposedMosquito(int n) {
         if (n >= bin_size) {
             n -= bin_size;
         } else {
-            return _exposedMosquitoQueue[i][n]; 
+            return _exposedMosquitoQueue[i][n];
         }
     }
     return NULL;
@@ -671,7 +661,7 @@ void Community::moveMosquito(Mosquito* m) {
                         r2 -= weights[idx];
                     }
                 }
-                neighbor = idx; 
+                neighbor = idx;
             } else {                                    // Alternatively, ignore distances when choosing destination
                 if (degree>0) {
                     neighbor = gsl_rng_uniform_int(RNG,pLoc->getNumNeighbors());
@@ -684,60 +674,104 @@ void Community::moveMosquito(Mosquito* m) {
 }
 
 
-void Community::swapImmuneStates() {
-    for (auto &e: _isHot) e.clear();
-
-    // For people of age x, copy immune status from people of age x-1
-    for (int age=NUM_AGE_CLASSES-1; age>0; age--) {
-        for (int pnum=0; pnum<_nPersonAgeCohortSizes[age]; pnum++) {
-            //cerr << "age " << age << ": " << pnum << " of " << _nPersonAgeCohortSizes[age] << endl;
-            Person* p = _personAgeCohort[age][pnum];
-            assert(p!=NULL);
-            if (_uniformSwap == true) {
-                // For people of age x, copy immune status from people of age x-1
-                // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
-                int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[age-1]);
-                p->copyImmunity(_personAgeCohort[age-1][r]);
+void Community::_processBirthday(Person* p) {
+    Person* donor;
+    if (p->getAge() == 0) {
+        //p->resetImmunity();
+        donor = nullptr;
+    } else if (_uniformSwap == true) {
+        // For people of age x, copy immune status from people of age x-1
+        // TODO: this may not be safe, if there are age gaps, i.e. people of age N with no one of age N-1
+        const int donor_age = p->getAge() - 1;
+        int r = gsl_rng_uniform_int(RNG,_nPersonAgeCohortSizes[donor_age]);
+        donor = _personAgeCohort[donor_age][r];
+    } else {
+        // Same as above, but use weighted sampling based on swap probs from file
+        double r = gsl_rng_uniform(RNG);
+        const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
+        int n;
+        for (n = 0; n < (signed) swap_probs.size() - 1; n++) {
+            if (r < swap_probs[n].second) {
+                break;
             } else {
-                // Same as above, but use weighted sampling based on swap probs from file
-                double r = gsl_rng_uniform(RNG);
-                const vector<pair<int, double> >& swap_probs = p->getSwapProbabilities();
-                int n;
-                for (n = 0; n < (signed) swap_probs.size() - 1; n++) {
-                    if (r < swap_probs[n].second) {
-                        break;
-                    } else {
-                        r -= swap_probs[n].second;
-                    }
-                }
-                const int id = swap_probs[n].first;
-                p->copyImmunity(getPersonByID(id)); 
+                r -= swap_probs[n].second;
             }
-
-            // update map of locations with infectious people
-            if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
-                for (int d = p->getInfectiousTime(); d < p->getRecoveryTime(); d++) {
-                    for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
-                        flagInfectedLocation(p->getLocation((TimePeriod) t), d);
-                    }
+        }
+        const int id = swap_probs[n].first;
+        donor = getPersonByID(id);
+    }
+    if (_par->delayBirthdayIfInfected) {
+        _swapIfNeitherInfected(p, donor);
+    } else {
+        if (donor) {
+            p->copyImmunity(donor);
+        } else {
+            p->resetImmunity();
+        }
+        // update map of locations with infectious people -- not necessary if birthdays are delayed until after infection resolves
+        // if this is a historical infection, person may have neg values for
+        // infectious dates that we don't need to deal with--they're in the past
+        if (p->isInfected(_nDay)) {
+            const int start_date = p->getInfectiousTime() > 0 ? p->getInfectiousTime() : 0;
+            for (int d = start_date; d < p->getRecoveryTime(); d++) {
+                for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                    flagInfectedLocation(p->getLocation((TimePeriod) t), d);
                 }
             }
         }
     }
+}
 
-    // For people of age 0, reset immunity
-    for (int pnum=0; pnum<_nPersonAgeCohortSizes[0]; pnum++) {
-        Person* p = _personAgeCohort[0][pnum];
-        assert(p!=NULL);
-        p->resetImmunity();
+
+void Community::_swapIfNeitherInfected(Person* p, Person* donor) {
+    int process_date = p->isInfected(_nDay) ? p->getRecoveryTime() : _nDay; // delay birthday if p is infected
+    process_date = donor and donor->isInfected(_nDay) ? std::max(process_date, donor->getRecoveryTime()) : process_date; // and/or delay if donor is infected
+    if (process_date == _nDay) {
+        if (donor) {
+            p->copyImmunity(donor);
+        } else {
+            p->resetImmunity();
+        }
+    } else {
+        if (_delayedBirthdays.count(process_date) == 0) _delayedBirthdays[process_date] = set<pair< Person*, Person*> >();
+        _delayedBirthdays[process_date].insert(make_pair(p, donor));
+    }
+}
+
+
+void Community::_processDelayedBirthdays() {
+    if (_delayedBirthdays.count(_nDay) > 0) {
+        for (pair<Person*, Person*> recip_donor: _delayedBirthdays[_nDay]) {
+            Person* p     = recip_donor.first;
+            Person* donor = recip_donor.second;
+            _swapIfNeitherInfected(p, donor);
+        }
+        _delayedBirthdays.erase(_nDay);
+    }
+}
+
+// 1.) Process delayed birthdays every day -- need to handle runs where normal birthdays are handled with interval > 1
+// 2.) Test delayed birthdays with having birthdays once per year on Julian day 100
+void Community::swapImmuneStates() {
+    const int julian = _nDay % 365;
+    const int bday_ivl = _par->birthdayInterval;
+    // For people of age x, copy immune status from people of age x-1
+
+    for (int y = 0; y < ceil(_peopleByAge.size()/365.0); ++y) {
+        const int minval = (365*y + julian + 1 <= bday_ivl ) ? 0 : 365*y + julian - bday_ivl + 1;
+        const int maxval = (365*y + julian >= (signed) _peopleByAge.size()) ? _peopleByAge.size() - 1 : 365*y + julian;
+        for (int pidx = minval; pidx <= maxval; ++pidx) {
+            Person* p = _peopleByAge[pidx];
+            assert(p!=NULL);
+            _processBirthday(p);
+        }
     }
     return;
 }
 
 
 void Community::updateDiseaseStatus() {
-    for (int i=0; i<_nNumPerson; i++) {
-        Person* p = _person+i;
+    for (Person* p: _people) {
         if (p->getNumNaturalInfections() == 0) continue;
         if (p->getSymptomTime()==_nDay) {                              // started showing symptoms today
             _nNumNewlySymptomatic[(int) p->getSerotype()][_nDay]++;
@@ -762,7 +796,7 @@ void Community::updateDiseaseStatus() {
 
 
 void Community::flagInfectedLocation(Location* _pLoc, int day) {
-    if (day < _par->nRunLength) _isHot[day].insert(_pLoc); 
+    if (day < _par->nRunLength) _isHot[day].insert(_pLoc);
 }
 
 
@@ -876,7 +910,7 @@ void Community::_advanceTimers() {
     _exposedQueue.back().clear();
 
     // delete infected mosquitoes that are dying today
-    vector<Mosquito*>::iterator itr; 
+    vector<Mosquito*>::iterator itr;
     for(itr = _infectiousMosquitoQueue.front().begin(); itr != _infectiousMosquitoQueue.front().end(); ++itr ) {
         delete (*itr);
     }
@@ -888,7 +922,7 @@ void Community::_advanceTimers() {
         _infectiousMosquitoQueue[i].shrink_to_fit();
 #endif
     }
-    
+
     _infectiousMosquitoQueue.back().clear();
 #ifndef __INTEL_COMPILER
     _infectiousMosquitoQueue.back().shrink_to_fit();
@@ -938,7 +972,9 @@ void Community::_modelMosquitoMovement() {
 
 void Community::tick(int day) {
     _nDay = day;
-    if ((_nDay+1)%365==0) { swapImmuneStates(); }                     // randomize and advance immune states on
+    //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
+    _processDelayedBirthdays();
+    if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
     if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
     /*{
     const Location* _l = _location[4];
@@ -968,9 +1004,7 @@ void Community::tick(int day) {
 // getNumInfected - counts number of infected residents
 int Community::getNumInfected(int day) {
     int count=0;
-    for (int i=0; i<_nNumPerson; i++)
-        if (_person[i].isInfected(day))
-            count++;
+    for (Person* p: _people) { if (p->isInfected(day)) count++; }
     return count;
 }
 
@@ -978,19 +1012,16 @@ int Community::getNumInfected(int day) {
 // getNumSymptomatic - counts number of symptomatic residents
 int Community::getNumSymptomatic(int day) {
     int count=0;
-    for (int i=0; i<_nNumPerson; i++)
-        if (_person[i].isSymptomatic(day))
-            count++;
+    for (Person* p: _people) { if (p->isSymptomatic(day)) count++; }
     return count;
 }
 
 // getNumSusceptible - counts number of susceptible residents
 vector<int> Community::getNumSusceptible() {
     vector<int> counts(NUM_OF_SEROTYPES, 0);
-    for (int i=0; i<_nNumPerson; i++) {
+    for (Person* p: _people) {
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            if (_person[i].isSusceptible((Serotype) s))
-                counts[s]++;
+            if (p->isSusceptible((Serotype) s)) counts[s]++;
         }
     }
     return counts;

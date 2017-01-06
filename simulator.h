@@ -25,6 +25,11 @@ enum ReportingType {
     INFECTION,
     CASE,
     DSS,
+    INTRO_PREV,
+    LOCAL_PREV,
+    INFECTION_PREV,
+    CASE_PREV,
+    DSS_PREV,
     NUM_OF_REPORTING_TYPES
 };
 
@@ -125,7 +130,7 @@ Community* build_community(const Parameters* par) {
 
 
 void seed_epidemic(const Parameters* par, Community* community) {
-    // epidemic may be seeded with initial exposure OR initial infection 
+    // epidemic may be seeded with initial exposure OR initial infection
     bool attempt_initial_infection = true;
     for (int serotype=0; serotype<NUM_OF_SEROTYPES; serotype++) {
         // Normal usage, to simulate epidemic
@@ -163,17 +168,16 @@ void write_yearly_people_file(const Parameters* par, const Community* community,
         exit(-1);
     }
     yearlyPeopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4" << endl;
-    for (int i=0; i<community->getNumPerson(); i++) {
-        Person *p = community->getPerson(i);
+    for (Person* p: community->getPeople()) {
         for (int j=p->getNumNaturalInfections()-1; j>=0; j--) {
-            yearlyPeopleOutputFile << p->getID() << "," 
-                << 1 + (int) p->getSerotype(j) << "," 
-                << p->getInfectedTime(j) << "," 
-                << p->getSymptomTime(j) << "," 
-                << p->getWithdrawnTime(j) << "," 
+            yearlyPeopleOutputFile << p->getID() << ","
+                << 1 + (int) p->getSerotype(j) << ","
+                << p->getInfectedTime(j) << ","
+                << p->getSymptomTime(j) << ","
+                << p->getWithdrawnTime(j) << ","
                 << p->getRecoveryTime(j) << ",";
             for (int s = 0; s < NUM_OF_SEROTYPES - 1; ++s) {
-                yearlyPeopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ","; 
+                yearlyPeopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ",";
             }
                 yearlyPeopleOutputFile << (p->isSusceptible((Serotype) (NUM_OF_SEROTYPES - 1))?0:1) << endl;
         }
@@ -227,13 +231,12 @@ void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, 
 
 void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const string process_id, vector<int>& epi_sizes) {
     stringstream ss;
-    // local transmission              = total                                  - introductions
-    periodic_incidence["daily"][LOCAL] = periodic_incidence["daily"][INFECTION] - periodic_incidence["daily"][INTRO];
+//if (date.day() >= 25*365 and date.day() < 36*365) {
     if (par->dailyOutput) {
         _reporter(ss, periodic_incidence, par, process_id, " day: ", date.day(), "daily");
         ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
-
+//}
      if (par->periodicOutput) {
         _aggregator(periodic_incidence, "n_day");
         const int n = par->periodicOutputInterval;
@@ -263,7 +266,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     _aggregator(periodic_incidence, "yearly");
     if (date.endOfYear()) {
         if (par->abcVerbose) {
-            cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: "; 
+            cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: ";
             for (auto v: periodic_incidence["yearly"]) cout << v << " "; cout << endl;
         }
 
@@ -326,6 +329,7 @@ void schedule_vector_control(const Parameters* par, Community* community) {
     }
 }
 
+
 int seed_epidemic(const Parameters* par, Community* community, const Date &date) {
     int introduced_infection_ct = 0;
     const int numperson = community->getNumPerson();
@@ -380,21 +384,34 @@ void update_extrinsic_incubation_period(const Parameters* par, Community* commun
 
 
 void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &epi_sizes) {
-    periodic_incidence["daily"][INTRO] += seed_epidemic(par, community, date);
+    seed_epidemic(par, community, date);
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
     community->tick(date.day());
 
-    // TODO - make it cleaner to iterate through pop
-    for (int i=community->getNumPerson()-1; i>=0; i--) {
-        Person *p = community->getPerson(i);
-        // TODO - it should be sufficient to only check second conditional
-        if (p->isInfected(date.day()) and p->isNewlyInfected(date.day())) {
-            ++periodic_incidence["daily"][INFECTION];
+    for (Person* p: community->getPeople()) {
+        if (p->isInfected(date.day())) {
             const Infection* infec = p->getInfection();
-            if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
-            if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
+            bool local  = infec->isLocallyAcquired();
+            bool symp   = infec->isSymptomatic();
+            bool severe = infec->isSevere();
+
+            // Prevalence
+            periodic_incidence["daily"][INTRO_PREV]     += not local;
+            periodic_incidence["daily"][LOCAL_PREV]     += local;
+            periodic_incidence["daily"][INFECTION_PREV] += 1;
+            periodic_incidence["daily"][CASE_PREV]      += symp;
+            periodic_incidence["daily"][DSS_PREV]       += severe;
+
+            // Incidence
+            if (p->isNewlyInfected(date.day())) {
+                periodic_incidence["daily"][INTRO]      += not local;
+                periodic_incidence["daily"][LOCAL]      += local;
+                periodic_incidence["daily"][INFECTION]  += 1;
+                periodic_incidence["daily"][CASE]       += symp;
+                periodic_incidence["daily"][DSS]        += severe;
+            }
         }
     }
 
@@ -432,7 +449,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
-        update_vaccinations(par, community, date); 
+        update_vaccinations(par, community, date);
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 
@@ -578,9 +595,8 @@ void write_immunity_by_age_file(const Community* community, const int year, stri
         filename = ss_filename.str();
     }
     // total count, denv1, denv2, denv3, denv4, imm_to_one, imm_to_all
-    vector< vector<int> > tally(NUM_AGE_CLASSES, vector<int>(NUM_OF_SEROTYPES+3, 0)); 
-    for (int i = 0; i<community->getNumPerson(); ++i) {
-        Person* p = community->getPerson(i);
+    vector< vector<int> > tally(NUM_AGE_CLASSES, vector<int>(NUM_OF_SEROTYPES+3, 0));
+    for (Person* p: community->getPeople()) {
         const int age = p->getAge();
         tally[age][0]++;
         const int numInfections = p->getNumNaturalInfections();
@@ -612,8 +628,7 @@ void write_immunity_file(const Community* community, const string label, string 
     ofstream file;
     file.open(filename);
     file << "pid age imm1 imm2 imm3 imm4\n";
-    for (int i = 0; i<community->getNumPerson(); ++i) {
-        Person* p = community->getPerson(i);
+    for (Person* p: community->getPeople()) {
         vector<int> infection_history(NUM_OF_SEROTYPES, 0); // 0 is no infection; -1 means yesterday, -2 means 2 days ago ...
         for (int k = 0; k<p->getNumNaturalInfections(); ++k) {
             int s = (int) p->getSerotype(k);
@@ -640,16 +655,15 @@ void daily_detailed_output(Community* community, int t) {
         cout << t << ",me," << p->getID() << "," << p->getLocation()->getID() << "," << 1 + (int) p->getSerotype() << "," << "," << "," << endl;
     }*/
     // print out infected people
-    for (int i=community->getNumPerson()-1; i>=0; i--) {
-        Person *p = community->getPerson(i);
+    for (Person *p: community->getPeople()) {
         if (p->isInfected(t)) {
             // home location
-            cout << t 
+            cout << t
                  << ",p,"
-                 << p->getID() << "," 
-                 << p->getLocation(HOME_MORNING)->getID() << "," 
-                 << 1 + (int) p->getSerotype() << "," 
-                 << (p->isSymptomatic(t)?1:0) << "," 
+                 << p->getID() << ","
+                 << p->getLocation(HOME_MORNING)->getID() << ","
+                 << 1 + (int) p->getSerotype() << ","
+                 << (p->isSymptomatic(t)?1:0) << ","
                  << (p->isWithdrawn(t)?1:0) << ","
                  << (p->isNewlyInfected(t)?1:0) << endl;
         }
@@ -718,8 +732,7 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
         int homeids[100];
         int numhomes=0;
         // ages of infected people
-        for (int i=community->getNumPerson()-1; i>=0; i--) {
-            Person *p = community->getPerson(i);
+        for (Person* p: community->getPeople()) {
             int t = p->getInfectedTime();
             if (t>=0) {
                 if (t==0)
@@ -762,7 +775,7 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
         for (int t=0; t<par->nRunLength; t++) {
             dailyOutputFile << t << ",";
             for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyOutputFile << infected[i][t] << ",";
-            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyOutputFile << symptomatic[i][t] << ","; 
+            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyOutputFile << symptomatic[i][t] << ",";
             dailyOutputFile << symptomatic[NUM_OF_SEROTYPES-1][t] << endl;
         }
         dailyOutputFile.close();
@@ -778,17 +791,16 @@ void write_output(const Parameters* par, Community* community, vector<int> numIn
             exit(-1);
         }
         peopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;
-        for (int i=0; i<community->getNumPerson(); i++) {
-            Person *p = community->getPerson(i);
+        for (Person* p: community->getPeople()) {
             for (int j=p->getNumNaturalInfections()-1; j>=0; j--) {
-                peopleOutputFile << p->getID() << "," 
-                    << 1 + (int) p->getSerotype(j) << "," 
-                    << p->getInfectedTime(j) << "," 
-                    << p->getSymptomTime(j) << "," 
-                    << p->getWithdrawnTime(j) << "," 
-                    << p->getRecoveryTime(j) << ","; 
+                peopleOutputFile << p->getID() << ","
+                    << 1 + (int) p->getSerotype(j) << ","
+                    << p->getInfectedTime(j) << ","
+                    << p->getSymptomTime(j) << ","
+                    << p->getWithdrawnTime(j) << ","
+                    << p->getRecoveryTime(j) << ",";
                 for (int s = 0; s < NUM_OF_SEROTYPES; ++s) {
-                    peopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ","; 
+                    peopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ",";
                 }
                     peopleOutputFile << (p->isVaccinated()?1:0) << endl;
             }
