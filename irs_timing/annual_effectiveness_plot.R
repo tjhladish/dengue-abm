@@ -2,7 +2,7 @@ rm(list=ls())
 
 require("RSQLite")
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "./irs_timing0-partial.sqlite")
+db = dbConnect(drv, "./irs_timing0.sqlite")
 
 d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_duration, M.*
                       from parameters P, metrics M, jobs J
@@ -10,6 +10,7 @@ d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_durati
                     and P.serial = J.serial
                     and status = \'D\';')
 
+pop_size = 18.2 # in 100 thousands
 npars = 4
 serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
@@ -20,7 +21,7 @@ tags = d[,1:npars]
 data = d[,(serial_col + data_burnin + 1):last_col]
 #medians = aggregate(d[,5:34], by=list(d$vector_control, d$vc_coverage, d$timing), FUN=median)
 
-plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcumulative=F) {
+plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcumulative=F, plotcasesaverted=F) {
     
     medians = aggregate(data, by=list(tags$vector_control, tags$campaign_duration, tags$vc_coverage, tags$timing), FUN=median)
     names(medians)[1:npars]=c('vc','dur','cov','day')
@@ -35,18 +36,25 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
     .lwd = 1
     if (plotcases) {
         #browser()
-        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$dur==1, (npars+1):(npars+plot_years)])/18.2
+        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$dur==1, (npars+1):(npars+plot_years)])/pop_size
         matplot(t(plotdata),
                 lty=c(1,3:1), type='l', lwd=.lwd, col=c('black',reds),
-                xlab='Year', ylab='Cases per 100k people', ylim=c(0,850), main='')
-        legend('topright', legend=c('baseline','75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=c(1,1:3), bty='n', col=c('black',rev(reds)))
+                xlab='Year', ylab='Cases per 100,000 people', ylim=c(0,850), main='')
+        legend('bottomright', legend=c('baseline','75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=c(1,1:3), bty='n', col=c('black',rev(reds)))
     } else if (plotcumulative) {
         matplot(t(cum_eff[cum_eff$dur==1, (npars+1):(npars+plot_years)]),
                 lty=3:1, type='l', ylim=c(0,1), ylab='Cumulative effectiveness', lwd=.lwd, main='', xlab='Year', col=reds)
         legend('topright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=1:3, bty='n', col=rev(reds))
+    } else if (plotcasesaverted) {
+        cum_ca_vals = -sweep(as.matrix(cum_medians[-1,(npars+1):(dim(cum_medians)[2])]), 2, as.numeric(cum_medians[1,(npars+1):(dim(cum_medians)[2])]), '-')
+        cum_ca_vals = cum_ca_vals/(pop_size*1000)
+        cum_ca = cbind(cum_medians[-1,1:npars], cum_ca_vals)
+        matplot(t(cum_ca[cum_ca$dur==1, (npars+1):(npars+plot_years)]),
+                lty=3:1, type='l', ylab='Cumulative cases averted per 100 people', lwd=.lwd, main='', xlab='Year', col=reds)
+        legend('bottomright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=1:3, bty='n', col=rev(reds))
     } else {
         matplot(t(eff[eff$dur==1,(npars+1):(npars+plot_years)]),
-                lty=3:1, type='l', ylim=c(-0.5,1), lwd=.lwd, ylab='Effectiveness', xlab='Year', col=reds)
+                lty=3:1, type='l', ylim=c(-0.25,1), lwd=.lwd, ylab='Effectiveness', xlab='Year', col=reds)
         abline(h=0,lty=2)
         legend('topright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=1:3, bty='n', col=rev(reds))
     }
@@ -54,12 +62,13 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
 }
 
 #png('vc_effectiveness.png', width=1200, height=1920, res=180)
-png('vc_effectiveness.png', width=3000, height=860, res=225)
-par(mfrow=c(1,3), mar=c(5.1,4.1,1,1), oma=c(0,0,2,0))
+png('vc_effectiveness.png', width=2000, height=1720, res=225)
+par(mfrow=c(2,2), mar=c(4.6,4.1,1.2,1), oma=c(0,0,2,0))
 
 par(las=1,bty='L')
 plot_effectiveness_over_time(tags,data,182, plotcases=T)
-mtext('Simulated impact of IRS (90-day campaign, July 1 start) on dengue cases per 100k, effectiveness, and cumulative effectiveness',side = 3,outer=T)
+mtext('Simulated impact of IRS (90-day campaign, July 1 start)',side = 3,outer=T)
 plot_effectiveness_over_time(tags,data,182)
+plot_effectiveness_over_time(tags,data,182, plotcasesaverted=T)
 plot_effectiveness_over_time(tags,data,182, plotcumulative=T)
 dev.off()
