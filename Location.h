@@ -29,7 +29,6 @@ class Location {
         void setID(int id) { _ID = id; }
         int getID() const { return _ID; }
         int getSerial() const { return _serial; }
-<<<<<<< HEAD
         void setType(LocationType t) { _type = t; }
         LocationType getType() const { return _type; }
         void addPerson(Person *p, int t);
@@ -55,16 +54,6 @@ class Location {
         }
         double getCurrentVectorControlEfficacy(int now) const { return vectorControlActive(now) ? ITQ.top().efficacy : 0.0; }
         double getCurrentVectorControlDailyMortality(int now) const { return vectorControlActive(now) ? ITQ.top().daily_mortality : 0.0; }
-=======
-        void addPerson(Person *p, int t);
-        bool removePerson(Person *p, int t);
-        int getNumPerson(TimePeriod timeofday) const { return _person[(int) timeofday].size(); } 
-        std::vector<Person*> getResidents() { return _person[HOME_NIGHT]; }
-        Person* findMom();                                            // Try to find a resident female of reproductive age
-        void setBaseMosquitoCapacity(int capacity) { _nBaseMosquitoCapacity = capacity; }
-        int getBaseMosquitoCapacity() const { return _nBaseMosquitoCapacity; }
-        int getCurrentInfectedMosquitoes() { return _currentInfectedMosquitoes; }
->>>>>>> irs_timing
         void addInfectedMosquito() { _currentInfectedMosquitoes++; }
         void addInfectedMosquitoes(int n) { _currentInfectedMosquitoes += n; }
         void removeInfectedMosquito() { _currentInfectedMosquitoes--; }

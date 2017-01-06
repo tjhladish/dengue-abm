@@ -384,51 +384,6 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
 
-const int BURNIN = 80;
-if (date.year() >= BURNIN) {
-    vector<int> target_ages;
-    if (par->vaccinationEvents.size() > 0) {
-        target_ages.push_back(par->vaccinationEvents.back().age);
-    } else {
-        target_ages = {9, 16};
-    }
-    for (int target_age: target_ages) {
-        const int VACC_START_DAY = BURNIN*365;
-        if (date.julianDay() == par->startDayOfYear - 1) {
-            // Dims: serostatus (neg/pos), vaccinated (F,T), severity(no infection, asymptomatic, mild, severe)
-            vector< vector< vector<int> > > tally = {{{0,0,0,0},{0,0,0,0}},{{0,0,0,0},{0,0,0,0}}};
-            const int year_of_intervention = date.year() - BURNIN;
-            for (int i=community->getNumPerson()-1; i>=0; i--) {
-                Person *p = community->getPerson(i);
-                if (p->getAge() == year_of_intervention + target_age) {
-                    const bool ever_infected = p->getNumNaturalInfections() > 0 ? true : false;
-                    const bool serostatus = ever_infected and p->getInfectionHistory().front()->getInfectedTime() < VACC_START_DAY;
-                    const bool vaccinated = p->isVaccinated();
-                    int severity = 0; // default = no infection in past year
-                    if (ever_infected and date.day() - p->getInfectionHistory().back()->getInfectedTime() < 365) {
-                        const Infection* infec = p->getInfectionHistory().back();
-                        if ((const bool) infec->isSevere()) {
-                            severity = 3;
-                        } else if ((const bool) infec->isSymptomatic()) {
-                            severity = 2;
-                        } else {
-                            severity = 1;
-                        }
-                    }
-                    tally[(int) serostatus][(int) vaccinated][severity]++;
-                }
-            }
-            for (unsigned int serostatus = 0; serostatus < tally.size(); ++serostatus) {
-                for (unsigned int vaccinated = 0; vaccinated < tally[serostatus].size(); ++vaccinated) {
-                    for (unsigned int severity = 0; severity < tally[serostatus][vaccinated].size(); ++severity) {
-                        cerr << "COHORT," << par->randomseed << "," << year_of_intervention << "," << serostatus << "," << vaccinated << "," << severity << "," << tally[serostatus][vaccinated][severity] << "," << target_age << endl;
-                    }
-                }
-            }
-        }
-    }
-}
-
     community->tick(date.day());
 
     // TODO - make it cleaner to iterate through pop
@@ -440,22 +395,6 @@ if (date.year() >= BURNIN) {
             const Infection* infec = p->getInfection();
             if (infec->isSymptomatic()) ++periodic_incidence["daily"][CASE];
             if (infec->isSevere())      ++periodic_incidence["daily"][DSS];
-
-if (not par->abcVerbose and date.year() >= BURNIN) {   ////////// THIS IS A HACK TO REDUCE OUTPUT.  20 IS THE BURNIN DURATION IN YEARS.
-    // for dec 2015 WHO results
-    stringstream ss;
-    ss << date.day() << ","
-        << date.year() << ","
-        << p->getID() << ","
-        << p->getAge() << ","
-        << p->getLocation(HOME_MORNING)->getID() << ","
-        << (int) p->isVaccinated() << ","
-        << 1 + (int) infec->serotype() << ","
-        << (int) infec->isSymptomatic() << ","
-        << (int) infec->isSevere();
-    daily_output_buffer.push_back(ss.str());
-}
-
         }
     }
 
@@ -493,20 +432,8 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
-
-const int BURNIN = 80;
-if (date.julianDay() == par->startDayOfYear - 1 and date.year() >= BURNIN) {
-    vector<Person*> ageCohort = community->getAgeCohort(9);
-    double seroprev = 0.0;
-    for (auto p: ageCohort) if (p->getNumNaturalInfections() > 0) { seroprev += 1.0; }
-    //seroprev /= ageCohort.size();
-    cerr << "seed, year, vaccine cohort age, seroprevalence: "
-         << par->randomseed << "," << date.year() << "," << 9 << "," << seroprev << "," << ageCohort.size() << endl;
-}
-
         update_vaccinations(par, community, date); 
-        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
-
+        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 
 /*
@@ -560,7 +487,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
             metrics.push_back(seropos_9yo);
         }
 
-        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes, daily_output_buffer);
+        advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
     }
 
     return metrics;

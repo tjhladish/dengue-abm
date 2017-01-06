@@ -46,7 +46,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
 
     double _mild_EF      = args[0];
     double _severe_EF    = args[1];
-<<<<<<< HEAD
     double _base_path    = args[2];
     double _sec_severity = args[3];
     double _pss_ratio    = args[4];
@@ -56,15 +55,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betapm       = 0.10; //
     //int realization      = args[7]; // used for bookkeeping only
     //double _flav_ar      = args[8];
-=======
-    double _sec_severity = args[2];
-    double _base_path    = args[3];
-    double _pss_ratio    = args[4];
-    double _exp_coef     = args[5];
-    double _nmos         = args[6];
-    double _betamp       = args[7]; // mp and pm and not separately
-    double _betapm       = args[7]; // identifiable, so they're the same
->>>>>>> irs_timing
 
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
@@ -72,13 +62,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
     string output_dir = "/scratch/lfs/thladish";
 
-<<<<<<< HEAD
-=======
-    vector<long double> abc_args(&args[0], &args[7]);
-    string argstring;
-    const string process_id = to_string(calculate_process_id(abc_args, argstring));
-
->>>>>>> irs_timing
     par->randomseed              = rng_seed;
     par->dailyOutput             = true;
     par->monthlyOutput           = false;
@@ -95,11 +78,8 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     // http://rsif.royalsocietypublishing.org/content/10/86/20130414/suppl/DC1
     par->defineSerotypeRelativeRisks();
     par->basePathogenicity = _base_path;
-<<<<<<< HEAD
     par->primaryPathogenicityModel = ORIGINAL_LOGISTIC;
     //par->annualFlavivirusAttackRate = _flav_ar;
-=======
->>>>>>> irs_timing
     par->postSecondaryRelativeRisk = 0.1;
 
     par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);

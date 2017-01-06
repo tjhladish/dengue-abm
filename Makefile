@@ -8,11 +8,7 @@ CPP:=g++-4.9
 endif
 
 MAKE     	= make --no-print-directory
-<<<<<<< HEAD
 CFLAGS   	= -Wall -Wextra -pedantic -std=c++11
-=======
-CFLAGS   	= -Wall -pedantic -std=c++11
->>>>>>> irs_timing
 #OPTI     	= -g
 OPTI     	= -O2
 LDFLAGS	 	= -L $(HPC_GSL_LIB) $(TACC_GSL_LIB)

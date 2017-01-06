@@ -61,10 +61,6 @@ void Parameters::define_defaults() {
     basePathogenicity = 1.0;                            // preferably this value is fit; default interpretation is Pr{symptomatic | secondary denv1 infection}
     postSecondaryRelativeRisk = 0.1;                    // risk of symptoms in post-secondary infections relative to secondary infections
 
-<<<<<<< HEAD
-=======
-    //useAgeStructuredPrimaryPathogenicity = false; // changing default behavior from original WHO work
->>>>>>> irs_timing
     primaryPathogenicityModel = ORIGINAL_LOGISTIC;
     primaryRelativeRisk= 0.5;
     annualFlavivirusAttackRate = 0.05;                  // used for geometric pathogenicity model
@@ -99,11 +95,8 @@ void Parameters::define_defaults() {
     startDayOfYear = 1;
 
     dailyOutput   = false;
-<<<<<<< HEAD
     periodicOutput  = false;
     periodicOutputInterval  = 5;
-=======
->>>>>>> irs_timing
     weeklyOutput  = false;
     monthlyOutput = false;
     yearlyOutput  = false;
@@ -657,7 +650,6 @@ void Parameters::defineSerotypeRelativeRisks() { // should be called after repor
     for (double& val: relative_risk_by_sero) val /= implied_cases_by_sero[0];
     serotypePathogenicityRelativeRisks = relative_risk_by_sero;
 }
-<<<<<<< HEAD
 
 
 struct RhoParams { double alpha_irs; vector<double> mu; };
@@ -764,5 +756,3 @@ double Parameters::calculate_daily_vector_control_mortality(const float efficacy
     delete rho_params;
     return rho;
 }
-=======
->>>>>>> irs_timing

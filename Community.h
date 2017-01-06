@@ -96,12 +96,9 @@ class Community {
         std::vector< std::vector<int> > _nNumVaccinatedCases;
         std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::set<Location*, LocPtrComp> > _isHot;
-<<<<<<< HEAD
 
         static std::vector<std::set<Location*, LocPtrComp> > _vectorControlStartDates;
         static std::set<Location*, LocPtrComp> _vectorControlLocations; // Locations that currently have vector control measures in place
-=======
->>>>>>> irs_timing
         bool _uniformSwap;                                            // use original swapping (==true); or parse swap file (==false)
 
         void expandExposedQueues();
