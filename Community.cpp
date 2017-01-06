@@ -501,7 +501,7 @@ void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfect
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
     eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
-    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip, _nDay);
+    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
