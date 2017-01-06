@@ -700,24 +700,31 @@ void Community::_processBirthday(Person* p) {
         const int id = swap_probs[n].first;
         donor = getPersonByID(id);
     }
-    _swapIfNeitherInfected(p, donor);
-/*
-    // update map of locations with infectious people -- not necessary if birthdays are delayed until after infection resolves
-    if (p->getNumNaturalInfections() > 0 and p->getRecoveryTime() > _nDay) {
+    if (_par->delayBirthdayIfInfected) {
+        _swapIfNeitherInfected(p, donor);
+    } else {
+        if (donor) {
+            p->copyImmunity(donor);
+        } else {
+            p->resetImmunity();
+        }
+        // update map of locations with infectious people -- not necessary if birthdays are delayed until after infection resolves
         // if this is a historical infection, person may have neg values for
         // infectious dates that we don't need to deal with--they're in the past
-        const int start_date = p->getInfectiousTime() > 0 ? p->getInfectiousTime() : 0;
-        for (int d = start_date; d < p->getRecoveryTime(); d++) {
-            for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
-                flagInfectedLocation(p->getLocation((TimePeriod) t), d);
+        if (p->isInfected(_nDay)) {
+            const int start_date = p->getInfectiousTime() > 0 ? p->getInfectiousTime() : 0;
+            for (int d = start_date; d < p->getRecoveryTime(); d++) {
+                for (int t=0; t<(int) NUM_OF_TIME_PERIODS; t++) {
+                    flagInfectedLocation(p->getLocation((TimePeriod) t), d);
+                }
             }
         }
-    }*/
+    }
 }
 
 
 void Community::_swapIfNeitherInfected(Person* p, Person* donor) {
-    int process_date = p->isInfected(_nDay) ? p->getRecoveryTime() : _nDay; // delay birthday is p is infected
+    int process_date = p->isInfected(_nDay) ? p->getRecoveryTime() : _nDay; // delay birthday if p is infected
     process_date = donor and donor->isInfected(_nDay) ? std::max(process_date, donor->getRecoveryTime()) : process_date; // and/or delay if donor is infected
     if (process_date == _nDay) {
         if (donor) {

@@ -15,6 +15,7 @@ void Parameters::define_defaults() {
     randomseed = 5489;
     nRunLength = 100;
     birthdayInterval = 7;
+    delayBirthdayIfInfected = false;
     betaPM = 0.2;
     betaMP = 0.1;
     fMosquitoMove = 0.2;
