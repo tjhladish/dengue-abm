@@ -70,7 +70,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     const int runLengthYears     = TOTAL_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 100;
-    par->birthdayInterval        = 365; // process birthdays daily
+    par->birthdayInterval        = 365;
     par->delayBirthdayIfInfected = false;
     par->annualIntroductionsCoef = pow(10, _exp_coef);
 

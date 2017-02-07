@@ -33,7 +33,7 @@ const string SIM_POP = "yucatan";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
 const int FIRST_OBSERVED_YEAR = 1979;
-const int LAST_YEAR           = 2013;                                 // inclusive
+const int LAST_YEAR           = 2015;                                 // inclusive
 const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
 const int DDT_DURATION        = 23;                                   // 23 years long
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
@@ -44,33 +44,36 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->define_defaults();
     par->serial = serial;
 
-    double _mild_EF      = args[0];
-    double _severe_EF    = args[1];
-    double _base_path    = args[2];
-    double _sec_severity = args[3];
-    double _pss_ratio    = args[4];
-    double _exp_coef     = args[5];
-    double _nmos         = args[6];
+    double _mild_RF      = args[0];
+  //double _p95_mild_RF  = args[1]; // not needed in this scope
+    double _severe_RF    = args[2];
+    double _base_path    = args[3];
+    double _sec_severity = args[4];
+    double _pss_ratio    = args[5];
+    double _exp_coef     = args[6];
+    double _nmos         = args[7];
     double _betamp       = 0.25; // beta values from chao et al
     double _betapm       = 0.10; //
     //int realization      = args[7]; // used for bookkeeping only
     //double _flav_ar      = args[8];
 
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+    par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
     string output_dir = "/scratch/lfs/thladish";
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
-    par->monthlyOutput           = false;
+    par->dailyOutput             = false;
+    par->monthlyOutput           = true;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION + FORECAST_DURATION;
     par->nRunLength              = runLengthYears*365;
-    par->startDayOfYear          = 100;
-    par->annualIntroductionsCoef = pow(10, _exp_coef);
+    par->startDayOfYear          = 1; // start on Jan 1, and aggregate cases on standard Julian calendar
+    par->birthdayInterval        = 1; // 1 == daily birthdays
+    par->annualIntroductionsCoef = _exp_coef;
+    //par->annualIntroductionsCoef = pow(10, _exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
@@ -317,9 +320,10 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     // initialize & run simulator
     const Parameters* par = define_simulator_parameters(args, rng_seed, serial);
+    const double _p95_mild_RF = args[1]; // not needed in this scope
 
-    string sero_filename = "/scratch/lfs/thladish/sero/annual_serotypes." + process_id;
-    par->writeAnnualSerotypes(sero_filename);
+    //string sero_filename = "/scratch/lfs/thladish/sero/annual_serotypes." + process_id;
+    //par->writeAnnualSerotypes(sero_filename);
 
     gsl_rng_set(RNG, rng_seed);
     Community* community = build_community(par);
@@ -331,10 +335,10 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     simulate_abc(par, community, process_id, serotested_ids, seropos_87);
 
     // output immunity file for immunity profile comparison with empirical data
-    string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
-    write_immunity_file(community, process_id, imm_filename, par->nRunLength);
+    //string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
+    //write_immunity_file(community, process_id, imm_filename, par->nRunLength);
 
-    vector<double> profile = immune_profile(community);
+    //vector<double> profile = immune_profile(community);
 
     vector<int> mild_cases;
     vector<int> severe_cases;
@@ -347,29 +351,40 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
  
     for (unsigned int i = 0; i < all_cases.size(); ++i) mild_cases.push_back(all_cases[i] - severe_cases[i]);
 
-    const double total_mild   = accumulate(mild_cases.begin(), mild_cases.end(), 0.0);
-    const double total_severe = accumulate(severe_cases.begin(), severe_cases.end(), 0.0);
+    int y1995_idx = 16;
+
+    const double pre_1995_severe = accumulate(severe_cases.begin(),           severe_cases.begin()+y1995_idx, 0.0);
+    const double modern_severe   = accumulate(severe_cases.begin()+y1995_idx, severe_cases.end(), 0.0);
+    const double pre_1995_cases  = accumulate(all_cases.begin(),              all_cases.begin()+y1995_idx, 0.0);
+    const double modern_cases    = accumulate(all_cases.begin()+y1995_idx,    all_cases.end(), 0.0);
+    const double mean_pre_1995_severe  = pre_1995_severe / pre_1995_cases;
+    const double mean_modern_severe    = modern_severe / modern_cases;
+
+    //const double total_mild   = accumulate(mild_cases.begin(), mild_cases.end(), 0.0);
+    //const double total_severe = accumulate(severe_cases.begin(), severe_cases.end(), 0.0);
 
     time (&end);
     double dif = difftime (end,start);
 
-    const double mild_reporting = par->reportedFraction[(int) MILD];
+    const double modern_mild_reporting = par->reportedFraction[(int) MILD];
+    const double pre1995_mild_reporting = _p95_mild_RF;
     const double severe_reporting = par->reportedFraction[(int) SEVERE];
-    const double reported_mean_severe_fraction  = (total_severe*severe_reporting) / (total_mild*mild_reporting + total_severe*severe_reporting);
+    //const double reported_mean_severe_fraction  = (total_severe*severe_reporting) / (total_mild*mild_reporting + total_severe*severe_reporting);
 
     // convert all cases and severe fraction to reported cases
     vector<int> reported_severe(all_cases.size());
     vector<int> reported_total_cases(all_cases.size());
     ABC::Col reported_per_cap(all_cases.size());
     const int pop_size = community->getNumPerson();
-    for (unsigned int i = 0; i < all_cases.size(); i++) {
-        const float_type mild_reported   = mild_cases[i] * mild_reporting;
-        const float_type severe_reported = severe_cases[i] * severe_reporting;
+    for (unsigned int year = 0; year < all_cases.size(); year++) {
+        const double mild_RF = (signed) year < y1995_idx ? pre1995_mild_reporting : modern_mild_reporting;
+        const float_type mild_reported   = mild_cases[year] * mild_RF;
+        const float_type severe_reported = severe_cases[year] * severe_reporting;
         const float_type total_reported  = mild_reported + severe_reported;
-        reported_severe[i] = (int) (severe_reported + 0.5);
-        reported_total_cases[i] = (int) (total_reported + 0.5);
+        reported_severe[year] = (int) (severe_reported + 0.5);
+        reported_total_cases[year] = (int) (total_reported + 0.5);
         // convert to reported cases per 100,000
-        reported_per_cap[i] = 1e5 * total_reported / pop_size;
+        reported_per_cap[year] = 1e5 * total_reported / pop_size;
     }
 
     stringstream ss;
@@ -393,20 +408,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     float_type _skewness         = ABC::skewness(reported_per_cap);
     float_type _median_crossings = ABC::median_crossings(reported_per_cap);
     float_type _seropos          = seropos_87;
-    float_type _severe_prev      = reported_mean_severe_fraction;
-
-    // logistic regression requires x values that are, in this case, just sequential ints
-    vector<double> x(all_cases.size()); for(unsigned int i = 0; i < x.size(); ++i) x[i] = i;
-
-    ABC::LogisticFit* fit = ABC::logistic_reg(x, reported_severe, reported_total_cases);
-    float_type _beta0, _beta1;
-    if (fit->status == GSL_SUCCESS) {
-        _beta0 = fit->beta0;
-        _beta1 = fit->beta1;
-    } else {
-        _beta0 = 100;
-        _beta1 = 100;
-    }
+    float_type _p95_sev_frac     = mean_pre_1995_severe;
+    float_type _mod_sev_frac     = mean_modern_severe;
 
     ss << _mean << " "
        << _min << " "
@@ -418,11 +421,10 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
        << _skewness << " "
        << _median_crossings << " "
        << _seropos << " "
-       << _severe_prev << " "
-       << _beta0 << " "
-       << _beta1 << " |";
+       << _p95_sev_frac << " "
+       << _mod_sev_frac;
 
-    for (double val: profile) ss << " " << val;
+    // ss << " |"; for (double val: profile) ss << " " << val;
     ss << endl;
 
     string output = ss.str();
@@ -439,9 +441,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     append_if_finite(metrics, _skewness);
     append_if_finite(metrics, _median_crossings);
     append_if_finite(metrics, _seropos);
-    append_if_finite(metrics, _severe_prev);
-    append_if_finite(metrics, _beta0);
-    append_if_finite(metrics, _beta1);
+    append_if_finite(metrics, _p95_sev_frac);
+    append_if_finite(metrics, _mod_sev_frac);
 
     delete par;
     delete community;
