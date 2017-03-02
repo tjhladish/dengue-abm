@@ -232,11 +232,12 @@ void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, 
 void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> >& periodic_incidence, const Date& date, const string process_id, vector<int>& epi_sizes) {
     stringstream ss;
 //if (date.day() >= 25*365 and date.day() < 36*365) {
+if (date.day() >= 116*365) {
     if (par->dailyOutput) {
         _reporter(ss, periodic_incidence, par, process_id, " day: ", date.day(), "daily");
         ss << community->getExpectedExtrinsicIncubation() << " " << community->getMosquitoMultiplier()*par->nDefaultMosquitoCapacity << endl;
     }
-//}
+}
      if (par->periodicOutput) {
         _aggregator(periodic_incidence, "n_day");
         const int n = par->periodicOutputInterval;
@@ -528,8 +529,8 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
     map<string, vector<int> > periodic_incidence = construct_tally();
 
     for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.julianDay() == 99 and date.year() == 108 ) { // This should correspond to April 9 (day 99) of 1987
-                                                               // for a 135 year simulation
+        if ( date.julianDay() == 99 and date.year() == 108 ) { // This corresponds to April 9 (day 99) of 1987
+                                                               // for a simulation starting Jan 1, 1879
             // calculate seroprevalence among 8-14 year old merida residents
             for (int id: serotested_ids) {
                 const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
@@ -538,13 +539,17 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
             seropos_87 /= serotested_ids.size();
         }
 
-        //if (date.day() == 125*365) {
-        //    string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2003." + process_id;
-        //    write_immunity_file(community, process_id, imm_filename, date.day());
-        //}
-
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
 
+        if ( date.julianDay() == 365 and date.year() == 121 ) { // December 31 (day 365) of 2000
+            string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2000." + process_id;
+            write_immunity_file(community, process_id, imm_filename, date.day());
+        }
+
+        if ( date.julianDay() == 99 and date.year() == 135 ) { // April 9 (day 99) of 2014
+            string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2014_04_09." + process_id;
+            write_immunity_file(community, process_id, imm_filename, date.day());
+        }
     }
 
     //string dailyfilename = "";

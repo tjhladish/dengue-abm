@@ -61,11 +61,11 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
-    string output_dir = "/scratch/lfs/thladish";
+    //string output_dir = "/scratch/lfs/thladish";
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = false;
-    par->monthlyOutput           = true;
+    par->dailyOutput             = true;
+    par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
     int runLengthYears           = DDT_START + DDT_DURATION + FITTED_DURATION + FORECAST_DURATION;
@@ -315,7 +315,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time (&start);
 
     vector<double> abc_args(&args[0], &args[7]);
-    const unsigned int realization = (int) args[7];
+    const unsigned int realization = 0; //(int) args[7];
     const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
 
     // initialize & run simulator
@@ -336,7 +336,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     // output immunity file for immunity profile comparison with empirical data
     //string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
-    //write_immunity_file(community, process_id, imm_filename, par->nRunLength);
+    string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2015." + process_id;
+    write_immunity_file(community, process_id, imm_filename, par->nRunLength);
 
     //vector<double> profile = immune_profile(community);
 
