@@ -7,12 +7,12 @@
 #SBATCH --mail-user=tjhladish@gmail.com
 
 #SBATCH --account=epi
-#SBATCH --qos=epi-b
+#SBATCH --qos=epi
 #SBATCH --workdir=/home/tjhladish/work/dengue/irs_timing
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
 #SBATCH --time=24:00:00
-#SBATCH --array=0-2999
+#SBATCH --array=0-499
 
 module load gcc/5.2.0 gsl
 for i in `seq 1 50`;
