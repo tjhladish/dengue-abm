@@ -320,7 +320,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     // initialize & run simulator
     const Parameters* par = define_simulator_parameters(args, rng_seed, serial);
-    const double _p95_mild_RF = args[1]; // not needed in this scope
+    const double _p95_mild_RF = args[1];
 
     //string sero_filename = "/scratch/lfs/thladish/sero/annual_serotypes." + process_id;
     //par->writeAnnualSerotypes(sero_filename);

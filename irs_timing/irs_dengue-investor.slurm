@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=irs-dengue
-#SBATCH --output=/ufrc/longini/tjhladish/irs_weekly_output2/refit0_%A_%a.out
-#SBATCH --error=./auto_output/refit_%A_%a.err
+#SBATCH --output=./auto_output/refit-stopping_%A_%a.out
+##SBATCH --output=/ufrc/longini/tjhladish/irs_daily_output-irs_refit/refit0_%A_%a.out
+#SBATCH --error=./auto_output/refit-stopping_%A_%a.err
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tjhladish@gmail.com
@@ -17,5 +18,5 @@
 module load gcc/5.2.0 gsl
 for i in `seq 1 50`;
 do
-    ./abc_sql abc_irs-timing.json --simulate
+    ./abc_sql abc_stopping-effect.json --simulate
 done
