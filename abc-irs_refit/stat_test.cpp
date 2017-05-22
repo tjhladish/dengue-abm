@@ -32,7 +32,11 @@ int main() {
     //for (unsigned int y = 0; y<cases.size() and y<pop.size(); ++y) cout << 1979+y << " " << 1e5*cases[y]/pop[y] << endl;
     vector<ABC::float_type> incidence;
     for (unsigned int y = 0; y<cases.size() and y<pop.size(); ++y) incidence.push_back(1e5*cases[y]/pop[y]);
-
+{
+    cerr << "total cases per 100k people\n";
+    int year = 1979;
+    for (auto val: incidence) cerr << setprecision(1) << fixed << year++ << " " << val << endl;
+}
 
     ABC::Map<ABC::Col> col(&incidence[0], incidence.size()); // copy data from vector into Col
     cout << col.transpose() << endl;
