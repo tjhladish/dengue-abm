@@ -4,33 +4,26 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "irs_timing-refit0.sqlite",
-    "posterior_database_filename"   : "posterior-refit0.sqlite",
+    "database_filename"             : "irs_winter-effect_delayed_birthdays.sqlite",
+    "posterior_database_filename"   : "yucatan-sm3-merged-posterior.sqlite",
 
     "parameters" : [
-        {"name"       : "mild_reported_fraction",
-         "short_name" : "mild_rf",
+        {"name"       : "mild_expansion_factor",
+         "short_name" : "mild_EF",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
          "par2"       : 999},
 
-        {"name"       : "pre95_mrf_coef",
-         "short_name" : "p95_mrf",
+        {"name"       : "severe_expansion_factor",
+         "short_name" : "severe_EF",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
          "par2"       : 999},
 
-        {"name"       : "severe_reported_fraction",
-         "short_name" : "severe_rf",
-         "dist_type"  : "POSTERIOR",
-         "num_type"   : "FLOAT",
-         "par1"       : 0,
-         "par2"       : 999},
-
-        {"name"       : "secondary_pathogenicity",
-         "short_name" : "sec_path",
+        {"name"       : "base_pathogenicity",
+         "short_name" : "base_path",
          "dist_type"  : "POSTERIOR",
          "num_type"   : "FLOAT",
          "par1"       : 0,
@@ -68,7 +61,7 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
-         "par2"       : 0},
+         "par2"       : 9},
 
         {"name"       : "vector_control",
          "dist_type"  : "PSEUDO",
@@ -101,7 +94,13 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
          "par1"       : 0.8,
-         "par2"       : 0.8}
+         "par2"       : 0.8},
+
+        {"name"       : "delayed_bday",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 1}
     ],
 
     "metrics" : [

@@ -28,7 +28,7 @@ class Community {
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
         bool loadMosquitoes(std::string moslocFilename, std::string mosFilename);
-        int getNumPerson() const { return _nNumPerson; }
+        int getNumPeople() const { return _people.size(); }
         std::vector<Person*> getPeople() const { return _people; }
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
@@ -87,7 +87,6 @@ class Community {
                                                                          // left to live
         std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
         int _nDay;                                                    // current day
-        int _nNumPerson;                                              // number of persons in the simulation
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
