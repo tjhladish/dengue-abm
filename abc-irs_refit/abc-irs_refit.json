@@ -1,0 +1,93 @@
+{
+    "smc_iterations" : 10,
+    "num_samples"    : 10000,
+    "predictive_prior_fraction" : 0.05,
+    "pls_training_fraction"     : 0.8,
+    "noise"                     : "MULTIVARIATE",
+
+    "database_filename"         : "yucatan-refit_365-bdays2.sqlite",
+
+    "parameters" : [
+        {"name"         : "mild_reported_fraction",
+         "short_name"   : "mild_rf",
+         "dist_type"    : "NORMAL",
+         "untransform"  : {"type"  : "LOGISTIC", "min"   : 0.01, "max"   : 1 },
+         "num_type"     : "FLOAT",
+         "par1"         : -2.944439,
+         "par2"         : 1.4},
+
+         {"name"         : "pre95_mrf_coef",
+          "short_name"   : "p95_mrf",
+          "dist_type"    : "NORMAL",
+          "untransform"  : {"type"  : "LOGISTIC",
+                            "transformed_addend" : ["mild_reported_fraction"],
+                            "min" : 0.01,
+                            "max" : 1 },
+          "num_type"     : "FLOAT",
+          "par1"         : -0.5,
+          "par2"         : 1},
+
+        {"name"         : "severe_reported_fraction",
+         "short_name"   : "severe_rf",
+         "dist_type"    : "NORMAL",
+         "untransform"  : {"type"  : "LOGISTIC", "min"   : 0.02, "max"   : 1 },
+         "num_type"     : "FLOAT",
+         "par1"         : -1.098612,
+         "par2"         : 0.8},
+
+        {"name"         : "secondary_pathogenicity",
+         "short_name"   : "sec_path",
+         "dist_type"    : "NORMAL",
+         "untransform"  : "LOGISTIC",
+         "num_type"     : "FLOAT",
+         "par1"         : 0.8472979,
+         "par2"         : 0.7},
+
+        {"name"         : "secondary_severity",
+         "short_name"   : "sec_sev",
+         "dist_type"    : "NORMAL",
+         "untransform"  : "LOGISTIC",
+         "num_type"     : "FLOAT",
+         "par1"         : -2.197225,
+         "par2"         : 2.25},
+
+        {"name"         : "primary_secondary_severity_ratio",
+         "short_name"   : "pss_ratio",
+         "dist_type"    : "NORMAL",
+         "untransform"  : "LOGISTIC",
+         "num_type"     : "FLOAT",
+         "par1"         : 0.0,
+         "par2"         : 1.0},
+
+        {"name"         : "exposures_coefficient",
+         "short_name"   : "exp_coef",
+         "dist_type"    : "NORMAL",
+         "untransform"  : {"type"  : "LOGISTIC", "min"   : 0, "max"   : 25 },
+         "num_type"     : "FLOAT",
+         "par1"         : -4.5,
+         "par2"         : 1.5},
+
+        {"name"         : "mosquito_density",
+         "short_name"   : "num_mos",
+         "dist_type"    : "NORMAL",
+         "untransform"  : {"type"  : "LOGISTIC", "min"   : 1, "max"   : 120 },
+         "num_type"     : "FLOAT",
+         "par1"         : 0,
+         "par2"         : 0.7}
+    ],
+
+    "metrics" : [
+        {"name" : "mean",           "num_type" : "FLOAT",   "value" : 101.006     },
+        {"name" : "min",            "num_type" : "FLOAT",   "value" : 0           },
+        {"name" : "quant25",        "num_type" : "FLOAT",   "value" : 2.73475     },
+        {"name" : "median",         "num_type" : "FLOAT",   "value" : 37.9815     },
+        {"name" : "quant75",        "num_type" : "FLOAT",   "value" : 129.016     },
+        {"name" : "max",            "num_type" : "FLOAT",   "value" : 464.334     },
+        {"name" : "stdev",          "num_type" : "FLOAT",   "value" : 140.03      },
+        {"name" : "skewness",       "num_type" : "FLOAT",   "value" : 1.37983     },
+        {"name" : "med_xing",       "num_type" : "FLOAT",   "value" : 0.25        },
+        {"name" : "seroprev",       "num_type" : "FLOAT",   "value" : 0.6         },
+        {"name" : "pre95_sev_frac", "num_type" : "FLOAT",   "value" : 0.000696896 },
+        {"name" : "mod_sev_frac",   "num_type" : "FLOAT",   "value" : 0.290166    }
+    ]
+}

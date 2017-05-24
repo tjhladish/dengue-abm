@@ -26,7 +26,7 @@ Mosquito::Mosquito() {
 }
 
 
-Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod, int time) {
+Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod) {
     _nID = _nNextID++;
     _bDead = false;
     _eSerotype = serotype;

@@ -6,9 +6,10 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <utility>
 #include <numeric>
 #include <cmath>
-
+#include <algorithm>
 
 class Person;
 class Mosquito;
@@ -17,6 +18,9 @@ class Location;
 // We use this to make sure that locations are iterated through in a well-defined order (by ID), rather than by mem address
 struct LocPtrComp { bool operator()(const Location* A, const Location* B) const { return A->getID() < B->getID(); } };
 
+// We use this to created a vector of people, sorted by decreasing age.  Used for aging/immunity swapping.
+struct PerPtrComp { bool operator()(const Person* A, const Person* B) const { return A->getAge() > B->getAge(); } };
+
 class Community {
     public:
         Community(const Parameters* parameters);
@@ -24,8 +28,8 @@ class Community {
         bool loadPopulation(std::string szPop,std::string szImm, std::string szSwap);
         bool loadLocations(std::string szLocs,std::string szNet);
         bool loadMosquitoes(std::string moslocFilename, std::string mosFilename);
-        int getNumPerson() const { return _nNumPerson; }
-        Person *getPerson(int n) const { return _person+n; }
+        int getNumPeople() const { return _people.size(); }
+        std::vector<Person*> getPeople() const { return _people; }
         int getNumInfected(int day);
         int getNumSymptomatic(int day);
         std::vector<int> getNumSusceptible();
@@ -73,7 +77,7 @@ class Community {
 
     protected:
         static const Parameters* _par;
-        Person *_person;                                              // the array index is equal to the ID
+        std::vector<Person*> _people;                                 // the array index is equal to the ID
         std::vector< std::vector<Person*> > _personAgeCohort;         // array of pointers to people of the same age
         int _nPersonAgeCohortSizes[NUM_AGE_CLASSES];                  // size of each age cohort
         double *_fMortality;                                          // mortality by year, starting from 0
@@ -83,18 +87,20 @@ class Community {
                                                                          // left to live
         std::vector< std::vector<Mosquito*> > _exposedMosquitoQueue;  // queue of exposed mosquitoes with n days of latency left
         int _nDay;                                                    // current day
-        int _nNumPerson;                                              // number of persons in the simulation
         int _nMaxInfectionParity;                                     // maximum number of infections (serotypes) per person
         bool _bNoSecondaryTransmission;
         double _fMosquitoCapacityMultiplier;                          // seasonality multiplier for mosquito capacity
         double _expectedEIP;                                          // extrinsic incubation period in days
         double _EIP_emu;                                              // e^mu for log-normal sampling of EIP, (Chan & Johanson 2012)
         static constexpr double _EIP_sigma = pow((double) 4.9, -0.5); // SD for log-normal sampling of EIP, (Chan & Johanson 2012)
+        //static const double _EIP_sigma = 0.4517539514526256;            // same as above, but to accommodate the intel compiler
         std::vector< std::vector<int> > _nNumNewlyInfected;
         std::vector< std::vector<int> > _nNumNewlySymptomatic;
         std::vector< std::vector<int> > _nNumVaccinatedCases;
         std::vector< std::vector<int> > _nNumSevereCases;
         static std::vector<std::set<Location*, LocPtrComp> > _isHot;
+        static std::vector<Person*> _peopleByAge;
+        static std::map<int, std::set<std::pair<Person*, Person*> > > _delayedBirthdays;
 
         static std::vector<std::set<Location*, LocPtrComp> > _vectorControlStartDates;
         static std::set<Location*, LocPtrComp> _vectorControlLocations; // Locations that currently have vector control measures in place
@@ -106,5 +112,8 @@ class Community {
         void mosquitoFilter(std::vector<Mosquito*>& mosquitoes, const double survival_prob);
         void _advanceTimers();
         void _modelMosquitoMovement();
+        void _processBirthday(Person* p);
+        void _processDelayedBirthdays();
+        void _swapIfNeitherInfected(Person* p, Person* donor);
 };
 #endif

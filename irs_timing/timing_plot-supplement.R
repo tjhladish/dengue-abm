@@ -2,7 +2,7 @@ rm(list=ls())
 
 require("RSQLite")
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "./irs_timing0-partial.sqlite")
+db = dbConnect(drv, "./irs_timing0.sqlite")
 
 d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_duration, M.*
                       from parameters P, metrics M, jobs J
@@ -15,6 +15,8 @@ serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
 plot_years = 10  # used 5 for timing plot
 last_col = serial_col + data_burnin + plot_years
+month_starts = c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
+month_labels = c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
 
 tags = d[,1:npars]
 data = d[,(serial_col + data_burnin + 1):last_col]
@@ -32,13 +34,14 @@ timing_effectiveness = function(tags, data, window, func, end) {
     return(means)
 }
 
-png('ce_vc-equillibrium-90day-first5years.png', width=2500, height=860, res=225)
+png('irs_timing-first10years-main.png', width=2500, height=860, res=225)
 par(mfrow=c(1,3), mar=c(2.1,2.1,1,1), oma=c(3,3,3,0),las=1)
 #dur_ = 1
 end = F
 for (cov_ in c(0.25, 0.5, 0.75)){
     test = timing_effectiveness(tags, data, plot_years, median, end)
-    plot(0:365, ylim=c(0,1), xlab='', ylab='', type='n')
+    plot(0:365, ylim=c(0,1), xlab='', ylab='', type='n', xaxt='n')
+    axis(1,at=month_starts,labels = month_labels)
     minval = min(c(test$eff[test$vc==1 & test$dur==0 & test$cov==cov_],test$eff[test$vc==1 & test$dur==1 & test$cov==cov_ & test$day < 365]))
     maxval = max(c(test$eff[test$vc==1 & test$dur==0 & test$cov==cov_],test$eff[test$vc==1 & test$dur==1 & test$cov==cov_ & test$day < 365]))
     rect(0,minval,365,maxval,border=NA,col='#cccccc')
@@ -55,7 +58,7 @@ for (cov_ in c(0.25, 0.5, 0.75)){
     legend('bottomright',legend = c('all houses treated in 1 day', 'houses treated across 90 days', 'houses treated continuously'), lty=1:3, bty='n')
 }
 par(las=0)
-mtext("Campaign start (Julian day)", side=1, outer=T, line=1)
+mtext("Campaign start (Month)", side=1, outer=T, line=1)
 mtext("Effectiveness (prevented cases)", side=2, outer=T, line=1)
 mtext("Effect of campaign start date on IRS effectiveness", side=3, outer=T)
 dev.off()

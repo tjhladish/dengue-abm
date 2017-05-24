@@ -24,7 +24,7 @@ struct RestoreMosquitoPars {
 class Mosquito {
     public:
         Mosquito();
-        Mosquito(Location* p, Serotype s, int nInfectedAtID, int nExternalIncubationPeriod, int time);
+        Mosquito(Location* p, Serotype s, int nInfectedAtID, int nExternalIncubationPeriod);
         Mosquito(RestoreMosquitoPars* pars);
 
         virtual ~Mosquito();

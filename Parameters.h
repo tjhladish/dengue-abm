@@ -279,6 +279,8 @@ public:
 
     unsigned long int randomseed;
     int nRunLength;
+    int birthdayInterval;                                   // 1 == birthdays occur daily, so 1/365 of people age each day; default = 7 (weekly)
+    bool delayBirthdayIfInfected;                           // delay xfer of immune states until neither donor nor recipient are infected
     double betaPM;                                          // scales person-to-mosquito transmission
     double betaMP;                                          // scales mosquito-to-person transmission (includes bite rate)
     double fMosquitoMove;                                   // daily probability of mosquito migration
@@ -351,6 +353,8 @@ public:
 
     int startDayOfYear;
     bool dailyOutput;
+    bool periodicOutput;
+    int periodicOutputInterval;
     bool weeklyOutput;
     bool monthlyOutput;
     bool yearlyOutput;
