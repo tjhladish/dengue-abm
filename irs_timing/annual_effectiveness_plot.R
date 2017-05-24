@@ -33,20 +33,21 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
     cum_eff = cbind(cum_medians[-1,1:npars], cum_eff_vals)
     reds=c('#FF0000','#DD0000','#AA0000')
     .lwd = 1
+    duration = 1
     if (plotcases) {
         #browser()
-        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$dur==1, (npars+1):(npars+plot_years)])/18.2
+        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$dur==duration, (npars+1):(npars+plot_years)])/18.2
         matplot(t(plotdata),
                 lty=c(1,3:1), type='l', lwd=.lwd, col=c('black',reds),
                 xlab='Year', ylab='Cases per 100k people', ylim=c(0,850), main='')
         legend('topright', legend=c('baseline','75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=c(1,1:3), bty='n', col=c('black',rev(reds)))
     } else if (plotcumulative) {
-        matplot(t(cum_eff[cum_eff$dur==1, (npars+1):(npars+plot_years)]),
+        matplot(t(cum_eff[cum_eff$dur==duration, (npars+1):(npars+plot_years)]),
                 lty=3:1, type='l', ylim=c(0,1), ylab='Cumulative effectiveness', lwd=.lwd, main='', xlab='Year', col=reds)
         legend('topright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=1:3, bty='n', col=rev(reds))
     } else {
-        matplot(t(eff[eff$dur==1,(npars+1):(npars+plot_years)]),
-                lty=3:1, type='l', ylim=c(-0.5,1), lwd=.lwd, ylab='Effectiveness', xlab='Year', col=reds)
+        matplot(t(eff[eff$dur==duration,(npars+1):(npars+plot_years)]),
+                lty=3:1, type='l', ylim=c(-0.25,1), lwd=.lwd, ylab='Effectiveness', xlab='Year', col=reds)
         abline(h=0,lty=2)
         legend('topright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=.lwd, lty=1:3, bty='n', col=rev(reds))
     }
@@ -54,12 +55,12 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
 }
 
 #png('vc_effectiveness.png', width=1200, height=1920, res=180)
-png('vc_effectiveness.png', width=3000, height=860, res=225)
+png('vc_effectiveness-90_day_duration-jan1_start.png', width=3000, height=860, res=225)
 par(mfrow=c(1,3), mar=c(5.1,4.1,1,1), oma=c(0,0,2,0))
 
 par(las=1,bty='L')
-plot_effectiveness_over_time(tags,data,182, plotcases=T)
-mtext('Simulated impact of IRS (90-day campaign, July 1 start) on dengue cases per 100k, effectiveness, and cumulative effectiveness',side = 3,outer=T)
-plot_effectiveness_over_time(tags,data,182)
-plot_effectiveness_over_time(tags,data,182, plotcumulative=T)
+plot_effectiveness_over_time(tags,data,0, plotcases=T)
+mtext('Simulated impact of IRS (90-day campaign, January 1 start) on dengue cases per 100k, effectiveness, and cumulative effectiveness',side = 3,outer=T)
+plot_effectiveness_over_time(tags,data,0)
+plot_effectiveness_over_time(tags,data,0, plotcumulative=T)
 dev.off()

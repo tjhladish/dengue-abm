@@ -13,7 +13,7 @@ d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_durati
 npars = 4
 serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
-plot_years = 5  # used 5 for timing plot
+plot_years = 10  # used 5 for timing plot
 last_col = serial_col + data_burnin + plot_years
 
 tags = d[,1:npars]
