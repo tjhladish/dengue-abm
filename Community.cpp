@@ -39,7 +39,6 @@ Community::Community(const Parameters* parameters) :
     {
     _par = parameters;
     _nDay = 0;
-    _nNumPerson = 0;
     _fMosquitoCapacityMultiplier = 1.0;
     _expectedEIP = -1;
     _EIP_emu = -1;
@@ -136,7 +135,6 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         return false;
     }
     string buffer;
-    _nNumPerson=0;
     int agecounts[NUM_AGE_CLASSES];
     for (int i=0; i<NUM_AGE_CLASSES; i++) agecounts[i] = 0;
 
@@ -170,7 +168,6 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
             _location[house]->addPerson(p, HOME_NIGHT);
             assert(age<NUM_AGE_CLASSES);
             agecounts[age]++;
-            _nNumPerson++;
         }
     }
     iss.close();
@@ -429,9 +426,9 @@ Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
     // TODO - make that not true (about starting at 1)
-    if(id < 1 or id > _nNumPerson) {
-        cerr << "ERROR: failed to find person with id " << id << " max: " << _nNumPerson << endl;
-        assert(id > 0 and id <= _nNumPerson);
+    if(id < 1 or id > getNumPeople()) {
+        cerr << "ERROR: failed to find person with id " << id << " max: " << getNumPeople() << endl;
+        assert(id > 0 and id <= getNumPeople());
     }
 
     int i = 0;

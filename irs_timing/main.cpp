@@ -21,9 +21,9 @@ const string SIM_POP = "yucatan";
 const string HOME_DIR(std::getenv("HOME"));
 const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
-const string imm_dir(output_dir + "/imm_1000_yucatan");
+const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
-const int RESTART_BURNIN    = 25;
+const int RESTART_BURNIN    = 25; // was 100 for foi-effect analysis
 const int FORECAST_DURATION = 51;
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
@@ -34,45 +34,51 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->define_defaults();
     par->serial = serial;
 
-    //00  "mild_expansion_factor",
-    //01  "severe_expansion_factor",
-    //02  "base_pathogenicity",
-    //03  "secondary_severity",
-    //04  "primary_secondary_severity_ratio",
-    //05  "exposures_coefficient",
-    //06  "mosquito_density",
-    //07  "realization",
-    //08  "vector_control",
-    //09  "campaign_duration",
-    //10  "timing",
-    //11  "vc_coverage",
-    //12  "vc_efficacy",
+    //00   "mild_rf",
+    //01   "p95_mrf",
+    //02   "severe_rf",
+    //03   "sec_path",
+    //04   "sec_sev",
+    //05   "pss_ratio",
+    //06   "exp_coef",
+    //07   "num_mos",
 
-    double _mild_EF      = args[0];
-    double _severe_EF    = args[1];
-    double _base_path    = args[2];
-    double _sec_severity = args[3];
-    double _pss_ratio    = args[4];
-    double _exp_coef     = args[5];
-    double _nmos         = args[6];
+    //08   "realization",
+    //09   "vector_control",
+    //10   "campaign_duration",
+    //11   "timing",
+    //12   "vc_coverage",
+    //13   "vc_efficacy",
+
+    double _mild_RF      = args[0];
+  //double _p95_mild_RF  = args[1]; // not needed in this scope
+    double _severe_RF    = args[2];
+    double _base_path    = args[3];
+    double _sec_severity = args[4];
+    double _pss_ratio    = args[5];
+    double _exp_coef     = args[6];
+    double _nmos         = args[7];
+    double _foi_mult     = args[14];
     double _betamp       = 0.25; // beta values from chao et al
     double _betapm       = 0.10; //
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+
+    par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     par->randomseed              = rng_seed;
     par->dailyOutput             = false;
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
-    par->weeklyOutput            = true;
+    par->weeklyOutput            = false;
     par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
     const int runLengthYears     = TOTAL_DURATION;
     par->nRunLength              = runLengthYears*365;
-    par->startDayOfYear          = 100;
-    par->birthdayInterval        = 365;
+    par->startDayOfYear          = 1;
+    par->birthdayInterval        = 1;
     par->delayBirthdayIfInfected = false;
-    par->annualIntroductionsCoef = pow(10, _exp_coef);
+    par->annualIntroductionsCoef = _exp_coef;
+    //par->annualIntroductionsCoef = pow(10, _exp_coef);
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
@@ -95,7 +101,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = (int) _nmos;
+    par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
@@ -121,7 +127,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
-    par->immunityFilename         = imm_dir    + "/immunity2003."       + process_id;
+    par->immunityFilename         = imm_dir    + "/immunity2015."       + process_id;
     //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
@@ -189,13 +195,13 @@ void append_if_finite(vector<double> &vec, double val) {
 }
 
 
-vector<double> tally_counts(const Parameters* par, Community* community, const int vc_timing) {
+vector<double> tally_counts(const Parameters* par, Community* community, int pre_intervention_output) {
     // aggregate based on the timing of the annual start of vector control
     int discard_days = INT_MAX;
     for (VectorControlEvent vce: par->vectorControlEvents) {
+        // seems like this loop doesn't do anything, given discard_days initialized as INT_MAX
         discard_days = discard_days < vce.campaignStart ? discard_days : vce.campaignStart;
     }
-    const int pre_intervention_output = 5; // years
     discard_days = discard_days==INT_MAX ? 365*(RESTART_BURNIN-pre_intervention_output) : discard_days - (365*pre_intervention_output);
 
     //vector< vector<int> > severe      = community->getNumSevereCases();
@@ -256,40 +262,45 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time_t start, end;
     time (&start);
     //const string process_id = report_process_id(args, serial, mp, start);
-    vector<double> abc_args(&args[0], &args[7]);
-    const unsigned int realization = (int) args[7];
+    vector<double> abc_args(&args[0], &args[7]); // should have been args[8] instead of args[7], but collisions are very unlikely
+    const unsigned int realization = 0; //(int) args[8];
 
     const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
+//cerr << "IDS " << process_id << " " << serial;
+//for (auto _p: args) cerr << " " << _p; cerr << endl;
+//exit(-10);
     report_process_id(args, serial, mp, start);
 
     cerr << "SCENARIO " << rng_seed;
     for (auto _p: args) cerr << " " << _p; cerr << endl;
 
     Parameters* par = define_simulator_parameters(args, rng_seed, serial, process_id);
-//  Posterior pars
-    //00  "mild_expansion_factor",
-    //01  "severe_expansion_factor",
-    //02  "base_pathogenicity",
-    //03  "secondary_severity",
-    //04  "primary_secondary_severity_ratio",
-    //05  "exposures_coefficient",
-    //06  "mosquito_density",
+    //00   "mild_rf",
+    //01   "p95_mrf",
+    //02   "severe_rf",
+    //03   "sec_path",
+    //04   "sec_sev",
+    //05   "pss_ratio",
+    //06   "exp_coef",
+    //07   "num_mos",
 
-//  Pseudo pars
-    //07  "realization",
-    //08  "vector_control",
-    //09  "campaign_duration",
-    //10  "timing",
-    //11  "vc_coverage",
-    //12  "vc_efficacy",
+    //08   "realization",
+    //09   "vector_control",
+    //10   "campaign_duration",
+    //11   "timing",
+    //12   "vc_coverage",
+    //13   "vc_efficacy",
+    //14   "foi_multiplier"
+    //15   "vc_strategy_duration"
 
     vector<int> vc_campaign_duration_levels = {1, 90, 365};
 
-    const bool vector_control     = (bool) args[8];
-    const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[9]]; // number of days to achieve coverage
-    const int vc_timing           = (int) args[10];
-    const double vc_coverage      = args[11];
-    const double vc_efficacy      = args[12];       // expected % reduction in equillibrium mosquito population in treated houses
+    const bool vector_control     = (bool) args[9];
+    const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[10]]; // number of days to achieve coverage
+    const int vc_timing           = (int) args[11];
+    const double vc_coverage      = args[12];
+    const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
+    const int vc_years            = (int) args[15];
 
     Community* community = build_community(par);
 
@@ -297,8 +308,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         const int efficacyDuration = 90;       // number of days efficacy is maintained
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
-        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-        //for (int vec_cont_year = 0; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
+        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
+        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
             // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
             int startDate = 0;
             if (vc_timing >= par->startDayOfYear) { // start before Jan 1
@@ -311,12 +322,28 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }
 
     seed_epidemic(par, community);
-    simulate_epidemic(par, community, process_id);
+    //simulate_epidemic(par, community, process_id);
+    vector< vector<double> > sero_prev;
+    bool capture_sero_prev = true;
+    simulate_epidemic_with_seroprev(par, community, process_id, sero_prev, capture_sero_prev);
 
     time (&end);
     double dif = difftime (end,start);
 
-    vector<double> metrics = tally_counts(par, community, vc_timing);
+    const int pre_intervention_output = 5; // years
+    const int desired_intervention_output = 50;
+    vector<double> metrics = tally_counts(par, community, pre_intervention_output);
+
+    assert(sero_prev.size() == 5);
+    assert(sero_prev[0].size() == sero_prev[1].size());
+    assert(sero_prev[0].size() == sero_prev[2].size());
+    assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
+    // flatten sero_prev
+    for (auto sero_prev_class: sero_prev) {
+        for (int year = RESTART_BURNIN-pre_intervention_output; year < RESTART_BURNIN + desired_intervention_output; ++year) {
+            metrics.push_back(sero_prev_class[year]);
+        }
+    }
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
@@ -380,7 +407,6 @@ int main(int argc, char* argv[]) {
     }
 
     if (simulate_db) {
-        cerr << "simulate db\n";
         time(&GLOBAL_START_TIME);
         abc->set_simulator(simulator);
         abc->simulate_next_particles(buffer_size);
