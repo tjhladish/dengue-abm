@@ -1,13 +1,15 @@
+require(data.table)
 obs = read.table('weekly_confirmed_cases_1995-2015_wide.csv', header=F, sep=' ', col.names=1:53, fill=T)
 #obs = obs[-c(1:11),]                   # discard 1995-2015
-sim.raw = read.table('daily_output-refit', header=F, col.names=c('serial','day','intro','local','intro_prev','local_prev'))
-sim.raw = sim.raw[sim.raw$day<=50004,] # end before 2016
-#sim.raw = sim.raw[sim.raw$day>46354,]  # start with 2006
-sim.raw$inc = sim.raw$intro + sim.raw$local
-require(data.table)
-sim.dt = data.table(sim.raw)[,.(serial,day,inc)]
-sim.means = aggregate(sim.dt, by = list(serial=sim.dt$serial,day=sim.dt$day%%365), FUN=mean)
-sim.dt.mean = data.table(sim.means)[,.(serial,day,inc)]
+# sim.raw = read.table('daily_output-refit', header=F, col.names=c('serial','day','intro','local','intro_prev','local_prev'))
+# sim.raw = sim.raw[sim.raw$day<=50004,] # end before 2016
+# #sim.raw = sim.raw[sim.raw$day>46354,]  # start with 2006
+# sim.raw$inc = sim.raw$intro + sim.raw$local
+# sim.dt = data.table(sim.raw)[,.(serial,day,inc)]
+# sim.means = aggregate(sim.dt, by = list(serial=sim.dt$serial,day=sim.dt$day%%365), FUN=mean)
+#
+# sim.dt.mean = data.table(sim.means)[,.(serial,day,inc)]
+load(file='sim.dt.mean.rda')
 
 sim.overall.mean = aggregate(sim.dt.mean[,.(inc)], by=list(day=sim.dt.mean$day), FUN=mean)
 obs.mean = colMeans(obs[,1:52], na.rm=T)
@@ -23,3 +25,4 @@ legend('topleft',legend=c('Observed','Simulated'),col=c('black','blue'), lwd=2, 
 lines((1:365), sim.overall.mean$inc/max(sim.overall.mean$inc), col='blue', lwd=3)
 polygon(c(1:365, 365:1), c(sim.ci$inc[,1],rev(sim.ci$inc[,2]))/max(sim.overall.mean$inc), col = "#00009922", border = FALSE)
 dev.off()
+
