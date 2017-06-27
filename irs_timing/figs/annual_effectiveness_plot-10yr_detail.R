@@ -2,21 +2,21 @@ rm(list=ls())
 
 require("RSQLite")
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "./irs_stopping-effect.sqlite", flags=SQLITE_RO)
+db = dbConnect(drv, "./irs_stopping-effect_rerun.sqlite", flags=SQLITE_RO)
 
 d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_duration, strat_years, M.*
                       from par P, met M, job J
                       where P.serial = M.serial
+                    and strat_years = 50
+                    and (vc_coverage = 0.75 or vector_control)
                     and P.serial = J.serial
                     and status = \'D\';')
-
-
 
 pop_size = 18.2 # in 100 thousands
 npars = 5
 serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
-plot_years = 20  # used 5 for timing plot
+plot_years = 10  # used 5 for timing plot
 last_col = serial_col + data_burnin + plot_years
 
 tags = d[,1:npars]
@@ -30,18 +30,18 @@ plot_effectiveness_over_time = function(tags, data, timing) {
     eff = cbind(medians[-1,1:npars], eff_vals)
     reds=c('#FF0000','#DD0000','#AA0000')
     .lwd = 1:3
-    matplot(t(eff[eff$dur==1 & eff$strat==10,(npars+1):(npars+plot_years)]),
+    matplot(t(eff[eff$dur==1 & eff$strat==50,(npars+1):(npars+plot_years)]),
             #lty=3:1, type='l', ylim=c(0,1.05), lwd=.lwd, ylab='Overall effectiveness', xlab='Year', col=reds)
-            lty=3:1, type='l', lwd=.lwd, ylab='Overall effectiveness', xlab='Year', col='#999999')
-    matlines(t(eff[eff$dur==1 & eff$strat==50, (npars+1):(npars+plot_years)]),
-            lty=3:1, type='l', ylab='Cumulative cases averted per 100 people', lwd=.lwd, main='', xlab='Year', col=reds)
+            lty=3:1, type='l', lwd=.lwd, ylab='Overall effectiveness', xlab='Year', col=reds, ylim=c(0,1))
+    #matlines(t(eff[eff$dur==1 & eff$strat==50, (npars+1):(npars+plot_years)]),
+    #        lty=3:1, type='l', lwd=.lwd, main='', xlab='Year', col=reds)
     abline(h=0,lty=2)
-    legend('bottomright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=rev(.lwd), lty=1:3, bty='n', col=rev(reds))
+    legend('topright', legend=c('75% coverage','50% coverage','25% coverage'), lwd=rev(.lwd), lty=1:3, bty='n', col=rev(reds))
     return(medians)
 }
 
-png('vc_effectiveness-main-refit-20year.png', width=1000, height=860, res=150)
+png('vc_effectiveness-main-refit-10year.png', width=1500, height=1290, res=200)
 par(las=1,bty='L')
 plot_effectiveness_over_time(tags,data,152)
-mtext('Simulated impact of IRS (90-day campaign, early June) over first 10 years',side = 3, line=2)
+#mtext('Simulated impact of IRS (90-day campaign, June 1) over first 10 years',side = 3, line=2)
 dev.off()

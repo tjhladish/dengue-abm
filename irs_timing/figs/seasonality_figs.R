@@ -241,9 +241,12 @@ plot_seasonality = function(supplement=T) {
         #darkgrey  = '#888888'
         lightgrey = '#eeeeff'
         darkgrey  = '#2222ff'
-        gradient.rect(152,1.09,152+180,1.32,col=smoothColors(lightgrey,100,darkgrey,100,lightgrey),border=T)
-        #gradient.rect(152,0,152+180,0.15,col=smoothColors(lightgrey,100,darkgrey,100,lightgrey),border=T)
-        text(152+90, 1.20, labels='Insecticide active (optimal timing)')
+        #gradient.rect(152,1.09,152+180,1.32,col=smoothColors(lightgrey,100,darkgrey,100,lightgrey),border=T)
+        #text(152+90, 1.20, labels='Insecticide active (optimal timing)')
+        text(152+90, 1.25, labels='Insecticide active (optimal timing)')
+        arrows(152, 1.15, 152+180, 1.15, code=3, length=0.125)
+        arrows(152, 1.05, 152, 1.25, length=0)
+        arrows(152+180, 1.05, 152+180, 1.25, length=0)
         lines(rescaled_e_avg, col=3, lwd=1.5, type='l')
         lines(r0_smooth/max(r0_smooth), col=orange, lwd=1.5)
         abline(h=1/max(r0_smooth), col=orange, lty=3)

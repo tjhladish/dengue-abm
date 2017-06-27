@@ -2,19 +2,22 @@ rm(list=ls())
 
 require("RSQLite")
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "./irs_timing-refit0.sqlite")
+db = dbConnect(drv, "./irs_stopping-effect_rerun.sqlite", flags=SQLITE_RO)
 
 d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_duration, M.*
                       from par P, met M, job J
-                      where P.serial = M.serial 
+                      where P.serial = M.serial
+                    and strat_years = 50
+                    and (vc_coverage = 0.75 or vector_control)
                     and P.serial = J.serial
                     and status = \'D\';')
 
+#d$vc_coverage[d$vector_control==0] = 0
 pop_size = 18.2 # in 100 thousands
 npars = 4
 serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
-plot_years = 50  # used 5 for timing plot
+plot_years = 10  # used 5 for timing plot
 last_col = serial_col + data_burnin + plot_years
 
 tags = d[,1:npars]
@@ -22,9 +25,9 @@ data = d[,(serial_col + data_burnin + 1):last_col]
 #medians = aggregate(d[,5:34], by=list(d$vector_control, d$vc_coverage, d$timing), FUN=median)
 
 plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcumulative=F, plotcasesaverted=F) {
-    
-    medians = aggregate(data, by=list(tags$vector_control, tags$campaign_duration, tags$vc_coverage, tags$timing), FUN=median)
-    names(medians)[1:npars]=c('vc','dur','cov','day')
+    #browser()
+    medians = aggregate(data, by=list(tags$campaign_duration, tags$vc_coverage, tags$timing, tags$vector_control), FUN=median)
+    names(medians)[1:npars]=c('dur','cov','day','vc')
     medians = medians[medians$day==timing | medians$vc==0,]
     eff_vals = 1 - sweep(as.matrix(medians[-1,(npars+1):(dim(medians)[2])]), 2, as.numeric(medians[1,(npars+1):(dim(medians)[2])]), '/')
     eff = cbind(medians[-1,1:npars], eff_vals)
@@ -36,8 +39,8 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
     .lwd = 1
     duration = 1
     if (plotcases) {
-        #browser()
-        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$dur==duration, (npars+1):(npars+plot_years)])/pop_size
+       # browser()
+        plotdata = rbind(medians[1,(npars+1):(npars+plot_years)], medians[medians$vc==1, (npars+1):(npars+plot_years)])/pop_size
         matplot(t(plotdata),
                 lty=c(1,3:1), type='l', lwd=.lwd, col=c('black',reds),
                 xlab='Year', ylab='Cases per 100,000 people', ylim=c(0,850), main='')
@@ -73,13 +76,17 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
 #plot_effectiveness_over_time(tags,data,0, plotcumulative=T)
 #dev.off()
 
-png('vc_effectiveness-refit.png', width=2000, height=1720, res=225)
+png('vc_4-panel-impact_10yr-grid.png', width=2000, height=1720, res=225)
 par(mfrow=c(2,2), mar=c(4.6,4.1,1.2,1), oma=c(0,0,2,0))
 
 par(las=1,bty='L')
-plot_effectiveness_over_time(tags,data,182, plotcases=T)
-mtext('Simulated impact of IRS (90-day campaign, July 1 start)',side = 3,outer=T)
-plot_effectiveness_over_time(tags,data,182)
-plot_effectiveness_over_time(tags,data,182, plotcasesaverted=T)
-plot_effectiveness_over_time(tags,data,182, plotcumulative=T)
+plot_effectiveness_over_time(tags,data,152, plotcases=T)
+grid()
+#mtext('Simulated impact of IRS (90-day campaign, June 1 start)',side = 3,outer=T)
+plot_effectiveness_over_time(tags,data,152)
+grid()
+plot_effectiveness_over_time(tags,data,152, plotcasesaverted=T)
+grid()
+plot_effectiveness_over_time(tags,data,152, plotcumulative=T)
+abline(v=1:10, h=1:20/20)
 dev.off()
