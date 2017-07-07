@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "irs_stopping-effect.sqlite",
+    "database_filename"             : "irs_stopping-effect_repeat.sqlite",
     "posterior_database_filename"   : "posterior-refit0.sqlite",
 
     "parameters" : [
@@ -117,7 +117,15 @@
          "num_type"   : "INT",
          "par1"       : 10,
          "par2"       : 50,
-         "step"       : 40}
+         "step"       : 40},
+
+        {"name"       : "efficacy_duration",
+         "short_name" : "eff_days",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 90,
+         "par2"       : 90,
+         "step"       : 0}
     ],
 
     "metrics" : [

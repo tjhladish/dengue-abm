@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
 const int RESTART_BURNIN    = 25; // was 100 for foi-effect analysis
-const int FORECAST_DURATION = 51;
+const int FORECAST_DURATION = 51; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 
@@ -199,7 +199,6 @@ vector<double> tally_counts(const Parameters* par, Community* community, int pre
     // aggregate based on the timing of the annual start of vector control
     int discard_days = INT_MAX;
     for (VectorControlEvent vce: par->vectorControlEvents) {
-        // seems like this loop doesn't do anything, given discard_days initialized as INT_MAX
         discard_days = discard_days < vce.campaignStart ? discard_days : vce.campaignStart;
     }
     discard_days = discard_days==INT_MAX ? 365*(RESTART_BURNIN-pre_intervention_output) : discard_days - (365*pre_intervention_output);
@@ -208,8 +207,7 @@ vector<double> tally_counts(const Parameters* par, Community* community, int pre
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
 
     //vector< vector<int> > infected    = community->getNumNewlyInfected();
-    //const int num_years = FORECAST_DURATION;
-    const int num_years = 55;
+    const int num_years = FORECAST_DURATION + pre_intervention_output - 1; // typically 55
     vector<vector<int> > s_tally(NUM_OF_SEROTYPES, vector<int>(num_years+1, 0));
 
     vector<double> metrics(num_years, 0.0);
@@ -292,6 +290,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     //13   "vc_efficacy",
     //14   "foi_multiplier"
     //15   "vc_strategy_duration"
+    //16   "efficacy_duration"
 
     vector<int> vc_campaign_duration_levels = {1, 90, 365};
 
@@ -301,11 +300,11 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const double vc_coverage      = args[12];
     const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
     const int vc_years            = (int) args[15];
+    const int efficacyDuration    = (int) args[16]; // default was 90; number of days efficacy is maintained
 
     Community* community = build_community(par);
 
     if (vector_control) {
-        const int efficacyDuration = 90;       // number of days efficacy is maintained
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
         for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
@@ -331,7 +330,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     double dif = difftime (end,start);
 
     const int pre_intervention_output = 5; // years
-    const int desired_intervention_output = 50;
+    const int desired_intervention_output = FORECAST_DURATION - 1;
     vector<double> metrics = tally_counts(par, community, pre_intervention_output);
 
     assert(sero_prev.size() == 5);
