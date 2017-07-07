@@ -2,10 +2,10 @@ rm(list=ls())
 
 require("RSQLite")
 drv = dbDriver("SQLite")
-db = dbConnect(drv, "./irs_timing0.sqlite")
+db = dbConnect(drv, "./irs_timing-refit0.sqlite", flags=SQLITE_RO)
 
 d <- dbGetQuery(db, 'select vector_control, timing, vc_coverage, campaign_duration, M.*
-                      from parameters P, metrics M, jobs J
+                      from par P, met M, job J
                       where P.serial = M.serial 
                     and P.serial = J.serial
                     and status = \'D\';')
