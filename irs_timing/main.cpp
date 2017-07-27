@@ -112,7 +112,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->simulateAnnualSerotypes = false;
     //par->normalizeSerotypeIntros = true;
     //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
-    par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
+    par->nDailyExposed = {{1.0, 1.0, 1.0, 1.0}};
+    //par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
 
     par->annualIntroductions = {1.0};
 
