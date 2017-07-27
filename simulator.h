@@ -137,7 +137,7 @@ void seed_epidemic(const Parameters* par, Community* community) {
         if (par->nInitialExposed[serotype] > 0) {
             attempt_initial_infection = false;
             for (int i=0; i<par->nInitialExposed[serotype]; i++)
-                community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()), (Serotype) serotype,0);
+                community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()) + 1, (Serotype) serotype,0);
         }
     }
     if (attempt_initial_infection) {
@@ -148,7 +148,7 @@ void seed_epidemic(const Parameters* par, Community* community) {
 
                 // must infect nInitialInfected persons -- this bit is mysterious
                 while (community->getNumInfected(0) < count + par->nInitialInfected[serotype]) {
-                    community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()), (Serotype) serotype,0);
+                    community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()) + 1, (Serotype) serotype,0);
                 }
             }
         }
