@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "irs_stopping-effect_repeat.sqlite",
+    "database_filename"             : "irs_stopping-effect_intro-fix.sqlite",
     "posterior_database_filename"   : "posterior-refit0.sqlite",
     "retain_posterior_rank"         : "true",
 
@@ -297,7 +297,7 @@
         {"name" : "imm1_47", "num_type" : "INT", "value" : 0},
         {"name" : "imm1_48", "num_type" : "INT", "value" : 0},
         {"name" : "imm1_49", "num_type" : "INT", "value" : 0},
-       
+
         {"name" : "imm2__5", "num_type" : "INT", "value" : 0},
         {"name" : "imm2__4", "num_type" : "INT", "value" : 0},
         {"name" : "imm2__3", "num_type" : "INT", "value" : 0},
