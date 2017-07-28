@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=irs-dengue
-#SBATCH --output=./auto_output/refit-stopping_%A_%a.out
+#SBATCH --output=./auto_output/refit-stopping-repeat_%A_%a.out
 ##SBATCH --output=/ufrc/longini/tjhladish/irs_daily_output-irs_refit/refit0_%A_%a.out
-#SBATCH --error=./auto_output/refit-stopping_%A_%a.err
+#SBATCH --error=./auto_output/refit-stopping-repeat_%A_%a.err
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tjhladish@gmail.com

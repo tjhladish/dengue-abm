@@ -16,48 +16,44 @@ using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 
-//unsigned int calculate_process_id(vector< long double> &args, string &argstring);
+//unsigned int calculate_process_id(vector<double> &args, string &argstring);
 const string SIM_POP = "yucatan";
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial) {
+Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
     par->define_defaults();
     par->serial = serial;
 
-    double _mild_EF      = args[0];
-    double _severe_EF    = args[1];
-    double _base_path    = args[2];
-    double _sec_severity = args[3];
-    double _pss_ratio    = args[4];
-    double _exp_coef     = args[5];
-    double _nmos         = args[6];
+    double _mild_RF      = args[0];
+  //double _p95_mild_RF  = args[1]; // not needed in this scope
+    double _severe_RF    = args[2];
+    double _base_path    = args[3];
+    double _sec_severity = args[4];
+    double _pss_ratio    = args[5];
+  //double _exp_coef     = args[6];
+    double _nmos         = args[7];
     double _betamp       = 0.25; // beta values from chao et al
     double _betapm       = 0.10; //
-    par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
+
+    par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
-    vector<long double> abc_args(&args[0], &args[7]);
+    vector<double> abc_args(&args[0], &args[7]);
     string argstring;
     //const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
     par->randomseed              = rng_seed;
+    par->periodicOutput          = true;
+    par->periodicOutputInterval  = 25;
     par->dailyOutput             = false;
-    par->weeklyOutput            = true;
-    par->monthlyOutput           = true;
-    par->yearlyOutput            = true;
+    par->weeklyOutput            = false;
+    par->monthlyOutput           = false;
+    par->yearlyOutput            = false;
     par->abcVerbose              = true;
     par->nRunLength              = 100;
     par->annualIntroductionsCoef = 0.0;
-    //if ( SIM_POP == "merida") {
-        par->annualIntroductionsCoef = 0.0;//pow(10, _exp_coef);
-    //} else if ( SIM_POP == "yucatan" ) {
-    //    // assuming parameter fitting was done on merida population 
-    //    par->annualIntroductionsCoef = pow(10, _exp_coef)*1819498.0/839660.0;
-    //} else {
-    //    cerr << "ERROR: Unknown simulation population (SIM_POP): " << SIM_POP << endl;
-    //    exit(523);
-    //}
+    par->birthdayInterval        = 365;
 
     // pathogenicity values fitted in
     // Reich et al, Interactions between serotypes of dengue highlight epidemiological impact of cross-immunity, Interface, 2013
@@ -66,7 +62,6 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     par->defineSerotypeRelativeRisks();
     par->basePathogenicity = _base_path;
     par->primaryPathogenicityModel = ORIGINAL_LOGISTIC;
-    //par->annualFlavivirusAttackRate = _flav_ar;
     par->postSecondaryRelativeRisk = 0.1;
 
     par->primarySevereFraction    = vector<double>(NUM_OF_SEROTYPES, _sec_severity*_pss_ratio);
@@ -99,8 +94,39 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     return par;
 }
 
+string calculate_process_id(vector<double> &args, string &argstring) {
+    // CCRC32 checksum based on string version of argument values
+    CCRC32 crc32;
+    crc32.Initialize();
 
-long double tally_counts(const Parameters* par, Community* community) {
+    for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((double) args[i]) + " ";
+
+    const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
+    const int len = argstring.length();
+    const int process_id = crc32.FullCRC(argchars, len);
+
+    return to_string(process_id);
+}
+
+
+string report_process_id (vector<double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
+    double dif = difftime (start_time, GLOBAL_START_TIME);
+
+    string argstring;
+    const string process_id = calculate_process_id(args, argstring);
+
+    cerr << "pid in report_process_id (num args = " << args.size() << "): " << process_id << endl;
+    stringstream ss;
+    ss << mp->mpi_rank << " begin " << process_id << " " << dec << serial << " " << dif << " " << argstring << endl;
+    string output = ss.str();
+    fputs(output.c_str(), stderr);
+
+    return to_string(process_id);
+}
+
+
+
+double tally_counts(const Parameters* par, Community* community) {
     vector< vector<int> > infected    = community->getNumNewlyInfected();
 /*
 cerr << "numNewlyInfected:\n";
@@ -110,35 +136,38 @@ for (auto v: infected) {
 cerr << endl;
 */
                                // we're estimating R-zero, so
-    long double metric = -1.0; // subtract one for patient zero
+    double metric = -1.0; // subtract one for patient zero
     for (int t=0; t<par->nRunLength; t++) {
         for (int s=0; s<NUM_OF_SEROTYPES; s++) {
             metric += infected[s][t];
         }
     }
-    cout << metric << " ";
+    cout << metric << endl;
     return metric;
 }
 
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
+vector<double> simulator(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
 
     time_t start ,end;
     time (&start);
 
+    const unsigned int realization = (int) args[8];
+    const string process_id = report_process_id(args, serial, mp, start) + "." + to_string(realization);
+
     Parameters* par = define_simulator_parameters(args, rng_seed, serial);
     Community* community = build_community(par);
     //const vector<int> MONTH_START = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
-    vector<long double> metrics;
+    vector<double> metrics;
 
     //for (unsigned int month = 0; month < MONTH_START.size(); ++month) {
     for (unsigned int day = 0; day < 365; ++day) {
         par->startDayOfYear = day;
 
         seed_epidemic(par, community);
-        simulate_epidemic(par, community);
+        simulate_epidemic(par, community, process_id);
 
         metrics.push_back( tally_counts(par, community) );
 
@@ -149,7 +178,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     double dif = difftime (end,start);
 
     stringstream ss;
-    ss << " end " << dif << " ";
+    ss << mp->mpi_rank << " end " << process_id << " " << dec << serial << " " << dif << " ";
     for (auto i: args) ss << i << " ";
     ss << "| ";
     for (auto i: metrics) ss << i << " ";
