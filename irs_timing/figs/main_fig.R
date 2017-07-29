@@ -89,12 +89,16 @@ tick.locs <- c(0, cumsum(month.len)) + 1 # place ticks at 0, plus the cumsum of 
 # want: labels falling in middle of month boundaries
 name.locs <- head(tick.locs,-1) + month.len/2 #
 
+# overall approach to how we will show data dimensions
 baseaes <- aes(
-  x=doy, y=value, color=variable,
-  size=factor(durability), alpha=layer, linetype=factor(duration),
-  shape=factor(coverage), yintercept=value
+  x=doy, y=value, yintercept=value,
+  # lines will day-of-year (1-365) against some value (10yr effectiveness, or scaled seasonal data)
+  color=variable, # different colors for different kinds of things;
+  # shape=factor(coverage), # exception: will use grey scale for coverage; tried shape, meh
+  size=factor(durability), alpha=layer, linetype=factor(duration)
 )
 
+# use background highlight to indicate months
 mon.cols <- annotate("rect",
   xmin=head(tick.locs[c(TRUE, FALSE)],-1),
   xmax=tick.locs[c(FALSE, TRUE)],
@@ -109,7 +113,9 @@ baselinep <- ggplot(plot.dt, baseaes) +
     legend.key.width = unit(1, "cm"), legend.key.height = unit(0.9, "cm"),
     panel.grid.minor = element_blank(),
     text = element_text(size = 25),
-    panel.background = element_rect(fill="grey98", color="white")
+    panel.background = element_rect(fill="grey98", color="white"),
+    axis.title.y = element_text(margin=margin(r=10)),
+    strip.text.y = element_text(angle=90)
   ) +
   mon.cols +
   scale_alpha_manual(values=c(foreground=1,background=0.3), guide="none") +
@@ -132,7 +138,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_size_manual(
     values = c(reference=1,`150`=2,`90`=1,`30`=0.5),
     breaks = c("150","90","30"),
-    name   = "IRS Durability",
+    name   = "IRS durability",
     labels = function(x) sprintf("%3s day", x)
   ) +
   scale_x_continuous(
@@ -141,66 +147,85 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_linetype_manual(
     values = c(reference="solid",`1`="dashed",`90`="solid",`365`="dotted"),
     breaks = c("365","90","1"),
-    name   = "IRS Rollout",
+    name   = "IRS rollout",
     labels = function(x) sprintf("%3s day", x)
   )
+
+small.gap <- 0.1
+  big.gap <- small.gap * 2
 
 p.month <- baselinep + annotate("text",
   x = name.locs, y = 0,
   label = c("J","F","M","A","M","J","J","A","S","O","N","D"), size = 10
 ) + scale_y_continuous(
-  name=NULL, breaks=0, labels="Month"
+  name=NULL, breaks=0, labels=NULL
 ) + theme(
   panel.grid = element_blank()
 )
+mon.left <- 6.68
+mon.right <- 2.25
+p.month.top <- p.month + theme(plot.margin = unit(c(big.gap,   mon.right, small.gap, mon.left), "line"))
+p.month.bot <- p.month + theme(plot.margin = unit(c(small.gap, mon.right, big.gap,   mon.left), "line"))
 
-p.month.top <- p.month + theme(plot.margin = unit(c(0.2, 2.25, 0,   2.37), "line"))
-p.month.bot <- p.month + theme(plot.margin = unit(c(0,   2.25, 0.2, 2.37), "line"))
+seas.legend <- theme(
+  legend.title = element_blank(),
+  legend.position = c(0.25, 0.92), legend.justification = c(0, 0.9)
+)
 
-labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
+ln.size.override <- guide_legend(override.aes = list(size=1))
+line.override.col <- guides(color=ln.size.override)
+line.override.lty <- guides(linetype=ln.size.override)
 
-cases.dt[, face := 'Seasonal' ]
+seas.left <- 1.95
 
 p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
-  facet_grid(face ~ .) + theme(strip.background = element_rect(color="black")) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Incidence", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
+  seas.legend +
   theme(
-    legend.position = c(0.1,0.85), legend.justification = c(0,0.9),
-    plot.margin = unit(c(0,0.5,0,2), "line")
+    plot.margin = unit(c(small.gap,mon.right,small.gap,seas.left), "line")
   ) +
-  labeller("a")
-
-seasonal.dt[, face := 'Seasonal' ]
+  line.override.col
 
 p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background"]) +
-  facet_grid(face ~ .) + theme(strip.background = element_rect(color="black")) +
   geom_line(data=seasonal.dt[layer == "background"], size=0.7) +
   guides(size="none", linetype="none") +
-  scale_y_continuous(name="Seasonal Factors", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
+  scale_y_continuous(name="Seasonal factors", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
+  seas.legend +
   theme(
-    legend.title = element_blank(),
-    legend.position = c(0.2,0.85), legend.justification = c(0,0.9),
-    plot.margin = unit(c(0,0.5,0.2,2), "line")
+    plot.margin = unit(c(small.gap,mon.right,big.gap,seas.left), "line")
   ) +
-  labeller("b")
+  line.override.col
 
 proactive.start <- yday(as_date("1970/6/1"))
-proactive.end <- proactive.start + 179
-reactive.start <- yday(as_date("1970/11/1"))
-reactive.end <- yday(as_date("1970/11/1")+179)
+proactive.end   <- proactive.start + 179
+reactive.start  <- yday(as_date("1970/11/1"))
+reactive.end    <- yday(as_date("1970/11/1")+179)
 
-p.campaigns <- baselinep + annotate("rect",
-  xmin = c(1,proactive.start,reactive.start), xmax=c(reactive.end,proactive.end,365), ymin = c(-0.5,0,-0.5), ymax=c(0,0.5,0),
-  fill=c("blue","yellow","blue")#, alpha = 0.5
+pro.col <- "chocolate4"
+rea.col <- "darkturquoise"
+
+ln.size <- 5
+
+p.campaigns <- baselinep + annotate("segment",
+  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
+  color=c(rea.col,pro.col), size=ln.size,
+  arrow=arrow(20,unit(2,"line"),"last","closed")
+) + annotate("segment",
+  x = reactive.start+1, xend=365, y = -.75, yend=-.75,
+  color=rea.col, size=ln.size
+) + annotate("segment",
+  x = c(reactive.start, proactive.start)+ln.size/2, xend=c(reactive.start, proactive.start)+ln.size/2, y = c(-1.5,1.5), yend=c(0,0),
+  color=c(rea.col, pro.col), size=ln.size
 ) + annotate("text",
-  y=c(0.25,-0.25), x=c((proactive.start+proactive.end)/2,(1+reactive.end)/2),
-  label=c("Proactive IRS", "Reactive IRS"), color=c('black','white'), size = 10
-) + scale_y_continuous(name=NULL, breaks=0, labels = "IRS\nTiming") +
+  y=c(0.75,-0.75), x=c(proactive.start,reactive.start)-1,
+  label=c("Proactive IRS", "Reactive IRS"), color='black', size = 10,
+  hjust="right"
+) + scale_y_continuous(name=NULL, breaks=0, limits = c(-1.5,1.5), labels = NULL) +
 theme(
-  panel.grid = element_blank(),
+  panel.grid = element_line(color = "white"),
   panel.background = element_rect(fill="grey85"),
-  plot.margin = unit(c(0.2, 2.25, 0.2,   2.05), "line")
+  plot.margin = unit(c(big.gap, mon.right, big.gap,   mon.left), "line")
 )
 
 legend.x <- 0.7
@@ -227,18 +252,18 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
   scale_color_manual(
     values=c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
     breaks=c("75","50","25"),
-    name="IRS Coverage",
+    name="IRS coverage",
     labels = function(x) sprintf("%s%%", x)
   ) +
   guides(size="none", linetype="none") +
   coord_cartesian(ylim = c(0,1)) +
   scale_y_continuous(name="", limits = c(0,1)) +
-  eff.legend + labeller("c") +
+  eff.legend +
   theme(
-    plot.margin = unit(c(0.2,0.5,0,1.9), "line")
-  ) + guides(color=guide_legend(override.aes = list(size=1)))
+    plot.margin = unit(c(big.gap,0.5,small.gap,1.9), "line")
+  ) + line.override.col
 
-duration.dt[,face:="Sensitivity Studies"]
+duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
   highlighter + facet_grid(face ~ .) +
@@ -246,10 +271,10 @@ p.eff.duration <- baselinep +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
   scale_y_continuous(name="Effectiveness", limits = c(0,1), labels = function(x) sprintf("%1.2f", x)) +
-  eff.legend + labeller("d") +
+  eff.legend +
   theme(
-    plot.margin = unit(c(0,0.5,0,1.9), "line")
-  ) + guides(linetype=guide_legend(override.aes = list(size=1)))
+    plot.margin = unit(c(small.gap,0.5,small.gap,1.9), "line")
+  ) + line.override.lty
 
 durability.dt[,face:=""]
 
@@ -258,17 +283,19 @@ p.eff.durability <- baselinep +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
-  eff.legend + labeller("e") +
+  eff.legend +
   theme(
-    plot.margin = unit(c(0,0.5,0,1.9), "line")
+    plot.margin = unit(c(small.gap,0.5,small.gap,1.9), "line")
   )
+
+labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
 
 png(args[8], width = 1000, height = 1600, units = "px")
 grid.arrange(
   p.month.top,
-  p.cases, p.seasonal,
-  p.campaigns,
-  p.eff.coverage, p.eff.duration, p.eff.durability,
+  p.cases + labeller("a"), p.seasonal + labeller("b"),
+  p.campaigns + labeller("c"),
+  p.eff.coverage + labeller("d"), p.eff.duration + labeller("e"), p.eff.durability + labeller("f"),
   p.month.bot,
   ncol=1,
   heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)

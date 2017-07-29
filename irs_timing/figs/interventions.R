@@ -8,7 +8,7 @@ drv = dbDriver("SQLite")
 db = dbConnect(drv, args[1], flags=SQLITE_RO)
 
 eff.dt <- data.table(dbGetQuery(db,
-  'select timing AS doy, vc_coverage*100 AS coverage, campaign_duration AS duration, 90 AS durability, M.*
+  'select timing+1 AS doy, vc_coverage*100 AS coverage, campaign_duration AS duration, 90 AS durability, M.*
   from par P, met M, job J
   where P.serial = M.serial
   and P.serial = J.serial
@@ -31,7 +31,7 @@ tmp[duration == 0, duration := 1]
 
 db = dbConnect(drv, args[2], flags=SQLITE_RO)
 d2 <- data.table(dbGetQuery(db,
-  'select timing AS doy, vc_coverage*100 AS coverage, 90 AS duration, eff_days AS durability, M.*
+  'select timing+1 AS doy, vc_coverage*100 AS coverage, 90 AS duration, eff_days AS durability, M.*
   from par P, met M, job J
   where P.serial = M.serial
   and P.serial = J.serial
