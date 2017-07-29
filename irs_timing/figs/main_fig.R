@@ -95,7 +95,9 @@ baseaes <- aes(
   # lines will day-of-year (1-365) against some value (10yr effectiveness, or scaled seasonal data)
   color=variable, # different colors for different kinds of things;
   # shape=factor(coverage), # exception: will use grey scale for coverage; tried shape, meh
-  size=factor(durability), alpha=layer, linetype=factor(duration)
+  size=factor(durability),
+  linetype=factor(duration),
+  alpha=layer # used to show foreground (smoothed) vs background (raw) data
 )
 
 # use background highlight to indicate months
@@ -105,6 +107,8 @@ mon.cols <- annotate("rect",
   ymin=-Inf, ymax=Inf,
   alpha=0.05
 )
+
+ref.line.sz <- 1
 
 baselinep <- ggplot(plot.dt, baseaes) +
   theme_minimal() +
@@ -136,12 +140,13 @@ baselinep <- ggplot(plot.dt, baseaes) +
     )
   ) +
   scale_size_manual(
-    values = c(reference=1,`150`=2,`90`=1,`30`=0.5),
+    values = c(reference=ref.line.sz,`150`=ref.line.sz*2,`90`=ref.line.sz,`30`=ref.line.sz/2),
     breaks = c("150","90","30"),
     name   = "IRS durability",
     labels = function(x) sprintf("%3s day", x)
   ) +
   scale_x_continuous(
+    # don't show the day-of-year scale - covered by the background month layer
     name = NULL, breaks = NULL, labels = NULL, limits = c(1,365), expand=c(0,0)
   ) +
   scale_linetype_manual(
@@ -172,7 +177,7 @@ seas.legend <- theme(
   legend.position = c(0.25, 0.92), legend.justification = c(0, 0.9)
 )
 
-ln.size.override <- guide_legend(override.aes = list(size=1))
+ln.size.override <- guide_legend(override.aes = list(size=ref.line.sz))
 line.override.col <- guides(color=ln.size.override)
 line.override.lty <- guides(linetype=ln.size.override)
 
@@ -190,16 +195,16 @@ p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
 p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background"]) +
   geom_line(data=seasonal.dt[layer == "background"], size=0.7) +
   guides(size="none", linetype="none") +
-  scale_y_continuous(name="Seasonal factors", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
+  scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
   seas.legend +
   theme(
     plot.margin = unit(c(small.gap,mon.right,big.gap,seas.left), "line")
   ) +
   line.override.col
 
-proactive.start <- yday(as_date("1970/6/1"))
-proactive.end   <- proactive.start + 179
-reactive.start  <- yday(as_date("1970/11/1"))
+proactive.start <- yday(as_date("1970/6/1")) # June 1
+proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
+reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
 reactive.end    <- yday(as_date("1970/11/1")+179)
 
 pro.col <- "chocolate4"
@@ -212,7 +217,7 @@ p.campaigns <- baselinep + annotate("segment",
   color=c(rea.col,pro.col), size=ln.size,
   arrow=arrow(20,unit(2,"line"),"last","closed")
 ) + annotate("segment",
-  x = reactive.start+1, xend=365, y = -.75, yend=-.75,
+  x = reactive.start+1, xend=365, y = -.75, yend = -.75,
   color=rea.col, size=ln.size
 ) + annotate("segment",
   x = c(reactive.start, proactive.start)+ln.size/2, xend=c(reactive.start, proactive.start)+ln.size/2, y = c(-1.5,1.5), yend=c(0,0),
@@ -233,7 +238,7 @@ legend.x <- 0.7
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
   y=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", value],
-  size = 3, color = "yellow"#, alpha = 0.5
+  size = ref.line.sz*3, color = "yellow"
 )
 
 eff.legend <- theme(
@@ -290,12 +295,16 @@ p.eff.durability <- baselinep +
 
 labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
 
+# the final plotting arrangement; TODO: move padding changes here to consolidate?
 png(args[8], width = 1000, height = 1600, units = "px")
 grid.arrange(
   p.month.top,
-  p.cases + labeller("a"), p.seasonal + labeller("b"),
-  p.campaigns + labeller("c"),
-  p.eff.coverage + labeller("d"), p.eff.duration + labeller("e"), p.eff.durability + labeller("f"),
+  p.cases          + labeller("a"),
+  p.seasonal       + labeller("b"),
+  p.campaigns      + labeller("c"),
+  p.eff.coverage   + labeller("d"),
+  p.eff.duration   + labeller("e"),
+  p.eff.durability + labeller("f"),
   p.month.bot,
   ncol=1,
   heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)
