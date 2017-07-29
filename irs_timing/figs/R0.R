@@ -29,11 +29,17 @@ store <- melt(
 )[layer %in% c("q.mean", "q.smooth")]
 
 norm <- store[layer == "q.smooth", max(value)]
-store <- store[,
+store <- rbind(store[,
   .(doy, value=value/norm, variable="R0",
     coverage="reference", duration="reference", durability="reference",
     layer = ifelse(layer == "q.smooth","foreground","background")
-)]
+)],
+  data.table(
+    doy=1, value=1/norm, variable="R0",
+    coverage="reference", duration="365", durability="reference",
+    layer="foreground"
+  )
+)
 
 saveRDS(store, args[2])
 

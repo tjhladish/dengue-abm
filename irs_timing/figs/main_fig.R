@@ -192,8 +192,9 @@ p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
   ) +
   line.override.col
 
-p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background"]) +
-  geom_line(data=seasonal.dt[layer == "background"], size=0.7) +
+p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & duration == "reference"]) +
+  geom_line(data=seasonal.dt[layer == "background" & duration == "reference"], size=0.7) +
+  geom_hline(baseaes, seasonal.dt[duration == "365"]) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
   seas.legend +
@@ -207,15 +208,18 @@ proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
 reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
 reactive.end    <- yday(as_date("1970/11/1")+179)
 
-pro.col <- "chocolate4"
+pro.col <- # "chocolate4"
 rea.col <- "darkturquoise"
 
-ln.size <- 5
+ln.size <- 5/3*ref.line.sz
 
 p.campaigns <- baselinep + annotate("segment",
-  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
-  color=c(rea.col,pro.col), size=ln.size,
-  arrow=arrow(20,unit(2,"line"),"last","closed")
+  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end)-5, y = c(-.75,.75), yend=c(-.75,.75),
+  color=c(rea.col,pro.col), size=ln.size#, arrow=arrow(35,unit(1.5,"line"),"last","closed")
+) + annotate("segment",
+          x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
+          color=c(rea.col,pro.col), size=ln.size/5,
+          arrow=arrow(35,unit(1.5,"line"),"last","closed")
 ) + annotate("segment",
   x = reactive.start+1, xend=365, y = -.75, yend = -.75,
   color=rea.col, size=ln.size
