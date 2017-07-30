@@ -8,7 +8,7 @@ require(lubridate)
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c(
 #   paste0("~/Dropbox/who/fig1_data/",
-#          c("obs", "sim", "eip", "R0", "mos", "baseline", "interventions"),
+#          c("obs", "sim", "eip", "R0", "mos", "coverage", "duration", "durability"),
 #          ".rds"),
 #   "~/Dropbox/who/fig1_data/fig1.png"
 # )
@@ -19,56 +19,9 @@ sim.dt <- readRDS(args[2])
 eip.dt <- readRDS(args[3])
 R0.dt  <- readRDS(args[4])
 mos.dt <- readRDS(args[5])
-baseline.dt <- readRDS(args[6])
-interventions.dt <- readRDS(args[7])
-
-## perform effectiveness calcs
-eff10.dt <- interventions.dt[baseline.dt, on="particle"][,
-  # join baseline to interventions on particle basis
-  # baseline has *only* particle as key
-  .(eff10=(i.cases10-cases10)/i.cases10),
-  keyby=.(doy, coverage, duration, durability, particle)
-]
-
-# take stats across particles; maintains separate results by intervention dimensions
-stat.eff10.dt <- eff10.dt[,
-  .(med.eff10 = stats::median(eff10)),
-  keyby=.(doy, coverage, duration, durability)
-]
-
-running.mean.smooth.n <- 5
-convo.factor <- rep(1, running.mean.smooth.n)/running.mean.smooth.n
-# take doy-by-doy statistical results (med.eff10), and smooth with running mean (see ?filter)
-stat.eff10.dt[duration != 365, # 365 duration has only one datum, no need (or ability) to smooth
-  smooth := as.numeric(filter(
-    med.eff10, convo.factor, method = "convolution",
-    sides = 2, circular = T
-    # want running mean to be centered (sides = 2) and wrap the series (circular = T)
-  )),
-  by=.(coverage, duration, durability)
-]
-stat.eff10.dt[duration == 365, smooth := med.eff10 ]
-
-# convenience function to look at sensitivity studies by appropriate
-# dimensions -- uses "filt" to fix some params + pickout correct other layers
-# first item is raw data (value = med.eff10, layer = "background")
-# second item is smoothed data (value = smooth, layer = "foreground")
-slice <- function(filt) rbind(stat.eff10.dt[
-  eval(filt), .(doy, value=med.eff10, variable="Effectiveness",
-    coverage, duration, durability,
-    layer = "background"
-  )], stat.eff10.dt[
-  eval(filt), .(doy, value=smooth, variable="Effectiveness",
-    coverage, duration, durability,
-    layer = "foreground"
-)])
-
-# set duration, durability, floating coverage
-coverage.dt <- slice(expression(duration == 90 & durability == 90))
-# set coverage, durability, floating duration
-duration.dt <- slice(expression(coverage == 75 & durability == 90))
-# set duration, coverage, floating durability
-durability.dt <- slice(expression(coverage == 75 & duration == 90))
+coverage.dt <- readRDS(args[6])
+duration.dt <- readRDS(args[7])
+durability.dt <- readRDS(args[8])
 
 ## assorted data.tables for plotting
 cases.dt <- rbind(obs.dt, sim.dt) # panel a
@@ -156,6 +109,10 @@ baselinep <- ggplot(plot.dt, baseaes) +
     labels = function(x) sprintf("%3s day", x)
   )
 
+margin.theme <- function(t,r,b,l) theme(
+  plot.margin = unit(c(t, r, b, l), "line")
+)
+
 small.gap <- 0.1
   big.gap <- small.gap * 2
 
@@ -167,10 +124,6 @@ p.month <- baselinep + annotate("text",
 ) + theme(
   panel.grid = element_blank()
 )
-mon.left <- 6.68
-mon.right <- 2.25
-p.month.top <- p.month + theme(plot.margin = unit(c(big.gap,   mon.right, small.gap, mon.left), "line"))
-p.month.bot <- p.month + theme(plot.margin = unit(c(small.gap, mon.right, big.gap,   mon.left), "line"))
 
 seas.legend <- theme(
   legend.title = element_blank(),
@@ -181,15 +134,10 @@ ln.size.override <- guide_legend(override.aes = list(size=ref.line.sz))
 line.override.col <- guides(color=ln.size.override)
 line.override.lty <- guides(linetype=ln.size.override)
 
-seas.left <- 1.95
-
 p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Incidence", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
   seas.legend +
-  theme(
-    plot.margin = unit(c(small.gap,mon.right,small.gap,seas.left), "line")
-  ) +
   line.override.col
 
 p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & duration == "reference"]) +
@@ -198,9 +146,6 @@ p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & dur
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
   seas.legend +
-  theme(
-    plot.margin = unit(c(small.gap,mon.right,big.gap,seas.left), "line")
-  ) +
   line.override.col
 
 proactive.start <- yday(as_date("1970/6/1")) # June 1
@@ -213,13 +158,12 @@ rea.col <- "darkturquoise"
 
 ln.size <- 5/3*ref.line.sz
 
+# see https://github.com/tidyverse/ggplot2/pull/2132
+# using absolute latest ggplot2 makes for sharp arrow
 p.campaigns <- baselinep + annotate("segment",
-  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end)-5, y = c(-.75,.75), yend=c(-.75,.75),
-  color=c(rea.col,pro.col), size=ln.size#, arrow=arrow(35,unit(1.5,"line"),"last","closed")
-) + annotate("segment",
-          x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
-          color=c(rea.col,pro.col), size=ln.size/5,
-          arrow=arrow(35,unit(1.5,"line"),"last","closed")
+  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
+  color=c(rea.col,pro.col), size=ln.size, linejoin="mitre",#/5,
+  arrow=arrow(35,unit(1.5,"line"),"last","closed")
 ) + annotate("segment",
   x = reactive.start+1, xend=365, y = -.75, yend = -.75,
   color=rea.col, size=ln.size
@@ -230,11 +174,10 @@ p.campaigns <- baselinep + annotate("segment",
   y=c(0.75,-0.75), x=c(proactive.start,reactive.start)-1,
   label=c("Proactive IRS", "Reactive IRS"), color='black', size = 10,
   hjust="right"
-) + scale_y_continuous(name=NULL, breaks=0, limits = c(-1.5,1.5), labels = NULL) +
+) + scale_y_continuous(name=NULL, breaks=0, limits = c(-1.5, 1.5), labels = NULL) +
 theme(
   panel.grid = element_line(color = "white"),
-  panel.background = element_rect(fill="grey85"),
-  plot.margin = unit(c(big.gap, mon.right, big.gap,   mon.left), "line")
+  panel.background = element_rect(fill="grey85")
 )
 
 legend.x <- 0.7
@@ -268,9 +211,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
   coord_cartesian(ylim = c(0,1)) +
   scale_y_continuous(name="", limits = c(0,1)) +
   eff.legend +
-  theme(
-    plot.margin = unit(c(big.gap,0.5,small.gap,1.9), "line")
-  ) + line.override.col
+  line.override.col
 
 duration.dt[,face:="Sensitivity analyses"]
 
@@ -281,9 +222,7 @@ p.eff.duration <- baselinep +
   guides(color="none", size="none") +
   scale_y_continuous(name="Effectiveness", limits = c(0,1), labels = function(x) sprintf("%1.2f", x)) +
   eff.legend +
-  theme(
-    plot.margin = unit(c(small.gap,0.5,small.gap,1.9), "line")
-  ) + line.override.lty
+  line.override.lty
 
 durability.dt[,face:=""]
 
@@ -292,24 +231,27 @@ p.eff.durability <- baselinep +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
-  eff.legend +
-  theme(
-    plot.margin = unit(c(small.gap,0.5,small.gap,1.9), "line")
-  )
+  eff.legend
 
 labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
 
+mon.left  <- 4.88
+mon.right <- 1.85
+seas.left <- .15
+eff.right <- 0.1
+eff.left  <- 0.1
+
 # the final plotting arrangement; TODO: move padding changes here to consolidate?
-png(args[8], width = 1000, height = 1600, units = "px")
+png(args[9], width = 1000, height = 1730, units = "px")
 grid.arrange(
-  p.month.top,
-  p.cases          + labeller("a"),
-  p.seasonal       + labeller("b"),
-  p.campaigns      + labeller("c"),
-  p.eff.coverage   + labeller("d"),
-  p.eff.duration   + labeller("e"),
-  p.eff.durability + labeller("f"),
-  p.month.bot,
+  p.month                          + margin.theme(small.gap,   mon.right, small.gap, mon.left),
+  p.cases          + labeller("a") + margin.theme(small.gap, mon.right, small.gap,seas.left),
+  p.seasonal       + labeller("b") + margin.theme(small.gap, mon.right, big.gap,seas.left),
+  p.campaigns      + labeller("c") + margin.theme(big.gap,   mon.right, big.gap, mon.left),
+  p.eff.coverage   + labeller("d") + margin.theme(big.gap,   eff.right, small.gap, eff.left),
+  p.eff.duration   + labeller("e") + margin.theme(small.gap, eff.right, small.gap, eff.left),
+  p.eff.durability + labeller("f") + margin.theme(small.gap, eff.right, small.gap, eff.left),
+  p.month                          + margin.theme(small.gap, mon.right, small.gap,   mon.left),
   ncol=1,
   heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)
 )

@@ -27,7 +27,17 @@ $(DBMAIN)/baseline.rds: $(DBROOT)/who/irs_figs/irs_timing-refit0.sqlite
 
 $(DBMAIN)/interventions.rds: $(DBROOT)/who/irs_figs/irs_timing-refit0.sqlite $(DBROOT)/who/irs_insecticide-durability-effect.sqlite
 
-SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos baseline interventions,.rds)
+$(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
+
+$(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds: sensitivity.R $(DBMAIN)/stat.eff10.rds
+	Rscript $^ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds
+	# override generic rule; these have shared features, so build them all at once
+
+TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability,.rds)
+SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
 
 $(DBMAIN)/fig1.png: main_fig.R $(SRCS)
+	Rscript $^ $@
+
+$(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
