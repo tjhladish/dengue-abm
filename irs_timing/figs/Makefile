@@ -41,3 +41,6 @@ $(DBMAIN)/fig1.png: main_fig.R $(SRCS)
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
+
+$(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
+	Rscript $^ $@
