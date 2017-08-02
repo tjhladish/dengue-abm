@@ -95,8 +95,9 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_size_manual(
     values = c(reference=ref.line.sz,`150`=ref.line.sz*2,`90`=ref.line.sz,`30`=ref.line.sz/2),
     breaks = c("150","90","30"),
-    name   = "IRS durability",
-    labels = function(x) sprintf("%3s day", x)
+  #  name   = "IRS durability sensitivity",
+    name   = element_blank(),
+    labels = function(x) sprintf("%3s day   ", x)
   ) +
   scale_x_continuous(
     # don't show the day-of-year scale - covered by the background month layer
@@ -105,8 +106,9 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_linetype_manual(
     values = c(reference="solid",`1`="dashed",`90`="solid",`365`="dotted"),
     breaks = c("365","90","1"),
-    name   = "IRS rollout",
-    labels = function(x) sprintf("%3s day", x)
+  #  name   = "IRS rollout sensitivity",
+    name   = element_blank(),
+    labels = function(x) sprintf("%3s day   ", x)
   )
 
 margin.theme <- function(t,r,b,l) theme(
@@ -153,26 +155,27 @@ proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
 reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
 reactive.end    <- yday(as_date("1970/11/1")+179)
 
-pro.col <- # "chocolate4"
-rea.col <- "darkturquoise"
+pro.col <- "cyan4"
+rea.col <- "darkgreen"
 
 ln.size <- 5/3*ref.line.sz
 
 # see https://github.com/tidyverse/ggplot2/pull/2132
 # using absolute latest ggplot2 makes for sharp arrow
+arrow_y_offset = 0.825
 p.campaigns <- baselinep + annotate("segment",
-  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-.75,.75), yend=c(-.75,.75),
+  x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-arrow_y_offset,arrow_y_offset), yend=c(-arrow_y_offset,arrow_y_offset),
   color=c(rea.col,pro.col), size=ln.size, linejoin="mitre",#/5,
   arrow=arrow(35,unit(1.5,"line"),"last","closed")
 ) + annotate("segment",
-  x = reactive.start+1, xend=365, y = -.75, yend = -.75,
+  x = reactive.start+1, xend=365, y = -arrow_y_offset, yend = -arrow_y_offset,
   color=rea.col, size=ln.size
 ) + annotate("segment",
-  x = c(reactive.start, proactive.start)+ln.size/2, xend=c(reactive.start, proactive.start)+ln.size/2, y = c(-1.5,1.5), yend=c(0,0),
+  x = c(reactive.start, proactive.start)+ln.size/2, xend=c(reactive.start, proactive.start)+ln.size/2, y = c(-1.5,1.5), yend=c(-0.15,0.15),
   color=c(rea.col, pro.col), size=ln.size
 ) + annotate("text",
-  y=c(0.75,-0.75), x=c(proactive.start,reactive.start)-1,
-  label=c("Proactive IRS", "Reactive IRS"), color='black', size = 10,
+  y=c(arrow_y_offset,-arrow_y_offset), x=c(proactive.start,reactive.start)-1,
+  label=c("Proactive IRS", "Reactive IRS"), color=c(pro.col,rea.col), size = 10,
   hjust="right"
 ) + scale_y_continuous(name=NULL, breaks=0, limits = c(-1.5, 1.5), labels = NULL) +
 theme(
@@ -180,7 +183,7 @@ theme(
   panel.background = element_rect(fill="grey85")
 )
 
-legend.x <- 0.7
+legend.x <- 0.53
 
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
@@ -189,11 +192,13 @@ highlighter <- annotate("line",
 )
 
 eff.legend <- theme(
-  legend.position = c(legend.x,.95),
+  legend.direction = 'horizontal',
+  legend.position = c(legend.x,.87),
   legend.justification = c(0,0.9),
-  legend.title.align = 0.5,
-  strip.background = element_rect(fill='black', color='black'),
-  strip.text = element_text(color='white')
+  legend.title = element_text(face="bold", vjust=20, hjust=10),
+  #legend.title.align = 50,
+  #strip.background = element_rect(fill='grey40', color='grey40'),
+  strip.text = element_text(color='white', size = 20)
 )
 
 coverage.dt[,face:=""]
@@ -204,8 +209,9 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
   scale_color_manual(
     values=c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
     breaks=c("75","50","25"),
-    name="IRS coverage",
-    labels = function(x) sprintf("%s%%", x)
+#    name="IRS coverage sensitivity",
+    name   = element_blank(),
+    labels = function(x) sprintf("%s%%   ", x)
   ) +
   guides(size="none", linetype="none") +
   coord_cartesian(ylim = c(0,1)) +
@@ -242,9 +248,11 @@ eff.right <- 0.1
 eff.left  <- 0.1
 
 # the final plotting arrangement; TODO: move padding changes here to consolidate?
-png(args[9], width = 1000, height = 1730, units = "px")
+res = 300
+mag = 0.85*res/72
+png(args[9], width = 1000*mag, height = 1730*mag, units = "px", res=res)
 grid.arrange(
-  p.month                          + margin.theme(small.gap,   mon.right, small.gap, mon.left),
+  p.month                          + margin.theme(small.gap, mon.right, small.gap, mon.left),
   p.cases          + labeller("a") + margin.theme(small.gap, mon.right, small.gap,seas.left),
   p.seasonal       + labeller("b") + margin.theme(small.gap, mon.right, big.gap,seas.left),
   p.campaigns      + labeller("c") + margin.theme(big.gap,   mon.right, big.gap, mon.left),

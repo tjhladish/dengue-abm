@@ -15,7 +15,7 @@ $(DBMAIN)/%.rds: %.R
 
 $(DBMAIN)/obs.rds: $(DBMAIN)/weekly_confirmed_cases_1995-2015_wide.csv
 
-$(DBMAIN)/sim.rds: $(DBROOT)/daily_output-refit
+$(DBMAIN)/sim.rds: ./daily_output-refit
 
 $(DBMAIN)/eip.rds: $(DBMAIN)/seasonal_EIP_24hr.out
 
