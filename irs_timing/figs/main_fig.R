@@ -34,7 +34,7 @@ eff.dt <- rbind(coverage.dt, duration.dt, durability.dt) # panel c-e
 plot.dt <- rbind(cases.dt, seasonal.dt, eff.dt) # combine all data to set universal scales
 
 ## build some reference doy-based locations for month columns, labels
-doys <- 1:365-1
+doys <- 1:365-1 # need to make 0-364 to add a scale that starts w/ 1
 dates <- lubridate::as_date(doys) # convert doys into dates for use w/ lubridate; default year 1970 is non-leap
 month.len <- rle(month.abb[month(dates)])$lengths # get the month lengths
 tick.locs <- c(0, cumsum(month.len)) + 1 # place ticks at 0, plus the cumsum of each month length
@@ -55,19 +55,24 @@ baseaes <- aes(
 
 # use background highlight to indicate months
 mon.cols <- annotate("rect",
-  xmin=head(tick.locs[c(TRUE, FALSE)],-1),
-  xmax=tick.locs[c(FALSE, TRUE)],
-  ymin=-Inf, ymax=Inf,
-  alpha=0.05
+  xmin=head(tick.locs[c(TRUE, FALSE)],-1), # every other month start, except last
+  xmax=tick.locs[c(FALSE, TRUE)], # every other month start, except first
+  ymin=-Inf, ymax=Inf, # setting these to Inf ensures the rects extend full width + don't mess w/ scale
+  alpha=0.05 # adjust for how dark; ALT: might also change color?
 )
 
+# change this to change the base (plot) line thickness
+# all other line thicknesses are set relative to this
 ref.line.sz <- 1
 
 baselinep <- ggplot(plot.dt, baseaes) +
   theme_minimal() +
   theme(
     legend.text.align = 0.0,
-    legend.key.width = unit(1, "cm"), legend.key.height = unit(0.9, "cm"),
+    legend.key.width = unit(1, "cm"),
+    legend.key.height = unit(0.9, "cm"),
+    legend.title = element_text(face="bold"),
+    legend.direction = 'horizontal',
     panel.grid.minor = element_blank(),
     text = element_text(size = 25),
     panel.background = element_rect(fill="grey98", color="white"),
@@ -84,19 +89,18 @@ baselinep <- ggplot(plot.dt, baseaes) +
      `Cases (observed)`="black",
      `Cases (model)`="red"
     ), labels=c(
-      `Mos. pop.`="Mos. pop.",
-      `R0`=expression(R[0]),
+      `Mos. pop.`=expression(paste(M(t),'  ')),
+      `R0`=expression(paste(R[0],'  ')),
       EIP="EIP",
       Effectiveness="Effectiveness",
       `Cases (observed)`="Cases (observed)",
-      `Cases (model)`="Cases (model)"
+      `Cases (model)`="Cases (model)   "
     )
   ) +
   scale_size_manual(
     values = c(reference=ref.line.sz,`150`=ref.line.sz*2,`90`=ref.line.sz,`30`=ref.line.sz/2),
     breaks = c("150","90","30"),
-  #  name   = "IRS durability sensitivity",
-    name   = element_blank(),
+    name   = "IRS durability sensitivity",
     labels = function(x) sprintf("%3s day   ", x)
   ) +
   scale_x_continuous(
@@ -106,9 +110,19 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_linetype_manual(
     values = c(reference="solid",`1`="dashed",`90`="solid",`365`="dotted"),
     breaks = c("365","90","1"),
-  #  name   = "IRS rollout sensitivity",
-    name   = element_blank(),
+    name   = "IRS rollout sensitivity",
     labels = function(x) sprintf("%3s day   ", x)
+  ) +
+  guides(
+    size = guide_legend(
+      title.position = "top", title.hjust = 0
+    ),
+    color = guide_legend(
+      override.aes = list(size=ref.line.sz), title.position = "top", title.hjust = 0
+    ),
+    linetype = guide_legend(
+      override.aes = list(size=ref.line.sz), title.position = "top", title.hjust = 0
+    )
   )
 
 margin.theme <- function(t,r,b,l) theme(
@@ -118,6 +132,7 @@ margin.theme <- function(t,r,b,l) theme(
 small.gap <- 0.1
   big.gap <- small.gap * 2
 
+# plot panel for month labels
 p.month <- baselinep + annotate("text",
   x = name.locs, y = 0,
   label = c("J","F","M","A","M","J","J","A","S","O","N","D"), size = 10
@@ -127,28 +142,23 @@ p.month <- baselinep + annotate("text",
   panel.grid = element_blank()
 )
 
+# legend for seasonal plots
 seas.legend <- theme(
   legend.title = element_blank(),
-  legend.position = c(0.25, 0.92), legend.justification = c(0, 0.9)
+  legend.position = c(0.15, 0.92), legend.justification = c(0, 0.9)
 )
-
-ln.size.override <- guide_legend(override.aes = list(size=ref.line.sz))
-line.override.col <- guides(color=ln.size.override)
-line.override.lty <- guides(linetype=ln.size.override)
 
 p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Incidence", breaks = c(0,1), limits = c(0,1), labels = c(0,"Max")) +
-  seas.legend +
-  line.override.col
+  seas.legend
 
 p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & duration == "reference"]) +
   geom_line(data=seasonal.dt[layer == "background" & duration == "reference"], size=0.7) +
   geom_hline(baseaes, seasonal.dt[duration == "365"]) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
-  seas.legend +
-  line.override.col
+  seas.legend
 
 proactive.start <- yday(as_date("1970/6/1")) # June 1
 proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
@@ -177,13 +187,12 @@ p.campaigns <- baselinep + annotate("segment",
   y=c(arrow_y_offset,-arrow_y_offset), x=c(proactive.start,reactive.start)-1,
   label=c("Proactive IRS", "Reactive IRS"), color=c(pro.col,rea.col), size = 10,
   hjust="right"
-) + scale_y_continuous(name=NULL, breaks=0, limits = c(-1.5, 1.5), labels = NULL) +
-theme(
+) + scale_y_continuous(
+  name=NULL, breaks=0, limits = c(-1.5, 1.5), labels = NULL
+) + theme(
   panel.grid = element_line(color = "white"),
   panel.background = element_rect(fill="grey85")
 )
-
-legend.x <- 0.53
 
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
@@ -191,49 +200,45 @@ highlighter <- annotate("line",
   size = ref.line.sz*3, color = "yellow"
 )
 
+legend.x <- 0.55
+
 eff.legend <- theme(
-  legend.direction = 'horizontal',
-  legend.position = c(legend.x,.87),
-  legend.justification = c(0,0.9),
-  legend.title = element_text(face="bold", vjust=20, hjust=10),
-  #legend.title.align = 50,
-  #strip.background = element_rect(fill='grey40', color='grey40'),
-  strip.text = element_text(color='white', size = 20)
+  legend.position = c(legend.x,.94),
+  legend.justification = c(0, 0.9)
 )
 
-coverage.dt[,face:=""]
+#coverage.dt[,face:=""]
 
 p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
-  highlighter + facet_grid(face ~ .) +
+  highlighter + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
-    values=c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
-    breaks=c("75","50","25"),
-#    name="IRS coverage sensitivity",
-    name   = element_blank(),
-    labels = function(x) sprintf("%s%%   ", x)
+    values = c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
+    breaks = c("75","50","25"),
+    name = "IRS coverage sensitivity",
+    labels = function(x) {
+      c(sprintf("%s%%   ", head(x,-1)),sprintf("%s%%", tail(x,1)))
+    }
   ) +
   guides(size="none", linetype="none") +
   coord_cartesian(ylim = c(0,1)) +
   scale_y_continuous(name="", limits = c(0,1)) +
-  eff.legend +
-  line.override.col
+  eff.legend
 
-duration.dt[,face:="Sensitivity analyses"]
+#duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter + facet_grid(face ~ .) +
+  highlighter + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
   scale_y_continuous(name="Effectiveness", limits = c(0,1), labels = function(x) sprintf("%1.2f", x)) +
-  eff.legend +
-  line.override.lty
+  eff.legend
 
-durability.dt[,face:=""]
+#durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter + facet_grid(face ~ .) +
+  highlighter + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
@@ -242,12 +247,12 @@ p.eff.durability <- baselinep +
 labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
 
 mon.left  <- 4.88
-mon.right <- 1.85
+mon.right <- 0.1 #1.85
 seas.left <- .15
 eff.right <- 0.1
 eff.left  <- 0.1
 
-# the final plotting arrangement; TODO: move padding changes here to consolidate?
+# the final plotting arrangement
 res = 300
 mag = 0.85*res/72
 png(args[9], width = 1000*mag, height = 1730*mag, units = "px", res=res)
