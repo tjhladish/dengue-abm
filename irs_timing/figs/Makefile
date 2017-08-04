@@ -4,7 +4,7 @@ DBMAIN := $(DBROOT)/who/fig1_data
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: $(DBMAIN)/fig1.png
+default: $(DBMAIN)/fig2.png
 
 # rules for making fig-ready data
 
@@ -37,6 +37,13 @@ TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability,.rds)
 SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
 
 $(DBMAIN)/fig1.png: main_fig.R $(SRCS)
+	Rscript $^ $@
+
+$(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(DBROOT)/who/irs_stopping-effect_rerun.sqlite
+
+$(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
+
+$(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
