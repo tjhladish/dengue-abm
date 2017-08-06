@@ -1,6 +1,6 @@
 
 args <- commandArgs(trailingOnly = TRUE)
-# args <- args <- paste0("~/Dropbox/who/fig1_data/stopping-",c("baseline","interventions","sero"),".rds")
+# args <- paste0("~/Dropbox/who/fig1_data/stopping-",c("baseline","interventions","sero"),".rds")
 
 require(data.table)
 

@@ -41,10 +41,14 @@ $(DBMAIN)/fig1.png: main_fig.R $(SRCS)
 
 $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(DBROOT)/who/irs_stopping-effect_rerun.sqlite
 
-$(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
+$(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
 
 $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
+
+$(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
+	Rscript $^ $@
+
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
