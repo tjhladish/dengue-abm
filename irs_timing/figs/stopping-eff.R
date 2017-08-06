@@ -8,8 +8,8 @@ baseline.dt <- readRDS(args[1])
 interventions.dt <- readRDS(args[2])
 
 eff.dt <- interventions.dt[baseline.dt,
-    on=c("particle","year")
-  ][i.s!=0,.(eff=(i.s-s)/i.s), by=.(coverage, duration, end_year, particle, year)]
+  on=c("particle","year")
+][,.(eff=ifelse(i.s==s, 0, (i.s-s)/i.s)), by=.(coverage, duration, end_year, particle, year)]
 
 stat.eff.dt <- eff.dt[,{
     qs <- quantile(eff, probs = (0:4)/4, na.rm = T)
