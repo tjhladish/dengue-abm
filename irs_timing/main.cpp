@@ -335,9 +335,9 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     vector<double> metrics = tally_counts(par, community, pre_intervention_output);
 
     assert(sero_prev.size() == 5);
-    assert(sero_prev[0].size() == sero_prev[1].size());
-    assert(sero_prev[0].size() == sero_prev[2].size());
+    for (int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
     assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
+
     // flatten sero_prev
     for (auto sero_prev_class: sero_prev) {
         for (int year = RESTART_BURNIN-pre_intervention_output; year < RESTART_BURNIN + desired_intervention_output; ++year) {
