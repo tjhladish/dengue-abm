@@ -4,7 +4,7 @@ DBMAIN := $(DBROOT)/who/fig1_data
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: supfigs
+default: supfigs mainfigs
 
 # rules for making fig-ready data
 
@@ -55,6 +55,8 @@ $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-se
 $(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
+mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2 fig2_alt,.png)
+
 supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity winter_effect foi_effect,.png)
 
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
@@ -64,6 +66,14 @@ $(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMA
 	Rscript $^ $@
 
 $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annual_effectiveness_plot.R $(DBMAIN)/baseline.cases.rds $(DBMAIN)/interventions.cases.rds $(DBMAIN)/averted.cases.rds $(DBMAIN)/stopping-eff.rds
+	Rscript $^ $@
+
+$(DBMAIN)/foi_data.rds: $(DBMAIN)/irs_timing-summer_winter-foi.sqlite
+
+$(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi_data.rds
+	Rscript $^ $@
+
+$(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
 	Rscript $^ $@
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
