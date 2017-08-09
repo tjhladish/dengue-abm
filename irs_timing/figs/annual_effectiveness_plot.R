@@ -17,7 +17,7 @@ pop_size = 18.2 # in 100 thousands
 npars = 4
 serial_col = npars + 1
 data_burnin = 5 # used 6 for timing plot
-plot_years = 10  # used 5 for timing plot
+plot_years = 50  # used 5 for timing plot
 last_col = serial_col + data_burnin + plot_years
 
 tags = d[,1:npars]
@@ -76,17 +76,33 @@ plot_effectiveness_over_time = function(tags, data, timing, plotcases=F, plotcum
 #plot_effectiveness_over_time(tags,data,0, plotcumulative=T)
 #dev.off()
 
-png('vc_4-panel-impact_10yr-grid.png', width=2000, height=1720, res=225)
+png('vc_4-panel-impact_50yr.png', width=2000, height=1720, res=225)
 par(mfrow=c(2,2), mar=c(4.6,4.1,1.2,1), oma=c(0,0,2,0))
 
 par(las=1,bty='L')
 plot_effectiveness_over_time(tags,data,152, plotcases=T)
-grid()
+#grid()
 #mtext('Simulated impact of IRS (90-day campaign, June 1 start)',side = 3,outer=T)
 plot_effectiveness_over_time(tags,data,152)
-grid()
+#grid()
 plot_effectiveness_over_time(tags,data,152, plotcasesaverted=T)
-grid()
+#grid()
 plot_effectiveness_over_time(tags,data,152, plotcumulative=T)
-abline(v=1:10, h=1:20/20)
+#abline(v=1:10, h=1:20/20)
+dev.off()
+
+plot_years = 10
+png('vc_4-panel-impact_10yr.png', width=2000, height=1720, res=225)
+par(mfrow=c(2,2), mar=c(4.6,4.1,1.2,1), oma=c(0,0,2,0))
+
+par(las=1,bty='L')
+plot_effectiveness_over_time(tags,data[1:10],152, plotcases=T)
+#grid()
+#mtext('Simulated impact of IRS (90-day campaign, June 1 start)',side = 3,outer=T)
+plot_effectiveness_over_time(tags,data[1:10],152)
+#grid()
+plot_effectiveness_over_time(tags,data[1:10],152, plotcasesaverted=T)
+#grid()
+plot_effectiveness_over_time(tags,data[1:10],152, plotcumulative=T)
+#abline(v=1:10, h=1:20/20)
 dev.off()
