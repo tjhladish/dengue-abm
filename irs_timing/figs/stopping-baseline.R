@@ -16,7 +16,7 @@ baseline.dt <- data.table(dbGetQuery(db,
    where P.serial = M.serial
    and vector_control == 0
    and vc_coverage == 0.75
-   and strat_years == 10
+   and strat_years == 50
    and P.serial = J.serial
    and status = \'D\';'
 ))
