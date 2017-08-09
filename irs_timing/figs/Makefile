@@ -4,7 +4,7 @@ DBMAIN := $(DBROOT)/who/fig1_data
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: $(DBMAIN)/fig2_alt.png
+default: supfigs
 
 # rules for making fig-ready data
 
@@ -49,9 +49,13 @@ $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-se
 $(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
+supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity winter_effect foi_effect,.png)
+
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
 	Rscript $^ $@
 
+$(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
+	Rscript $^ $@
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
