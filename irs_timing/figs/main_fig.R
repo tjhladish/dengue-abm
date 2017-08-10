@@ -83,15 +83,16 @@ baselinep <- ggplot(plot.dt, baseaes) +
   scale_alpha_manual(values=c(foreground=1,background=0.3), guide="none") +
   scale_color_manual(values=c(
     `Mos. pop.`="blue",
-    `R0`="#ff7700",
-     `EIP`=3,
+    `R0`=3,
+    #`R0`="#ff7700",
+     `EIP`="#ff7700",
      `Effectiveness`="black",
      `Cases (observed)`="black",
      `Cases (model)`="red"
     ), labels=c(
       `Mos. pop.`=expression(paste(M(t),'  ')),
       `R0`=expression(paste(R[0],'  ')),
-      EIP="EIP",
+      EIP="EIP(t)",
       Effectiveness="Effectiveness",
       `Cases (observed)`="Cases (observed)",
       `Cases (model)`="Cases (model)   "
@@ -145,7 +146,7 @@ p.month <- baselinep + annotate("text",
 # legend for seasonal plots
 seas.legend <- theme(
   legend.title = element_blank(),
-  legend.position = c(0.15, 0.92), legend.justification = c(0, 0.9)
+  legend.position = c(0.12, 0.92), legend.justification = c(0, 0.9)
 )
 
 p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
@@ -165,8 +166,10 @@ proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
 reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
 reactive.end    <- yday(as_date("1970/11/1")+179)
 
-pro.col <- "cyan4"
-rea.col <- "darkgreen"
+#pro.col <- "cyan4"
+#rea.col <- "darkgreen"
+pro.col <- "#0000ff"
+rea.col <- "#664400"
 
 ln.size <- 5/3*ref.line.sz
 
@@ -197,7 +200,7 @@ p.campaigns <- baselinep + annotate("segment",
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
   y=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", value],
-  size = ref.line.sz*3, color = "yellow"
+  size = ref.line.sz*5, color = "grey70"
 )
 
 legend.x <- 0.55
