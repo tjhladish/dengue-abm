@@ -1,13 +1,15 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 # args stopping-baseline.rds stopping-interventions.rds averted.cases.rds
-
 require(data.table)
 
 baseline.dt <- readRDS(args[1])
 interventions.dt <- readRDS(args[2])
 
-avert <- interventions.dt[baseline.dt, on=.(particle, year)][,
+setkey(interventions.dt, particle, year)
+setkey(baseline.dt, particle, year)
+
+avert <- interventions.dt[baseline.dt, on=c('particle', 'year')][,
   .(
     averted=i.cases-cases,
     cum.averted=i.cum.cases-cum.cases,
