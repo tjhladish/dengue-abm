@@ -17,3 +17,4 @@ raw_data/weather/*.csv
 abc/yuc_posterior_output/*daily
 abc/yuc_posterior_output/*annual
 *.log
+.Rhistory
