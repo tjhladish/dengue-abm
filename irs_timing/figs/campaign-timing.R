@@ -1,7 +1,7 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-
+# args <- c("~/Dropbox/who/fig1_data/irs_timing-summer_winter-foi.sqlite", "~/Dropbox/daily-irs_refit-simple-nofilenames-uniq.out", "~/Dropbox/who/fig1_data/campaign-timing-prevalence.local.rds")
 require(RSQLite)
 require(data.table)
 
@@ -30,29 +30,31 @@ ref.dt <- data.table(
   )), stringsAsFactors = T
 )
 
+dbDisconnect(db)
+
 ref.dt[,
   foi := factor(foi, levels = foilvls, ordered = T)
 ][,
   intervention := factor(intervention, levels = timelvls, ordered = T)  
 ]
 
+target <- gsub(".+-(\\w+\\.\\w+).rds$","\\1",args[3])
+tarcols <- c("incidence.intro","incidence.local","prevalence.intro","prevalence.local")
+trans <- sprintf("V%d", 1:length(tarcols) + 3)
+dropcols <- trans[which(tarcols != target)]
 ## TODO check for .Rdata
 
 daily.dt <- fread(
   args[2], sep = " ", header = F,
-  col.names = c("serial","day","incidence.intro","incidence.local","prevalence.intro","prevalence.local"),
-  drop = "V1"
-)
+  col.names = c("serial","day", "value"),
+  drop = c("V1", dropcols)
+)[ref.dt, on="serial"][, day    := day - min(day) ]
 
-intermediate.dt <- setkey(melt.data.table(daily.dt, id.vars=c("serial","day")),serial,day)[ref.dt, on="serial"]
-rm(daily.dt)
-
-plot.dt <- intermediate.dt[,{
+plot.dt <- daily.dt[,{
   mn <- mean(value)
   ps <- quantile(value, probs = c(0,.25,.5,.75, 1))
-  list(ave=mn, min=ps[1], lo=ps[2], md=ps[3], hi=ps[4], max=ps[5])
-}, keyby=list(intervention, foi, variable, day)
+  .(ave=mn, min=ps[1], lo=ps[2], md=ps[3], hi=ps[4], max=ps[5])
+  }, keyby=.(foi, intervention, day)
 ]
-plot.dt[, day    := day - min(day) ]
 
 saveRDS(plot.dt, args[3])

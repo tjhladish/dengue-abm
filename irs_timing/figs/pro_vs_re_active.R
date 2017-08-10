@@ -1,7 +1,7 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-# args <- c("~/Dropbox/who/fig1_data/campaign-timing.rds", "~/Dropbox/who/fig1_data/pro_vs_re_active.png")
+# args <- c("~/Dropbox/who/fig1_data/campaign-timing-%.rds", "~/Dropbox/who/fig1_data/pro_vs_re_active.png")
 
 require(data.table)
 require(ggplot2)
@@ -18,9 +18,9 @@ irs.dt <- data.table(
   ymin=ymin, ymax=ymax,
   intervention = factor(c(rep(timelvls[2],reps),rep(timelvls[3],reps)), levels = timelvls, ordered = T)
 )
-views = c("IRS window","half range","median")
+views = c("IRS window","Half range","Median")
 view <- function(i) {
-  views = c("IRS window","half range","median")
+  views = c("IRS window","Half range","Median")
   factor(views[i], levels = views, ordered = T)
 }
 
@@ -42,7 +42,7 @@ view <- function(i) {
 #   guides(linetype="none")
 
 png(args[2],height=1200,width=1000,res=180)
-ggplot(plot.dt[variable == "prevalence.local"],
+ggplot(plot.dt,
        aes(fill=intervention)
 ) + theme_minimal() +
   coord_cartesian(xlim=c(125,850), ylim=c(ymin,ymax)) +

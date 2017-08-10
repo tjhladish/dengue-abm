@@ -76,10 +76,14 @@ $(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi_data.rds
 $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
 	Rscript $^ $@
 
-$(DBMAIN)/pro_vs_re_active.png: pro_vs_re_active.R $(DBMAIN)/campaign-timing.rds
+CMPRES = incidence.intro incidence.local prevalence.intro prevalence.local
+
+# override production of these .rds, since they all use same script
+$(call wrap,$(DBMAIN)/campaign-timing-,$(CMPRES),.rds): campaign-timing.R $(DBMAIN)/irs_timing-summer_winter-foi.sqlite $(DBROOT)/daily-irs_refit-simple-nofilenames-uniq.out
 	Rscript $^ $@
 
-$(DBMAIN)/campaign-timing.rds: $(DBMAIN)/irs_timing-summer_winter-foi.sqlite $(DBROOT)/daily-irs_refit-simple-nofilenames-uniq.out
+$(DBMAIN)/pro_vs_re_active-%.png: pro_vs_re_active.R $(DBMAIN)/campaign-timing-%.rds
+	Rscript $^ $@
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
