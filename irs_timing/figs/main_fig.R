@@ -200,7 +200,7 @@ p.campaigns <- baselinep + annotate("segment",
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
   y=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", value],
-  size = ref.line.sz*5, color = "grey70"
+  size = ref.line.sz*5, color = "grey70" # was yellow
 )
 
 legend.x <- 0.55
@@ -216,7 +216,8 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
   highlighter + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
-    values = c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
+    values = c(`25`="grey65",`50`="grey50",`75`="black"),
+    #values = c(`25`="lightgrey",`50`="darkgrey",`75`="black"),
     breaks = c("75","50","25"),
     name = "IRS coverage sensitivity",
     labels = function(x) {
