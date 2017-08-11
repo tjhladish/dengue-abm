@@ -55,7 +55,7 @@ $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-se
 $(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
-mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2 fig2_alt,.png)
+mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)
 
 supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect,.png)
 

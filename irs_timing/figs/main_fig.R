@@ -1,3 +1,5 @@
+#require(devtools)
+#dev_mode(on=T)
 
 require(ggplot2)
 require(gridExtra)
@@ -179,7 +181,7 @@ arrow_y_offset = 0.825
 p.campaigns <- baselinep + annotate("segment",
   x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-arrow_y_offset,arrow_y_offset), yend=c(-arrow_y_offset,arrow_y_offset),
   color=c(rea.col,pro.col), size=ln.size, linejoin="mitre",#/5,
-  arrow=arrow(35,unit(1.5,"line"),"last","closed")
+  arrow=arrow(35,unit(1.25,"line"),"last","closed")
 ) + annotate("segment",
   x = reactive.start+1, xend=365, y = -arrow_y_offset, yend = -arrow_y_offset,
   color=rea.col, size=ln.size
@@ -200,7 +202,7 @@ p.campaigns <- baselinep + annotate("segment",
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
   y=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", value],
-  size = ref.line.sz*5, color = "grey70" # was yellow
+  size = ref.line.sz*5, color = "#F0E68Caa" # was yellow, grey70
 )
 
 legend.x <- 0.55
