@@ -39,7 +39,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
 
     curpar <- par()
 
-    par(mfrow=c(3,1))
+    par(mfrow=c(3,1), lend=1)
     #nf <- layout(matrix(c(1,2),ncol=1), widths=c(5,5,5), heights=c(3,2), TRUE)
 #par(mar=c(1,4.2,2,1),oma=c(3.5,1,2,0))
     par(las=1,mar=c(1,5,0,0),oma=c(2.5,0,0,0))
@@ -56,7 +56,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
     lty0 =3
     lty10=rep(1,3)
     lty50=rep(1,3)
-    ylim_ = c(0, 1.1)
+    ylim_ = c(0, 1)
 
     #### PANEL A -- Long-term annual effectiveness
     matplot(y=cbind(rep(0,21),eff.ys[,4:6]), type='l',
@@ -81,7 +81,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
 
 
     #### PANEL B -- Long-term annual effectiveness w/ stopping
-    ylim_ = c(-4, 1.5)
+    ylim_ = c(-4, 1.4)
     #matplot(y=cbind(rep(0,21),eff.ys[,c(3,6)]), type='l',
     matplot(y=cbind(rep(0,21),eff.ys[,c(4:6,1:3)]), type='l',
             #lwd=.lwd, lty=c(lty0,lty50,lty10),

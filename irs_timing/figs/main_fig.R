@@ -29,7 +29,7 @@ durability.dt <- readRDS(args[8])[layer=="background"]
 cases.dt <- rbind(obs.dt, sim.dt) # panel a
 seasonal.dt <- rbind(
   mos.dt[layer=="foreground"], # take out filter to show raw rainfall as well
-  R0.dt[layer=="foreground"],
+  R0.dt,#[layer=="foreground"],
   eip.dt
 ) # panel b
 eff.dt <- rbind(coverage.dt, duration.dt, durability.dt) # panel c-e
@@ -162,7 +162,7 @@ p.cases <- baselinep + geom_line(data=rbind(cases.dt)) +
   seas.legend
 
 p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & duration == "reference"]) +
-  geom_line(data=seasonal.dt[layer == "background" & duration == "reference"], size=0.7) +
+  #geom_line(data=seasonal.dt[layer == "background" & duration == "reference"], size=0.7) +
   geom_hline(baseaes, seasonal.dt[duration == "365"]) +
   guides(size="none", linetype="none") +
   scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
@@ -207,12 +207,12 @@ p.campaigns <- baselinep + annotate("segment",
 highlighter <- annotate("line",
   x=coverage.dt[coverage == 75 & duration == 90 & durability == 90, doy],
   y=coverage.dt[coverage == 75 & duration == 90 & durability == 90, value],
-  size = ref.line.sz*5, color = "#F0E68Caa" # was yellow, grey70
+  size = ref.line.sz*5, color = "#F0ED71aa" # was yellow, grey70
 )
 highlight.dot <- function(xpos) annotate("point",
   x=xpos,
-  y=0.835,
-  size = ref.line.sz*10, shape=15, color = "#F0E68Caa" # was yellow, grey70
+  y=0.862,
+  size = ref.line.sz*10, shape=15, color = "#F0ED71aa" # was yellow, grey70
 )
 
 
@@ -263,7 +263,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
 #duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter + highlight.dot(264.5) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
@@ -273,13 +273,13 @@ p.eff.duration <- baselinep +
 #durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter + highlight.dot(264.5) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
   eff.legend
 
-labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=15)
+labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=13, fontface='bold')
 
 mon.left  <- 4.88
 mon.right <- 0.1 #1.85
