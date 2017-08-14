@@ -127,10 +127,10 @@ baselinep <- ggplot(plot.dt, baseaes) +
     ),
     linetype = guide_legend(
       override.aes = list(size=ref.line.sz), title.position = "top", title.hjust = 0
-    ),
-    fill = guide_legend(
-      title.position = "top", title.hjust = 0
     )
+    # , fill = guide_legend(
+    #   title.position = "top", title.hjust = 0
+    # )
   )
 
 margin.theme <- function(t,r,b,l) theme(
