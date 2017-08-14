@@ -1,3 +1,5 @@
+#require(devtools)
+#dev_mode(on=T)
 
 require(ggplot2)
 require(gridExtra)
@@ -19,15 +21,15 @@ sim.dt <- readRDS(args[2])
 eip.dt <- readRDS(args[3])
 R0.dt  <- readRDS(args[4])
 mos.dt <- readRDS(args[5])
-coverage.dt <- readRDS(args[6])
-duration.dt <- readRDS(args[7])
-durability.dt <- readRDS(args[8])
+coverage.dt <- readRDS(args[6])[layer=="background"] # don't show smoothed data for eff
+duration.dt <- readRDS(args[7])[layer=="background"]
+durability.dt <- readRDS(args[8])[layer=="background"]
 
 ## assorted data.tables for plotting
 cases.dt <- rbind(obs.dt, sim.dt) # panel a
 seasonal.dt <- rbind(
   mos.dt[layer=="foreground"], # take out filter to show raw rainfall as well
-  R0.dt,
+  R0.dt[layer=="foreground"],
   eip.dt
 ) # panel b
 eff.dt <- rbind(coverage.dt, duration.dt, durability.dt) # panel c-e
@@ -48,9 +50,9 @@ baseaes <- aes(
   # lines will day-of-year (1-365) against some value (10yr effectiveness, or scaled seasonal data)
   color=variable, # different colors for different kinds of things;
   # shape=factor(coverage), # exception: will use grey scale for coverage; tried shape, meh
+#  alpha=layer, # used to show foreground (smoothed) vs background (raw) data
   size=factor(durability),
-  linetype=factor(duration),
-  alpha=layer # used to show foreground (smoothed) vs background (raw) data
+  linetype=factor(duration)
 )
 
 # use background highlight to indicate months
@@ -64,6 +66,8 @@ mon.cols <- annotate("rect",
 # change this to change the base (plot) line thickness
 # all other line thicknesses are set relative to this
 ref.line.sz <- 1
+
+day.labeller <- function(x) sprintf("%3s day  ", x)
 
 baselinep <- ggplot(plot.dt, baseaes) +
   theme_minimal() +
@@ -80,7 +84,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
     strip.text.y = element_text(angle=90)
   ) +
   mon.cols +
-  scale_alpha_manual(values=c(foreground=1,background=0.3), guide="none") +
+#  scale_alpha_manual(values=c(foreground=1,background=0.3), guide="none") +
   scale_color_manual(values=c(
     `Mos. pop.`="blue",
     `R0`=3,
@@ -102,7 +106,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
     values = c(reference=ref.line.sz,`150`=ref.line.sz*2,`90`=ref.line.sz,`30`=ref.line.sz/2),
     breaks = c("150","90","30"),
     name   = "IRS durability sensitivity",
-    labels = function(x) sprintf("%3s day   ", x)
+    labels = day.labeller
   ) +
   scale_x_continuous(
     # don't show the day-of-year scale - covered by the background month layer
@@ -112,7 +116,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
     values = c(reference="solid",`1`="dashed",`90`="solid",`365`="dotted"),
     breaks = c("365","90","1"),
     name   = "IRS rollout sensitivity",
-    labels = function(x) sprintf("%3s day   ", x)
+    labels = day.labeller
   ) +
   guides(
     size = guide_legend(
@@ -123,6 +127,9 @@ baselinep <- ggplot(plot.dt, baseaes) +
     ),
     linetype = guide_legend(
       override.aes = list(size=ref.line.sz), title.position = "top", title.hjust = 0
+    ),
+    fill = guide_legend(
+      title.position = "top", title.hjust = 0
     )
   )
 
@@ -179,7 +186,7 @@ arrow_y_offset = 0.825
 p.campaigns <- baselinep + annotate("segment",
   x = c(1,proactive.start)+1, xend=c(reactive.end,proactive.end), y = c(-arrow_y_offset,arrow_y_offset), yend=c(-arrow_y_offset,arrow_y_offset),
   color=c(rea.col,pro.col), size=ln.size, linejoin="mitre",#/5,
-  arrow=arrow(35,unit(1.5,"line"),"last","closed")
+  arrow=arrow(35,unit(1.25,"line"),"last","closed")
 ) + annotate("segment",
   x = reactive.start+1, xend=365, y = -arrow_y_offset, yend = -arrow_y_offset,
   color=rea.col, size=ln.size
@@ -197,11 +204,32 @@ p.campaigns <- baselinep + annotate("segment",
   panel.background = element_rect(fill="grey85")
 )
 
-highlighter <- annotate("line",
-  x=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", doy],
-  y=coverage.dt[coverage == 75 & duration == 90 & durability == 90 & layer == "foreground", value],
-  size = ref.line.sz*5, color = "grey70" # was yellow
+highlighter <- function(xpos) list(
+  annotate("line",
+    x=coverage.dt[coverage == 75 & duration == 90 & durability == 90, doy],
+    y=coverage.dt[coverage == 75 & duration == 90 & durability == 90, value],
+    size = ref.line.sz*5, color = "#F0E68Caa" # was yellow, grey70
+  ),
+  annotate("point",
+    x=xpos,
+    y=0.835,
+    size = ref.line.sz*10, shape=15, color = "#F0E68Caa" # was yellow, grey70
+  )
 )
+
+# highlighter <- function(dt, dimension, sclnm, labeller) {
+#   # vals <- rep(NA_character_, length(scl))
+#   # names(vals) <- scl
+#   # vals[nm] <- "#F0E68Caa"
+#   
+#   list(geom_ribbon(
+#     aes_(fill=as.name(dimension), x=~doy, ymax=~value+0.025, ymin=~value-0.025, color=NULL),
+#     dt
+#   ), scale_fill_manual(
+#     name=sclnm, labels=labeller,
+#     values=c('red', 'blue', 'green')
+#   ))
+# } 
 
 legend.x <- 0.55
 
@@ -212,8 +240,12 @@ eff.legend <- theme(
 
 #coverage.dt[,face:=""]
 
+percent.labeller <- function(x) {
+  c(sprintf("%s%%  ", head(x,-1)),sprintf("%s%%", tail(x,1)))
+}
+
 p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
-  highlighter + # facet_grid(face ~ .) +
+  highlighter(210.5) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
     values = c(`25`="grey65",`50`="grey50",`75`="black"),
@@ -232,7 +264,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
 #duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter + #facet_grid(face ~ .) +
+  highlighter(264.5) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
@@ -242,7 +274,7 @@ p.eff.duration <- baselinep +
 #durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter + #facet_grid(face ~ .) +
+  highlighter(264.5) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +

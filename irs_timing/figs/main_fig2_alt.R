@@ -1,7 +1,6 @@
 rm(list=ls())
 
 require(data.table)
-require(ggplot2)
 
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c(paste0("~/Dropbox/who/fig1_data/stopping-",c("eff","sero"),".rds"),"~/Dropbox/who/fig1_data/fig2_alt.png")

@@ -55,7 +55,7 @@ $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-se
 $(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
-mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2 fig2_alt,.png)
+mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)
 fig1: $(call wrap,$(DBMAIN)/,fig1,.png)
 fig2: $(call wrap,$(DBMAIN)/,fig2_alt,.png)
 
