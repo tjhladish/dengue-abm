@@ -204,18 +204,17 @@ p.campaigns <- baselinep + annotate("segment",
   panel.background = element_rect(fill="grey85")
 )
 
-highlighter <- function(xpos) list(
-  annotate("line",
-    x=coverage.dt[coverage == 75 & duration == 90 & durability == 90, doy],
-    y=coverage.dt[coverage == 75 & duration == 90 & durability == 90, value],
-    size = ref.line.sz*5, color = "#F0E68Caa" # was yellow, grey70
-  ),
-  annotate("point",
-    x=xpos,
-    y=0.835,
-    size = ref.line.sz*10, shape=15, color = "#F0E68Caa" # was yellow, grey70
-  )
+highlighter <- annotate("line",
+  x=coverage.dt[coverage == 75 & duration == 90 & durability == 90, doy],
+  y=coverage.dt[coverage == 75 & duration == 90 & durability == 90, value],
+  size = ref.line.sz*5, color = "#F0E68Caa" # was yellow, grey70
 )
+highlight.dot <- function(xpos) annotate("point",
+  x=xpos,
+  y=0.835,
+  size = ref.line.sz*10, shape=15, color = "#F0E68Caa" # was yellow, grey70
+)
+
 
 # highlighter <- function(dt, dimension, sclnm, labeller) {
 #   # vals <- rep(NA_character_, length(scl))
@@ -240,12 +239,12 @@ eff.legend <- theme(
 
 #coverage.dt[,face:=""]
 
-percent.labeller <- function(x) {
-  c(sprintf("%s%%  ", head(x,-1)),sprintf("%s%%", tail(x,1)))
-}
+# percent.labeller <- function(x) {
+#   c(sprintf("%s%%  ", head(x,-1)),sprintf("%s%%", tail(x,1)))
+# }
 
 p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
-  highlighter(210.5) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
+  highlighter + highlight.dot(210.5) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
     values = c(`25`="grey65",`50`="grey50",`75`="black"),
@@ -264,7 +263,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
 #duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter(264.5) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264.5) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
@@ -274,7 +273,7 @@ p.eff.duration <- baselinep +
 #durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter(264.5) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264.5) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
