@@ -19,6 +19,11 @@ stat.eff.dt[
 ]
 stat.eff.dt[moddoy > 365, moddoy := moddoy - 365 ]
 
+
+backcols <- c(mos="blue",r0=3)
+# `Mos. pop.`="blue",
+# `R0`=3,
+
 png(args[4], width=2000, height=2200, res=300)
 par(mfrow=c(3,1), mar=c(2.1,2.1,1,1), oma=c(3,3,0,0),las=1)
 #dur_ = 1
@@ -32,19 +37,19 @@ for (cov_ in c(75,50,25)) {
     plot(0:365, ylim=c(minval-pad*.range,maxval+pad*.range), xlab='', ylab='', type='n', xaxt='n')
     axis(1,at=month_starts,labels = month_labels)
     
-    with(R0.dt[layer == "foreground" & duration != 365], lines(doy, (.range*value)+minval, col='#ff7700', lwd=2)) # R0
-    with(mos.dt[layer == "foreground"], lines(doy, (.range*value)+minval, col=4, lwd=1.5)) # mosquitoes
+    with(R0.dt[layer == "foreground" & duration != 365], lines(doy, (.range*value)+minval, col=backcols["r0"], lwd=2)) # R0
+    with(mos.dt[layer == "foreground"], lines(doy, (.range*value)+minval, col=backcols["mos"], lwd=1.5)) # mosquitoes
 
     # shift ts based on half campaign duration + half durability
     
     with(test[duration == 1],{
-      lines(moddoy, med.eff10, type='l', lty=1, lwd=0.5)
-      lines(moddoy, smooth, type='l', lty=1, lwd=2)
+      lines(moddoy, med.eff10, type='l', lty=1, lwd=2)
+      #lines(moddoy, smooth, type='l', lty=1, lwd=2)
     })
     
     with(test[duration == 90],{
-      lines(moddoy, med.eff10, type='l', lty=2, lwd=0.5)
-      lines(moddoy, smooth, type='l', lty=2, lwd=2)
+      lines(moddoy, med.eff10, type='l', lty=2, lwd=2)
+      #lines(moddoy, smooth, type='l', lty=2, lwd=2)
     })
 
     with(test[duration == 365], abline(h=med.eff10, lty=3, lwd=2))

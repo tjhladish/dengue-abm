@@ -41,22 +41,25 @@ view <- function(i) {
 #   scale_alpha_manual(name="measure", limits=views, values = c(0.1,0.2,1)) +
 #   guides(linetype="none")
 
+pro.col <- "#0000ff"
+rea.col <- "#664400"
+
 png(args[2],height=1200,width=1000,res=180)
 ggplot(plot.dt,
        aes(fill=intervention)
-) + theme_minimal() +
+) + theme_minimal() + theme(strip.text.y = element_text(angle=90)) +
   coord_cartesian(xlim=c(125,850), ylim=c(ymin,ymax)) +
   facet_grid(foi ~ ., scales = "free") +
   #  geom_ribbon(aes(ymin=min, ymax=max, alpha="full range", color=NULL)) +
   geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=views[1]), data=irs.dt) +
-  geom_text(aes(x=(xmax+xmin)/2, y=ifelse(intervention == "Proactive",ymax*.6,ymin/.6), label=intervention), data=irs.dt) +
+  geom_text(aes(x=(xmax+xmin)/2, y=ifelse(intervention == "Proactive",ymax*.6,ymin/.6), label=intervention, color=intervention), data=irs.dt) +
   geom_ribbon(aes(x=day, ymin=lo, ymax=hi, alpha=views[2])) +
   #  geom_line(aes(y=ave, linetype="average", alpha="line")) +
   geom_line(aes(x=day, y=md, linetype="median", alpha=views[3], color=intervention)) +
   scale_y_log10(name="# Active infections") +
   scale_alpha_manual(name="Measure", limits=views, values = c(0.1,0.2,1)) +
-  scale_color_manual(name="Intervention", values=c(None='black',Proactive="cyan4",Reactive="darkgreen")) +
-  scale_fill_manual(name="Intervention", values=c(None='black',Proactive="cyan4",Reactive="darkgreen")) +
+  scale_color_manual(name="Intervention", values=c(None='black',Proactive=pro.col,Reactive=rea.col)) +
+  scale_fill_manual(name="Intervention", values=c(None='black',Proactive=pro.col,Reactive=rea.col)) +
   scale_x_continuous(name="Days since start of first intervention calendar year") +
   guides(linetype="none")
 dev.off()
