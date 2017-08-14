@@ -49,14 +49,14 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
 
     #col50='black'
     col0 ='black'
-    col10='#aa0000'
+    col10=c('#de7676','#d13646','#7f0016')
     col50=c('grey55', 'grey40', 'black') # increasing tone w/ increasing coverage
-    .lwd = 3
+    .lwd = 2.5
     #.lwd = c(2,1.5,2.25,3)
     #.lwd = 3:6/2
     lty0 =3
-    lty10=1
-    lty50=1
+    lty10=rep(1,3)
+    lty50=rep(1,3)
     ylim_ = c(0, 1.1)
 
     #### PANEL A -- Long-term annual effectiveness
@@ -64,64 +64,79 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
             lwd=.lwd, lty=c(lty0,rep(lty50,3)),
             col=c(col0, rep(col50,3)),
             #col=c(.col[-1], .col[-1]),
-            ylab='Overall effectiveness', xlab='', ylim = ylim_, axes=F,
+            ylab='Effectiveness', xlab='', ylim = ylim_, axes=F,
             cex.lab=1.5
            )
     #lines(c(1,21), c(0,0), col=col50, lwd=.lwd[1])
-    text(1, ylim_[2]-(0.025*(ylim_[2]-ylim_[1])), cex=2, font=2,labels='a')
+    text(1, ylim_[2]-(0.025*(ylim_[2]-ylim_[1])), cex=2.5, font=2,labels='a')
     axis(1, at=0:4*5 + 1, labels=F)
     axis(2)
 
     legend('topright',
            inset=c(0.05,0.05),
            legend=c('75% coverage','50% coverage','25% coverage', 'baseline (0% coverage)'),
-           lwd=rev(.lwd), lty=c(rep(lty50,3),lty0), col=rev(c(col0, rep(col50,3))),
-           seg.len=2.5,
+           lwd=rev(.lwd), lty=c(lty50,lty0), col=rev(c(col0, rep(col50,3))),
+           seg.len=2,
            #lwd=rev(.lwd), lty=lty50, col=rev(.col),
            bty='n', cex=1.25)
 
 
     #### PANEL B -- Long-term annual effectiveness w/ stopping
     ylim_ = c(-4, 1.5)
-    matplot(y=cbind(rep(0,21),eff.ys[,c(3,6)]), type='l',
-            lwd=.lwd, lty=c(lty0,lty10,lty50),
-            col=c(col0, col10, col50[3]),
-            #col=c(.col[-1], .col[-1]),
-            ylab='Overall effectiveness', xlab='', ylim = ylim_, axes=F,
+    #matplot(y=cbind(rep(0,21),eff.ys[,c(3,6)]), type='l',
+    matplot(y=cbind(rep(0,21),eff.ys[,c(4:6,1:3)]), type='l',
+            #lwd=.lwd, lty=c(lty0,lty50,lty10),
+            lwd=c(2.5,rep(1.5,3),rep(2.5,3)), lty=c(lty0,lty50,lty10),
+            col=c(col0, col50, col10),
+            #col=c(col0, adjustcolor(col50, alpha.f=0.5), col10),
+            #col=c(col0, col10, col50[3]),
+            ylab='Effectiveness', xlab='', ylim = ylim_, axes=F,
             cex.lab=1.5
            )
-
+#abline(h=seq(-3,-4,-0.1))
     legend('bottomleft',
-           inset=c(0.05,0.05),
-           legend=c('75% coverage','75% coverage ending in year 10','baseline (0% coverage)'),
-           lwd=rev(.lwd), lty=c(lty50,lty10,lty0), col=c(col50[3],col10,col0),
-           seg.len=2.5,
+           inset=c(0.02,0.05),
+           legend=c('75% coverage', '50% coverage', '25% coverage', 'baseline (0% coverage)',
+                    '75% coverage ending in year 10', '50% coverage ending in year 10', '25% coverage ending in year 10'),
+           #legend=c('75% coverage','75% coverage ending in year 10','baseline (0% coverage)'),
+           lwd=c(rep(1.5,3),rep(2.5,4)), lty=c(lty50,lty0,lty10), col=c(rev(col50),col0,rev(col10)),
+           seg.len=2,
            #lwd=rev(.lwd), lty=lty50, col=rev(.col),
            bty='n', cex=1.25)
 
-    text(1, ylim_[2]-(0.025*(ylim_[2]-ylim_[1])), cex=2, font=2,labels='b')
+    text(1, ylim_[2]-(0.025*(ylim_[2]-ylim_[1])), cex=2.5, font=2,labels='b')
     axis(1, at=0:4*5 + 1, labels=F)
     axis(2)
 
     #### PANEL C -- Long-term annual seroprevalence
-    matplot(y=sero.ys[,c(3,4,7)], type='l',
+    #matplot(y=sero.ys[,c(3,4,7)], type='l',
+    matplot(y=sero.ys[,c(4:7,1:3)], type='l',
             lwd=.lwd,
-            lty=c(lty10,lty0,lty50),
-            col=c(col10, col0, col50[3]),
+            lty=c(lty0,lty50,lty10),
+            col=c(col0, col50, col10),
             ylab='Seroprevalence', xlab='', ylim = c(0.3,0.8), axes=F,
             cex.lab=1.5
            )
 
     legend('bottomleft',
-           inset=c(0.05,0.05),
-           legend=c('75% coverage','75% coverage ending in year 10','baseline (0% coverage)'),
-           lwd=rev(.lwd), lty=c(lty50,lty10,lty0), col=c(col50[3],col10,col0),
-           seg.len=2.5,
+           inset=c(0.02,0.05),
+           legend=c('75% coverage', '50% coverage', '25% coverage', 'baseline (0% coverage)'),
+           lwd=c(rep(1.5,3),2.5), lty=c(lty50,lty0), col=c(rev(col50),col0),
+           seg.len=2,
            #lwd=rev(.lwd), lty=lty50, col=rev(.col),
            bty='n', cex=1.25)
 
+    legend('bottomleft',
+           inset=c(0.37,0.05),
+           legend=c('75% coverage ending in year 10', '50% coverage ending in year 10', '25% coverage ending in year 10'),
+           lwd=c(rep(2.5,3)), lty=lty10, col=rev(col10),
+           seg.len=2,
+           #lwd=rev(.lwd), lty=lty50, col=rev(.col),
+           bty='n', cex=1.25)
+
+
     ylim_ = par('usr')[3:4]
-    text(1, ylim_[2]-(0.09*(ylim_[2]-ylim_[1])), cex=2, font=2,labels='c')
+    text(1, ylim_[2]-(0.09*(ylim_[2]-ylim_[1])), cex=2.5, font=2,labels='c')
     axis(1, at=0:4*5 + 1, labels=F)
     axis(1, at=0:4*5 + 1, labels=0:4*5, lwd = 0, line = -0.3)
     axis(2)
@@ -132,7 +147,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
 }
 
 res = 300
-mag = 0.55*res/72
-    png(args[3], width = 1000*mag, height = 1200*mag, units = "px", res=res)
+mag = 0.45*res/72
+    png(args[3], width = 1000*mag, height = 1600*mag, units = "px", res=res)
     plot_effectiveness_over_time(effectiveness.dt, seroprevalence.dt)
 dev.off()
