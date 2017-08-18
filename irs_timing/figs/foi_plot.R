@@ -4,12 +4,18 @@ args <- commandArgs(trailingOnly = T)
 
 eff <- readRDS(args[1])
 
-foi = c('70% FOI', 'Baseline (fitted) FOI', '130% FOI')
-seasons = c('June 1 IRS (best timing)', 'November 1 IRS (worst timing)')
+#foi = 
+seasons = c('June 1 IRS (proactive timing)', 'November 1 IRS (reactive timing)')
 
 data = matrix(setkey(eff, timing)$med.eff, nrow=2, byrow=T)
 rownames(data) = seasons
-colnames(data) = foi
+
 png(args[2], width=1200, height=800, res=120)
-barplot(data, beside=T, ylab='Overall cumulative effectiveness (first 10 years)', legend=rownames(data), main='Effect of force of infection and IRS seasonality on effectiveness', ylim=c(0,1))
+barplot(data,
+  beside=T,
+  ylab='Overall cumulative effectiveness (first 10 years)',
+  names.arg = c(expression(paste('70% ',M[peak])), expression(paste('Baseline (fitted) ',M[peak])), expression(paste('130% ',M[peak]))),
+  legend=rownames(data),
+  main='Effect of mosquito population and IRS seasonality on effectiveness', ylim=c(0,1)
+)
 dev.off()

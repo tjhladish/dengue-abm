@@ -23,9 +23,9 @@ $(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
-$(DBMAIN)/baseline.rds: $(DBROOT)/who/irs_figs/irs_timing-refit0.sqlite
+$(DBMAIN)/baseline.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite
 
-$(DBMAIN)/interventions.rds: $(DBROOT)/who/irs_figs/irs_timing-refit0.sqlite $(DBROOT)/who/irs_insecticide-durability-effect.sqlite
+$(DBMAIN)/interventions.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite $(DBROOT)/who/irs_insecticide-durability-effect.sqlite
 
 $(DBMAIN)/baseline.cases.rds: $(DBMAIN)/stopping-baseline.rds
 
@@ -59,12 +59,15 @@ mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)
 fig1: $(call wrap,$(DBMAIN)/,fig1,.png)
 fig2: $(call wrap,$(DBMAIN)/,fig2_alt,.png)
 
-supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect,.png)
+supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-alt vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect,.png)
 
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
 	Rscript $^ $@
 
 $(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
+	Rscript $^ $@
+
+$(DBMAIN)/irs_timing-realigned-SI-alt.png: timing_plot_realigned-supplement-alt.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
 	Rscript $^ $@
 
 $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annual_effectiveness_plot.R $(DBMAIN)/baseline.cases.rds $(DBMAIN)/interventions.cases.rds $(DBMAIN)/averted.cases.rds $(DBMAIN)/stopping-eff.rds

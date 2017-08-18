@@ -2,23 +2,28 @@ require(data.table)
 require(RSQLite)
 
 args <- commandArgs(trailingOnly = TRUE)
+# args <- c("/Users/carlpearson/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/irs_insecticide-durability-effect.sqlite", "~/Dropbox/who/fig1_data/interventions.rds")
 
 drv = dbDriver("SQLite")
 
 db = dbConnect(drv, args[1], flags=SQLITE_RO)
 
 eff.dt <- data.table(dbGetQuery(db,
-  'select timing+1 AS doy, vc_coverage*100 AS coverage, campaign_duration AS duration, 90 AS durability, M.*
-  from par P, met M, job J
-  where P.serial = M.serial
-  and P.serial = J.serial
-  and status = \'D\'
-  and vector_control = 1;')
+  "SELECT
+   timing+1 AS doy, vc_coverage*100 AS coverage,
+   campaign_duration AS duration, 90 AS durability,
+   posterior AS particle,
+   M.*
+   FROM met M
+   JOIN par P ON P.serial = M.serial
+   JOIN job J ON J.serial = M.serial
+   WHERE status = 'D'
+   AND vector_control = 1;")
 )
 
 dbDisconnect(db)
 
-eff.dt[, particle := floor(serial / 954)]
+#eff.dt[, particle := floor(serial / 954)]
 
 tmp <- eff.dt[,
   .(cases10=base::sum(.SD)),
