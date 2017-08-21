@@ -25,7 +25,7 @@ $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
 $(DBMAIN)/baseline.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite
 
-$(DBMAIN)/interventions.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite $(DBROOT)/who/irs_insecticide-durability-effect.sqlite
+$(DBMAIN)/interventions.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
 
 $(DBMAIN)/baseline.cases.rds: $(DBMAIN)/stopping-baseline.rds
 

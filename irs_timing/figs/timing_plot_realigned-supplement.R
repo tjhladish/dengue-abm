@@ -45,14 +45,14 @@ for (cov_ in c(75,50,25)) {
     
     with(test[duration == 1],{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=2, lwd=2, col="grey")
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=2, lwd=2, col="lightgrey")
       lines(moddoy, med.eff10, type='l', lty=2, lwd=2)
       #lines(moddoy, smooth, type='l', lty=1, lwd=2)
     })
     
     with(test[duration == 90],{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="grey")
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="lightgrey")
       lines(moddoy, med.eff10, type='l', lty=1, lwd=2)
       #lines(moddoy, smooth, type='l', lty=2, lwd=2)
     })

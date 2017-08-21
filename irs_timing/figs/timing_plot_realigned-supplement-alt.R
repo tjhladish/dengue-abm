@@ -44,7 +44,7 @@ for (dur_ in c(150,90,30)) {
     
     with(test,{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="grey")
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="lightgrey")
       lines(moddoy, med.eff10, type='l', lty=1, lwd=2)
       #lines(moddoy, smooth, type='l', lty=1, lwd=2)
     })
