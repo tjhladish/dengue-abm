@@ -3,17 +3,27 @@ rm(list=ls())
 require(data.table)
 
 args <- commandArgs(trailingOnly = T)
-# args <- paste0("~/Dropbox/who/fig1_data/", c("baseline.cases.rds", "interventions.cases.rds", "averted.cases.rds", "stopping-eff.rds", "vc_4-panel-impact_10yr.png"))
+# args <- c(paste0("~/Dropbox/who/fig1_data/stopping-", c("baseline.cases.rds", "interventions.cases.rds", "averted.rds", "eff.rds")), "~/Dropbox/who/fig1_data/vc_4-panel-impact_10yr.png")
+# args <- c("~/Dropbox/who/fig1_data/foi-baseline.cases.rds", "~/Dropbox/who/fig1_data/foi-interventions.cases.rds", "~/Dropbox/who/fig1_data/foi-averted.rds", "~/Dropbox/who/fig1_data/foi-eff.rds", "~/Dropbox/who/fig1_data/foi_4panel_20yr.png")
 
 plot_years <- as.integer(gsub(".+_(\\d+)yr.png","\\1", args[5]))
 
-baseline.cases.dt <- readRDS(args[1])[year < plot_years,.(
+base.dt <- readRDS(args[1])
+bkeys <- grep("(case|particle)", names(base.dt), invert=T, value=T)
+
+baseline.cases.dt <- base.dt[year < plot_years,.(
   cases.md = median(cases), cum.cases.md = median(cum.cases)
-), by=year]
-interventions.cases.dt <- readRDS(args[2])[year < plot_years,.(
+), by=bkeys ]
+
+i.dt <- readRDS(args[2])
+ikeys <- grep("(case|particle)", names(i.dt), invert=T, value=T)
+plotkeys <- grep("year",ikeys,invert = T, value = T)
+
+interventions.cases.dt <- i.dt[end_year == 50 & year < plot_years,.(
   cases.md = median(cases), cum.cases.md = median(cum.cases)
-), by=.(coverage, year)]
-averted.cases.dt <- readRDS(args[3])[year < plot_years]
+), by=ikeys]
+
+averted.cases.dt <- readRDS(args[3])[end_year == 50 & year < plot_years]
 eff.dt <- readRDS(args[4])[end_year == 50 & year < plot_years]
 
 pop_size = 18.2 # in 100 thousands
