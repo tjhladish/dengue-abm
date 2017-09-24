@@ -15,10 +15,10 @@ interventions.dt <- data.table(dbGetQuery(db,
    strat_years AS end_year,
    CAST(P.serial / 12 AS INT) AS particle,
    M.*
-   FROM par P, met M, job J
-   WHERE P.serial = M.serial
-   AND vector_control = 1
-   AND P.serial = J.serial
+   FROM met M
+   JOIN par P ON P.serial = M.serial
+   JOIN job J ON J.serial = M.serial
+   WHERE vector_control = 1
    AND status = 'D';"
 ))
 

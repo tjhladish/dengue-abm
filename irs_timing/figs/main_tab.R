@@ -12,16 +12,16 @@ args <- commandArgs(trailingOnly = TRUE)
 # )
 
 ## read in assorted input data
-coverage.dt <- readRDS(args[1])[layer=="foreground"]
-duration.dt <- readRDS(args[2])[layer=="foreground"]
-durability.dt <- readRDS(args[3])[layer=="foreground"]
+coverage.dt <- readRDS(args[1])[layer=="background"]
+duration.dt <- readRDS(args[2])[layer=="background"]
+durability.dt <- readRDS(args[3])[layer=="background"]
 
 minmax <- function(dt) {
   dt[,.(
     max=max(value), max.doy=format(as_date(0)+doy[which.max(value)]-1,"%b %d"),
     min=min(value), min.doy=format(as_date(0)+doy[which.min(value)]-1,"%b %d")
-  ), by=.(coverage, duration, durability)][, 
-    ratio := round(max/min - 1,2)
+  ), by=.(coverage, duration, durability)][,
+    ratio := round(max/min, 2)
   ][,
     rmax := round(max,2)
   ][,

@@ -2,6 +2,8 @@
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/who/irs_stopping-effect_rerun.sqlite","~/Dropbox/who/fig1_data/stopping-baseline.rds")
 
+# TODO: parse filename a bit to eliminate code duplication?
+
 require(RSQLite)
 require(data.table)
 
@@ -38,6 +40,6 @@ parse.meas.yr(baseline.mlt)
 
 baseline.dt <- dcast.data.table(baseline.mlt, particle + year ~ measure)
 
-baseline.dt[, seropositive := imm1+imm2+imm3+imm4 ]
+baseline.dt[, seropositive := 1-imm0 ]
 
 saveRDS(baseline.dt, args[2])
