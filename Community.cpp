@@ -155,19 +155,22 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         5 2 30 2 2748114000 2 396166
         */
         if (line >> id >> house >> age >> sex >> hh_serial >> pernum >> work) {
-            Person* p = new Person();
-            _people.push_back(p);
-            p->setAge(age);
-            p->setSex((SexType) sex);
-            p->setHomeID(house);
-            p->setLocation(_location[house], HOME_MORNING);
-            p->setLocation(_location[work], WORK_DAY);
-            p->setLocation(_location[house], HOME_NIGHT);
-            _location[house]->addPerson(p, HOME_MORNING);
-            _location[work]->addPerson(p, WORK_DAY);
-            _location[house]->addPerson(p, HOME_NIGHT);
-            assert(age<NUM_AGE_CLASSES);
-            agecounts[age]++;
+            if (house < 1000) {
+                Person* p = new Person();
+                _people.push_back(p);
+                p->setAge(age);
+                p->setSex((SexType) sex);
+                p->setHomeID(house);
+                p->setLocation(_location[house], HOME_MORNING);
+                p->setLocation(_location[work], WORK_DAY);
+                p->setLocation(_location[house], HOME_NIGHT);
+                _location[house]->addPerson(p, HOME_MORNING);
+                _location[work]->addPerson(p, WORK_DAY);
+                _location[house]->addPerson(p, HOME_NIGHT);
+                assert(age<NUM_AGE_CLASSES);
+                agecounts[age]++;
+                p->infect(SEROTYPE_1,-10);
+            }
         }
     }
     iss.close();
@@ -895,6 +898,16 @@ void Community::humanToMosquitoTransmission() {
         }
     }
     _isHot[_nDay].clear();
+
+    int total_mos_sum = 0;
+    int inf_mos_sum = 0;
+    for (int i = 1; i<=1000; ++i) {
+        Location* loc = _location[i];
+        total_mos_sum += int(loc->getBaseMosquitoCapacity() * (1.0-loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5);  // number of mosquitoes
+        inf_mos_sum += loc->getCurrentInfectedMosquitoes();
+    }
+    cerr << "day, total, infected mos: " <<_nDay << ", " << total_mos_sum/1000.0 << ", " << inf_mos_sum/1000.0 << endl;
+    
     return;
 }
 
@@ -970,8 +983,8 @@ void Community::_modelMosquitoMovement() {
 void Community::tick(int day) {
     _nDay = day;
     //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
-    _processDelayedBirthdays();
-    if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
+    //_processDelayedBirthdays();
+    //if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
     if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
     /*{
     const Location* _l = _location[4];

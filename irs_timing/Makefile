@@ -8,7 +8,7 @@ CPP:=g++-4.9
 endif
 
 #CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
-CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
+CFLAGS = -O2 -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue
 GSL_PATH = $(HOME)/work/AbcSmc/gsl_local

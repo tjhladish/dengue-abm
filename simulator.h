@@ -315,11 +315,11 @@ void schedule_vector_control(const Parameters* par, Community* community) {
         double rho = par->calculate_daily_vector_control_mortality(vce.efficacy);
         if (vce.strategy == UNIFORM_STRATEGY) {
             for (Location* loc: community->getLocations() ) {
-                if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
+            //    if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
                    // location will be treated
                    const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
                    loc->scheduleVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
-                }
+            //    }
             }
         } else if (vce.strategy == MAX_MOSQUITOES_STRATEGY) { //  TODO - implement me
             cerr << "ERROR: MAX_MOSQUITOES_STRATEGY is not yet implemented\n";

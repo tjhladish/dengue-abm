@@ -17,7 +17,7 @@ using dengue::util::max_element;
 time_t GLOBAL_START_TIME;
 
 string calculate_process_id(vector<double> &args, string &argstring);
-const string SIM_POP = "yucatan";
+const string SIM_POP = "merida";
 const string HOME_DIR(std::getenv("HOME"));
 const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
@@ -59,8 +59,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     double _exp_coef     = args[6];
     double _nmos         = args[7];
     double _foi_mult     = args[14];
-    double _betamp       = 0.25; // beta values from chao et al
-    double _betapm       = 0.10; //
+    double _betamp       = 1.0; // beta values from chao et al
+    double _betapm       = 1.0; //
 
     par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
@@ -73,11 +73,11 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->yearlyOutput            = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
     const int runLengthYears     = TOTAL_DURATION;
-    par->nRunLength              = runLengthYears*365;
+    par->nRunLength              = 1000;//runLengthYears*365;
     par->startDayOfYear          = 1;
     par->birthdayInterval        = 1;
     par->delayBirthdayIfInfected = false;
-    par->annualIntroductionsCoef = _exp_coef;
+    par->annualIntroductionsCoef = 0;//_exp_coef;
     //par->annualIntroductionsCoef = pow(10, _exp_coef);
 
     // pathogenicity values fitted in
@@ -98,11 +98,11 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     par->betaPM = _betapm;
     par->betaMP = _betamp;
-    par->fMosquitoMove = 0.15;
+    par->fMosquitoMove = 0.0;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);
-    par->eMosquitoDistribution = EXPONENTIAL;
+    par->nDefaultMosquitoCapacity = (int) (_nmos);
+    par->eMosquitoDistribution = CONSTANT;
 
     par->nDaysImmune = 730;
     par->fVESs = vector<double>(NUM_OF_SEROTYPES, 0.0);
@@ -112,7 +112,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->simulateAnnualSerotypes = false;
     //par->normalizeSerotypeIntros = true;
     //if (par->simulateAnnualSerotypes) par->generateAnnualSerotypes();
-    par->nDailyExposed = {{1.0, 1.0, 1.0, 1.0}};
+    par->nDailyExposed = {{0, 0, 0, 0}};
     //par->nDailyExposed = {{0.25, 0.25, 0.25, 0.25}};
 
     par->annualIntroductions = {1.0};
@@ -124,15 +124,17 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     // we add the startDayOfYear offset because we will end up discarding that many values from the beginning
     // mosquitoMultipliers are indexed to start on Jan 1
     //par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out", par->nRunLength + par->startDayOfYear);
-    par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
+    //par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out");
+    par->mosquitoMultipliers.clear();
+    par->mosquitoMultipliers.emplace_back(0, 1, 1);
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
-    par->immunityFilename         = imm_dir    + "/immunity2015."       + process_id;
+    //par->immunityFilename         = imm_dir    + "/immunity2015."       + process_id;
     //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
-    par->swapProbFilename         = pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
+    par->swapProbFilename         = "";
     //par->mosquitoFilename         = output_dir + "/mos_mer_who/mos."       + to_string(process_id);
     //par->mosquitoLocationFilename = output_dir + "/mosloc_mer_who/mosloc." + to_string(process_id);
 
@@ -183,7 +185,7 @@ string report_process_id (vector<double> &args, const unsigned long int serial, 
     string output = ss.str();
     fputs(output.c_str(), stderr);
 
-    return to_string(process_id);
+  return to_string(process_id);
 }
 
 
@@ -317,6 +319,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
             } else {                                // start after Jan 1
                 startDate = (vec_cont_year+1)*365 + vc_timing - par->startDayOfYear;
             }
+            startDate = 100;
             par->vectorControlEvents.emplace_back(startDate, vc_campaignDuration, vc_coverage, vc_efficacy, efficacyDuration, locType, lss);
         }
     }
