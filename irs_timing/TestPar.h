@@ -5,6 +5,7 @@
 #include <numeric>
 #include <functional>
 #include <vector>
+#include <gsl/gsl_roots.h>
 
 // probability of death at an age, given survival to that age
 static const std::vector<double> MOSQUITO_DAILY_DEATH_PROBABILITY = {
@@ -114,5 +115,97 @@ std::vector<double> death_age_cdf(std::vector<double> survive_age_prob, std::vec
 
 static const std::vector<double> MOSQUITO_DEATHAGE_CDF =
   death_age_cdf(MOSQUITO_SURVIVE_CUMPROB, MOSQUITO_DAILY_DEATH_PROBABILITY);
+
+static const double Mref =
+  std::accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end());
+
+struct RhoParams { double eff };
+
+double mstar (double mu, vector<double> phat) {
+  vector<int> pows(phat.size());
+  std::iota(pows.begin(), pows.end(), 0);
+  vector<double> survives(pows.size());
+  std::transform(
+    pows.begin(), pows.end(),
+    phat.begin(),
+    survives.begin(),
+    [mu](int power, double phat){ return phat*pow(1-mu, power); }
+  );
+  return accumulate(survives.begin(), survives.end());
+}
+
+double _irs_expr (double rho_par, void *params) {
+    // Logit transformation, for potentially more efficient search of par space.
+    // In testing it was 5% slower, however, because of the extra calculations for
+    // the transformation.  Convergence did not happen in substantially fewer iterations.
+    //const double rho = 1.0 / (1.0 + exp(-rho_par));
+
+    RhoParams* rho_params = (RhoParams *) params;
+
+    //cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
+    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*rho_params->eff;
+}
+
+
+  double __find_rho (RhoParams* rho_params) {
+      int status = GSL_CONTINUE;
+      int iter = 0, max_iter = 100;
+      const gsl_root_fsolver_type *T;
+      gsl_root_fsolver *s;
+      //double rho_lo = -5; // for logit search
+      //double rho_hi = 5;
+      double rho_lo = 0.0;
+      double rho_hi = 1.0;
+      double rho = (rho_hi + rho_lo)/2;
+      gsl_function F;
+
+      F.function = &_irs_expr;
+      F.params = rho_params;
+
+      T = gsl_root_fsolver_brent;
+      s = gsl_root_fsolver_alloc (T);
+      gsl_root_fsolver_set (s, &F, rho_lo, rho_hi);
+
+      //printf ("using %s method\n", gsl_root_fsolver_name (s));
+      //printf ("%5s [%9s, %9s] %9s %9s\n", "iter", "lower", "upper", "root", "err(est)");
+      while (status == GSL_CONTINUE and iter++ < max_iter) {
+          status = gsl_root_fsolver_iterate (s);
+          rho = gsl_root_fsolver_root (s);
+          rho_lo = gsl_root_fsolver_x_lower (s);
+          rho_hi = gsl_root_fsolver_x_upper (s);
+          status = gsl_root_test_interval (rho_lo, rho_hi, 0, 0.001);
+
+       //   if (status == GSL_SUCCESS) { printf ("Converged:\n"); }
+
+       //   const double rho = 1.0 / (1.0 + exp(-rho_par));
+       //   printf ("%5d [%.7f, %.7f] %.7f %+.7f\n", iter, rho_lo, rho_hi, rho, rho_hi - rho_lo);
+      }
+
+      gsl_root_fsolver_free (s);
+      if (not (status == GSL_SUCCESS)) {
+          cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
+          exit(-732);
+      }
+      return rho;
+  }
+
+
+double calculate_daily_vector_control_mortality(const float efficacy) const {
+    vector<double> mu(MOSQUITO_AGE_CDF.size(), 0.0);
+    for (unsigned int i = 0; i < mu.size() - 1; ++i) mu[i] = MOSQUITO_AGE_CDF[i+1] - MOSQUITO_AGE_CDF[i];
+
+    RhoParams* rho_params = new RhoParams(efficacy);
+
+    //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
+    if ((1.0 - efficacy) * Mref < 1.0) {
+        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high\n";
+        return -100;
+    }
+
+    const double rho = __find_rho(rho_params);
+    cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << endl;
+    delete rho_params;
+    return rho;
+}
 
 #endif
