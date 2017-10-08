@@ -143,7 +143,7 @@ double _irs_expr (double rho_par, void *params) {
     RhoParams* rho_params = (RhoParams *) params;
 
     //cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
-    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*rho_params->eff;
+    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*(1-rho_params->eff);
 }
 
 
@@ -191,8 +191,6 @@ double _irs_expr (double rho_par, void *params) {
 
 
 double calculate_daily_vector_control_mortality(const float efficacy) const {
-    vector<double> mu(MOSQUITO_AGE_CDF.size(), 0.0);
-    for (unsigned int i = 0; i < mu.size() - 1; ++i) mu[i] = MOSQUITO_AGE_CDF[i+1] - MOSQUITO_AGE_CDF[i];
 
     RhoParams* rho_params = new RhoParams(efficacy);
 
