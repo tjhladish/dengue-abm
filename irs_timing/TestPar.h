@@ -91,12 +91,11 @@ std::vector<double> relative_fraction(std::vector<double> ps) {
 static const std::vector<double> MOSQUITO_AGE_RELFRAC =
   relative_fraction(MOSQUITO_SURVIVE_CUMPROB);
 
-std::vector<double> cdf_from_relfrac(std::vector<double> rf) {
-  return cdf_from_pdf(norm_weights_to_pdf(rf));
-};
+// the pdf of mosquito age
+static const std::vector<double> MOSQUITO_AGE_PDF = norm_weights_to_pdf(MOSQUITO_AGE_RELFRAC);
 
 // the cdf of mosquito age
-static const std::vector<double> MOSQUITO_AGE_CDF = cdf_from_relfrac(MOSQUITO_AGE_RELFRAC);
+static const std::vector<double> MOSQUITO_AGE_CDF = cdf_from_pdf(MOSQUITO_AGE_PDF);
 
 std::vector<double> death_age_cdf(std::vector<double> survive_age_prob, std::vector<double> die_age_prob) {
   std::vector<double> pdf(die_age_prob);
@@ -117,7 +116,7 @@ static const std::vector<double> MOSQUITO_DEATHAGE_CDF =
   death_age_cdf(MOSQUITO_SURVIVE_CUMPROB, MOSQUITO_DAILY_DEATH_PROBABILITY);
 
 static const double Mref =
-  std::accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end());
+  std::accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end(), 0.0);
 
 struct RhoParams { double eff };
 
@@ -131,7 +130,7 @@ double mstar (double mu, vector<double> phat) {
     survives.begin(),
     [mu](int power, double phat){ return phat*pow(1-mu, power); }
   );
-  return accumulate(survives.begin(), survives.end());
+  return std::accumulate(survives.begin(), survives.end(), 0.0);
 }
 
 double _irs_expr (double rho_par, void *params) {
@@ -205,5 +204,34 @@ double calculate_daily_vector_control_mortality(const float efficacy) const {
     delete rho_params;
     return rho;
 }
+
+// e.g. today_biting_age_pdf = weight_biting_age_pdf(MOSQUITO_AGE_PDF, today_inf_p);
+
+std::vector<double> weight_biting_age_pdf(
+  std::vector<double> raw_age_pdf,
+  double prob_infecting_bite
+) {
+  std::vector<double> pdf(raw_age_pdf);
+  std::vector<double> biting_prob(raw_age_pdf.size(), prob_infecting_bite);
+  biting_prob[1] = 1.0;
+
+  std::partial_sum(
+    biting_prob.begin(), biting_prob.end(),
+    biting_prob.begin(), // just overwrite vals
+    [](double prev, double p) { return prev*(1-p); }
+  ); // TODO: this needs some checking and is more complex than necessary for
+  // uniform probability.  however: sets up having historical mosquito FOI
+
+  std::transform(
+    pdf.begin(), pdf.end(),
+    biting_prob.begin(),
+    pdf.begin(),
+    // alt could use a series of biting probabilities
+    [](double age_p, double prev_non_inf_p){ return prev_non_inf_p * age_p; }
+  );
+
+  return pdf;
+};
+
 
 #endif
