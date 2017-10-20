@@ -65,7 +65,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = false;
+    par->dailyOutput             = false; // turn on for daily prevalence figure, probably uncomment filter in simulator.h for daily output to get only rel. days
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
     par->weeklyOutput            = false;
@@ -335,7 +335,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     vector<double> metrics = tally_counts(par, community, pre_intervention_output);
 
     assert(sero_prev.size() == 5);
-    for (int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
+    for (unsigned int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
     assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
 
     // flatten sero_prev
