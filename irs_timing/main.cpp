@@ -325,7 +325,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     //simulate_epidemic(par, community, process_id);
     vector< vector<double> > sero_prev;
     bool capture_sero_prev = true;
-    simulate_epidemic_with_seroprev(par, community, process_id, sero_prev, capture_sero_prev);
+    int sero_prev_aggregation_start_date = vc_timing; // aggregation interval is [sero_prev_aggregation_start_date, (sero_prev_aggregation_start_date + 364) % 365] on a [0,364] calendar
+    simulate_epidemic_with_seroprev(par, community, process_id, capture_sero_prev, sero_prev, sero_prev_aggregation_start_date);
 
     time (&end);
     double dif = difftime (end,start);
