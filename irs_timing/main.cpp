@@ -65,7 +65,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = false;
+    par->dailyOutput             = false; // turn on for daily prevalence figure, probably uncomment filter in simulator.h for daily output to get only rel. days
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
     par->weeklyOutput            = false;
@@ -325,7 +325,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     //simulate_epidemic(par, community, process_id);
     vector< vector<double> > sero_prev;
     bool capture_sero_prev = true;
-    simulate_epidemic_with_seroprev(par, community, process_id, sero_prev, capture_sero_prev);
+    int sero_prev_aggregation_start_date = vc_timing; // aggregation interval is [sero_prev_aggregation_start_date, (sero_prev_aggregation_start_date + 364) % 365] on a [0,364] calendar
+    simulate_epidemic_with_seroprev(par, community, process_id, capture_sero_prev, sero_prev, sero_prev_aggregation_start_date);
 
     time (&end);
     double dif = difftime (end,start);
@@ -335,9 +336,9 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     vector<double> metrics = tally_counts(par, community, pre_intervention_output);
 
     assert(sero_prev.size() == 5);
-    assert(sero_prev[0].size() == sero_prev[1].size());
-    assert(sero_prev[0].size() == sero_prev[2].size());
+    for (unsigned int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
     assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
+
     // flatten sero_prev
     for (auto sero_prev_class: sero_prev) {
         for (int year = RESTART_BURNIN-pre_intervention_output; year < RESTART_BURNIN + desired_intervention_output; ++year) {

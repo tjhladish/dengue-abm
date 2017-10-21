@@ -11,9 +11,9 @@
 #SBATCH --qos=epi-b
 #SBATCH --workdir=/home/tjhladish/work/dengue/irs_timing
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=4000
+#SBATCH --mem-per-cpu=2000
 #SBATCH --time=24:00:00
-#SBATCH --array=0-2499
+#SBATCH --array=0-2999
 #SBATCH --partition=hpg2-compute
 
 module load gcc/5.2.0 gsl
