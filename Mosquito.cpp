@@ -43,7 +43,7 @@ Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExter
     _nAgeDeath = _nAgeInfected; // can't be younger than this
     double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-age_cdf[_nAgeInfected]));
     _nAgeDeath = Parameters::sampler(age_cdf, r, _nAgeDeath);
-
+    //cerr << _nAgeInfected << " " << _nAgeDeath << endl;
     _pLocation = _pOriginLocation = p;
     _pLocation->addInfectedMosquito();
 }
