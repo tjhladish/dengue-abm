@@ -271,6 +271,60 @@ namespace dengue {
             printf("%d", result);
             return result;
         }
+
+        inline vector<double> cdf_from_pdf(vector<double> pdf) {
+            vector<double> cdf(pdf.size());
+            partial_sum(
+                pdf.begin(), pdf.end(),
+                cdf.begin()
+                );
+            return cdf;
+        }
+
+        inline vector<double> complement(vector<double> ps) {
+            vector<double> res(ps.size());
+            transform(
+                ps.begin(), ps.end(), // for all ps
+                res.begin(), // put into res
+                [](double p) { return 1-p; } // after taking complement
+                );
+            return res;
+        }
+
+        inline vector<double> cumprod(vector<double> ps) {
+            vector<double> res(ps.size());
+            partial_sum(
+                ps.begin(), ps.end(), // for all p in ps
+                res.begin(), // put into res
+                multiplies<double>()
+                // the cumulative product at each p (cp_i = prod from 0 to i p_i)
+                );
+            return res;
+        }
+
+        inline vector<double> relative_fraction(vector<double> ps) {
+            vector<double> res(ps.size(), 1.0);
+            copy(
+                ps.begin(), ps.end()-1,
+                // survival fraction == the fraction that survived previous day
+                // so day 1 fraction = 1, day 2 fraction = day 1 survival prob from birth, etc
+                res.begin()+1
+            );
+            return res;
+        }
+
+        inline vector<double> death_age_cdf(vector<double> survive_age_prob, vector<double> die_age_prob) {
+            vector<double> pdf(die_age_prob);
+
+            transform(
+                survive_age_prob.begin(), survive_age_prob.end()-1,
+                // using survival probs for previous day
+                die_age_prob.begin()+1, // deaths probs for same day
+                pdf.begin()+1, // overwriting from day 2 on
+                multiplies<double>() // combine the probabilities
+                );
+            return cdf_from_pdf(pdf);
+        }
     }
 }
 #endif

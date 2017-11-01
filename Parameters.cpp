@@ -724,7 +724,7 @@ double __find_rho (RhoParams* rho_params) {
 
 
 double Parameters::calculate_daily_vector_control_mortality(const float efficacy) const {
-    vector<double> mu = MOSQUITO_DEATH_PROBABILITY;
+    vector<double> mu = MOSQUITO_DAILY_DEATH_PROBABILITY;
     //for (unsigned int i = 0; i < mu.size() - 1; ++i) mu[i] = MOSQUITO_AGE_CDF[i+1] - MOSQUITO_AGE_CDF[i];
 
     RhoParams* rho_params = new RhoParams();
