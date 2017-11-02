@@ -654,21 +654,21 @@ void Parameters::defineSerotypeRelativeRisks() { // should be called after repor
 }
 
 
-double mstar (double mu, std::vector<double> phat) {
-  std::vector<int> pows(phat.size());
-  std::iota(pows.begin(), pows.end(), 0);
-  std::vector<double> survives(pows.size());
-  std::transform(
+double mstar (double mu, vector<double> phat) {
+  vector<int> pows(phat.size());
+  iota(pows.begin(), pows.end(), 0);
+  vector<double> survives(pows.size());
+  transform(
     pows.begin(), pows.end(),
     phat.begin(),
     survives.begin(),
     [mu](int power, double phat){ return phat*pow(1-mu, power); }
   );
-  return std::accumulate(survives.begin(), survives.end(), 0.0);
+  return accumulate(survives.begin(), survives.end(), 0.0);
 }
 
 
-static const double Mref = std::accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end(), 0.0);
+static const double Mref = accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end(), 0.0);
 
 
 double __irs_expr (double rho_par, void *params) {
@@ -718,7 +718,7 @@ double __find_rho (double efficacy) {
 
       gsl_root_fsolver_free (s);
       if (not (status == GSL_SUCCESS)) {
-          std::cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
+          cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
           exit(-732);
       }
       return rho;
@@ -728,13 +728,13 @@ double __find_rho (double efficacy) {
 double Parameters::calculate_daily_vector_control_mortality(const float efficacy) const {
     //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
     if ((1.0 - efficacy) * Mref < 1.0) {
-        std::cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high:\n";
-        std::cerr << "       IRS doesn't prevent mosquitoes from being born and thus\n";
-        std::cerr << "       has no effect on mosquitoes that are 0 days old.\n";
+        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high:\n";
+        cerr << "       IRS doesn't prevent mosquitoes from being born and thus\n";
+        cerr << "       has no effect on mosquitoes that are 0 days old.\n";
         return -100;
     }
 
     const double rho = __find_rho(efficacy);
-    std::cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << std::endl;
+    cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << endl;
     return rho;
 }
