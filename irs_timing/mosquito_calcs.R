@@ -14,14 +14,23 @@ survives_p = 1 - death_p
 survives_from_birth = cumprod(survives_p)
 frac_alive = c(1, head(survives_from_birth,-1)) # for daily mu calc
 
-bite_age_cdf = cumsum(frac_alive/sum(frac_alive))
+bite_age_pdf <- frac_alive/sum(frac_alive)
+bite_age_cdf = cumsum(bite_age_pdf)
 
-death_age_pdf = c(death_p[1], head(survives_to_p,-1)*tail(death_p,-1))
+death_age_pdf = c(death_p[1], head(survives_from_birth,-1)*tail(death_p,-1))
 death_age_cdf = cumsum(death_age_pdf)
 
 # for biting calculations:
 # biting age (without mod) draw against biting_age_cdf
 # death age: take biting age, draw from death_age_cdf[biting_age-1] to 1 (0 if biting age = 1)
+
+adj_bite_age <- function(inf_bite_prob, bite_pdf = bite_age_pdf) {
+  ages <- 1:length(bite_pdf)
+  pows <- ages - 1
+  first_inf_bite_at_age_p <- ((1-inf_bite_prob)^pows) * inf_bite_prob * bite_pdf
+  total_prob <- sum(first_inf_bite_at_age_p)
+  return(first_inf_bite_at_age_p / total_prob)
+}
 
 # for daily death mu:
 # M*(1-eff) = M'
