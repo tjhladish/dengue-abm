@@ -26,27 +26,24 @@ Mosquito::Mosquito() {
 }
 
 
-Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod) {
+
+Mosquito::Mosquito(Location* p, Serotype serotype, int nInfectedAtID, int nExternalIncubationPeriod, double prob_infecting_bite) {
     _nID = _nNextID++;
     _bDead = false;
     _eSerotype = serotype;
     _nInfectedAtID = nInfectedAtID;
-    //const double rho = p->getCurrentVectorControlDailyMortality(time);
-    vector<double> age_cdf = MOSQUITO_AGE_CDF;
-    // no longer adjusting CDF -- mosquitoes at location already have increased mortality in Community::applyVectorControl()
-    /*if (rho > 0) {
-                                               //mortality_by_age_i* = 1 - (1 - mortality_by_age_i)(1 - rho)^i
-        for (unsigned int i = 0; i < age_cdf.size(); ++i) age_cdf[i] = 1.0 - (1.0 - MOSQUITO_AGE_CDF[i]) * pow(1.0 - rho, i);
-    }*/
+    // extract precalculated age CDF given the specified prob_infecting_bite
+    vector<double> age_cdf = MOSQUITO_FIRST_BITE_AGE_CDF_MESH[(int) (prob_infecting_bite * (MOSQUITO_FIRST_BITE_AGE_CDF_MESH.size()-1))]; //MOSQUITO_AGE_CDF;
     _nAgeInfected = Parameters::sampler(age_cdf, gsl_rng_uniform(RNG));
     _nAgeInfectious = _nAgeInfected + nExternalIncubationPeriod;
     _nAgeDeath = _nAgeInfected; // can't be younger than this
-    double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-age_cdf[_nAgeInfected]));
-    _nAgeDeath = Parameters::sampler(age_cdf, r, _nAgeDeath);
+    double r = 1.0-(gsl_rng_uniform(RNG)*(1.0-MOSQUITO_DEATHAGE_CDF[_nAgeInfected]));
+    _nAgeDeath = Parameters::sampler(MOSQUITO_DEATHAGE_CDF, r, _nAgeDeath);
     //cerr << _nAgeInfected << " " << _nAgeDeath << endl;
     _pLocation = _pOriginLocation = p;
     _pLocation->addInfectedMosquito();
 }
+
 
 Mosquito::Mosquito(RestoreMosquitoPars* rp):
     _pLocation(rp->location), _eSerotype(rp->serotype), _nAgeInfected(rp->age_infected), _nAgeInfectious(rp->age_infectious), _nAgeDeath(rp->age_dead) {

@@ -156,6 +156,9 @@ static const std::vector<double> MOSQUITO_AGE_CDF = dengue::util::cdf_from_pdf(M
 
 static const std::vector<double> MOSQUITO_DEATHAGE_CDF = dengue::util::death_age_cdf(MOSQUITO_SURVIVE_CUMPROB, MOSQUITO_DAILY_DEATH_PROBABILITY);
 
+// first index is the probability*10000, second is the mosquito age in days
+// we sample 10001 values so that the end points are included ([0,1] rather than [0,1))
+static const std::vector<std::vector<double> > MOSQUITO_FIRST_BITE_AGE_CDF_MESH = dengue::util::calc_biting_age_cdf_mesh(MOSQUITO_AGE_PDF, 10001);
 
 // for some serotypes, the fraction who are symptomatic upon primary infection
 static const std::vector<double> SYMPTOMATIC_BY_AGE = {

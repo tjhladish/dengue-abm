@@ -325,6 +325,32 @@ namespace dengue {
                 );
             return cdf_from_pdf(pdf);
         }
+
+        inline vector<double> weight_biting_age_pdf( const vector<double> &MOSQUITO_AGE_PDF, const double prob_infecting_bite) {
+            vector<double> pdf(MOSQUITO_AGE_PDF.size(), 0.0); // prob of biting at age 0 is 0
+            vector<double> biting_prob(MOSQUITO_AGE_PDF.size(), prob_infecting_bite);
+
+            double denominator = 0.0;
+            for (unsigned int age = 1; age < MOSQUITO_AGE_PDF.size(); ++age) {
+                const double prob_inf_bite_given_age = pow(1.0 - prob_infecting_bite, age - 1) * prob_infecting_bite;
+                pdf[age] = prob_inf_bite_given_age * MOSQUITO_AGE_PDF[age];
+                denominator += pdf[age];
+            }
+            //cerr << denominator << " ";
+            for (unsigned int age = 1; age < MOSQUITO_AGE_PDF.size(); ++age) { pdf[age] /= denominator; }
+
+            return pdf;
+        }
+
+        inline vector< vector<double> > calc_biting_age_cdf_mesh(const vector<double> &MOSQUITO_AGE_PDF, const int sample_density) {
+            vector< vector<double> > biting_age_cdf_mesh(sample_density, vector<double>(MOSQUITO_AGE_PDF.size()));
+
+            for (unsigned int i = 0; i < biting_age_cdf_mesh.size(); ++i) {
+                // sample_density - 1 so that we get values on [0,1], rather than [0,1)
+                biting_age_cdf_mesh[i] = cdf_from_pdf( weight_biting_age_pdf(MOSQUITO_AGE_PDF, (double) i / (sample_density-1)) );
+            }
+            return biting_age_cdf_mesh;
+        }
     }
 }
 #endif
