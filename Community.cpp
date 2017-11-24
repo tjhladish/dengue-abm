@@ -28,11 +28,11 @@ int mod(int k, int n) { return ((k %= n) < 0) ? k+n : k; } // correct for non-ne
 
 Community::Community(const Parameters* parameters) :
     _exposedQueue(MAX_INCUBATION, vector<Person*>(0)),
-    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
+    _infectiousMosquitoQueue(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0)),
     // reserving MAX_MOSQUITO_AGE is simpler than figuring out what the maximum
     // possible EIP is when EIP is variable
-    _exposedMosquitoQueue(MAX_MOSQUITO_AGE, vector<Mosquito*>(0)),
-    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
+    _exposedMosquitoQueue(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0)),
+    _nNumNewlyInfected(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)), // +1 not needed; nRunLength is already a valid size
     _nNumNewlySymptomatic(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
     _nNumVaccinatedCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE)),
     _nNumSevereCases(NUM_OF_SEROTYPES, vector<int>(parameters->nRunLength + MAX_MOSQUITO_AGE))
@@ -85,8 +85,8 @@ void Community::reset() { // used for r-zero calculations, to reset pop after a 
     _nNumVaccinatedCases.clear();
 
     _exposedQueue.resize(MAX_INCUBATION, vector<Person*>(0));
-    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
-    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0));
+    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0));
     _nNumNewlyInfected.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
     _nNumNewlySymptomatic.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
     _nNumVaccinatedCases.resize(NUM_OF_SEROTYPES, vector<int>(_par->nRunLength + MAX_MOSQUITO_AGE));
@@ -381,11 +381,11 @@ bool Community::loadMosquitoes(string moslocFilename, string mosFilename) {
 
     for (unsigned int i = 0; i < _exposedMosquitoQueue.size(); i++ ) _exposedMosquitoQueue[i].clear();
     _exposedMosquitoQueue.clear();
-    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+    _exposedMosquitoQueue.resize(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0));
 
     for (unsigned int i = 0; i < _infectiousMosquitoQueue.size(); i++ ) _infectiousMosquitoQueue[i].clear();
     _infectiousMosquitoQueue.clear();
-    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE, vector<Mosquito*>(0));
+    _infectiousMosquitoQueue.resize(MAX_MOSQUITO_AGE+1, vector<Mosquito*>(0));
 
     char queue;
     int sero, idx, ageInfd, ageInfs, ageDead;
@@ -492,13 +492,13 @@ void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate pe
 
 
 // returns number of days mosquito has left to live
-void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID) {
+void Community::attemptToAddMosquito(Location* p, Serotype serotype, int nInfectedByID, double prob_infecting_bite) {
     int eip = (int) (getEIP() + 0.5);
 
     // It doesn't make sense to have an EIP that is greater than the mosquitoes lifespan
     // Truncating also makes vector sizing more straightforward
     eip = eip > MAX_MOSQUITO_AGE ? MAX_MOSQUITO_AGE : eip;
-    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip);
+    Mosquito* m = new Mosquito(p, serotype, nInfectedByID, eip, prob_infecting_bite);
     int daysleft = m->getAgeDeath() - m->getAgeInfected();
     int daysinfectious = daysleft - eip;
     if (daysinfectious<=0) {
@@ -880,7 +880,8 @@ void Community::humanToMosquitoTransmission() {
             m -= loc->getCurrentInfectedMosquitoes(); // subtract off the number of already-infected mosquitos
             if (m<0) m=0; // more infected mosquitoes than the base capacity, presumable due to immigration
                                                                   // how many susceptible mosquitoes bite viremic hosts in this location?
-            int numbites = gsl_ran_binomial(RNG, _par->betaPM*sumviremic/(sumviremic+sumnonviremic), m);
+            const double prob_infecting_bite = _par->betaPM*sumviremic/(sumviremic+sumnonviremic);
+            int numbites = gsl_ran_binomial(RNG, prob_infecting_bite, m);
             while (numbites-->0) {
                 int serotype;                                     // which serotype infects mosquito
                 if (sumserotype[0]==1.0) {
@@ -890,7 +891,7 @@ void Community::humanToMosquitoTransmission() {
                     for (serotype=0; serotype<NUM_OF_SEROTYPES && r>sumserotype[serotype]; serotype++)
                         r -= sumserotype[serotype];
                 }
-                attemptToAddMosquito(loc, (Serotype) serotype, locid);
+                attemptToAddMosquito(loc, (Serotype) serotype, locid, prob_infecting_bite);
             }
         }
     }
