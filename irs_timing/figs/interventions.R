@@ -20,7 +20,9 @@ eff.dt <- data.table(dbGetQuery(db,
    JOIN par P ON P.serial = M.serial
    JOIN job J ON J.serial = M.serial
    WHERE status = 'D'
-   AND vector_control = 1;", paste0("M.",tarcols,collapse=", ")
+   AND vector_control = 1 
+   AND strat_years != 10;",
+   paste0("M.",tarcols,collapse=", ")
   )
 ))
 
@@ -54,4 +56,4 @@ tmp[duration == 0, duration := 1]
 # ]
 # 
 # store <- rbind(tmp, d2)
-saveRDS(tmp, args[3])
+saveRDS(tmp, tail(args, 1))

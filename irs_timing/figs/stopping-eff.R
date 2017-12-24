@@ -10,9 +10,12 @@ bkey <- grep("^(imm|s)",names(baseline.dt),invert=T, value=T)
 interventions.dt <- readRDS(args[2])
 ikey <- grep("^(imm|s|particle)", names(interventions.dt),invert=T, value=T)
 
-eff.dt <- interventions.dt[baseline.dt,
-  on=bkey
-][,.(eff=ifelse(i.s==s, 0, (i.s-s)/i.s)), by=c(ikey, "particle")]
+join.dt <- interventions.dt[baseline.dt, on=bkey]
+
+eff.dt <- join.dt[!is.na(doy),
+  .(eff=ifelse(i.s==s, 0, (i.s-s)/i.s)),
+  by=c(ikey, "particle")
+]
 
 stat.eff.dt <- eff.dt[,{
     qs <- quantile(eff, probs = (0:4)/4, na.rm = T)
@@ -22,4 +25,4 @@ stat.eff.dt <- eff.dt[,{
   by=ikey
 ]
 
-saveRDS(stat.eff.dt, args[3])
+saveRDS(stat.eff.dt, tail(args,1))

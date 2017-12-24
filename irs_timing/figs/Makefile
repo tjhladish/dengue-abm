@@ -38,7 +38,7 @@ $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
 $(DBMAIN)/baseline.rds: $(SQMAIN)
 
-$(DBMAIN)/interventions.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
+$(DBMAIN)/interventions.rds: $(SQMAIN)
 
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
 
@@ -51,7 +51,9 @@ $(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
 #########################
 # conserved rules
 
-$(DBMAIN)/%-eff.rds $(DBMAIN)/%-sero.rds $(DBMAIN)/%-sero-SI.rds: $(DBMAIN)/%-baseline.rds $(DBMAIN)/%-interventions.rds
+$(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
+
+$(DBMAIN)/foi-eff.rds $(DBMAIN)/foi-sero.rds $(DBMAIN)/foi-sero-SI.rds: $(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds
 
 $(DBMAIN)/%.cases.rds: cases.R $(DBMAIN)/%.rds
 	Rscript $^ $@
@@ -63,7 +65,7 @@ $(DBMAIN)/%-averted.rds: averted.cases.R $(DBMAIN)/%-baseline.cases.rds $(DBMAIN
 #########################
 # SI 4-panel figure data
 
-$(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(DBROOT)/who/irs_stopping-effect_rerun.sqlite
+$(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(SQMAIN)
 
 ######################
 # foi analysis data
