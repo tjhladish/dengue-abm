@@ -1,9 +1,12 @@
 DBROOT := ~/Dropbox
 DBMAIN := $(DBROOT)/who/fig1_data
+SQMAIN := $(DBROOT)/who/irs_results-refit2-partial.sqlite
+
 
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
+#default: $(DBMAIN)/fig1.png
 default: supfigs mainfigs
 
 clean:
@@ -13,8 +16,11 @@ clean:
 
 # rules for making fig-ready data
 
+$(DBMAIN):
+	mkdir $(DBMAIN)
+
 # this rule should come first; other rules are adding specific prerequisites, and need to come later
-$(DBMAIN)/%.rds: %.R
+$(DBMAIN)/%.rds: %.R | $(DBMAIN)
 	Rscript $^ $@
 
 ########################
@@ -30,9 +36,9 @@ $(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
-$(DBMAIN)/baseline.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite
+$(DBMAIN)/baseline.rds: $(SQMAIN)
 
-$(DBMAIN)/interventions.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
+$(DBMAIN)/interventions.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
 
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
 
@@ -40,6 +46,7 @@ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds: sensitiv
 	Rscript $^ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds
 	# override generic rule; these have shared features, so build them all at once
 
+$(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
 
 #########################
 # conserved rules
@@ -117,4 +124,9 @@ $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
 
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
+	Rscript $^ $@
+
+$(DBMAIN)/confidence-intervals.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
+
+$(DBMAIN)/check_runs.png: check_runs.R $(SQMAIN)
 	Rscript $^ $@

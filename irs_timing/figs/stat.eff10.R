@@ -3,6 +3,7 @@ require(data.table)
 require(lubridate)
 
 args <- commandArgs(trailingOnly = TRUE)
+# args <- paste0("~/Dropbox/who/fig1_data/",c("baseline.rds", "interventions.rds", "stat.eff10.rds"))
 
 baseline.dt <- readRDS(args[1])
 interventions.dt <- readRDS(args[2])
