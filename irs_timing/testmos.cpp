@@ -1,6 +1,8 @@
 #include <iostream>
 #include "TestPar.h"
 
+// compiled on hpg using: g++ -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic -I/home/tjhladish/work/AbcSmc/gsl_local/include/ testmos.cpp -o delme -lm -L/home/tjhladish/work/AbcSmc/gsl_local/lib/ -lgsl -lgslcblas -lpthread -ldl
+
 using namespace std;
 
 int main() {

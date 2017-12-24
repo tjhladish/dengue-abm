@@ -46,11 +46,11 @@ def haversine(lon1, lat1, lon2, lat2):
 def lookup_location_code(age, code):
     code = int(code)
     loc = ''
-    if code in school_codes or (code == 0 and age >= school_age):
+    if code in school_codes or (code == child_code and age >= school_age):
         loc = 's'
     elif code in work_codes:
         loc = 'w'
-    elif code in home_codes or (code == 0 and age < school_age):
+    elif code in home_codes or (code == child_code and age < school_age):
         loc = 'h'
     else:
         print "Error: encountered bad employment (EMPSTATD) code:", code
@@ -124,6 +124,7 @@ def select_nearest_school(px, py, nearby_places, workplaces_and_schools, workpla
     closest_school, min_dist = workplaces_and_schools[workplace_lookup[nearby_places[0]]], () # () evaluates to greater than any number
     for workid in nearby_places:
         s = workplaces_and_schools[workplace_lookup[workid]]
+        #print 'candidate:', workid, s
         d = haversine(px, py, s['x'], s['y'])
         if d < min_dist:
             min_dist = d
@@ -172,7 +173,7 @@ def import_households(filename, hh_loc):
     print "reading household locations"
 
     # At this point, only includes houses
-    for line in file('locations-yucatan.txt'):
+    for line in file(filename):
         '''
         id type x y x_ctr y_ctr
         1 house -89.6910220003 20.7015302009 -89.69159442 20.69995656
@@ -198,7 +199,6 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
     print "reading workplaces & schools"
     loc_id = current_max_loc_id + 1
     total_raw_workers = 0
-    workplace_lookup = dict()
     for line in file(filename):
         '''
         W 1 -89.6264173747 20.9599660422
@@ -223,21 +223,24 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
         w['xi'] = x_to_col_num(w['x'])
         w['yi'] = y_to_row_num(w['y'])
         workplaces_and_schools.append(w)
-        workplace_lookup[w['workid']] = len(workplaces_and_schools) - 1
         loc_id += 1
         
     workplaces_and_schools.sort(cmp=xy_cmp)
+
+    workplace_lookup = dict()
+    for i in range(len(workplaces_and_schools)):
+        workplace_lookup[workplaces_and_schools[i]['workid']] = i
     return total_raw_workers, workplace_lookup
 
 def import_population(filename, pop, pop_ids, day_loc_ctr):
     ''' This function imports a preliminary version of the population file
     that doesn't have people assigned to workplaces yet (perhaps among
-    other things.'''
+    other things.)'''
 
     print "reading population"
     header = True
     i = -1 
-    for line in file('population-yucatan.txt'):
+    for line in file(filename):
         i += 1
         #if i % 10000 == 0:
         #    print i
@@ -273,17 +276,23 @@ def import_population(filename, pop, pop_ids, day_loc_ctr):
     return
 
 def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup):
+    schools = [location for location in workplaces_and_schools if location['type'] == 's']
+
     students_allocated = 0
     for pid in pop_ids:
         loc_type = pop[pid][field_idx['day_loc']]
         if loc_type != 's':
             continue
+        #print "looking at pid: ", pid
         num_loc_needed = 1
 
         px, py = pop[pid][field_idx['x']], pop[pid][field_idx['y']]
         pxi, pyi = x_to_col_num(px), y_to_row_num(py)
 
-        nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed)
+        nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, schools, num_loc_needed)
+        #for s in nearby_places:
+        #    print s
+
         school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools, workplace_lookup)
         # 'school' is an element in the workplaces_and_schools list
         pop[pid][field_idx['workid']] = school['workid'] 

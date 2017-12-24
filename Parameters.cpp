@@ -654,107 +654,87 @@ void Parameters::defineSerotypeRelativeRisks() { // should be called after repor
 }
 
 
-struct RhoParams { double alpha_irs; vector<double> mu; };
+double mstar (double mu, vector<double> phat) {
+  vector<int> pows(phat.size());
+  iota(pows.begin(), pows.end(), 0);
+  vector<double> survives(pows.size());
+  transform(
+    pows.begin(), pows.end(),
+    phat.begin(),
+    survives.begin(),
+    [mu](int power, double phat){ return phat*pow(1-mu, power); }
+  );
+  return accumulate(survives.begin(), survives.end(), 0.0);
+}
 
 
-double __alpha_irs_expr (double rho_par, void *params) {
+static const double Mref = accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end(), 0.0);
+
+
+double __irs_expr (double rho_par, void *params) {
     // Logit transformation, for potentially more efficient search of par space.
     // In testing it was 5% slower, however, because of the extra calculations for
     // the transformation.  Convergence did not happen in substantially fewer iterations.
     //const double rho = 1.0 / (1.0 + exp(-rho_par));
 
-    RhoParams* rho_params = (RhoParams *) params;
-
-    long double alpha_irs_guess = 1.0;
-    for (unsigned int k = 1; k < rho_params->mu.size(); ++k) {
-        double partial = 1.0;
-        for (unsigned int j = 0; j < k; ++j) {
-            partial *= 1.0 - rho_params->mu[j];
-        }
-        //const long double alpha_part = pow((long double) 1.0 - rho, k) * partial;
-        const long double alpha_part = pow((long double) 1.0 - rho_par, k) * partial;
-        alpha_irs_guess += alpha_part;
-    }
-    //cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
-    return alpha_irs_guess - rho_params->alpha_irs;
+    double eff = *(double *) params;
+    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*(1.0-eff);
 }
 
 
-double __find_rho (RhoParams* rho_params) {
-    int status = GSL_CONTINUE;
-    int iter = 0, max_iter = 100;
-    const gsl_root_fsolver_type *T;
-    gsl_root_fsolver *s;
-    double rho = 0;
-    //double rho_lo = -5; // for logit search
-    //double rho_hi = 5;
-    double rho_lo = 0.0;
-    double rho_hi = 1.0;
-    gsl_function F;
+double __find_rho (double efficacy) {
+      int status = GSL_CONTINUE;
+      int iter = 0, max_iter = 100;
+      const gsl_root_fsolver_type *T;
+      gsl_root_fsolver *s;
+      //double rho_lo = -5; // for logit search
+      //double rho_hi = 5;
+      double rho_lo = 0.0;
+      double rho_hi = 1.0;
+      double rho = (rho_hi + rho_lo)/2;
+      gsl_function F;
 
-    F.function = &__alpha_irs_expr;
-    F.params = rho_params;
+      F.function = &__irs_expr;
+      F.params = &efficacy;
 
-    T = gsl_root_fsolver_brent;
-    s = gsl_root_fsolver_alloc (T);
-    gsl_root_fsolver_set (s, &F, rho_lo, rho_hi);
+      T = gsl_root_fsolver_brent;
+      s = gsl_root_fsolver_alloc (T);
+      gsl_root_fsolver_set (s, &F, rho_lo, rho_hi);
 
-    //printf ("using %s method\n", gsl_root_fsolver_name (s));
-    //printf ("%5s [%9s, %9s] %9s %9s\n", "iter", "lower", "upper", "root", "err(est)");
-    while (status == GSL_CONTINUE and iter++ < max_iter) {
-        status = gsl_root_fsolver_iterate (s);
-        rho = gsl_root_fsolver_root (s);
-        rho_lo = gsl_root_fsolver_x_lower (s);
-        rho_hi = gsl_root_fsolver_x_upper (s);
-        status = gsl_root_test_interval (rho_lo, rho_hi, 0, 0.001);
+      //printf ("using %s method\n", gsl_root_fsolver_name (s));
+      //printf ("%5s [%9s, %9s] %9s %9s\n", "iter", "lower", "upper", "root", "err(est)");
+      while (status == GSL_CONTINUE and iter++ < max_iter) {
+          status = gsl_root_fsolver_iterate (s);
+          rho = gsl_root_fsolver_root (s);
+          rho_lo = gsl_root_fsolver_x_lower (s);
+          rho_hi = gsl_root_fsolver_x_upper (s);
+          status = gsl_root_test_interval (rho_lo, rho_hi, 0, 0.001);
 
-     //   if (status == GSL_SUCCESS) { printf ("Converged:\n"); }
+       //   if (status == GSL_SUCCESS) { printf ("Converged:\n"); }
 
-     //   const double rho = 1.0 / (1.0 + exp(-rho_par));
-     //   printf ("%5d [%.7f, %.7f] %.7f %+.7f\n", iter, rho_lo, rho_hi, rho, rho_hi - rho_lo);
-    }
+       //   const double rho = 1.0 / (1.0 + exp(-rho_par));
+       //   printf ("%5d [%.7f, %.7f] %.7f %+.7f\n", iter, rho_lo, rho_hi, rho, rho_hi - rho_lo);
+      }
 
-    gsl_root_fsolver_free (s);
-    if (not (status == GSL_SUCCESS)) {
-        cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
-        exit(-732);
-    }
-    return rho;
+      gsl_root_fsolver_free (s);
+      if (not (status == GSL_SUCCESS)) {
+          cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
+          exit(-732);
+      }
+      return rho;
 }
 
 
 double Parameters::calculate_daily_vector_control_mortality(const float efficacy) const {
-    vector<double> mu(MOSQUITO_AGE_CDF.size(), 0.0);
-    for (unsigned int i = 0; i < mu.size() - 1; ++i) mu[i] = MOSQUITO_AGE_CDF[i+1] - MOSQUITO_AGE_CDF[i];
-
-    RhoParams* rho_params = new RhoParams();
-    rho_params->mu = mu;
-
-    // calculate alpha
-    double alpha = 1.0; // accounts for k == 0 term
-    for (unsigned int k = 1; k < mu.size(); ++k) {
-        double partial = 1.0;
-        for (unsigned int j = 0; j < k; ++j) {
-            partial *= 1.0 - mu[j];
-        }
-        alpha += partial;
-    }
-
-    const double alpha_irs = (1.0 - efficacy) * alpha;
-    //cerr << "alpha: " << alpha << endl;
-    //cerr << "requested alpha_irs: " << alpha_irs << endl;
-    //cerr << "min alpha_irs: 1.0" << endl;
-    //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/alpha) << endl;
-    if (alpha_irs < 1.0) {
-        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high\n";
+    //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
+    if ((1.0 - efficacy) * Mref < 1.0) {
+        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high:\n";
+        cerr << "       IRS doesn't prevent mosquitoes from being born and thus\n";
+        cerr << "       has no effect on mosquitoes that are 0 days old.\n";
         return -100;
     }
-    // calculate rho
-    // alpha_irs ==: 1+\sum_{k=2}^{N}(1-rho)^{k-1}\prod_{j=1}^{j=k-1} (1-mu_j)
-    rho_params->alpha_irs = alpha_irs;
-    //cerr << "looking for rho\n";
-    const double rho = __find_rho(rho_params);
+
+    const double rho = __find_rho(efficacy);
     cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << endl;
-    delete rho_params;
     return rho;
 }

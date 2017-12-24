@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 #include <gsl/gsl_roots.h>
+#include <gsl/gsl_errno.h>
 
 // probability of death at an age, given survival to that age
 static const std::vector<double> MOSQUITO_DAILY_DEATH_PROBABILITY = {
@@ -35,7 +36,7 @@ std::vector<double> norm_weights_to_pdf(std::vector<double> weights) {
     // is the weight of that index, divided by total
   );
   return pdf;
-};
+}
 
 std::vector<double> cdf_from_pdf(std::vector<double> pdf) {
   std::vector<double> cdf(pdf.size());
@@ -44,7 +45,7 @@ std::vector<double> cdf_from_pdf(std::vector<double> pdf) {
     cdf.begin()
   );
   return cdf;
-};
+}
 
 std::vector<double> complement(std::vector<double> ps) {
   std::vector<double> res(ps.size());
@@ -54,7 +55,7 @@ std::vector<double> complement(std::vector<double> ps) {
     [](double p) { return 1-p; } // after taking complement
   );
   return res;
-};
+}
 
 // probability of survival at an age, given survival to that age
 static const std::vector<double> MOSQUITO_DAILY_SURVIVAL_PROBABILITY =
@@ -69,7 +70,7 @@ std::vector<double> cumprod(std::vector<double> ps) {
     // the cumulative product at each p (cp_i = prod from 0 to i p_i)
   );
   return res;
-};
+}
 
 // probability of surviving an age from birth
 static const std::vector<double> MOSQUITO_SURVIVE_CUMPROB =
@@ -84,7 +85,7 @@ std::vector<double> relative_fraction(std::vector<double> ps) {
     res.begin()+1
   );
   return res;
-};
+}
 
 // the relative fraction of mosquitos from a birth cohort alive at an age
 // also, given no migration etc, the unnormalized steady-state age distribution
@@ -109,7 +110,7 @@ std::vector<double> death_age_cdf(std::vector<double> survive_age_prob, std::vec
   );
 
   return cdf_from_pdf(pdf);
-};
+}
 
 
 static const std::vector<double> MOSQUITO_DEATHAGE_CDF =
@@ -118,12 +119,12 @@ static const std::vector<double> MOSQUITO_DEATHAGE_CDF =
 static const double Mref =
   std::accumulate(MOSQUITO_AGE_RELFRAC.begin(), MOSQUITO_AGE_RELFRAC.end(), 0.0);
 
-struct RhoParams { double eff };
+//struct RhoParams { double eff; };
 
-double mstar (double mu, vector<double> phat) {
-  vector<int> pows(phat.size());
+double mstar (double mu, std::vector<double> phat) {
+  std::vector<int> pows(phat.size());
   std::iota(pows.begin(), pows.end(), 0);
-  vector<double> survives(pows.size());
+  std::vector<double> survives(pows.size());
   std::transform(
     pows.begin(), pows.end(),
     phat.begin(),
@@ -139,14 +140,16 @@ double _irs_expr (double rho_par, void *params) {
     // the transformation.  Convergence did not happen in substantially fewer iterations.
     //const double rho = 1.0 / (1.0 + exp(-rho_par));
 
-    RhoParams* rho_params = (RhoParams *) params;
+    double eff = *(double *) params;
+    //RhoParams* rho_params = (RhoParams *) params;
 
     //cerr << rho_par << "\t" << rho << "\t" << alpha_irs_guess << "\t" << alpha_irs << " diff: " << alpha_irs_guess - alpha_irs << endl;
-    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*(1-rho_params->eff);
+    return mstar(rho_par, MOSQUITO_AGE_RELFRAC) - Mref*(1.0-eff);
 }
 
 
-  double __find_rho (RhoParams* rho_params) {
+//double __find_rho (RhoParams* rho_params) {
+double __find_rho (double efficacy) {
       int status = GSL_CONTINUE;
       int iter = 0, max_iter = 100;
       const gsl_root_fsolver_type *T;
@@ -159,7 +162,7 @@ double _irs_expr (double rho_par, void *params) {
       gsl_function F;
 
       F.function = &_irs_expr;
-      F.params = rho_params;
+      F.params = &efficacy;
 
       T = gsl_root_fsolver_brent;
       s = gsl_root_fsolver_alloc (T);
@@ -182,26 +185,26 @@ double _irs_expr (double rho_par, void *params) {
 
       gsl_root_fsolver_free (s);
       if (not (status == GSL_SUCCESS)) {
-          cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
+          std::cerr << "ERROR: Root-finding (for daily mosquito mortality due to IRS) did not converge\n";
           exit(-732);
       }
       return rho;
   }
 
 
-double calculate_daily_vector_control_mortality(const float efficacy) const {
+double calculate_daily_vector_control_mortality(const float efficacy) {//const {
 
-    RhoParams* rho_params = new RhoParams(efficacy);
+    //RhoParams* rho_params = new RhoParams(efficacy);
 
     //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
     if ((1.0 - efficacy) * Mref < 1.0) {
-        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high\n";
+        std::cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high\n";
         return -100;
     }
 
-    const double rho = __find_rho(rho_params);
-    cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << endl;
-    delete rho_params;
+    const double rho = __find_rho(efficacy);
+    std::cerr << "IRS efficacy requested, daily mortality found: " << efficacy << ", " << rho << std::endl;
+    //delete rho_params;
     return rho;
 }
 
@@ -231,7 +234,7 @@ std::vector<double> weight_biting_age_pdf(
   );
 
   return pdf;
-};
+}
 
 
 #endif

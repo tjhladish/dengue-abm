@@ -271,6 +271,86 @@ namespace dengue {
             printf("%d", result);
             return result;
         }
+
+        inline vector<double> cdf_from_pdf(vector<double> pdf) {
+            vector<double> cdf(pdf.size());
+            partial_sum(
+                pdf.begin(), pdf.end(),
+                cdf.begin()
+                );
+            return cdf;
+        }
+
+        inline vector<double> complement(vector<double> ps) {
+            vector<double> res(ps.size());
+            transform(
+                ps.begin(), ps.end(), // for all ps
+                res.begin(), // put into res
+                [](double p) { return 1-p; } // after taking complement
+                );
+            return res;
+        }
+
+        inline vector<double> cumprod(vector<double> ps) {
+            vector<double> res(ps.size());
+            partial_sum(
+                ps.begin(), ps.end(), // for all p in ps
+                res.begin(), // put into res
+                multiplies<double>()
+                // the cumulative product at each p (cp_i = prod from 0 to i p_i)
+                );
+            return res;
+        }
+
+        inline vector<double> relative_fraction(vector<double> ps) {
+            vector<double> res(ps.size(), 1.0);
+            copy(
+                ps.begin(), ps.end()-1,
+                // survival fraction == the fraction that survived previous day
+                // so day 1 fraction = 1, day 2 fraction = day 1 survival prob from birth, etc
+                res.begin()+1
+            );
+            return res;
+        }
+
+        inline vector<double> death_age_cdf(vector<double> survive_age_prob, vector<double> die_age_prob) {
+            vector<double> pdf(die_age_prob);
+
+            transform(
+                survive_age_prob.begin(), survive_age_prob.end()-1,
+                // using survival probs for previous day
+                die_age_prob.begin()+1, // deaths probs for same day
+                pdf.begin()+1, // overwriting from day 2 on
+                multiplies<double>() // combine the probabilities
+                );
+            return cdf_from_pdf(pdf);
+        }
+
+        inline vector<double> weight_biting_age_pdf( const vector<double> &MOSQUITO_AGE_PDF, const double prob_infecting_bite) {
+            vector<double> pdf(MOSQUITO_AGE_PDF.size(), 0.0); // prob of biting at age 0 is 0
+            vector<double> biting_prob(MOSQUITO_AGE_PDF.size(), prob_infecting_bite);
+
+            double denominator = 0.0;
+            for (unsigned int age = 1; age < MOSQUITO_AGE_PDF.size(); ++age) {
+                const double prob_inf_bite_given_age = pow(1.0 - prob_infecting_bite, age - 1) * prob_infecting_bite;
+                pdf[age] = prob_inf_bite_given_age * MOSQUITO_AGE_PDF[age];
+                denominator += pdf[age];
+            }
+            //cerr << denominator << " ";
+            for (unsigned int age = 1; age < MOSQUITO_AGE_PDF.size(); ++age) { pdf[age] /= denominator; }
+
+            return pdf;
+        }
+
+        inline vector< vector<double> > calc_biting_age_cdf_mesh(const vector<double> &MOSQUITO_AGE_PDF, const int sample_density) {
+            vector< vector<double> > biting_age_cdf_mesh(sample_density, vector<double>(MOSQUITO_AGE_PDF.size()));
+
+            for (unsigned int i = 0; i < biting_age_cdf_mesh.size(); ++i) {
+                // sample_density - 1 so that we get values on [0,1], rather than [0,1)
+                biting_age_cdf_mesh[i] = cdf_from_pdf( weight_biting_age_pdf(MOSQUITO_AGE_PDF, (double) i / (sample_density-1)) );
+            }
+            return biting_age_cdf_mesh;
+        }
     }
 }
 #endif

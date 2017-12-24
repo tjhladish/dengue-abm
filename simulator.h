@@ -434,7 +434,7 @@ map<string, vector<int> > construct_tally() {
 }
 
 
-vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* community, const string process_id, vector< vector<double> > &sero_prev, bool capture_sero_prev) {
+vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* community, const string process_id, bool capture_sero_prev, vector< vector<double> > &sero_prev, int sero_prev_aggregation_julian_start=0) {
     sero_prev = vector< vector<double> > (5, vector<double>(par->nRunLength/365, 0.0)); // rows are infection history: 0, 1, and 2+ infections
     vector<int> epi_sizes;
     Date date(par);
@@ -454,9 +454,11 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date);
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
-        if (capture_sero_prev and date.endOfYear()) {   // tally current seroprevalence stats
+        if (capture_sero_prev and (date.julianDay() == ((sero_prev_aggregation_julian_start+364) % 365 ) + 1)) { // +1 because julianDay is [1,365])), avg(avg(interventions are specified on [0,364]
+            // tally current seroprevalence stats
             vector<double> inf_ct_tally(5,0.0);         // [0,4] past infections
             for (Person* p: community->getPeople()) {
+                // ignoring possible seroconversion due to vaccine
                 const int ct = p->getNumNaturalInfections();
                 ++inf_ct_tally[ct];
             }
@@ -477,7 +479,7 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
 vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id) {
     vector< vector<double> > sero_prev;
     bool capture_sero_prev = false;
-    return simulate_epidemic_with_seroprev(par, community, process_id, sero_prev, capture_sero_prev);
+    return simulate_epidemic_with_seroprev(par, community, process_id, capture_sero_prev, sero_prev);
 }
 
 
