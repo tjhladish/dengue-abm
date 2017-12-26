@@ -7,7 +7,7 @@ SQMAIN := $(DBROOT)/who/irs_results-refit2-partial.sqlite
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
 #default: $(DBMAIN)/fig1.png
-default: supfigs mainfigs
+default: supfigs mainfigs $(DBMAIN)/check_runs.png
 
 clean:
 	rm $(DBMAIN)/*.rds
@@ -50,6 +50,9 @@ $(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
 
 #########################
 # conserved rules
+
+$(DBMAIN)/%-eff.rds: alt-eff.R
+	Rscript $^ $@
 
 $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
 
@@ -107,7 +110,7 @@ $(DBMAIN)/irs_timing-realigned-SI-alt.png: timing_plot_realigned-supplement-alt.
 $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annual_effectiveness_plot.R $(DBMAIN)/stopping-baseline.cases.rds $(DBMAIN)/stopping-interventions.cases.rds $(DBMAIN)/stopping-averted.rds $(DBMAIN)/stopping-eff.rds
 	Rscript $^ $@
 
-$(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi.baseline.rds $(DBMAIN)/foi.interventions.rds
+$(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi-eff.rds
 	Rscript $^ $@
 
 $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
