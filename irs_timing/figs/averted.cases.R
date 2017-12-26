@@ -15,12 +15,11 @@ avert <- interventions.dt[baseline.dt, on=bkey][,
   .(
     averted=i.cases-cases,
     cum.averted=i.cum.cases-cum.cases,
-    i.cum.cases
+    i.cum.cases,
+    cum.eff = ifelse(i.cum.cases == 0 & cum.cases == 0, 0, 1-(cum.cases/i.cum.cases))
   ),
-  keyby=ikey
+  by=ikey
 ]
-
-avert[, cum.eff := ifelse(i.cum.cases == 0 & cum.averted == 0, 0, cum.averted/i.cum.cases) ]
 
 res <- avert[,
   .(
