@@ -51,12 +51,12 @@ $(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
 #########################
 # conserved rules
 
-$(DBMAIN)/%-eff.rds: alt-eff.R
+$(DBMAIN)/%-eff.rds: alt-eff.R $(DBMAIN)/%-baseline.rds $(DBMAIN)/%-interventions.rds
 	Rscript $^ $@
 
-$(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
+$(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
 
-$(DBMAIN)/foi-eff.rds $(DBMAIN)/foi-sero.rds $(DBMAIN)/foi-sero-SI.rds: $(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds
+$(DBMAIN)/foi-sero.rds $(DBMAIN)/foi-sero-SI.rds: $(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds
 
 $(DBMAIN)/%.cases.rds: cases.R $(DBMAIN)/%.rds
 	Rscript $^ $@
