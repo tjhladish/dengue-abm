@@ -168,10 +168,13 @@ p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & dur
   scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
   seas.legend
 
-proactive.start <- yday(as_date("1970/6/1")) # June 1
+#proactive.start <- yday(as_date("1970/6/1")) # June 1
+proactive.start <- yday(as_date("1970/1/1")+147) # May 27
 proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
-reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
-reactive.end    <- yday(as_date("1970/11/1")+179)
+#reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
+reactive.start  <- yday(as_date("1970/1/1")+322) # Nov 18
+#reactive.end    <- yday(as_date("1970/11/1")+179)
+reactive.end    <- yday(as_date("1970/11/1")+322+179)
 
 #pro.col <- "cyan4"
 #rea.col <- "darkgreen"
