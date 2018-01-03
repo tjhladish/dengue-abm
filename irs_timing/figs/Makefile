@@ -1,10 +1,13 @@
 DBROOT := ~/Dropbox
 DBMAIN := $(DBROOT)/who/fig1_data
+SQMAIN := $(DBROOT)/who/irs_results-refit2-partial.sqlite
+
 
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: supfigs mainfigs
+#default: $(DBMAIN)/fig1.png
+default: supfigs mainfigs $(DBMAIN)/check_runs.png
 
 clean:
 	rm $(DBMAIN)/*.rds
@@ -13,8 +16,11 @@ clean:
 
 # rules for making fig-ready data
 
+$(DBMAIN):
+	mkdir $(DBMAIN)
+
 # this rule should come first; other rules are adding specific prerequisites, and need to come later
-$(DBMAIN)/%.rds: %.R
+$(DBMAIN)/%.rds: %.R | $(DBMAIN)
 	Rscript $^ $@
 
 ########################
@@ -30,9 +36,9 @@ $(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
-$(DBMAIN)/baseline.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite
+$(DBMAIN)/baseline.rds: $(SQMAIN)
 
-$(DBMAIN)/interventions.rds: $(DBROOT)/irs_timing-refit0_intro-fix.sqlite $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
+$(DBMAIN)/interventions.rds: $(SQMAIN)
 
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
 
@@ -40,11 +46,17 @@ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds: sensitiv
 	Rscript $^ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds
 	# override generic rule; these have shared features, so build them all at once
 
+$(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
 
 #########################
 # conserved rules
 
-$(DBMAIN)/%-eff.rds $(DBMAIN)/%-sero.rds $(DBMAIN)/%-sero-SI.rds: $(DBMAIN)/%-baseline.rds $(DBMAIN)/%-interventions.rds
+$(DBMAIN)/%-eff.rds: alt-eff.R $(DBMAIN)/%-baseline.rds $(DBMAIN)/%-interventions.rds
+	Rscript $^ $@
+
+$(DBMAIN)/stopping-sero.rds $(DBMAIN)/stopping-sero-SI.rds: $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
+
+$(DBMAIN)/foi-sero.rds $(DBMAIN)/foi-sero-SI.rds: $(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds
 
 $(DBMAIN)/%.cases.rds: cases.R $(DBMAIN)/%.rds
 	Rscript $^ $@
@@ -56,7 +68,7 @@ $(DBMAIN)/%-averted.rds: averted.cases.R $(DBMAIN)/%-baseline.cases.rds $(DBMAIN
 #########################
 # SI 4-panel figure data
 
-$(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(DBROOT)/who/irs_stopping-effect_rerun.sqlite
+$(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(SQMAIN)
 
 ######################
 # foi analysis data
@@ -98,7 +110,7 @@ $(DBMAIN)/irs_timing-realigned-SI-alt.png: timing_plot_realigned-supplement-alt.
 $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annual_effectiveness_plot.R $(DBMAIN)/stopping-baseline.cases.rds $(DBMAIN)/stopping-interventions.cases.rds $(DBMAIN)/stopping-averted.rds $(DBMAIN)/stopping-eff.rds
 	Rscript $^ $@
 
-$(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi.baseline.rds $(DBMAIN)/foi.interventions.rds
+$(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi-eff.rds
 	Rscript $^ $@
 
 $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
@@ -117,4 +129,9 @@ $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
 
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
+	Rscript $^ $@
+
+$(DBMAIN)/confidence-intervals.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
+
+$(DBMAIN)/check_runs.png: check_runs.R $(SQMAIN)
 	Rscript $^ $@

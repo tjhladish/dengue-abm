@@ -13,13 +13,11 @@ db = dbConnect(drv, args[1], flags=SQLITE_RO)
 ## note, WHERE (i.e., vc_coverage, strat_years, etc) might need to change
 ## likewise, magic number 12
 baseline.dt <- data.table(dbGetQuery(db,
-  'select CAST(P.serial / 12 AS INT) AS particle, M.*
-   from par P, met M, job J
-   where P.serial = M.serial
-   and vector_control == 0
-   and vc_coverage == 0.75
-   and strat_years == 50
-   and P.serial = J.serial
+  'SELECT posterior AS particle, M.*
+   FROM par P
+   JOIN met M ON P.serial == M.serial
+   JOIN job J ON P.serial == J.serial
+   WHERE vector_control == 0
    and status = \'D\';'
 ))
 
