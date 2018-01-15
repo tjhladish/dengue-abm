@@ -36,8 +36,8 @@ const int FIRST_OBSERVED_YEAR = 1979;
 const int LAST_YEAR           = 2015;                                 // inclusive
 const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
 const int DDT_DURATION        = 23;                                   // 23 years long
-const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 35 for 1979-2013 inclusive
-const int FORECAST_DURATION   = 1;                                    // need to run out to 2014 for immune profile comparison
+const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 37 for 1979-2015 inclusive
+const int FORECAST_DURATION   = 1;                                    // use 15 to create year 2030 immunity files for restarting (e.g. for intervention forecasting)
 
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
@@ -314,8 +314,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time_t start ,end;
     time (&start);
 
-    vector<double> abc_args(&args[0], &args[7]);
-    const unsigned int realization = 0; //(int) args[7];
+    vector<double> abc_args(&args[0], &args[8]);
+    const unsigned int realization = 0; //(int) args[9];
     const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
 
     // initialize & run simulator
@@ -331,13 +331,15 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     prime_population(community, RNG, p_prime);
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
-    vector<int> serotested_ids = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
-    simulate_abc(par, community, process_id, serotested_ids, seropos_87);
+    vector<double> seropos_14_by_age(9, 0.0); // age cats = c('0-4', '5-9', '10-14', '15-19', '20-29', '30-39', '40-49', '50-59', '60+')
+    vector<int> serotested_ids_87 = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
+    vector<int> serotested_ids_14 = read_pop_ids("../pop-" + SIM_POP + "/merida_ids.txt");
+    simulate_abc(par, community, process_id, serotested_ids_87, seropos_87, serotested_ids_14, seropos_14_by_age);
 
     // output immunity file for immunity profile comparison with empirical data
     //string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
-    string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2015." + process_id;
-    write_immunity_file(community, process_id, imm_filename, par->nRunLength);
+    //string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit2/immunity2030." + process_id;
+    //write_immunity_file(community, process_id, imm_filename, par->nRunLength);
 
     //vector<double> profile = immune_profile(community);
 
@@ -347,8 +349,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     tally_counts(par, community, all_cases, severe_cases);
 
     // throw out everything before end of DDT period
-    vector<int>(all_cases.begin()+DDT_START+DDT_DURATION, all_cases.end()).swap(all_cases);
-    vector<int>(severe_cases.begin()+DDT_START+DDT_DURATION, severe_cases.end()).swap(severe_cases);
+    vector<int>(   all_cases.begin()+DDT_START+DDT_DURATION,    all_cases.begin()+DDT_START+DDT_DURATION+FITTED_DURATION).swap(all_cases);
+    vector<int>(severe_cases.begin()+DDT_START+DDT_DURATION, severe_cases.begin()+DDT_START+DDT_DURATION+FITTED_DURATION).swap(severe_cases);
  
     for (unsigned int i = 0; i < all_cases.size(); ++i) mild_cases.push_back(all_cases[i] - severe_cases[i]);
 
@@ -376,7 +378,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     vector<int> reported_severe(all_cases.size());
     vector<int> reported_total_cases(all_cases.size());
     ABC::Col reported_per_cap(all_cases.size());
-    const int pop_size = community->getNumPerson();
+    const int pop_size = community->getNumPeople();
     for (unsigned int year = 0; year < all_cases.size(); year++) {
         const double mild_RF = (signed) year < y1995_idx ? pre1995_mild_reporting : modern_mild_reporting;
         const float_type mild_reported   = mild_cases[year] * mild_RF;
@@ -412,18 +414,19 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     float_type _p95_sev_frac     = mean_pre_1995_severe;
     float_type _mod_sev_frac     = mean_modern_severe;
 
-    ss << _mean << " "
-       << _min << " "
-       << _quant25 << " "
-       << _median << " "
-       << _quant75 << " "
-       << _max << " "
-       << _stdev << " "
-       << _skewness << " "
-       << _median_crossings << " "
-       << _seropos << " "
-       << _p95_sev_frac << " "
-       << _mod_sev_frac;
+    ss  << _mean <<
+    " " << _min <<
+    " " << _quant25 <<
+    " " << _median <<
+    " " << _quant75 <<
+    " " << _max <<
+    " " << _stdev <<
+    " " << _skewness <<
+    " " << _median_crossings <<
+    " " << _seropos <<
+    " " << _p95_sev_frac <<
+    " " << _mod_sev_frac;
+    for (double val: seropos_14_by_age) ss << " " << val;
 
     // ss << " |"; for (double val: profile) ss << " " << val;
     ss << endl;
@@ -444,6 +447,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     append_if_finite(metrics, _seropos);
     append_if_finite(metrics, _p95_sev_frac);
     append_if_finite(metrics, _mod_sev_frac);
+    for (double val: seropos_14_by_age) { append_if_finite(metrics, val); }
 
     delete par;
     delete community;
