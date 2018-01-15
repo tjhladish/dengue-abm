@@ -4,8 +4,8 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "rzero-refit.sqlite",
-    "posterior_database_filename"   : "posterior-refit0.sqlite",
+    "database_filename"             : "rzero-refit2.sqlite",
+    "posterior_database_filename"   : "posterior-refit2.sqlite",
 
     "parameters" : [
         {"name"       : "mild_reported_fraction",

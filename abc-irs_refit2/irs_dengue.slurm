@@ -14,7 +14,6 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2000
 #SBATCH --time=24:00:00
-#SBATCH --qos=epi
 #SBATCH --array=0-2999
 #SBATCH --partition=hpg2-compute
 

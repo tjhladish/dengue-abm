@@ -1,0 +1,85 @@
+{
+    "smc_iterations" : 1,
+    "num_samples"    : 1110000,
+    "predictive_prior_fraction" : 1.0,
+    "pls_training_fraction"     : 1.0,
+
+    "database_filename"             : "rzero-sensitivity.sqlite",
+
+    "parameters" : [
+        {"name"       : "mild_reported_fraction",
+         "short_name" : "mild_rf",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1.0,
+         "par2"       : 1.0},
+
+        {"name"       : "pre95_mrf_coef",
+         "short_name" : "p95_mrf",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1.0,
+         "par2"       : 1.0},
+
+        {"name"       : "severe_reported_fraction",
+         "short_name" : "severe_rf",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1.0,
+         "par2"       : 1.0},
+
+        {"name"       : "secondary_pathogenicity",
+         "short_name" : "sec_path",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.5185034393,
+         "par2"       : 0.5185034393},
+
+        {"name"       : "secondary_severity",
+         "short_name" : "sec_sev",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0672522490869999,
+         "par2"       : 0.0672522490869999},
+
+        {"name"       : "primary_secondary_severity_ratio",
+         "short_name" : "pss_ratio",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.42941090744,
+         "par2"       : 0.42941090744},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 1},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 100,
+         "step"       : 1},
+
+        {"name"       : "EIP",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 5.0,
+         "par2"       : 16.0,
+         "step"       : 0.1},
+
+        {"name"       : "realization",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 99}
+
+    ],
+
+    "metrics" : [
+        {"name" : "r0", "num_type" : "INT", "value" : 0}
+    ]
+}
