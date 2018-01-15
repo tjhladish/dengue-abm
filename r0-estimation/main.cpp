@@ -32,6 +32,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     double _pss_ratio    = args[5];
   //double _exp_coef     = args[6];
     double _nmos         = args[7];
+  //double _eip          = args[8]; // for doing R0 sensitivity analysis
     double _betamp       = 0.25; // beta values from chao et al
     double _betapm       = 0.10; //
 
@@ -39,7 +40,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     string HOME(std::getenv("HOME"));
     string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
-    vector<double> abc_args(&args[0], &args[7]);
+    vector<double> abc_args(&args[0], &args[7]); // args[8] if passing in EIP for R0 sensitivity analysis
     string argstring;
     //const string process_id = to_string(calculate_process_id(abc_args, argstring));
 
@@ -80,9 +81,16 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->nDaysImmune = 730;
     par->fVESs.clear();
     par->fVESs.resize(NUM_OF_SEROTYPES, 0);
-
     par->loadDailyEIP(pop_dir + "/seasonal_EIP_24hr.out");
     par->loadDailyMosquitoMultipliers(pop_dir + "/mosquito_seasonality.out"); // do not use 2-argument version for R0 estimation
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // USING FIXED EIP AND FIXED MOSQUITO POP FOR SENSITIVITY ANALYSIS
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // par->extrinsicIncubationPeriods.clear();
+    // par->extrinsicIncubationPeriods.emplace_back(0, 365, _eip);
+    // par->mosquitoMultipliers.clear();
+    // par->mosquitoMultipliers.emplace_back(0, 365, 1.0);
+
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
@@ -153,7 +161,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time_t start ,end;
     time (&start);
 
-    const unsigned int realization = (int) args[8];
+    const unsigned int realization = (int) args[8]; // args[9] if passing in EIP for R0 sensitivity analysis
     const string process_id = report_process_id(args, serial, mp, start) + "." + to_string(realization);
 
     Parameters* par = define_simulator_parameters(args, rng_seed, serial);
@@ -162,8 +170,9 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     vector<double> metrics;
 
-    //for (unsigned int month = 0; month < MONTH_START.size(); ++month) {
+    //for (unsigned int month = 0; month < MONTH_START.size(); ++month) { // to measure R0 on first of each month only
     for (unsigned int day = 0; day < 365; ++day) {
+    //for (unsigned int day = 0; day < 1; ++day) { // when running code for R0 sensitivity analysis
         par->startDayOfYear = day;
 
         seed_epidemic(par, community);
