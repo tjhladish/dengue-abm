@@ -138,6 +138,9 @@ $(DBMAIN)/tab1.tex: main_tab_tex.R $(TABSRCS)
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
 	Rscript $^ $@
 
+$(DBMAIN)/tabX.tex: main_tabX_tex.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
+	Rscript $^ > $@
+
 $(DBMAIN)/confidence-intervals.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
 
 $(DBMAIN)/check_runs.png: check_runs.R $(SQMAIN)
