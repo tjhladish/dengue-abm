@@ -43,7 +43,7 @@ plot_effectiveness_over_time = function(
         plotdata = cbind(bcases$cases.md, matrix(icases[,cases.md,keyby=.(coverage,year)]$cases.md, byrow = F, ncol=3))/pop_size
         matplot(plotdata,
                 lty=c(3,rep(1,3)), type='l', lwd=.lwd, col=c('black',reds),
-                xlab='Year', ylab='Cases per 100,000 people', ylim=c(0,850), main='')
+                xlab='Year', ylab='Cases per 100,000 people', ylim=c(0,1220), main='')
         legend('bottomright', legend=c('baseline','75% coverage','50% coverage','25% coverage'), seg.len=1.5, lwd=.lwd, lty=c(3,rep(1,3)), bty='n', col=c('black',rev(reds)))
     } else if (plotcumulative) {
         plotdata = matrix(acases[,cum.eff.md,keyby=.(coverage,year)]$cum.eff.md, byrow = F, ncol=3)

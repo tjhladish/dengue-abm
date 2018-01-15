@@ -2,6 +2,7 @@ require(data.table)
 require(lubridate)
 
 args <- commandArgs(trailingOnly = TRUE)
+## args <- c("~/Dropbox/who/fig1_data/stat.eff10.rds")
 
 ## read in assorted input data
 stat.eff10.dt <- readRDS(args[1])
