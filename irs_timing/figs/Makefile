@@ -23,6 +23,11 @@ $(DBMAIN)/%.rds: %.R | $(DBMAIN)
 	Rscript $^ $@
 
 ########################
+numbers:
+	Rscript discontinue_VC.R $(DBMAIN)/stopping-eff.rds
+
+
+########################
 # main text figure data
 
 $(DBMAIN)/obs.rds: $(DBMAIN)/weekly_confirmed_cases_1995-2015_wide.csv
@@ -126,6 +131,9 @@ $(DBMAIN)/pro_vs_re_active-%.png: pro_vs_re_active.R $(DBMAIN)/campaign-timing-%
 
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
+
+$(DBMAIN)/tab1.tex: main_tab_tex.R $(TABSRCS)
+	Rscript $^ > $@
 
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
 	Rscript $^ $@
