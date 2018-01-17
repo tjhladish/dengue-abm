@@ -36,6 +36,7 @@ numbers:
 
 $(DBMAIN)/obs.rds: $(DBMAIN)/weekly_confirmed_cases_1995-2015_wide.csv
 
+#$(DBMAIN)/sim.rds: ./daily_output-refit
 $(DBMAIN)/sim.rds: $(DBMAIN)/daily_cases_1995-2015_refit2.out
 
 $(DBMAIN)/eip.rds: $(DBMAIN)/seasonal_EIP_24hr.out
