@@ -113,7 +113,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
             lwd=.lwd,
             lty=c(lty0,lty50,lty10),
             col=c(col0, col50, col10),
-            ylab='Seroprevalence', xlab='', ylim = c(0.3,0.8), axes=F,
+            ylab='Seroprevalence', xlab='', ylim = c(0.4,0.9), axes=F,
             cex.lab=1.5
            )
 

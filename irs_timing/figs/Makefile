@@ -11,6 +11,10 @@ default: supfigs mainfigs $(DBMAIN)/check_runs.png
 clean:
 	rm $(DBMAIN)/*.rds
 
+check_requires:
+  # some command to grep all the requires
+  # feed that into R
+
 .SECONDARY:
 
 # rules for making fig-ready data
@@ -32,11 +36,11 @@ numbers:
 
 $(DBMAIN)/obs.rds: $(DBMAIN)/weekly_confirmed_cases_1995-2015_wide.csv
 
-$(DBMAIN)/sim.rds: ./daily_output-refit
+$(DBMAIN)/sim.rds: $(DBMAIN)/daily_cases_1995-2015_refit2.out
 
 $(DBMAIN)/eip.rds: $(DBMAIN)/seasonal_EIP_24hr.out
 
-$(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit.sqlite
+$(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit2.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
