@@ -1,7 +1,6 @@
-DBROOT := ~/Dropbox
-DBMAIN := $(DBROOT)/who/fig1_data
-SQMAIN := $(DBROOT)/who/irs_results-refit2-partial.sqlite
-
+# defines
+REFS ?= data_locations.mk
+include $(REFS)
 
 # usage: $(call first,middles...,last)
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
@@ -22,6 +21,11 @@ $(DBMAIN):
 # this rule should come first; other rules are adding specific prerequisites, and need to come later
 $(DBMAIN)/%.rds: %.R | $(DBMAIN)
 	Rscript $^ $@
+
+########################
+numbers:
+	Rscript discontinue_VC.R $(DBMAIN)/stopping-eff.rds
+
 
 ########################
 # main text figure data
@@ -74,7 +78,7 @@ $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds: $(SQMAIN)
 ######################
 # foi analysis data
 
-$(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds: foi.R $(DBMAIN)/irs_timing-summer_winter-foi.sqlite
+$(DBMAIN)/foi-baseline.rds $(DBMAIN)/foi-interventions.rds: foi.R $(FOI)
 	Rscript $^ $@
 
 $(DBMAIN)/4panel_foi_20yr.png: foi_annual_effectiveness_plot.R $(DBMAIN)/foi-baseline.cases.rds $(DBMAIN)/foi-interventions.cases.rds $(DBMAIN)/foi-averted.rds $(DBMAIN)/foi-eff.rds
@@ -120,7 +124,7 @@ $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-bas
 CMPRES = incidence.intro incidence.local prevalence.intro prevalence.local
 
 # override production of these .rds, since they all use same script
-$(call wrap,$(DBMAIN)/campaign-timing-,$(CMPRES),.rds): campaign-timing.R $(DBMAIN)/irs_timing-summer_winter-foi.sqlite $(DBROOT)/daily-irs_refit-simple-nofilenames-uniq.out
+$(call wrap,$(DBMAIN)/campaign-timing-,$(CMPRES),.rds): campaign-timing.R $(FOI) $(DAILY)
 	Rscript $^ $@
 
 $(DBMAIN)/pro_vs_re_active-%.png: pro_vs_re_active.R $(DBMAIN)/campaign-timing-%.rds
@@ -129,8 +133,14 @@ $(DBMAIN)/pro_vs_re_active-%.png: pro_vs_re_active.R $(DBMAIN)/campaign-timing-%
 $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 	Rscript $^ $@
 
+$(DBMAIN)/tab1.tex: main_tab_tex.R $(TABSRCS)
+	Rscript $^ > $@
+
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
 	Rscript $^ $@
+
+$(DBMAIN)/tabX.tex: main_tabX_tex.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
+	Rscript $^ > $@
 
 $(DBMAIN)/confidence-intervals.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
 

@@ -1,7 +1,7 @@
 {
     "smc_iterations" : 10,
-    "num_samples"    : 1000,
-    "predictive_prior_fraction" : 0.5,
+    "num_samples"    : 10000,
+    "predictive_prior_fraction" : 0.05,
     "pls_training_fraction"     : 0.8,
     "noise"                     : "MULTIVARIATE",
 
@@ -88,6 +88,15 @@
         {"name" : "med_xing",       "num_type" : "FLOAT",   "value" : 0.25        },
         {"name" : "seroprev",       "num_type" : "FLOAT",   "value" : 0.6         },
         {"name" : "pre95_sev_frac", "num_type" : "FLOAT",   "value" : 0.000696896 },
-        {"name" : "mod_sev_frac",   "num_type" : "FLOAT",   "value" : 0.290166    }
+        {"name" : "mod_sev_frac",   "num_type" : "FLOAT",   "value" : 0.290166    },
+        {"name" : "sp14_0_4",       "num_type" : "FLOAT",   "value" : 0.2777778   },
+        {"name" : "sp14_5_9",       "num_type" : "FLOAT",   "value" : 0.4900000   },
+        {"name" : "sp14_10_14",     "num_type" : "FLOAT",   "value" : 0.6164384   },
+        {"name" : "sp14_15_19",     "num_type" : "FLOAT",   "value" : 0.7265625   },
+        {"name" : "sp14_20_29",     "num_type" : "FLOAT",   "value" : 0.7412587   },
+        {"name" : "sp14_30_39",     "num_type" : "FLOAT",   "value" : 0.7083333   },
+        {"name" : "sp14_40_49",     "num_type" : "FLOAT",   "value" : 0.8076923   },
+        {"name" : "sp14_50_59",     "num_type" : "FLOAT",   "value" : 0.7419355   },
+        {"name" : "sp14_60_",       "num_type" : "FLOAT",   "value" : 0.8275862   }
     ]
 }

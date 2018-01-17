@@ -1,7 +1,7 @@
 rm(list=ls())
 
 args <- commandArgs(trailingOnly = T)
-# args <- c("~/Dropbox/who/fig1_data/irs_timing-summer_winter-foi.sqlite", "~/Dropbox/daily-irs_refit-simple-nofilenames-uniq.out", "~/Dropbox/who/fig1_data/campaign-timing-prevalence.local.rds")
+# args <- paste0("~/Dropbox/", c("who/irs_timing-summer_winter-foi_refit2.sqlite", "daily-irs_refit2-simple-uniq.out", "who/fig1_data/campaign-timing-prevalence.local.rds"))
 require(RSQLite)
 require(data.table)
 
@@ -20,7 +20,7 @@ timelvls <- c("None", "Proactive", "Reactive")
 ref.dt <- data.table(
   dbGetQuery(db, sprintf(
     'SELECT P.serial AS serial,
-       CASE WHEN vector_control = 0 THEN "%s" WHEN timing = 152 THEN "%s" ELSE "%s" END AS intervention,
+       CASE WHEN vector_control = 0 THEN "%s" WHEN timing = 147 THEN "%s" ELSE "%s" END AS intervention,
        CASE WHEN foi < 1.0          THEN "%s" WHEN foi = 1.0    THEN "%s" ELSE "%s" END AS foi
      FROM par P, job J
        WHERE P.serial = J.serial
@@ -40,14 +40,14 @@ ref.dt[,
 
 target <- gsub(".+-(\\w+\\.\\w+).rds$","\\1",args[3])
 tarcols <- c("incidence.intro","incidence.local","prevalence.intro","prevalence.local")
-trans <- sprintf("V%d", 1:length(tarcols) + 3)
+trans <- sprintf("V%d", 1:length(tarcols) + 2)
 dropcols <- trans[which(tarcols != target)]
 ## TODO check for .Rdata
 
 daily.dt <- fread(
   args[2], sep = " ", header = F,
   col.names = c("serial","day", "value"),
-  drop = c("V1", dropcols)
+  drop = dropcols
 )[ref.dt, on="serial"][, day    := day - min(day) ]
 
 plot.dt <- daily.dt[,{
