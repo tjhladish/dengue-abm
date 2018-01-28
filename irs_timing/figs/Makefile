@@ -98,7 +98,7 @@ $(DBMAIN)/fig1.png $(DBMAIN)/fig1.tiff: main_fig.R $(SRCS)
 $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
-$(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
+$(DBMAIN)/fig2_alt.png $(DBMAIN)/fig2_alt.tiff: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
 mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)

@@ -65,7 +65,7 @@ mon.cols <- annotate("rect",
 
 # change this to change the base (plot) line thickness
 # all other line thicknesses are set relative to this
-ref.line.sz <- 3/4
+ref.line.sz <- 1/2
 
 day.labeller <- function(x) sprintf("%3s day  ", x)
 
@@ -73,7 +73,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
   theme_minimal() +
   theme(
     legend.text.align = 0.0,
-    legend.key.width = unit(0.7, "cm"),
+    legend.key.width = unit(0.5, "cm"),
     legend.key.height = unit(0.5, "cm"),
     legend.title = element_text(face="bold"),
     legend.direction = 'horizontal',
@@ -247,7 +247,7 @@ eff.legend <- theme(
 # }
 
 p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
-  highlighter + highlight.dot(210.5-15) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
+  highlighter + highlight.dot(210.5-18) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
     values = c(`25`="grey65",`50`="grey50",`75`="black"),
@@ -266,7 +266,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
 #duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter + highlight.dot(264-10) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264-19) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
@@ -276,7 +276,7 @@ p.eff.duration <- baselinep +
 #durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter + highlight.dot(264-10) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(264-19) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
@@ -291,7 +291,7 @@ eff.right <- 0.1
 eff.left  <- 0.1
 
 # the final plotting arrangement
-res = 300
+res = 450
 # mag = 0.85*res/72
 #png(args[9], width = 1000*mag, height = 1730*mag, units = "px", res=res)
 ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=grid.arrange(
