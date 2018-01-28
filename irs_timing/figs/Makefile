@@ -92,7 +92,7 @@ $(DBMAIN)/4panel_foi_20yr.png: foi_annual_effectiveness_plot.R $(DBMAIN)/foi-bas
 TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability,.rds)
 SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
 
-$(DBMAIN)/fig1.png: main_fig.R $(SRCS)
+$(DBMAIN)/fig1.png $(DBMAIN)/fig1.tiff: main_fig.R $(SRCS)
 	Rscript $^ $@
 
 $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
