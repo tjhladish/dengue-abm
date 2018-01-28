@@ -25,6 +25,7 @@ sero.slice.dt <- seroprevalence.dt[, .(value=q.med,measure="Seroprevalence"), ke
 seroprevalence.dt[end_year == 0, end_year := 50L]
 
 font.expand <- 2
+line.weight <- 1.5
 
 plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
     slice.eff.dt  <- eff.dt[year < plot_years, q.med, keyby=.(end_year, coverage, year)]
@@ -41,10 +42,10 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
 
     curpar <- par()
 
-    par(mfrow=c(3,1), lend=1)
+    par(mfrow=c(3,1), lend=1, cex.axis=2)
     #nf <- layout(matrix(c(1,2),ncol=1), widths=c(5,5,5), heights=c(3,2), TRUE)
 #par(mar=c(1,4.2,2,1),oma=c(3.5,1,2,0))
-    par(las=1,mar=c(1,5,0,0),oma=c(2.5,0,0,0))
+    par(las=1,mar=c(1,5,0,0),oma=c(3.5,0,0,0))
 
 #par(mfcol=c(2,1))
 
@@ -52,7 +53,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
     col0 ='black'
     col10=c('#de7676','#d13646','#7f0016')
     col50=c('grey55', 'grey40', 'black') # increasing tone w/ increasing coverage
-    .lwd = 2.5
+    .lwd = 2.5*line.weight
     #.lwd = c(2,1.5,2.25,3)
     #.lwd = 3:6/2
     lty0 =3
@@ -142,7 +143,7 @@ plot_effectiveness_over_time = function(eff.dt, sero.dt, plot_years=21) {
     axis(1, at=0:4*5 + 1, labels=0:4*5, lwd = 0, line = -0.3)
     axis(2)
 
-    mtext("Years since introducing IRS", side=1, outer=T, line=1, cex=1*font.expand)
+    mtext("Years since introducing IRS", side=1, outer=T, line=2, cex=1*font.expand)
 
     par(curpar)
 }
