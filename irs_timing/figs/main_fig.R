@@ -95,7 +95,7 @@ baselinep <- ggplot(plot.dt, baseaes) +
      `Cases (model)`="red"
     ), labels=c(
       `Mos. pop.`=expression(paste(M(t),'  ')),
-      `R0`=expression(paste(R[0],'  ')),
+      `R0`=expression(paste(italic('R')[0],'  ')),
       EIP="EIP(t)",
       Effectiveness="Effectiveness",
       `Cases (observed)`="Cases (observed)",
