@@ -24,8 +24,9 @@ block1 <- ref[between(year, 0, 4),.(
 ), by=.(foi, doy, particle)]
 
 res1 <- block1[, .(
-  averted = median(averted)/modelpop,
-  ceff = median(ifelse(averted == bcases, 1, averted/bcases))),
+  averted = as.integer(median(averted)/modelpop),
+  ceff = signif(median(ifelse(averted == bcases, 1, averted/bcases)),2)
+  ),
   by=.(foi, doy)
 ][doy==148][,.(averted, ceff, years='1-5'),by=foi]
 
@@ -35,10 +36,10 @@ block2 <- ref[between(year, 5, 9),.(
 ), by=.(foi, doy, particle)]
 
 res2 <- block2[, .(
-  averted = median(averted)/modelpop,
-  ceff = median(ifelse(averted == bcases, 1, averted/bcases))),
-  by=.(foi, doy)
-][doy==148][,.(averted, ceff, years='5-10'),by=foi]
+  averted = as.integer(median(averted)/modelpop),
+  ceff = signif(median(ifelse(averted == bcases, 1, averted/bcases)), 2)
+  ), by=.(foi, doy)
+][doy==148][,.(averted, ceff, years='6-10'),by=foi]
 
 cat(
   kable(res1[res2, on='foi'], format="latex"),
