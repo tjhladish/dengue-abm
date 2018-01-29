@@ -44,7 +44,7 @@ view <- function(i) {
 pro.col <- "#0000ff"
 rea.col <- "#664400"
 
-png(args[2],height=1200,width=1000,res=180)
+png(args[2],height=1200,width=1200,res=180)
 ggplot(plot.dt[foi == "Baseline Mosquito Population"],
        aes(fill=intervention)
 ) + theme_minimal() + theme(strip.text.y = element_text(angle=90)) +
@@ -52,7 +52,12 @@ ggplot(plot.dt[foi == "Baseline Mosquito Population"],
 #  facet_grid(foi ~ ., scales = "free") +
   #  geom_ribbon(aes(ymin=min, ymax=max, alpha="full range", color=NULL)) +
   geom_rect(aes(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, alpha=views[1]), data=irs.dt) +
-  geom_text(aes(x=(xmax+xmin)/2, y=ifelse(intervention == "Proactive",ymax*.6,ymin/.6), label=intervention, color=intervention), data=irs.dt) +
+  geom_text(
+    aes(
+      x=xmin+25, y=ifelse(intervention == "Proactive",ymax*.50,ymin/.50),
+      label=intervention, color=intervention),
+    data=irs.dt, angle=90
+  ) +
   geom_ribbon(aes(x=day-365, ymin=lo, ymax=hi, alpha=views[2])) +
   #  geom_line(aes(y=ave, linetype="average", alpha="line")) +
   geom_line(aes(x=day-365, y=md, linetype="median", alpha=views[3], color=intervention)) +
