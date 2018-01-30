@@ -44,7 +44,7 @@ view <- function(i) {
 pro.col <- "#0000ff"
 rea.col <- "#664400"
 
-png(args[2],height=1200,width=1000,res=180)
+png(args[2],height=1200,width=1800,res=240)
 ggplot(plot.dt[foi == "Baseline Mosquito Population"],
        aes(fill=intervention)
 ) + theme_minimal() + theme(strip.text.y = element_text(angle=90)) +
