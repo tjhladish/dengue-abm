@@ -140,6 +140,9 @@ $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 $(DBMAIN)/tab1.tex: main_tab_tex.R $(TABSRCS)
 	Rscript $^ > $@
 
+$(DBMAIN)/tab2.tex: main_tab2_tex.R $(DBMAIN)/foi-baseline.cases.rds $(DBMAIN)/foi-interventions.cases.rds $(DBMAIN)/foi-averted.rds
+	Rscript $^ > $@
+
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
 	Rscript $^ $@
 
