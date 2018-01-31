@@ -63,7 +63,7 @@ ggsave(tail(args,1), plot=ggplot(intervention_examples.dt) + theme_minimal() + t
   # geom_line() + # TODO add seasonal curves to background?
   coord_cartesian(ylim=c(0,y.lim)) +
   scale_y_continuous("Coverage (%)", expand = c(y.exp, 0)) + # y.exp provides space to put month labels
-  scale_x_continuous("Julian Day", breaks = NULL, expand=c(0,0)) +
+  scale_x_continuous("Time of year", breaks = NULL, expand=c(0,0)) +
   scale_linetype_manual(
     values=c(instant=2, continuous=3, `90`=1),
     labels=c(instant='all covered houses treated in 1 day', continuous='covered houses treated across 365 days', `90`='covered houses treated across 90 days')
