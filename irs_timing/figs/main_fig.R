@@ -174,7 +174,7 @@ proactive.end   <- proactive.start + 179 # campaign is 90 days, including day 1
 #reactive.start  <- yday(as_date("1970/11/1")) # Nov 1
 reactive.start  <- yday(as_date("1970/1/1")+322) # Nov 18
 #reactive.end    <- yday(as_date("1970/11/1")+179)
-reactive.end    <- yday(as_date("1970/11/1")+322+179)
+reactive.end    <- yday(as_date("1970/1/1")+322+179)
 
 #pro.col <- "cyan4"
 #rea.col <- "darkgreen"
