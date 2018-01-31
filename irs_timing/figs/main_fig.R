@@ -223,7 +223,7 @@ highlight.dot <- function(xpos) annotate("point",
 #   # vals <- rep(NA_character_, length(scl))
 #   # names(vals) <- scl
 #   # vals[nm] <- "#F0E68Caa"
-#   
+#
 #   list(geom_ribbon(
 #     aes_(fill=as.name(dimension), x=~doy, ymax=~value+0.025, ymin=~value-0.025, color=NULL),
 #     dt
@@ -231,7 +231,7 @@ highlight.dot <- function(xpos) annotate("point",
 #     name=sclnm, labels=labeller,
 #     values=c('red', 'blue', 'green')
 #   ))
-# } 
+# }
 
 legend.x <- 0.49
 
@@ -294,7 +294,13 @@ eff.left  <- 0.1
 res = 450
 # mag = 0.85*res/72
 #png(args[9], width = 1000*mag, height = 1730*mag, units = "px", res=res)
-ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=grid.arrange(
+if (grepl("png$", args[9])) {
+  png(args[9], width = 5.5, height = 7, units = "in", res = res)
+} else if (grepl("tiff$", args[9])) {
+  tiff(args[9], width = 5.5, height = 7, units = "in", res = res, compression = "lzw+p", type = "cairo")
+}
+#ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=
+grid.arrange(
   p.month                          + margin.theme(small.gap, mon.right, small.gap, mon.left),
   p.cases          + labeller("a") + margin.theme(small.gap, mon.right, small.gap,seas.left),
   p.seasonal       + labeller("b") + margin.theme(small.gap, mon.right, big.gap,seas.left),
@@ -305,5 +311,6 @@ ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=g
   p.month                          + margin.theme(small.gap, mon.right, small.gap,   mon.left),
   ncol=1,
   heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)
-))
-#dev.off()
+)
+#)
+dev.off()

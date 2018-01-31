@@ -153,7 +153,7 @@ mag = 0.45*res/72
 if (grepl("png$", args[3])) {
   png(args[3], width = 2000*mag, height = 2400*mag, units = "px", res=res)
 } else if (grepl("tiff$", args[3])) {
-  tiff(args[3], width = 2000*mag, height = 2400*mag, units = "px", res=res)
+  tiff(args[3], width = 2000*mag, height = 2400*mag, units = "px", res=res, compression="lzw+p", type="cairo")
 }
     plot_effectiveness_over_time(effectiveness.dt, seroprevalence.dt)
 dev.off()
