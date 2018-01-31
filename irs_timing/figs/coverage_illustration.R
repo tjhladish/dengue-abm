@@ -10,7 +10,7 @@ eip.dt <- readRDS(args[1])
 R0.dt <- readRDS(args[2])
 mos.dt <- readRDS(args[3])
 
-y.lim <- 100
+y.lim <- 100 # alt: ylim <- 1
 
 optimal_start_date <- 148
 covered_households <- 0.75*y.lim
@@ -47,18 +47,22 @@ mon.y <- -y.exp/2*y.lim
 ## TODO: add seasonal factors in background?
 
 ggsave(tail(args,1), plot=ggplot(intervention_examples.dt) + theme_minimal() + theme(
-  panel.grid.major.x = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank(),
-  legend.key.width = unit(45/365, "npc"), # npc units are 0-1 on the plot space - so this means make the key roughly 45 days wide, though total width includes axis labels etc
-  legend.justification = c("left", "top"), # position which corner of the legend
-  legend.position = c(0, 0.95),
-  legend.title = element_blank()
+  # keep on y.major grid lines
+  panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank(),
+  # legend size / locating:
+  legend.key.width = unit(45/365, "npc"),
+  # npc units are 0-1 on the plot space; width is x dim
+  #   which is 365 long, so this means make the key 45 days wide
+  legend.justification = c("left", "top"), # position which corner of the legend; includes margins
+  legend.margin = margin(0,0,0,0), # zero out legend margins, so position off minimum bound of key/labels
+  legend.position = c(0, 0.95), # npc coordinates, so roughly put corner == day 1, coverage = 0.95*y.lim
+  legend.title = element_blank() # don't title the legend
 ) +
   aes(x=doy, y=coverage, linetype=intervention) +
   geom_line() +
+  # geom_line() + # TODO add seasonal curves to background?
   coord_cartesian(ylim=c(0,y.lim)) +
-  scale_y_continuous("Coverage", expand = c(y.exp,0)) +
+  scale_y_continuous("Coverage", expand = c(y.exp, 0)) + # y.exp provides space to put month labels
   scale_x_continuous("Julian Day", breaks = NULL, expand=c(0,0)) +
   scale_linetype_manual(
     values=c(instant=2, continuous=3, `90`=1),
