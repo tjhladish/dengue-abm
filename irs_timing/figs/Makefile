@@ -105,7 +105,7 @@ mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)
 fig1: $(call wrap,$(DBMAIN)/,fig1,.png)
 fig2: $(call wrap,$(DBMAIN)/,fig2_alt,.png)
 
-supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-alt vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect,.png)
+supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-alt vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect coverage_illustration,.png)
 
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
 	Rscript $^ $@
@@ -120,6 +120,9 @@ $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annua
 	Rscript $^ $@
 
 $(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi-eff.rds
+	Rscript $^ $@
+
+$(DBMAIN)/coverage_illustration.png: coverage_illustration.R $(call wrap,$(DBMAIN)/,eip R0 mos,.rds)
 	Rscript $^ $@
 
 $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
