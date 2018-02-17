@@ -11,6 +11,10 @@ default: supfigs mainfigs $(DBMAIN)/check_runs.png
 clean:
 	rm $(DBMAIN)/*.rds
 
+check_requires:
+  # some command to grep all the requires
+  # feed that into R
+
 .SECONDARY:
 
 # rules for making fig-ready data
@@ -32,11 +36,12 @@ numbers:
 
 $(DBMAIN)/obs.rds: $(DBMAIN)/weekly_confirmed_cases_1995-2015_wide.csv
 
-$(DBMAIN)/sim.rds: ./daily_output-refit
+#$(DBMAIN)/sim.rds: ./daily_output-refit
+$(DBMAIN)/sim.rds: $(DBMAIN)/daily_cases_1995-2015_refit2.out
 
 $(DBMAIN)/eip.rds: $(DBMAIN)/seasonal_EIP_24hr.out
 
-$(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit.sqlite
+$(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit2.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
@@ -87,20 +92,20 @@ $(DBMAIN)/4panel_foi_20yr.png: foi_annual_effectiveness_plot.R $(DBMAIN)/foi-bas
 TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability,.rds)
 SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
 
-$(DBMAIN)/fig1.png: main_fig.R $(SRCS)
+$(DBMAIN)/fig1.png $(DBMAIN)/fig1.tiff: main_fig.R $(SRCS)
 	Rscript $^ $@
 
 $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
-$(DBMAIN)/fig2_alt.png: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
+$(DBMAIN)/fig2_alt.png $(DBMAIN)/fig2_alt.tiff: main_fig2_alt.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@
 
 mainfigs: $(call wrap,$(DBMAIN)/,fig1 fig2_alt,.png)
 fig1: $(call wrap,$(DBMAIN)/,fig1,.png)
 fig2: $(call wrap,$(DBMAIN)/,fig2_alt,.png)
 
-supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-alt vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect,.png)
+supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-alt vc_4-panel-impact_10yr vc_4-panel-impact_50yr stacked_immunity pro_vs_re_active-prevalence.local foi_effect coverage_illustration,.png)
 
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
 	Rscript $^ $@
@@ -115,6 +120,9 @@ $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annua
 	Rscript $^ $@
 
 $(DBMAIN)/foi_effect.png: foi_plot.R $(DBMAIN)/foi-eff.rds
+	Rscript $^ $@
+
+$(DBMAIN)/coverage_illustration.png: coverage_illustration.R $(call wrap,$(DBMAIN)/,eip R0 mos,.rds)
 	Rscript $^ $@
 
 $(DBMAIN)/stacked_immunity.png: annual_immunity_plot-SI.R $(DBMAIN)/stopping-baseline.rds $(DBMAIN)/stopping-interventions.rds
@@ -135,8 +143,14 @@ $(DBMAIN)/tab1.csv: main_tab.R $(TABSRCS)
 $(DBMAIN)/tab1.tex: main_tab_tex.R $(TABSRCS)
 	Rscript $^ > $@
 
+$(DBMAIN)/tab2.tex: main_tab2_tex.R $(DBMAIN)/foi-baseline.cases.rds $(DBMAIN)/foi-interventions.cases.rds $(DBMAIN)/foi-averted.rds
+	Rscript $^ > $@
+
 $(DBMAIN)/offset_peak.csv: offset.R $(DBMAIN)/tab1.csv
 	Rscript $^ $@
+
+$(DBMAIN)/tabX.tex: main_tabX_tex.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
+	Rscript $^ > $@
 
 $(DBMAIN)/confidence-intervals.rds: $(SQMAIN) $(DBROOT)/irs_insecticide-durability-effect_intro-fix.sqlite
 

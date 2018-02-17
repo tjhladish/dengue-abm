@@ -4,8 +4,8 @@ args <- commandArgs(trailingOnly = T)
 
 eff <- readRDS(args[1])
 
-#foi = 
-seasons = c('June 1 IRS (proactive timing)', 'November 1 IRS (reactive timing)')
+#foi =
+seasons = c('May 21 IRS (proactive timing)', 'December 10 IRS (reactive timing)')
 
 data = matrix(setkey(eff, doy)[year==9,cq.med], nrow=2, byrow=T)
 rownames(data) = seasons
