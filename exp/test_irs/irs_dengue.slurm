@@ -8,7 +8,7 @@
 
 #SBATCH --account=epi
 #SBATCH --qos=epi-b
-#SBATCH --workdir=/home/tjhladish/work/dengue/test_irs
+#SBATCH --workdir=/home/tjhladish/work/dengue/exp/test_irs
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
 #SBATCH --time=24:00:00

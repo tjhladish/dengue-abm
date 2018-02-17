@@ -9,7 +9,7 @@
 
 #SBATCH --account=epi
 #SBATCH --qos=epi
-#SBATCH --workdir=/home/tjhladish/work/dengue/irs_timing
+#SBATCH --workdir=/home/tjhladish/work/dengue/exp/irs_timing
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2000
 #SBATCH --time=24:00:00
