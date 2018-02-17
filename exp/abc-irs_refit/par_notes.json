@@ -1,0 +1,138 @@
+{
+    "smc_iterations" : 14,
+    "num_samples"    : 10000,
+    "predictive_prior_fraction" : 0.01,
+    "pls_training_fraction"     : 0.8,
+
+    "database_filename"         : "yucatan-refit_365-bdays.sqlite",
+
+    "parameters" : [
+        {"name"       : "mild_expansion_factor",
+         "short_name" : "mild_EF",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 10,
+         "par2"       : 80},
+
+mild_reported_fraction
+mild_rf
+dist_type NORMAL
+transform LOGIT
+
+probable EF range = [5, 60] --> [0.0166, 0.2] 0.09 0.045
+unxformed mean = 0.05
+unxformed sd   = 0.045
+
+logit mean = -2.944439
+logit sd   = 1.4
+
+e^(logit mean) / (1 + e^(logit mean))
+        {"name"       : "severe_expansion_factor",
+         "short_name" : "severe_EF",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 5},
+severe_reported_fraction
+severe_rf
+normal
+logit
+
+unxformed mean = 0.25
+unxofrmed sd   = 0.19 // [0.166, 0.5] = 0.3875/2 ~ 0.19
+
+logit mean = -1.098612
+logit sd   = 0.8
+
+        {"name"       : "base_pathogenicity",
+         "short_name" : "base_path",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.2,
+         "par2"       : 0.8},
+
+secondary_pathogenicity
+sp
+normal
+logit
+
+unxformed mean = 0.7
+unxformed probable range = [0.5, 0.9]
+
+logit mean = 0.8472979
+logit sd   = 0.7
+        {"name"       : "secondary_severity",
+         "short_name" : "sec_sev",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 0.4},
+secondary_severity
+sec_sev
+normal
+logit
+
+unxformed mean = 0.1
+unxformed probable range = [0.001, 0.2]
+
+logit mean = -2.197225
+logit sd   = 2.25
+        {"name"       : "primary_secondary_severity_ratio",
+         "short_name" : "pss_ratio",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.25,
+         "par2"       : 0.75},
+
+unxformed mean = 0.5
+unxformed probable range = [0.25, 0.75]
+logit mean = 0
+logit sd   = 1
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : -3,
+         "par2"       : 1},
+normal
+log10 transformed
+
+unxformed mean =
+unxformed probable range = 
+
+log10 mean = -0.6
+log10 sd   = 0.75
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 20,
+         "par2"       : 100}
+normal
+log10
+
+unxformed mean = 60
+unxformed range = [10, 100]
+
+log10 mean = 1.778151
+log10 sd   = 0.3
+
+    ],
+
+    "metrics" : [
+        {"name" : "mean",           "num_type" : "FLOAT",   "value" : 101.006     },
+        {"name" : "min",            "num_type" : "FLOAT",   "value" : 0           },
+        {"name" : "quant25",        "num_type" : "FLOAT",   "value" : 2.73475     },
+        {"name" : "median",         "num_type" : "FLOAT",   "value" : 37.9815     },
+        {"name" : "quant75",        "num_type" : "FLOAT",   "value" : 129.016     },
+        {"name" : "max",            "num_type" : "FLOAT",   "value" : 464.334     },
+        {"name" : "stdev",          "num_type" : "FLOAT",   "value" : 140.03      },
+        {"name" : "skewness",       "num_type" : "FLOAT",   "value" : 1.37983     },
+        {"name" : "med_xing",       "num_type" : "FLOAT",   "value" : 0.25        },
+        {"name" : "seroprev",       "num_type" : "FLOAT",   "value" : 0.6         },
+        {"name" : "pre95_sev_prev", "num_type" : "FLOAT",   "value" : 0.000696896 },
+        {"name" : "mod_sev_prev",   "num_type" : "FLOAT",   "value" : 0.290166    }
+    ]
+}

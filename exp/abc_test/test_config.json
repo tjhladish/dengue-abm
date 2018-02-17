@@ -1,0 +1,74 @@
+{
+    "smc_iterations" : 1,
+    "num_samples"    : 10,
+    "predictive_prior_fraction" : 0.5,
+    "pls_training_fraction"     : 0.5,
+
+    "database_filename"             : "test.sqlite",
+
+    "parameters" : [
+        {"name"       : "case_expansion_factor",
+         "short_name" : "caseEF",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 25,
+         "par2"       : 25},
+
+        {"name"       : "mosquito_movement",
+         "short_name" : "mos_mov",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.6,
+         "par2"       : 0.6},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : -0.5,
+         "par2"       : -0.5},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 80,
+         "par2"       : 80},
+
+        {"name"       : "beta",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.16,
+         "par2"       : 0.16}
+    ],
+
+    "metrics" : [
+        {"name"      : "week1",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week2",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week3",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week4",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week5",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week6",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0},
+
+        {"name"      : "week7",
+         "num_type"  : "FLOAT",
+         "value"     : 100.0}
+    ]
+}

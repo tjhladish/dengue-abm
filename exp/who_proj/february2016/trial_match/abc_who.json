@@ -1,0 +1,130 @@
+{
+    "smc_iterations" : 1,
+    "num_samples"    : 1000,
+    "predictive_prior_fraction" : 1.0,
+    "pls_training_fraction"     : 1.0,
+
+    "database_filename"             : "cyd14_match-correct_mechanism-extra_year.sqlite",
+    "posterior_database_filename"   : "posterior.sqlite",
+
+    "parameters" : [
+        {"name"       : "mild_expansion_factor",
+         "short_name" : "mild_EF",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 99},
+
+        {"name"       : "severe_expansion_factor",
+         "short_name" : "severe_EF",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 99},
+
+        {"name"       : "base_pathogenicity",
+         "short_name" : "base_path",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.6,
+         "par2"       : 0.6},
+
+        {"name"       : "secondary_severity",
+         "short_name" : "sec_sev",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.13,
+         "par2"       : 0.13},
+
+        {"name"       : "primary_secondary_severity_ratio",
+         "short_name" : "pss_ratio",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 99},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "FLOAT",
+         "par1"       : -1.0,
+         "par2"       : -1.0},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 99},
+
+        {"name"       : "foi_target",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 9},
+
+        {"name"       : "CYD",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 14,
+         "par2"       : 14}
+    ],
+
+    "metrics" : [
+        {"name" : "seroneg_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "seroneg_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "seroneg_12_14", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "ar_placebo_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_vaccine_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_placebo_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_vaccine_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_placebo_12_14", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_vaccine_12_14", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "ar_placebo_neg", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_vaccine_neg", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_placebo_pos", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "ar_vaccine_pos", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "hosp_mild_placebo_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_placebo_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_placebo_12_14", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_12_14", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "hosp_severe_placebo_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_placebo_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_placebo_12_14", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_12_14", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "hosp_mild_placebo_2_5_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_2_5_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_placebo_6_11_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_6_11_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_placebo_12_14_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_mild_vaccine_12_14_y2", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "hosp_severe_placebo_2_5_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_2_5_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_placebo_6_11_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_6_11_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_placebo_12_14_y2", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "hosp_severe_vaccine_12_14_y2", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "infec_placebo_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_vaccine_2_5", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_placebo_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_vaccine_6_11", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_placebo_12_14", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_vaccine_12_14", "num_type" : "FLOAT", "value" : 0},
+
+        {"name" : "infec_placebo_neg", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_vaccine_neg", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_placebo_pos", "num_type" : "FLOAT", "value" : 0},
+        {"name" : "infec_vaccine_pos", "num_type" : "FLOAT", "value" : 0}
+    ]
+}

@@ -1,0 +1,159 @@
+{
+    "smc_iterations" : 1,
+    "num_samples"    : 1000,
+    "predictive_prior_fraction" : 1.0,
+    "pls_training_fraction"     : 1.0,
+
+    "database_filename"             : "debugging2.sqlite",
+    "posterior_database_filename"   : "posterior.sqlite",
+
+    "parameters" : [
+        {"name"       : "caseEF",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "mos_mov",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "exp_coef",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "num_mos",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "beta",
+         "dist_type"  : "POSTERIOR",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 999},
+
+        {"name"       : "vac",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 0},
+
+        {"name"       : "catchup",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 0},
+
+        {"name"       : "target",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 9,
+         "par2"       : 9,
+         "step"       : 0},
+
+        {"name"       : "catchup_to",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 30,
+         "par2"       : 30,
+         "step"       : 0},
+
+        {"name"       : "vec_control",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 0},
+
+        {"name"       : "vac_waning",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 0},
+
+        {"name"       : "vac_boosting",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 0}
+    ],
+
+    "metrics" : [
+        {"name" : "s1hc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s1hc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s1hc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s1hc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s1hc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s2hc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s2hc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s2hc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s2hc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s2hc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s3hc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s3hc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s3hc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s3hc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s3hc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s4hc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s4hc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s4hc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s4hc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s4hc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s1tc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s1tc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s1tc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s1tc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s1tc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s2tc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s2tc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s2tc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s2tc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s2tc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s3tc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s3tc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s3tc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s3tc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s3tc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s4tc01", "num_type" : "INT", "value" : 0},
+        {"name" : "s4tc02", "num_type" : "INT", "value" : 0},
+        {"name" : "s4tc03", "num_type" : "INT", "value" : 0},
+        {"name" : "s4tc04", "num_type" : "INT", "value" : 0},
+        {"name" : "s4tc05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s1i01", "num_type" : "INT", "value" : 0},
+        {"name" : "s1i02", "num_type" : "INT", "value" : 0},
+        {"name" : "s1i03", "num_type" : "INT", "value" : 0},
+        {"name" : "s1i04", "num_type" : "INT", "value" : 0},
+        {"name" : "s1i05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s2i01", "num_type" : "INT", "value" : 0},
+        {"name" : "s2i02", "num_type" : "INT", "value" : 0},
+        {"name" : "s2i03", "num_type" : "INT", "value" : 0},
+        {"name" : "s2i04", "num_type" : "INT", "value" : 0},
+        {"name" : "s2i05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s3i01", "num_type" : "INT", "value" : 0},
+        {"name" : "s3i02", "num_type" : "INT", "value" : 0},
+        {"name" : "s3i03", "num_type" : "INT", "value" : 0},
+        {"name" : "s3i04", "num_type" : "INT", "value" : 0},
+        {"name" : "s3i05", "num_type" : "INT", "value" : 0},
+
+        {"name" : "s4i01", "num_type" : "INT", "value" : 0},
+        {"name" : "s4i02", "num_type" : "INT", "value" : 0},
+        {"name" : "s4i03", "num_type" : "INT", "value" : 0},
+        {"name" : "s4i04", "num_type" : "INT", "value" : 0},
+        {"name" : "s4i05", "num_type" : "INT", "value" : 0}
+    ]
+}

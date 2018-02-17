@@ -1,0 +1,75 @@
+{
+    "smc_iterations" : 12,
+    "num_samples"    : 1000,
+    "predictive_prior_fraction" : 0.2,
+    "pls_training_fraction"     : 0.5,
+
+    "particle_basefilename"         : "dengue_particles-120y-small",
+    "predictive_prior_basefilename" : "dengue_predictive_prior-120y-small",
+    "resume_directory"              : "/scratch/lfs/thladish/work/dengue/abc/",
+
+
+    "parameters" : [
+        {"name"       : "expansion_factor",
+         "short_name" : "exp_fac",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 20,
+         "par2"       : 50},
+
+        {"name"       : "mosquito_movement",
+         "short_name" : "mos_mov",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 1},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : -3,
+         "par2"       : 1},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 25,
+         "par2"       : 100},
+
+        {"name"       : "beta",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.1,
+         "par2"       : 0.2}
+    ],
+
+    "metrics" : [
+
+        {"name"      : "mean",
+         "num_type"  : "FLOAT",
+         "value"     : 121.943},
+
+        {"name"      : "median",
+         "num_type"  : "FLOAT",
+         "value"     : 33.9603},
+
+        {"name"      : "stdev",
+         "num_type"  : "FLOAT",
+         "value"     : 176.722},
+
+        {"name"      : "max",
+         "num_type"  : "INT",
+         "value"     : 646.692},
+
+        {"name"      : "skewness",
+         "num_type"  : "FLOAT",
+         "value"     : 1.38442},
+
+        {"name"      : "median crossings",
+         "short_name": "mc",
+         "num_type"  : "FLOAT",
+         "value"     : 0.235294}
+    ]
+}

@@ -1,0 +1,77 @@
+{
+    "smc_iterations" : 2,
+    "num_samples"    : 20,
+    "predictive_prior_fraction" : 0.5,
+    "pls_training_fraction"     : 0.5,
+
+    "particle_basefilename"         : "dengue_particles-toy",
+    "predictive_prior_basefilename" : "dengue_predictive_prior-toy",
+
+    "parameters" : [
+        {"name"       : "expansion_factor",
+         "short_name" : "exp_fac",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 68},
+
+        {"name"       : "mosquito_movement",
+         "short_name" : "mos_mov",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0,
+         "par2"       : 1},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 1e-5},
+
+        {"name"       : "beta_mp",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 0.5},
+
+        {"name"       : "beta_pm",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 0.5},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "INT",
+         "par1"       : 25,
+         "par2"       : 75}
+    ],
+
+    "metrics" : [
+        {"name"      : "mean",
+         "num_type"  : "FLOAT",
+         "value"     : 1854.417},
+
+        {"name"      : "stdev",
+         "num_type"  : "FLOAT",
+         "value"     : 2151.492},
+
+        {"name"      : "max",
+         "num_type"  : "INT",
+         "value"     : 6132},
+
+        {"name"      : "slope",
+         "num_type"  : "FLOAT",
+         "value"     : 497.9},
+
+        {"name"      : "intercept",
+         "num_type"  : "FLOAT",
+         "value"     : -1381.8},
+
+        {"name"      : "r_squared",
+         "num_type"  : "FLOAT",
+         "value"     : 0.69618}
+    ]
+}
