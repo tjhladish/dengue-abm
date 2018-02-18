@@ -23,11 +23,32 @@ def fmt(val):
 fi = file('abc-irs_refit2.json', 'r')
 jdat = json.load(fi)
 
-
-# slurp metrics from db
+# slurp parameters from db
 con = sqlite3.connect(argv[2])
 con.row_factory = sqlite3.Row
 c = con.cursor()
+c.execute('select * from upar;')
+sql_pars = c.fetchall()
+pars = np.array(sql_pars)
+pars = np.delete(pars, [0,1], 1).astype(float) # delete serials from data (0 specifies which row/col, 1 specifies col and not row)
+
+# build stats matrix
+stats = {} 
+stats['median'] = np.percentile(pars, 50, axis=0)
+stats['q_min'] = np.percentile(pars, q_min, axis=0)
+stats['q_max'] = np.percentile(pars, q_max, axis=0)
+
+for par_idx in range(len(jdat['parameters'])):
+    j_par = jdat['parameters'][par_idx]
+    print j_par['name'].ljust(35), sep, #fmt(j_par['value']), sep,
+    print fmt(stats['median'][par_idx]), sep,
+    print '(' + fmt(stats['q_min'][par_idx]) + ', ' + fmt(stats['q_max'][par_idx]) + ')' + eol
+
+
+
+
+
+# slurp metrics from db
 c.execute('select * from met;')
 sql_mets = c.fetchall()
 #labels = sql_mets[0].keys()
