@@ -1,0 +1,15 @@
+#! /bin/sh
+#PBS -N dentest 
+#PBS -o dengue_toy.out
+#PBS -e dengue_toy.err
+#PBS -r y
+#PBS -l walltime=16:00:00
+#PBS -l nodes=1:ppn=10
+#PBS -l pmem=3200mb
+#PBS -W group_list=epi
+#PBS -M tjhladish@gmail.com
+#PBS -m abe
+
+cd $PBS_O_WORKDIR
+module load intel/2013 openmpi gsl
+mpiexec --bind-to-core ./abc_mpi abc_toy.json 2> abc.err > abc.out

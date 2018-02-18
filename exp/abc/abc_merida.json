@@ -1,0 +1,75 @@
+{
+    "smc_iterations" : 3,
+    "num_samples"    : 10000,
+    "predictive_prior_fraction" : 0.01,
+    "pls_training_fraction"     : 0.8,
+
+    "database_filename"         : "merida-all_historical_serotypes.sqlite",
+
+    "parameters" : [
+        {"name"       : "mild_expansion_factor",
+         "short_name" : "mild_EF",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 10,
+         "par2"       : 80},
+
+        {"name"       : "severe_expansion_factor",
+         "short_name" : "severe_EF",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 1,
+         "par2"       : 5},
+
+        {"name"       : "base_pathogenicity",
+         "short_name" : "base_path",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.2,
+         "par2"       : 0.8},
+
+        {"name"       : "secondary_severity",
+         "short_name" : "sec_sev",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.0,
+         "par2"       : 0.4},
+
+        {"name"       : "primary_secondary_severity_ratio",
+         "short_name" : "pss_ratio",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 0.25,
+         "par2"       : 0.75},
+
+        {"name"       : "exposures_coefficient",
+         "short_name" : "exp_coef",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : -2,
+         "par2"       : 1},
+
+        {"name"       : "mosquito_density",
+         "short_name" : "num_mos",
+         "dist_type"  : "UNIFORM",
+         "num_type"   : "FLOAT",
+         "par1"       : 20,
+         "par2"       : 100}
+    ],
+
+    "metrics" : [
+        {"name" : "mean",          "num_type" : "FLOAT",   "value" : 121.943  },
+        {"name" : "min",           "num_type" : "FLOAT",   "value" : 0        },
+        {"name" : "quant25",       "num_type" : "FLOAT",   "value" : 2.68004  },
+        {"name" : "median",        "num_type" : "FLOAT",   "value" : 33.9603  },
+        {"name" : "quant75",       "num_type" : "FLOAT",   "value" : 147.642  },
+        {"name" : "max",           "num_type" : "FLOAT",   "value" : 646.692  },
+        {"name" : "stdev",         "num_type" : "FLOAT",   "value" : 176.722  },
+        {"name" : "skewness",      "num_type" : "FLOAT",   "value" : 1.38442  },
+        {"name" : "med_xing",      "num_type" : "FLOAT",   "value" : 0.235294 },
+        {"name" : "seroprev",      "num_type" : "FLOAT",   "value" : 0.6      },
+        {"name" : "severe_prev",   "num_type" : "FLOAT",   "value" : 0.129899 },
+        {"name" : "beta0",         "num_type" : "FLOAT",   "value" : -5.06394 },
+        {"name" : "beta1",         "num_type" : "FLOAT",   "value" : 0.116576 }
+    ]
+}
