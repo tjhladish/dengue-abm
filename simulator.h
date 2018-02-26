@@ -286,6 +286,9 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
+    const int doseInterval = par->vaccineDoseInterval;
+    assert(doseInterval > 0); // neg is nonsensical, 0 is disallowed due to mod operation
+    const int boostInterval = par->vaccineBoostingInterval;
     for (VaccinationEvent ve: par->vaccinationEvents) {
         // Normal, initial vaccination
         if (date.day() == ve.simDay) {
@@ -294,8 +297,6 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
         } else if (date.day() > ve.simDay) {
             // Re-vaccination via ...
             int timeSinceVac = date.day() - ve.simDay;
-            const int doseInterval = par->vaccineDoseInterval;
-            const int boostInterval = par->vaccineBoostingInterval;
             if (timeSinceVac % doseInterval == 0 and timeSinceVac / doseInterval <= par->numVaccineDoses) {
                 // Multi-dose vaccine
                 community->boost(date.day(), doseInterval, par->numVaccineDoses);
