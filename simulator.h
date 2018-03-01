@@ -289,18 +289,18 @@ void update_vaccinations(const Parameters* par, Community* community, const Date
     const int doseInterval = par->vaccineDoseInterval;
     assert(doseInterval > 0); // neg is nonsensical, 0 is disallowed due to mod operation
     const int boostInterval = par->vaccineBoostingInterval;
-    for (VaccinationEvent ve: par->vaccinationEvents) {
+    for (CatchupVaccinationEvent cve: par->catchupVaccinationEvents) {
         // Normal, initial vaccination
-        if (date.day() == ve.simDay) {
-            if (not par->abcVerbose) cerr << "vaccinating " << ve.coverage*100 << "% of age " << ve.age << " on day " << ve.simDay << endl;
-            community->vaccinate(ve);
-        } else if (date.day() > ve.simDay) {
+        if (date.day() == cve.simDay) {
+            if (not par->abcVerbose) cerr << "vaccinating " << cve.coverage*100 << "% of age " << cve.age << " on day " << cve.simDay << endl;
+            community->vaccinate(cve);
+        } else if (date.day() > cve.simDay) {
             // Re-vaccination via ...
-            int timeSinceVac = date.day() - ve.simDay;
+            int timeSinceVac = date.day() - cve.simDay;
             if (timeSinceVac % doseInterval == 0 and timeSinceVac / doseInterval <= par->numVaccineDoses) {
                 // Multi-dose vaccine
                 community->boost(date.day(), doseInterval, par->numVaccineDoses);
-            } else if (par->linearlyWaningVaccine and par->vaccineBoosting and timeSinceVac % boostInterval == 0) {
+            } else if (par->vaccineBoosting and timeSinceVac % boostInterval == 0) {
                 // Boosting
                 community->boost(date.day(), boostInterval);
             }

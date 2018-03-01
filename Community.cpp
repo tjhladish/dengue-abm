@@ -463,18 +463,18 @@ bool Community::infect(int id, Serotype serotype, int day) {
 }
 
 
-void Community::vaccinate(VaccinationEvent ve) {
+void Community::vaccinate(CatchupVaccinationEvent cve) {
     // This approach to vaccination is somewhat problematic.  Age classes can be vaccinated multiple times,
     // so the probability of an individual being vaccinated becomes 1 - (1 - ve.coverage)^n, where n is the number
     // of times an age class is specified, either explicitly or implicitly by using a negative value for age
 
     // Valid coverage and age?
-    assert(ve.coverage >= 0.0 and ve.coverage <= 1.0);
-    assert(ve.age <= (signed) _personAgeCohort.size());
+    assert(cve.coverage >= 0.0 and cve.coverage <= 1.0);
+    assert(cve.age <= (signed) _personAgeCohort.size());
 
-    for (Person* p: _personAgeCohort[ve.age]) {
+    for (Person* p: _personAgeCohort[cve.age]) {
         assert(p != NULL);
-        if (!p->isVaccinated() && gsl_rng_uniform(RNG) < ve.coverage) p->vaccinate(ve.simDay);
+        if (!p->isVaccinated() and gsl_rng_uniform(RNG) < cve.coverage) p->vaccinate(cve.simDay);
     }
 }
 
@@ -488,6 +488,28 @@ void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate pe
             }
         }
     }
+}
+
+
+void Community::updateVaccination(Person* p) {
+    // expected to be run on p's birthday
+    bool vaccinate = false;
+    const bool alreadyVaccinated = p->isVaccinated();
+
+    if (p->getAge()==_par->vaccineTargetAge and not alreadyVaccinated) {
+        // standard vaccination of target age; vaccinate w/ probability = coverage
+        vaccinate = (gsl_rng_uniform(RNG) < _par->vaccineTargetCoverage);
+    } else if (alreadyVaccinated) {
+        const int timeSinceLastVaccination = p->daysSinceVaccination(_nDay);
+        if (p->getNumVaccinations() < _par->numVaccineDoses and timeSinceLastVaccination >= _par->vaccineDoseInterval) {
+            // multi-dose vaccination
+            vaccinate = true;
+        } else if (_par->vaccineBoosting and timeSinceLastVaccination >= _par->vaccineBoostingInterval) {
+            // booster dose
+            vaccinate = true;
+        }
+    }
+    if (vaccinate) p->vaccinate(_nDay);
 }
 
 
@@ -702,6 +724,7 @@ void Community::_processBirthday(Person* p) {
     } else {
         if (donor) {
             p->copyImmunity(donor);
+            updateVaccination(p);
         } else {
             p->resetImmunity();
         }
@@ -726,6 +749,7 @@ void Community::_swapIfNeitherInfected(Person* p, Person* donor) {
     if (process_date == _nDay) {
         if (donor) {
             p->copyImmunity(donor);
+            updateVaccination(p);
         } else {
             p->resetImmunity();
         }
@@ -972,21 +996,9 @@ void Community::tick(int day) {
     _nDay = day;
     //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
     _processDelayedBirthdays();
+
     if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
     if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
-    /*{
-    const Location* _l = _location[4];
-    cerr << "day " << day
-         << ", loc " << _l->getID()
-         << ", " << (int) _l->getType()
-         << ", base: " << _l->getBaseMosquitoCapacity()
-         << ", start: " << _l->getCurrentVectorControl()->start_day
-         << ", cur: " << (int)(_l->getBaseMosquitoCapacity() * (1.0-_l->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5)
-         << ", cur inf: " << _l->getCurrentInfectedMosquitoes()
-    //     << ", set eff: " << _l->getVectorControlEfficacy()
-         << ", cur eff: " << _l->getCurrentVectorControlEfficacy(_nDay)
-         << ", mortality: " << _l->getCurrentVectorControlDailyMortality(_nDay) << endl;
-    }*/
                                                                       // last day of simulator year
 
     updateDiseaseStatus();                                            // make people stay home or return to work
@@ -995,6 +1007,7 @@ void Community::tick(int day) {
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
+
     return;
 }
 

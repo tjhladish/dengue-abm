@@ -331,14 +331,13 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         double catchup_coverage = coverage;
 
         if (catchup) {
-            for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
-                par->vaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
+            for (int catchup_age = target; catchup_age <= catchup_to; catchup_age++) {
+                par->catchupVaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
             }
         } 
 
-        for (int vacc_year = RESTART_BURNIN; vacc_year < TOTAL_DURATION; vacc_year++) {
-            par->vaccinationEvents.emplace_back(target, vacc_year*365, target_coverage);
-        }
+        par->vaccineTargetAge = target;
+        par->vaccineTargetCoverage = target_coverage;
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
@@ -354,8 +353,6 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->vaccineBoosting         = false;
 
         par->whoDiseaseOutcome = INC_NUM_INFECTIONS;
-        par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
-        par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
     } else if (vaccine_mechanism == 1) { // also want A1 + B2 + C3a
         // imperfect efficacy that does not wane
         par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 0.7);
@@ -372,8 +369,6 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->vaccineBoosting         = false;
 
         par->whoDiseaseOutcome = VAC_ISNT_INFECTION;
-        par->whoBreakthrough   = BREAKTHROUGH_SEROCONVERSION;
-        par->whoWaning         = UNIVERSAL_WANING; // Naive-only was specified, but seems unrealistic
     } else {
         cerr << "Unsupported vaccine mechanism: " << vaccine_mechanism << endl;
         exit(-152);

@@ -73,7 +73,9 @@ void Parameters::define_defaults() {
     infantImmuneProb = 3.0/12.0;    // given exposure and maternal antibodies, chance of resisting infection (first 3 months)
     infantSevereProb = 6.0/9.0;     // given infection and maternal antibodies, chance of severe disease (next 6 months)
 
-    vaccinationEvents.clear();
+    catchupVaccinationEvents.clear();
+    vaccineTargetAge = 9;
+    vaccineTargetCoverage = 0.0;
     numVaccineDoses = 3;
     vaccineDoseInterval = 182;
 
@@ -106,8 +108,6 @@ void Parameters::define_defaults() {
 
     // WHO vaccine mechanism variables
     whoDiseaseOutcome = VAC_ISNT_INFECTION;
-    whoBreakthrough   = NO_BREAKTHROUGH_EFFECT;
-    whoWaning         = NO_WANING;
 }
 
 void Parameters::readParameters(int argc, char* argv[]) {

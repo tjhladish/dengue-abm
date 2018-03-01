@@ -82,23 +82,23 @@ enum WHO_DiseaseOutcome {
     NUM_OF_WHO_DISEASE_OUTCOMES
 };
 
-// series B
-enum WHO_BreakthroughEffect {
-    NO_BREAKTHROUGH_EFFECT,         // 1.  breakthrough infections have no effect on vaccine efficiacy
-                                    // TODO(cabp): duplicates bRetroactiveMatureVaccine / _bNaiveVaccineProtection mechanism
-    BREAKTHROUGH_SEROCONVERSION,    // 2.  breakthough makes vaccine behave like person is now seropositive;
-    PERFECT_BREAKTHROUGH,           // 3.  breakthrough makes vaccine have 100% efficacy afterwards
-    NUM_OF_WHO_BREAKTHROUGH_EFFECTS
-}; // default and alt matches our current model; no changes to make use of this variable
-
-// series C
-enum WHO_Waning {
-    NO_WANING,                      // 1.  no waning; TODO(cabp): we already cover otherwise, need to unify approach (i.e., linearlyWaningVaccine = false)
-    UNIVERSAL_WANING,               // 2.  waning applies to all vaccinees (current same as linearlyWaningVaccine = true)
-    NAIVE_WANING_ONLY,              // 3a. waning only effects seronegative vaccinees
-    ANTIBODY_WANING,                // 3b. waning modeled as antibody decline; intermediate period w/ disease enhancement, subsequent non-effect
-    NUM_OF_WHO_WANINGS
-};
+//// series B
+//enum WHO_BreakthroughEffect {
+//    NO_BREAKTHROUGH_EFFECT,         // 1.  breakthrough infections have no effect on vaccine efficiacy
+//                                    // TODO(cabp): duplicates bRetroactiveMatureVaccine / _bNaiveVaccineProtection mechanism
+//    BREAKTHROUGH_SEROCONVERSION,    // 2.  breakthough makes vaccine behave like person is now seropositive;
+//    PERFECT_BREAKTHROUGH,           // 3.  breakthrough makes vaccine have 100% efficacy afterwards
+//    NUM_OF_WHO_BREAKTHROUGH_EFFECTS
+//}; // default and alt matches our current model; no changes to make use of this variable
+//
+//// series C
+//enum WHO_Waning {
+//    NO_WANING,                      // 1.  no waning; TODO(cabp): we already cover otherwise, need to unify approach (i.e., linearlyWaningVaccine = false)
+//    UNIVERSAL_WANING,               // 2.  waning applies to all vaccinees (current same as linearlyWaningVaccine = true)
+//    NAIVE_WANING_ONLY,              // 3a. waning only effects seronegative vaccinees
+//    ANTIBODY_WANING,                // 3b. waning modeled as antibody decline; intermediate period w/ disease enhancement, subsequent non-effect
+//    NUM_OF_WHO_WANINGS
+//};
 
 extern const gsl_rng* RNG;// = gsl_rng_alloc (gsl_rng_taus2);
 
@@ -243,9 +243,9 @@ struct DynamicParameter {
 };
 
 
-struct VaccinationEvent {
-    VaccinationEvent(){};
-    VaccinationEvent(int a, int s, double c): age(a), simDay(s), coverage(c) {};
+struct CatchupVaccinationEvent {
+    CatchupVaccinationEvent(){};
+    CatchupVaccinationEvent(int a, int s, double c): age(a), simDay(s), coverage(c) {};
     int age;
     int simDay;
     double coverage;
@@ -359,7 +359,9 @@ public:
     int numVaccineDoses;                                    // Number of times to boost; default is INT_MAX
     int vaccineDoseInterval;                                // How often to we re-vaccinate for initial vaccine course, in days
     int vaccineBoostingInterval;                            // How often to we re-vaccinate for boosting, in days
-    std::vector<VaccinationEvent> vaccinationEvents;
+    std::vector<CatchupVaccinationEvent> catchupVaccinationEvents;
+    int vaccineTargetAge;
+    double vaccineTargetCoverage;
 
     std::vector<VectorControlEvent> vectorControlEvents;
 
@@ -373,10 +375,8 @@ public:
     bool abcVerbose;
     unsigned long int serial;
 
-// WHO vaccine mechanism variables
+    // WHO vaccine mechanism variables
     WHO_DiseaseOutcome whoDiseaseOutcome;
-    WHO_BreakthroughEffect whoBreakthrough;
-    WHO_Waning whoWaning;
 };
 
 #endif
