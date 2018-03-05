@@ -76,6 +76,7 @@ void Parameters::define_defaults() {
     catchupVaccinationEvents.clear();
     vaccineTargetAge = 9;
     vaccineTargetCoverage = 0.0;
+    vaccineTargetStartDate = INT_MAX;
     numVaccineDoses = 3;
     vaccineDoseInterval = 182;
 

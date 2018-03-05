@@ -56,8 +56,8 @@ class Community {
         int getNumInfectiousMosquitoes();
         int getNumExposedMosquitoes();
         void vaccinate(CatchupVaccinationEvent cve);
-        void updateVaccination(Person* p);
-        void boost(int time, int interval, int maxDoses=INT_MAX);
+        void targetVaccination(Person* p); // routine vaccination on target birthday
+        void updateVaccination();          // for boosting and multi-does vaccines
         void setVES(double f);
         void setVESs(std::vector<double> f);
         Mosquito *getInfectiousMosquito(int n);
@@ -102,6 +102,7 @@ class Community {
         static std::vector<std::set<Location*, LocPtrComp> > _isHot;
         static std::vector<Person*> _peopleByAge;
         static std::map<int, std::set<std::pair<Person*, Person*> > > _delayedBirthdays;
+        static std::set<Person*> _revaccinate_set;          // not automatically re-vaccinated, just checked for boosting, multiple doses
 
         static std::vector<std::set<Location*, LocPtrComp> > _vectorControlStartDates;
         static std::set<Location*, LocPtrComp> _vectorControlLocations; // Locations that currently have vector control measures in place

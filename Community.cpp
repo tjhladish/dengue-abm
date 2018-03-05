@@ -21,6 +21,7 @@ using namespace dengue::standard;
 
 const Parameters* Community::_par;
 vector< set<Location*, LocPtrComp> > Community::_isHot;
+set<Person*> Community::_revaccinate_set;
 vector<Person*> Community::_peopleByAge;
 map<int, set<pair<Person*,Person*> > > Community::_delayedBirthdays;
 
@@ -474,42 +475,44 @@ void Community::vaccinate(CatchupVaccinationEvent cve) {
 
     for (Person* p: _personAgeCohort[cve.age]) {
         assert(p != NULL);
-        if (!p->isVaccinated() and gsl_rng_uniform(RNG) < cve.coverage) p->vaccinate(cve.simDay);
-    }
-}
-
-
-void Community::boost(int time, int interval, int maxDoses) { // re-vaccinate people who were last vaccinated interval days ago
-    for (Person* p: _people) {
-        if (p->isVaccinated()) {
-            const int timeSinceLastVaccination = p->daysSinceVaccination(time);
-            if (timeSinceLastVaccination >= interval and p->getNumVaccinations() < maxDoses) {
-                p->vaccinate(time);
-            }
+        if (!p->isVaccinated() and gsl_rng_uniform(RNG) < cve.coverage) {
+            p->vaccinate(cve.simDay);
+            if (_par->vaccineBoosting or p->getNumVaccinations() < _par->numVaccineDoses) _revaccinate_set.insert(p);
         }
     }
 }
 
 
-void Community::updateVaccination(Person* p) {
-    // expected to be run on p's birthday
-    bool vaccinate = false;
-    const bool alreadyVaccinated = p->isVaccinated();
-
-    if (p->getAge()==_par->vaccineTargetAge and not alreadyVaccinated) {
-        // standard vaccination of target age; vaccinate w/ probability = coverage
-        vaccinate = (gsl_rng_uniform(RNG) < _par->vaccineTargetCoverage);
-    } else if (alreadyVaccinated) {
+void Community::updateVaccination() {
+    for (Person* p: _revaccinate_set) {
+        if (not p->isVaccinated()) {
+            // may be in set unnecessarily because of vaccination before last birthday
+            _revaccinate_set.erase(p);
+            continue;
+        }
         const int timeSinceLastVaccination = p->daysSinceVaccination(_nDay);
+        // TODO: Since updateVaccination only gets called on birthdays, the following only has an effect
+        // when the intervals are a multiple of years
         if (p->getNumVaccinations() < _par->numVaccineDoses and timeSinceLastVaccination >= _par->vaccineDoseInterval) {
             // multi-dose vaccination
-            vaccinate = true;
+            p->vaccinate(_nDay);
+            if (p->getNumVaccinations() == _par->numVaccineDoses) _revaccinate_set.erase(p); // we're done
         } else if (_par->vaccineBoosting and timeSinceLastVaccination >= _par->vaccineBoostingInterval) {
             // booster dose
-            vaccinate = true;
+            p->vaccinate(_nDay);
         }
     }
-    if (vaccinate) p->vaccinate(_nDay);
+}
+
+
+void Community::targetVaccination(Person* p) {
+    if (_nDay < _par->vaccineTargetStartDate) return; // not starting yet
+    // expected to be run on p's birthday
+    if (p->getAge()==_par->vaccineTargetAge and not p->isVaccinated()) {
+        // standard vaccination of target age; vaccinate w/ probability = coverage
+        if (gsl_rng_uniform(RNG) < _par->vaccineTargetCoverage) p->vaccinate(_nDay);
+        if (_par->vaccineBoosting or _par->numVaccineDoses > 1) _revaccinate_set.insert(p);
+    }
 }
 
 
@@ -724,7 +727,8 @@ void Community::_processBirthday(Person* p) {
     } else {
         if (donor) {
             p->copyImmunity(donor);
-            updateVaccination(p);
+            targetVaccination(p);
+            if (_revaccinate_set.count(donor) > 0) _revaccinate_set.insert(p);
         } else {
             p->resetImmunity();
         }
@@ -749,7 +753,8 @@ void Community::_swapIfNeitherInfected(Person* p, Person* donor) {
     if (process_date == _nDay) {
         if (donor) {
             p->copyImmunity(donor);
-            updateVaccination(p);
+            targetVaccination(p);
+            if (_revaccinate_set.count(donor) > 0) _revaccinate_set.insert(p);
         } else {
             p->resetImmunity();
         }
@@ -997,7 +1002,11 @@ void Community::tick(int day) {
     //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
     _processDelayedBirthdays();
 
+//vector<int> vtallies(101,0);
+//for (Person* p: _people) if (p->isVaccinated()) ++vtallies[p->getAge()];
+//for (int val: vtallies) cerr << val << " "; cerr << endl;
     if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
+    updateVaccination();
     if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
                                                                       // last day of simulator year
 

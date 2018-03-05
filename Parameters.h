@@ -362,6 +362,7 @@ public:
     std::vector<CatchupVaccinationEvent> catchupVaccinationEvents;
     int vaccineTargetAge;
     double vaccineTargetCoverage;
+    int vaccineTargetStartDate;
 
     std::vector<VectorControlEvent> vectorControlEvents;
 

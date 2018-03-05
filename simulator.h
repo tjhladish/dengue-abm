@@ -288,22 +288,12 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
     const int doseInterval = par->vaccineDoseInterval;
     assert(doseInterval > 0); // neg is nonsensical, 0 is disallowed due to mod operation
-    const int boostInterval = par->vaccineBoostingInterval;
+    //const int boostInterval = par->vaccineBoostingInterval;
     for (CatchupVaccinationEvent cve: par->catchupVaccinationEvents) {
-        // Normal, initial vaccination
+        // Normal, initial vaccination -- boosting, multiple doses handled in Community::tick()
         if (date.day() == cve.simDay) {
             if (not par->abcVerbose) cerr << "vaccinating " << cve.coverage*100 << "% of age " << cve.age << " on day " << cve.simDay << endl;
             community->vaccinate(cve);
-        } else if (date.day() > cve.simDay) {
-            // Re-vaccination via ...
-            int timeSinceVac = date.day() - cve.simDay;
-            if (timeSinceVac % doseInterval == 0 and timeSinceVac / doseInterval <= par->numVaccineDoses) {
-                // Multi-dose vaccine
-                community->boost(date.day(), doseInterval, par->numVaccineDoses);
-            } else if (par->vaccineBoosting and timeSinceVac % boostInterval == 0) {
-                // Boosting
-                community->boost(date.day(), boostInterval);
-            }
         }
     }
 }
@@ -457,14 +447,17 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
         advance_simulator(par, community, date, process_id, periodic_incidence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
         if (capture_sero_prev and (date.julianDay() == ((sero_prev_aggregation_julian_start+364) % 365 ) + 1)) { // +1 because julianDay is [1,365])), avg(avg(interventions are specified on [0,364]
             // tally current seroprevalence stats
+            int vaccinated_tally = 0;
             vector<double> inf_ct_tally(5,0.0);         // [0,4] past infections
             for (Person* p: community->getPeople()) {
                 // ignoring possible seroconversion due to vaccine
+                vaccinated_tally += p->isVaccinated();
                 const int ct = p->getNumNaturalInfections();
                 ++inf_ct_tally[ct];
             }
             double N = community->getNumPeople();
             for (unsigned int i = 0; i < inf_ct_tally.size(); ++i) sero_prev[i][date.year()] = inf_ct_tally[i] / N;
+            cerr << "vaccinated N, fraction: " << vaccinated_tally << " " << (double) vaccinated_tally / N << endl;
         }
     }
 /*

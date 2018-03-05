@@ -6,6 +6,7 @@
 #include <vector>
 #include <math.h>
 #include <algorithm>
+#include <numeric>
 #include <assert.h>
 #include <iterator>
 #include <iostream>

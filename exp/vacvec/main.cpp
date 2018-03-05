@@ -338,6 +338,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
         par->vaccineTargetAge = target;
         par->vaccineTargetCoverage = target_coverage;
+        par->vaccineTargetStartDate = RESTART_BURNIN*365;
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
