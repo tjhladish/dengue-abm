@@ -47,12 +47,14 @@ $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
 $(DBMAIN)/baseline.rds: $(SQMAIN)
 
-$(DBMAIN)/interventions.rds: $(SQMAIN)
+$(DBMAIN)/interventions.rds: $(SQMAIN) $(SQREV)
 
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
 
-$(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds: sensitivity.R $(DBMAIN)/stat.eff10.rds
-	Rscript $^ $(DBMAIN)/coverage.rds $(DBMAIN)/duration.rds $(DBMAIN)/durability.rds
+SENSITIVITES := coverage duration durability efficacy
+
+$(call wrap,$(DBMAIN)/,$(SENSITIVITES),.rds): sensitivity.R $(DBMAIN)/stat.eff10.rds
+	Rscript $^ $(call wrap,$(DBMAIN)/,$(SENSITIVITES),.rds)
 	# override generic rule; these have shared features, so build them all at once
 
 $(DBMAIN)/confidence-intervals.rds: $(SQMAIN)
@@ -89,11 +91,15 @@ $(DBMAIN)/4panel_foi_20yr.png: foi_annual_effectiveness_plot.R $(DBMAIN)/foi-bas
 	Rscript $^ $@
 
 
-TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability,.rds)
+TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability efficacy,.rds)
 SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
 
 $(DBMAIN)/fig1.png $(DBMAIN)/fig1.tiff: main_fig.R $(SRCS)
 	Rscript $^ $@
+
+$(DBMAIN)/fig1-SI.png: $(DBMAIN)/fig1.png
+
+$(DBMAIN)/fig1-SI.tiff: $(DBMAIN)/fig1-SI.png
 
 $(DBMAIN)/fig2.png: main_fig2.R $(DBMAIN)/stopping-eff.rds $(DBMAIN)/stopping-sero.rds
 	Rscript $^ $@

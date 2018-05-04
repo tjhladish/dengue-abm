@@ -13,21 +13,28 @@ stat.eff10.dt <- readRDS(args[1])
 # second item is smoothed data (value = smooth, layer = "foreground")
 slice <- function(filt) rbind(stat.eff10.dt[
   eval(filt), .(doy, value=med.eff10, variable="Effectiveness",
-    coverage, duration, durability,
+    coverage, duration, durability, efficacy,
     layer = "background"
   )], stat.eff10.dt[
   eval(filt), .(doy, value=smooth, variable="Effectiveness",
-    coverage, duration, durability,
+    coverage, duration, durability, efficacy,
     layer = "foreground"
 )])
 
-# set duration, durability, floating coverage
-coverage.dt <- slice(expression(duration == 90 & durability == 90))
-# set coverage, durability, floating duration
-duration.dt <- slice(expression(coverage == 75 & durability == 90))
-# set duration, coverage, floating durability
-durability.dt <- slice(expression(coverage == 75 & duration == 90))
+## TODO: introspect sensitivities
+#   have sensitivity names;
+#   can get (1) the main value for those
+
+# set duration, durability, efficacy, floating coverage
+coverage.dt <- slice(expression(duration == 90 & durability == 90 & efficacy == 0.8))
+# set coverage, durability, efficacy, floating duration
+duration.dt <- slice(expression(coverage == 75 & durability == 90 & efficacy == 0.8))
+# set duration, coverage, efficacy, floating durability
+durability.dt <- slice(expression(coverage == 75 & duration == 90 & efficacy == 0.8))
+# set duration, coverage, durability, floating efficacy
+efficacy.dt <- slice(expression(coverage == 75 & duration == 90 & durability == 90))
 
 saveRDS(coverage.dt, args[2])
 saveRDS(duration.dt, args[3])
 saveRDS(durability.dt, args[4])
+saveRDS(efficacy.dt, args[5])

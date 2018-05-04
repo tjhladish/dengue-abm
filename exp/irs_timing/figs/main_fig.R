@@ -7,13 +7,14 @@ require(data.table)
 require(lubridate)
 
 ## get script args; for debugging, uncomment section that follows
+args <- c(
+  paste0("~/Dropbox/who/fig1_data/",
+         c("obs", "sim", "eip", "R0", "mos", "coverage", "duration", "durability", "efficacy"),
+         ".rds"),
+  "local" #"~/Dropbox/who/fig1_data/fig1.png"
+)
+
 args <- commandArgs(trailingOnly = TRUE)
-# args <- c(
-#   paste0("~/Dropbox/who/fig1_data/",
-#          c("obs", "sim", "eip", "R0", "mos", "coverage", "duration", "durability"),
-#          ".rds"),
-#   "~/Dropbox/who/fig1_data/fig1.png"
-# )
 
 ## read in assorted input data
 obs.dt <- readRDS(args[1])
@@ -24,6 +25,7 @@ mos.dt <- readRDS(args[5])
 coverage.dt <- readRDS(args[6])[layer=="background"] # don't show smoothed data for eff
 duration.dt <- readRDS(args[7])[layer=="background"]
 durability.dt <- readRDS(args[8])[layer=="background"]
+efficacy.dt <- readRDS(args[9])[layer=="background"]
 
 ## assorted data.tables for plotting
 cases.dt <- rbind(obs.dt, sim.dt) # panel a
@@ -32,7 +34,9 @@ seasonal.dt <- rbind(
   R0.dt,#[layer=="foreground"],
   eip.dt
 ) # panel b
-eff.dt <- rbind(coverage.dt, duration.dt, durability.dt) # panel c-e
+cases.dt[, efficacy := "reference" ]
+seasonal.dt[, efficacy := "reference" ]
+eff.dt <- rbind(coverage.dt, duration.dt, durability.dt, efficacy.dt) # panel c-e
 plot.dt <- rbind(cases.dt, seasonal.dt, eff.dt) # combine all data to set universal scales
 
 ## build some reference doy-based locations for month columns, labels
@@ -77,8 +81,9 @@ baselinep <- ggplot(plot.dt, baseaes) +
     legend.key.height = unit(0.5, "cm"),
     legend.title = element_text(face="bold"),
     legend.direction = 'horizontal',
+    legend.margin = margin(),
     panel.grid.minor = element_blank(),
-    text = element_text(size = 10),
+    text = element_text(size = 10, family = "Arial"),
     panel.background = element_rect(fill="grey98", color="white"),
     axis.title.y = element_text(margin=margin(r=10)),
     strip.text.y = element_text(angle=90)
@@ -165,8 +170,10 @@ p.seasonal <- baselinep + geom_line(data=seasonal.dt[layer != "background" & dur
   #geom_line(data=seasonal.dt[layer == "background" & duration == "reference"], size=0.7) +
   geom_hline(baseaes, seasonal.dt[duration == "365"]) +
   guides(size="none", linetype="none") +
-  scale_y_continuous(name="Seasonal factors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
-  seas.legend
+  scale_y_continuous(name="Seasonal\nfactors", breaks = c(0, 1), limits = c(0,1), labels = c(0,"Max")) +
+  seas.legend + theme(
+    axis.title.y = element_text(margin=margin())
+  )
 
 #proactive.start <- yday(as_date("1970/6/1")) # June 1
 proactive.start <- yday(as_date("1970/1/1")+147) # May 27
@@ -213,8 +220,8 @@ highlighter <- annotate("line",
   size = ref.line.sz*5, color = "#F0ED71aa" # was yellow, grey70
 )
 highlight.dot <- function(xpos) annotate("point",
-  x=xpos,
-  y=0.78,
+  x=xpos*365,
+  y=0.81,
   size = ref.line.sz*10, shape=15, color = "#F0ED71aa" # was yellow, grey70
 )
 
@@ -236,8 +243,9 @@ highlight.dot <- function(xpos) annotate("point",
 legend.x <- 0.49
 
 eff.legend <- theme(
-  legend.position = c(legend.x,.97),
-  legend.justification = c(0, 0.9)
+  legend.position = c(legend.x, 0.73), # position from left, bottom
+  legend.justification = c(0, 0), # position refers to left, bottom corner of legend box
+  legend.key.height = unit(0.02, unit="npc")
 )
 
 #coverage.dt[,face:=""]
@@ -247,7 +255,7 @@ eff.legend <- theme(
 # }
 
 p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
-  highlighter + highlight.dot(210.5-18) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
+  highlighter + highlight.dot(0.511) + #(coverage.dt, 'coverage', "IRS coverage sensitivity", percent.labeller) + # facet_grid(face ~ .) +
   geom_line(aes(color=factor(coverage)), data=coverage.dt) +
   scale_color_manual(
     values = c(`25`="grey65",`50`="grey50",`75`="black"),
@@ -266,7 +274,7 @@ p.eff.coverage <- baselinep + #geom_line(data=coverage.dt) +
 #duration.dt[,face:="Sensitivity analyses"]
 
 p.eff.duration <- baselinep +
-  highlighter + highlight.dot(264-19) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(.655) + #(duration.dt, 'duration', "IRS rollout sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=duration.dt) +
   geom_hline(baseaes, duration.dt[duration == 365], show.legend = F) +
   guides(color="none", size="none") +
@@ -276,11 +284,30 @@ p.eff.duration <- baselinep +
 #durability.dt[,face:=""]
 
 p.eff.durability <- baselinep +
-  highlighter + highlight.dot(264-19) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  highlighter + highlight.dot(.655) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
   geom_line(data=durability.dt) +
   guides(color="none", linetype="none") +
   scale_y_continuous(name="", limits = c(0,1)) +
   eff.legend
+
+effaes <- baseaes
+effaes$size <- aes(size=factor(efficacy))$size
+
+p.eff.efficacy <- baselinep +
+  highlighter + highlight.dot(0.511) + #(durability.dt, 'durability', "IRS durability sensitivity", day.labeller) + #facet_grid(face ~ .) +
+  geom_line(data=efficacy.dt, mapping = effaes) +
+  guides(color="none", linetype="none") +
+  scale_y_continuous(name="", limits = c(0,1)) +
+  eff.legend + scale_size_manual(
+    values = c(`0.8`=ref.line.sz,`0.6`=3*ref.line.sz/4,`0.4`=ref.line.sz/2),
+    breaks = c("0.8","0.6","0.4"),
+    name   = "IRS efficacy sensitivity",
+    labels = function(x) {
+      con <- as.numeric(x)*100
+      c(sprintf("%s%%   ", head(con,-1)),sprintf("%s%%", tail(con,1)))
+    }
+  )
+
 
 labeller <- function(l) annotate("text", x=10, y=.92, label=l, size=rel(5), fontface='bold')
 
@@ -294,11 +321,41 @@ eff.left  <- 0.1
 res = 450
 # mag = 0.85*res/72
 #png(args[9], width = 1000*mag, height = 1730*mag, units = "px", res=res)
-if (grepl("png$", args[9])) {
-  png(args[9], width = 5.5, height = 7, units = "in", res = res)
-} else if (grepl("tiff$", args[9])) {
-  tiff(args[9], width = 5.5, height = 7, units = "in", res = res, compression = "lzw+p", type = "cairo")
-}
+
+targetfile <- tail(args,1)
+
+ispng <- grepl("png$", targetfile)
+istiff <- !ispng && grepl("tiff$", targetfile)
+#isdebugging <- !ispng && !istiff
+
+if (ispng) {
+  png(targetfile, width = 5.5, height = 7, units = "in", res = res)
+} else if (istiff) {
+  tiff(targetfile, width = 5.5, height = 7, units = "in", res = res, compression = "lzw+p", type = "cairo")
+} else warning("writing to default device...")
+#ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=
+grid.arrange(
+  p.month                          + margin.theme(small.gap, mon.right, small.gap, mon.left),
+  p.cases          + labeller("a") + margin.theme(small.gap, mon.right, small.gap,seas.left),
+  p.seasonal       + labeller("b") + margin.theme(small.gap, mon.right, big.gap,seas.left),
+  p.campaigns      + labeller("c") + margin.theme(big.gap,   mon.right, big.gap, mon.left),
+  p.eff.coverage   + labeller("d") + margin.theme(small.gap,   eff.right, small.gap, eff.left),
+  p.eff.duration   + labeller("e") + margin.theme(small.gap, eff.right, small.gap, eff.left),
+  p.eff.durability + labeller("f") + margin.theme(small.gap, eff.right, small.gap, eff.left),
+  p.month                          + margin.theme(small.gap, mon.right, small.gap,   mon.left),
+  ncol=1,
+  heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)
+)
+#)
+if (any(ispng, istiff)) dev.off()
+
+targetfile <- gsub("\\.","-SI.", targetfile)
+
+if (ispng) {
+  png(targetfile, width = 5.5, height = 7, units = "in", res = res)
+} else if (istiff) {
+  tiff(targetfile, width = 5.5, height = 7, units = "in", res = res, compression = "lzw+p", type = "cairo")
+} else stop("unsupported image requested: ", tail(args,1))
 #ggsave(args[9], width = unit(5.5,"in"), height = unit(7,"in"), dpi = res, plot=
 grid.arrange(
   p.month                          + margin.theme(small.gap, mon.right, small.gap, mon.left),
@@ -308,9 +365,10 @@ grid.arrange(
   p.eff.coverage   + labeller("d") + margin.theme(big.gap,   eff.right, small.gap, eff.left),
   p.eff.duration   + labeller("e") + margin.theme(small.gap, eff.right, small.gap, eff.left),
   p.eff.durability + labeller("f") + margin.theme(small.gap, eff.right, small.gap, eff.left),
+  p.eff.efficacy   + labeller("g") + margin.theme(small.gap, eff.right, small.gap, eff.left),
   p.month                          + margin.theme(small.gap, mon.right, small.gap,   mon.left),
   ncol=1,
-  heights = c(0.1,0.6,0.6,0.2,1,1,1,0.1)
+  heights = c(0.1,0.6,0.6,0.2,1,1,1,1,0.1)
 )
 #)
-dev.off()
+if (any(ispng, istiff)) dev.off()

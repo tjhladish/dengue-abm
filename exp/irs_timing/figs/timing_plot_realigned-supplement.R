@@ -14,7 +14,7 @@ month_labels = c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','No
 
 # wrap days
 stat.eff.dt[
-  duration != 365 & durability == 90,
+  duration != 365 & durability == 90 & efficacy == 0.8,
   moddoy := doy + floor((duration+durability)/2)
 ]
 stat.eff.dt[moddoy > 365, moddoy := moddoy - 365 ]
@@ -29,7 +29,7 @@ par(mfrow=c(3,1), mar=c(1,2.1,1,1), oma=c(3,3,0,0),las=1)
 #dur_ = 1
 end = F
 for (cov_ in c(75,50,25)) {
-    test = stat.eff.dt[coverage==cov_ & durability == 90, .(med.eff10, smooth, doy), keyby=.(duration, moddoy)]
+    test = stat.eff.dt[coverage==cov_ & durability == 90 & efficacy == 0.8, .(med.eff10, smooth, doy), keyby=.(duration, moddoy)]
     minval = test[, min(med.eff10)]
     maxval = test[, max(med.eff10)]
     .range = maxval-minval
