@@ -1,13 +1,23 @@
 rm(list=ls())
 
+args <- c(
+  "~/Dropbox/who/fig1_data/stat.eff10.rds",
+  "~/Dropbox/who/fig1_data/extra-stat.eff10.rds",
+  "~/Dropbox/who/fig1_data/R0.rds",
+  "~/Dropbox/who/fig1_data/mos.rds",
+  "~Dropbox/who/fig1_data/irs_timing-realigned-SI.png"
+)
+
 args <- commandArgs(trailingOnly = T)
-# args <- c("~/Dropbox/who/fig1_data/stat.eff10.rds", "~/Dropbox/who/fig1_data/R0.rds", "~/Dropbox/who/fig1_data/mos.rds", "~Dropbox/who/fig1_data/irs_timing-realigned-SI.png")
 
 require(data.table)
 
-stat.eff.dt <- readRDS(args[1])
-R0.dt <- readRDS(args[2])
-mos.dt <- readRDS(args[3])
+stat.eff.dt <- rbind(
+  readRDS(args[1]), readRDS(args[2])
+)
+
+R0.dt <- readRDS(args[3])
+mos.dt <- readRDS(args[4])
 
 month_starts = c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
 month_labels = c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -24,7 +34,7 @@ backcols <- c(mos="blue",r0=3)
 # `Mos. pop.`="blue",
 # `R0`=3,
 
-png(args[4], width=2000, height=2200, res=300)
+png(tail(args,1), width=2000, height=2200, res=300)
 par(mfrow=c(3,1), mar=c(1,2.1,1,1), oma=c(3,3,0,0),las=1)
 #dur_ = 1
 end = F
@@ -42,17 +52,28 @@ for (cov_ in c(75,50,25)) {
     with(mos.dt[layer == "foreground"], lines(doy, (.range*value)+minval, col=backcols["mos"], lwd=1.5)) # mosquitoes
 
     # shift ts based on half campaign duration + half durability
-    
+
     with(test[duration == 1],{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=2, lwd=2, col="lightgrey")
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=2, lwd=2, col="grey")
+      #lines(moddoy, smooth, type='l', lty=1, lwd=2)
+    })
+    
+    with(test[duration == 90],{
+      doyorder <- order(doy)
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="grey")
+      #lines(moddoy, smooth, type='l', lty=2, lwd=2)
+    })
+    
+        
+    with(test[duration == 1],{
+      doyorder <- order(doy)
       lines(moddoy, med.eff10, type='l', lty=2, lwd=2)
       #lines(moddoy, smooth, type='l', lty=1, lwd=2)
     })
     
     with(test[duration == 90],{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="lightgrey")
       lines(moddoy, med.eff10, type='l', lty=1, lwd=2)
       #lines(moddoy, smooth, type='l', lty=2, lwd=2)
     })

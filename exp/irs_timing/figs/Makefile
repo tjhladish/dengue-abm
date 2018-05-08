@@ -49,7 +49,12 @@ $(DBMAIN)/baseline.rds: $(SQMAIN)
 
 $(DBMAIN)/interventions.rds: $(SQMAIN) $(SQREV)
 
+$(DBMAIN)/extra-interventions.rds: $(SQEXT)
+
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
+	
+$(DBMAIN)/extra-stat.eff10.rds: stat.eff10.R $(DBMAIN)/baseline.rds $(DBMAIN)/extra-interventions.rds
+	Rscript $^ $@
 
 SENSITIVITES := coverage duration durability efficacy
 
@@ -116,7 +121,7 @@ supfigs: $(call wrap,$(DBMAIN)/,irs_timing-realigned-SI irs_timing-realigned-SI-
 $(DBMAIN)/SI-fig-sero.png: SI-fig-sero.R $(DBMAIN)/stopping-sero-SI.rds
 	Rscript $^ $@
 
-$(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
+$(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/extra-stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
 	Rscript $^ $@
 
 $(DBMAIN)/irs_timing-realigned-SI-alt.png: timing_plot_realigned-supplement-alt.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds

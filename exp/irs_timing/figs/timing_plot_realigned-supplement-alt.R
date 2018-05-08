@@ -5,7 +5,7 @@ args <- commandArgs(trailingOnly = T)
 
 require(data.table)
 
-stat.eff.dt <- readRDS(args[1])
+stat.eff.dt <- readRDS(args[1])[coverage==75 & duration == 90 & efficacy == 0.8]
 R0.dt <- readRDS(args[2])
 mos.dt <- readRDS(args[3])
 
@@ -13,8 +13,7 @@ month_starts = c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
 month_labels = c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
 
 # wrap days
-stat.eff.dt[
-  coverage==75 & duration == 90,
+stat.eff.dt[,
   moddoy := doy + floor((duration+durability)/2)
 ]
 stat.eff.dt[moddoy > 365, moddoy := moddoy - 365 ]
@@ -44,7 +43,7 @@ for (dur_ in c(150,90,30)) {
     
     with(test,{
       doyorder <- order(doy)
-      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="lightgrey")
+      lines(doy[doyorder], med.eff10[doyorder], type='l', lty=1, lwd=2, col="grey")
       lines(moddoy, med.eff10, type='l', lty=1, lwd=2)
       #lines(moddoy, smooth, type='l', lty=1, lwd=2)
     })
