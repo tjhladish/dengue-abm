@@ -45,6 +45,8 @@ $(DBMAIN)/R0.rds: $(DBMAIN)/rzero-refit2.sqlite
 
 $(DBMAIN)/mos.rds: $(DBMAIN)/NOAA_yucatan_daily.csv
 
+$(DBMAIN)/mod-mos.rds:
+
 $(DBMAIN)/baseline.rds: $(SQMAIN)
 
 $(DBMAIN)/interventions.rds: $(SQMAIN) $(SQREV)
@@ -125,6 +127,9 @@ $(DBMAIN)/irs_timing-realigned-SI.png: timing_plot_realigned-supplement.R $(DBMA
 	Rscript $^ $@
 
 $(DBMAIN)/irs_timing-realigned-SI-alt.png: timing_plot_realigned-supplement-alt.R $(DBMAIN)/stat.eff10.rds $(DBMAIN)/R0.rds $(DBMAIN)/mos.rds
+	Rscript $^ $@
+
+$(DBMAIN)/mod-mos-SI.png: mod-mos-SI.R $(DBMAIN)/mos.rds $(DBMAIN)/mos_mod.rds
 	Rscript $^ $@
 
 $(DBMAIN)/vc_4-panel-impact_10yr.png $(DBMAIN)/vc_4-panel-impact_50yr.png: annual_effectiveness_plot.R $(DBMAIN)/stopping-baseline.cases.rds $(DBMAIN)/stopping-interventions.cases.rds $(DBMAIN)/stopping-averted.rds $(DBMAIN)/stopping-eff.rds
