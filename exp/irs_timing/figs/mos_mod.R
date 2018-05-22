@@ -10,7 +10,7 @@ args <- commandArgs(trailingOnly = TRUE)
 makexform <- function(
   start=150L, coverage=0.75,
   efficacy=0.8, duration=90,
-  durability=90, householdfrac=0.8
+  durability=90, householdfrac=376400/475362
 ) {
   initial <- data.table(
     doy = 1L:365L
