@@ -26,6 +26,13 @@ on="doy")
 
 targetpoints[, layer := "foreground"]
 rainfall <- copy(targetpoints)[, layer := "background"][, multiplier := 1.0 ]
+irs.dt <- targetpoints[,
+  .(fillin=multiplier != 1, doy),
+  by=.(start, durability)
+]
+
+pro.col <- "#0000ff"
+rea.col <- "#664400"
 
 p <- ggplot(
   rbind(targetpoints, rainfall)
@@ -35,6 +42,11 @@ p <- ggplot(
 )) +
   aes(x=doy, y=multiplier*value, linetype=layer, color="rainfall") +
   geom_line() +
+  geom_rect(
+    aes(xmin=doy, xmax=doy+1, ymin=0+2*mon.y, ymax=1-2*mon.y, y=NULL, linetype=NULL, color=NULL, fill=factor(start)),
+    data=irs.dt[fillin==TRUE],
+    alpha = 0.2
+  ) +
   theme_minimal() + theme(
     panel.spacing=unit(1,"lines"),
     panel.grid.major.x = element_blank(),
@@ -43,6 +55,7 @@ p <- ggplot(
   ) +
   coord_cartesian(xlim = c(1,365), ylim=c(0,1)) +
   scale_color_manual(values=c(rainfall="blue"), guide="none") +
+  scale_fill_manual(values=c(`148`=pro.col,`323`=rea.col), guide="none") +
   scale_linetype_discrete(guide="none") +
   scale_y_continuous("Region-wide mosquito population",
                      breaks = (0:4)/4, minor_breaks = NULL,
@@ -60,5 +73,7 @@ p <- ggplot(
            ymin=-Inf, ymax=Inf, # setting these to Inf ensures the rects extend full width + don't mess w/ scale
            alpha=0.05 # adjust for how dark; ALT: might also change color?
   )
+
+#  +
 
 ggsave(tail(args,1), width = unit(6.5,"in"), height = unit(5.5,"in"), dpi = 450, plot=p)
