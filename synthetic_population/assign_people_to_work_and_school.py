@@ -10,7 +10,7 @@ min_x_center = -90.40409499
 min_y_center = 19.72078911
 
 # number of workplaces to look at when selecting a workplace
-workplace_neighborhood = 1000 
+workplace_neighborhood = 1000
 
 # ratio for Mexico, according to World Bank
 student_teacher_ratio = 28
@@ -29,18 +29,18 @@ field_idx = dict(zip('hid age sex x y workid hh_serial pernum day_loc'.split(), 
 
 def haversine(lon1, lat1, lon2, lat2):
     '''
-    Calculate the great circle distance between two points 
+    Calculate the great circle distance between two points
     on the earth (specified in decimal degrees)
     '''
-    # convert decimal degrees to radians 
+    # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    # haversine formula 
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
+    # haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
+    c = 2 * asin(sqrt(a))
     km = 6371 * c
-    return km 
+    return km
 
 
 def lookup_location_code(age, code):
@@ -57,16 +57,18 @@ def lookup_location_code(age, code):
         exit()
     return loc
 
-def binary_search(val_list, val, _lt, _gt, _eq, label, bound): 
+def binary_search(val_list, val, _lt, _gt, _eq, label):
 #    print "val_list length:", len(val_list)
 #    print "val, val_list[0][label], val_list[-1][label]:", val, val_list[0][label], val_list[-1][label]
     if _gt(val_list[0], val, label):
+        #print "val comes before beginning of list"
         return 0
     if _lt(val_list[-1], val, label):
+        #print "val comes after end of list"
         return len(val_list)
 
     imax = len(val_list)
-    imin = 0 
+    imin = 0
 
     while (imin < imax):
         imid = imin + (imax-imin)/2
@@ -75,16 +77,11 @@ def binary_search(val_list, val, _lt, _gt, _eq, label, bound):
         else:
             imax = imid
 
-    if (imax == imin) and _eq(val_list[imin], val, label):
-        return imin
-    else:
-        if bound == 'lower':
-            return imin
-        if bound == 'upper':
-            return imin + 1
+    return imin
 
 def get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed):
     #print "searching for schools:", loc_type
+    #print "looking for school near", pxi, pyi
     commute_range = -1
     positions_found = 0
     nearby_places = [] # by index in workplaces_and_schools
@@ -97,14 +94,16 @@ def get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed
         commute_range += 1
         #print "\n\nEnvelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
         for x_val in range(pxi-commute_range, pxi+commute_range+1):
-            pos_xmin = binary_search(workplaces_and_schools, x_val, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'lower')
-            pos_xmax = binary_search(workplaces_and_schools, x_val+1, dict_val_lt, dict_val_gt, dict_val_eq, 'xi', 'upper')
+            pos_xmin = binary_search(workplaces_and_schools, x_val, dict_val_lt, dict_val_gt, dict_val_eq, 'xi')
+            pos_xmax = binary_search(workplaces_and_schools, x_val+1, dict_val_lt, dict_val_gt, dict_val_eq, 'xi')
             if pos_xmin == pos_xmax:
                 continue
+            #print "w&s x slice:", workplaces_and_schools[pos_xmin:pos_xmax]
+            #print "pos_xmin, pos_xmax:", pos_xmin, pos_xmax
+            pos_ymin = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi-commute_range, dict_val_lt, dict_val_gt, dict_val_eq, 'yi')
+            pos_ymax = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi+commute_range+1, dict_val_lt, dict_val_gt, dict_val_eq, 'yi')
 
-            pos_ymin = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi-commute_range, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'lower')
-            pos_ymax = binary_search(workplaces_and_schools[pos_xmin:pos_xmax], pyi+commute_range+1, dict_val_lt, dict_val_gt, dict_val_eq, 'yi', 'upper')
-            
+            #print "w&s x and y slice:", workplaces_and_schools[pos_xmin:pos_xmax][pos_ymin:pos_ymax]
             for i,w in enumerate(workplaces_and_schools[pos_xmin:pos_xmax][pos_ymin:pos_ymax]):
                 #raw_idx = pos_xmin + pos_ymin + i
                 if pos_type == 'students':
@@ -114,9 +113,9 @@ def get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, num_loc_needed
                         positions_found += w[pos_type]
                         nearby_places.append(w['workid'])
 
-        #print "local positions:", positions_found            
-        #print "workplaces found:", len(nearby_places) 
-    # print "Envelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
+        #print "local positions:", positions_found
+        #print "workplaces found:", len(nearby_places)
+    #print "Envelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
     return nearby_places, positions_found
 
 def select_nearest_school(px, py, nearby_places, workplaces_and_schools, workplace_lookup):
@@ -126,9 +125,11 @@ def select_nearest_school(px, py, nearby_places, workplaces_and_schools, workpla
         s = workplaces_and_schools[workplace_lookup[workid]]
         #print 'candidate:', workid, s
         d = haversine(px, py, s['x'], s['y'])
+        #print "dist:", d
         if d < min_dist:
             min_dist = d
             closest_school = s
+    #print "shortest distance:", min_dist
     return closest_school, min_dist
 
 def x_to_col_num(x):
@@ -199,6 +200,9 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
     print "reading workplaces & schools"
     loc_id = current_max_loc_id + 1
     total_raw_workers = 0
+
+    fo = open('w_and_s_locs_w_id.txt', 'w') # don't remember how this was handled previously ...
+
     for line in file(filename):
         '''
         W 1 -89.6264173747 20.9599660422
@@ -214,17 +218,19 @@ def import_workplaces_and_schools(filename, workplaces_and_schools, current_max_
 
         p = line.split()
         w = {'workid':loc_id, 'type':p[0].lower(), 'x':float(p[2]), 'y':float(p[3]), 'workers':0, 'students':0}
+        fo.write(str(w['workid']) + ' ' + w['type'] + ' ' + str(w['x']) + ' ' + str(w['y']) + '\n')
         if w['type'] == 'w':
             w['raw_workers'] = int(p[1])
             total_raw_workers += w['raw_workers']
         else:
             w['raw_workers'] = 0
-            
+
         w['xi'] = x_to_col_num(w['x'])
         w['yi'] = y_to_row_num(w['y'])
         workplaces_and_schools.append(w)
         loc_id += 1
-        
+
+    fo.close()
     workplaces_and_schools.sort(cmp=xy_cmp)
 
     workplace_lookup = dict()
@@ -239,7 +245,7 @@ def import_population(filename, pop, pop_ids, day_loc_ctr):
 
     print "reading population"
     header = True
-    i = -1 
+    i = -1
     for line in file(filename):
         i += 1
         #if i % 10000 == 0:
@@ -278,6 +284,7 @@ def import_population(filename, pop, pop_ids, day_loc_ctr):
 def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup):
     schools = [location for location in workplaces_and_schools if location['type'] == 's']
 
+    fo = open('student_placement.log', 'w')
     students_allocated = 0
     for pid in pop_ids:
         loc_type = pop[pid][field_idx['day_loc']]
@@ -295,7 +302,7 @@ def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers,
 
         school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools, workplace_lookup)
         # 'school' is an element in the workplaces_and_schools list
-        pop[pid][field_idx['workid']] = school['workid'] 
+        pop[pid][field_idx['workid']] = school['workid']
         school['students'] += 1
         school['raw_workers'] += 1.0/student_teacher_ratio
         total_raw_workers     += 1.0/student_teacher_ratio
@@ -303,6 +310,8 @@ def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers,
         if students_allocated % 10000 == 0:
             print "students sent to school:", students_allocated
         #print px, py, school, distance
+        fo.write(' '.join(map(str,[pid, px, py, school['workid'], school['x'], school['y'], distance])) + '\n')
+    fo.close()
     return total_raw_workers
 
 def choose_workplace(px, py, nearby_places, workplaces_and_schools, workplace_lookup):
@@ -318,7 +327,7 @@ def choose_workplace(px, py, nearby_places, workplaces_and_schools, workplace_lo
     total = sum(raw_weights)
     for wt in raw_weights:
         probs.append(wt/total)
-    
+
     r = random()
     for i,p in enumerate(probs):
         if r < p:
@@ -330,7 +339,7 @@ def choose_workplace(px, py, nearby_places, workplaces_and_schools, workplace_lo
 
 # Import household location data
 hh_loc = dict()
-import_households('locations-yucatan.txt', hh_loc)
+import_households('locations-yucatan_prelim.txt', hh_loc)
 
 # Import workplace and school location data
 #
@@ -345,7 +354,7 @@ total_raw_workers, workplace_lookup = import_workplaces_and_schools('schools_and
 pop = OrderedDict()
 pop_ids = []
 day_loc_ctr = {'h':0, 'w':0, 's':0} # home / work / school
-import_population('population-yucatan.txt', pop, pop_ids, day_loc_ctr)
+import_population('population-yucatan_prelim.txt', pop, pop_ids, day_loc_ctr)
 
 print "Total number of non-teacher jobs (DENUE):", total_raw_workers
 print "Student:Teacher ratio (World Bank):", student_teacher_ratio
@@ -361,15 +370,16 @@ total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, to
 # normalize workplace sizes
 employment_rescaling_factor = day_loc_ctr['w'] / float(total_raw_workers)
 for place in workplaces_and_schools:
-    place['workers'] = place['raw_workers'] * employment_rescaling_factor 
+    place['workers'] = place['raw_workers'] * employment_rescaling_factor
 
 # Filehandle for file we're going to write
-fo = file('population-yucatan_no_copy.txt','w')
+#fo = file('population-yucatan_no_copy.txt','w')
+fo = file('population-yucatan-silvio.txt','w')
 fo.write('pid hid age sex hh_serial pernum workid\n')
 
 # Make a copy so we can delete places from the original data structure as they fill up
 W_AND_S_COPY = deepcopy(workplaces_and_schools)
-ctr = 0 
+ctr = 0
 
 # For each person
 for pid in pop.keys():
@@ -385,7 +395,7 @@ for pid in pop.keys():
         pxi, pyi = x_to_col_num(px), y_to_row_num(py)
 
         nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood)
-        #print len(nearby_places), positions_found 
+        #print len(nearby_places), positions_found
         workplace = choose_workplace(px, py, nearby_places, W_AND_S_COPY, workplace_lookup)
         workplace['workers'] -= 1 # remove one available job
         # If the selected workplace no longer has openings,
@@ -400,20 +410,20 @@ for pid in pop.keys():
     # Students already have the "workid" (prob should be called day_loc_id to avoid
     # confusion), so we don't have to do much for them, just output their info
     fo.write(' '.join(map(str,[
-                       pid, 
-                       person[field_idx['hid']],  
-                       person[field_idx['age']],  
-                       person[field_idx['sex']], 
+                       pid,
+                       person[field_idx['hid']],
+                       person[field_idx['age']],
+                       person[field_idx['sex']],
                        person[field_idx['hh_serial']],
                        person[field_idx['pernum']],
                        person[field_idx['workid']],
-                      ])) + '\n') 
+                      ])) + '\n')
     ctr += 1
     if ctr % 1000 == 0:
         print "placed", ctr, "people"
         print "workplace list size:", len(workplaces_and_schools)
     '''
-    pid hid age sex hh_serial pernum workid 
+    pid hid age sex hh_serial pernum workid
     1 1 31 1 0 0 -1 2748179000 1 110
     2 1 29 2 0 0 -1 2748179000 2 110
     3 1 10 2 0 0 -1 2748179000 3 0
