@@ -10,6 +10,8 @@
 #include <ctype.h>
 #include <assert.h>
 #include <algorithm>
+#include <random>
+#include <limits>
 
 using namespace std;
 
@@ -21,7 +23,7 @@ double min_y_center = 19.72078911;
 const int workplace_neighborhood = 1000;
 
 // ratio for Mexico, according to World Bank
-const int student_teacher_ratio = 28;
+const double student_teacher_ratio = 28;
 
 // IPUMS values for EMPSTATD (detailed employment status) variable
 const set<int> work_codes   = {110, 112, 113, 116, 120};
@@ -93,9 +95,28 @@ bool xy_cmp(LocationType* a, LocationType* b) {
         } else if (a->pixel["yi"] > b->pixel["yi"]) {
             return false;
         } else {
-            return true;
+            return false; // c++ sort requires strict weak ordering--equality must result in false
         }
     }
+}
+
+
+double haversine(double lon1, double lat1, double lon2, double lat2) {
+    // Calculate the great circle distance between two points 
+    // on the earth (specified in decimal degrees)
+
+    // convert decimal degrees to radians 
+    lon1 = deg_to_rad(lon1);
+    lon2 = deg_to_rad(lon2);
+    lat1 = deg_to_rad(lat1);
+    lat2 = deg_to_rad(lat2);
+    // haversine formula 
+    double dlon = lon2 - lon1;
+    double dlat = lat2 - lat1;
+    double a = pow(sin(dlat/2),2) + cos(lat1) * cos(lat2) * pow(sin(dlon/2),2);
+    double c = 2 * asin(sqrt(a));
+    double km = 6371 * c;
+    return km;
 }
 
 
@@ -171,10 +192,10 @@ vector<HouseType*> import_households(string filename) {
 };*/
 
 
-vector<LocationType*> import_workplaces_and_schools(const string filename, const int current_max_loc_id, map<int, int>& workplace_lookup, int& total_raw_workers) {
+vector<LocationType*> import_workplaces_and_schools(const string filename, const int hh_ct, map<int, int> &workplace_lookup, double &total_raw_workers) {
     vector<LocationType*> workplaces_and_schools;
     cerr << "reading workplaces & schools\n";
-    int loc_id = current_max_loc_id + 1;
+    int loc_id = hh_ct;
     total_raw_workers = 0;
 
     istringstream line;
@@ -198,7 +219,7 @@ vector<LocationType*> import_workplaces_and_schools(const string filename, const
 
             if (line >> type >> size >> x >> y) {
                 LocationType* w = new LocationType();
-                w->workid   = loc_id;
+                w->workid   = loc_id++;
                 w->type     = tolower(type);
                 w->x        = x;
                 w->y        = y;
@@ -216,7 +237,6 @@ vector<LocationType*> import_workplaces_and_schools(const string filename, const
                 w->pixel["xi"] = x_to_col_num(w->x);
                 w->pixel["yi"] = y_to_row_num(w->y);
                 workplaces_and_schools.push_back(w);
-                loc_id++;
             }
         }
     }
@@ -224,6 +244,7 @@ vector<LocationType*> import_workplaces_and_schools(const string filename, const
     fh_in.close();
     fh_out.close();
 
+    cerr << workplaces_and_schools.size() << endl;
     sort(workplaces_and_schools.begin(), workplaces_and_schools.end(), xy_cmp);
 
     for (unsigned int i = 0; i < workplaces_and_schools.size(); ++i) {
@@ -291,6 +312,9 @@ vector<PersonType*> import_population(string filename, vector<HouseType*>& hh_lo
                 ++per_ctr;
             }
         }
+    } else {
+        cerr << "Error reading population file: " << filename << endl;
+        exit(-2);
     }
     cerr << "Population size: " << pop.size() << endl;
     cerr << "Total number of workers (IPUMS): " << day_loc_ctr['w'] << endl;
@@ -320,35 +344,35 @@ unsigned int binary_search(vector<LocationType*> loc_vec, int search_coord, stri
     return imin;
 }
 
-vector<int> get_nearby_places(int pxi, int pyi, char loc_type, vector<LocationType*> workplaces_and_schools, int num_loc_needed, int& positions_found) {
+vector<LocationType*> get_nearby_places(int pxi, int pyi, char loc_type, vector<LocationType*> places, int num_loc_needed, int& positions_found) {
     int commute_range = -1;
     positions_found = 0;
-    vector<int> nearby_places; // by index in workplaces_and_schools
+    vector<LocationType*> nearby_places; // by index in places
     string pos_type = loc_type == 'w' ? "workers" : "students";
 
-    while ((nearby_places.size() < num_loc_needed and nearby_places.size() < workplaces_and_schools.size()) or (positions_found <= 0)) {
+    while ((nearby_places.size() < num_loc_needed and nearby_places.size() < places.size()) or (positions_found <= 0)) {
         nearby_places.clear();
         commute_range += 1;
         //#print "\n\nEnvelope size:", 2*commute_range + 1, 'x', 2*commute_range + 1
         for (int x_val = pxi-commute_range; x_val <= pxi+commute_range; ++x_val) {
             unsigned int start_pos = 0;
-            unsigned int end_pos_plus_one = workplaces_and_schools.size();
-            start_pos = binary_search(workplaces_and_schools, x_val, "xi", start_pos, end_pos_plus_one);
-            end_pos_plus_one = binary_search(workplaces_and_schools, x_val+1, "xi", start_pos, end_pos_plus_one);
+            unsigned int end_pos_plus_one = places.size();
+            start_pos = binary_search(places, x_val, "xi", start_pos, end_pos_plus_one);
+            end_pos_plus_one = binary_search(places, x_val+1, "xi", start_pos, end_pos_plus_one);
 
             if (start_pos == end_pos_plus_one) { continue; }
 
-            start_pos = binary_search(workplaces_and_schools, pyi-commute_range, "yi", start_pos, end_pos_plus_one);
-            end_pos_plus_one = binary_search(workplaces_and_schools, pyi+commute_range+1, "yi", start_pos, end_pos_plus_one);
+            start_pos = binary_search(places, pyi-commute_range, "yi", start_pos, end_pos_plus_one);
+            end_pos_plus_one = binary_search(places, pyi+commute_range+1, "yi", start_pos, end_pos_plus_one);
 
             for (unsigned int i = start_pos; i < end_pos_plus_one; ++i) {
-                LocationType* w = workplaces_and_schools[i]; 
+                LocationType* w = places[i]; 
                 if (pos_type == "students") {
                     positions_found++;
-                    nearby_places.push_back(w->workid);
+                    nearby_places.push_back(w);
                 } else if (w->workers > 0) {
                     positions_found += w->workers;
-                    nearby_places.push_back(w->workid);
+                    nearby_places.push_back(w);
                 }
             }
         }
@@ -356,192 +380,176 @@ vector<int> get_nearby_places(int pxi, int pyi, char loc_type, vector<LocationTy
     return nearby_places;
 }
 
-/*
-def select_nearest_school(px, py, nearby_places, workplaces_and_schools, workplace_lookup):
+
+LocationType* select_nearest_school(const double px, const double py, vector<LocationType*> &nearby_places, double &min_dist) {
     //# nearby_places is a list of indeces for workplaces_and_schools
-    closest_school, min_dist = workplaces_and_schools[workplace_lookup[nearby_places[0]]], () //# () evaluates to greater than any number
-    for workid in nearby_places:
-        s = workplaces_and_schools[workplace_lookup[workid]]
-        //#print 'candidate:', workid, s
-        d = haversine(px, py, s['x'], s['y'])
-        //#print "dist:", d
-        if d < min_dist:
-            min_dist = d
-            closest_school = s
-    //#print "shortest distance:", min_dist
-    return closest_school, min_dist
+    assert(nearby_places.size() > 0);
+    LocationType* closest_school = nearby_places[0];
+    min_dist = numeric_limits<double>::max();
+    for (auto s: nearby_places) { 
+        const double d = haversine(px, py, s->x, s->y);
+        if (d < min_dist) {
+            min_dist = d;
+            closest_school = s;
+        }
+    }
+    return closest_school;
+}
 
 
-def send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup):
-    schools = [location for location in workplaces_and_schools if location['type'] == 's']
+void send_kids_to_school(vector<PersonType*> &pop, const vector<int> &pop_ids, const vector<LocationType*> &workplaces_and_schools, double &total_raw_workers) {
+    vector<LocationType*> schools;
+    for (auto L: workplaces_and_schools) {
+        if (L->type == 's') schools.push_back(L);
+    }
+    //schools = [location for location in workplaces_and_schools if location['type'] == 's']
 
-    fo = open('student_placement.log', 'w')
-    students_allocated = 0
-    for pid in pop_ids:
-        loc_type = pop[pid][field_idx['day_loc']]
-        if loc_type != 's':
-            continue
-        //#print "looking at pid: ", pid
-        num_loc_needed = 1
+	ofstream fh_out("student_placement.log");
+    int students_allocated = 0;
+    for (int pid: pop_ids) { // we're looping through pop in a shuffled order
+        PersonType* p = pop[pid];
+        char loc_type = p->day_loc;
+        if (loc_type != 's') {
+            continue;
+        }
 
-        px, py = pop[pid][field_idx['x']], pop[pid][field_idx['y']]
-        pxi, pyi = x_to_col_num(px), y_to_row_num(py)
+        const double px = p->x;
+        const double py = p->y;
+        const int pxi = x_to_col_num(px);
+        const int pyi = y_to_row_num(py);
+        const int num_loc_needed = 1;
 
-        nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, schools, num_loc_needed)
-        //#for s in nearby_places:
-        //#    print s
-
-        school, distance = select_nearest_school(px, py, nearby_places, workplaces_and_schools, workplace_lookup)
-        //# 'school' is an element in the workplaces_and_schools list
-        pop[pid][field_idx['workid']] = school['workid']
-        school['students'] += 1
-        school['raw_workers'] += 1.0/student_teacher_ratio
-        total_raw_workers     += 1.0/student_teacher_ratio
-        students_allocated += 1
-        if students_allocated % 10000 == 0:
-            print "students sent to school:", students_allocated
+        int positions_found = 0;
+        vector<LocationType*> nearby_places = get_nearby_places(pxi, pyi, loc_type, schools, num_loc_needed, positions_found);
+        double distance;
+        LocationType* school = select_nearest_school(px, py, nearby_places, distance);
+        p->workid = school->workid;
+        school->students++;
+        school->raw_workers += 1.0/student_teacher_ratio;
+        total_raw_workers   += 1.0/student_teacher_ratio;
+        students_allocated++;
+        if (students_allocated % 10000 == 0) {
+            cerr << "students sent to school: " << students_allocated << endl;
+        }
         //#print px, py, school, distance
-        fo.write(' '.join(map(str,[pid, px, py, school['workid'], school['x'], school['y'], distance])) + '\n')
-    fo.close()
-    return total_raw_workers
-
-def choose_workplace(px, py, nearby_places, workplaces_and_schools, workplace_lookup):
-    raw_weights = [0.0 for i in range(len(nearby_places))]
-    for i, workid in enumerate(nearby_places):
-        w = workplaces_and_schools[workplace_lookup[workid]]
-        dist = haversine(px, py, w['x'], w['y'])
-        size = w['workers']
-        raw_weights[i] = size / dist**2
-
-    //# normalize weights
-    probs = []
-    total = sum(raw_weights)
-    for wt in raw_weights:
-        probs.append(wt/total)
-
-    r = random()
-    for i,p in enumerate(probs):
-        if r < p:
-            return workplaces_and_schools[workplace_lookup[nearby_places[i]]]
-        r -= p
-
-    return workplaces_and_schools[workplace_lookup[nearby_places[-1]]]
-*/
+        fh_out << pid << " " << px << " " << py << " " << school->workid << " " << school->x << " " << school->y << " " << distance << endl;
+    }
+    fh_out.close();
+    return;
+}
 
 
-double haversine(double lon1, double lat1, double lon2, double lat2) {
-    // Calculate the great circle distance between two points 
-    // on the earth (specified in decimal degrees)
+LocationType* choose_workplace(const double px, const double py, vector<LocationType*> nearby_places, mt19937& rng) {
+    assert(nearby_places.size() > 0);
+    LocationType* chosen_place = nearby_places.back();
+    vector<double> raw_weights(nearby_places.size(), 0.0);
+    double total_weight = 0.0;
+    for (unsigned int i = 0; i < nearby_places.size(); ++i) {
+        const LocationType* w = nearby_places[i];
+        const double dist = haversine(px, py, w->x, w->y);
+        const double size = w->workers;
+        raw_weights[i] = size / (dist*dist);
+        total_weight += raw_weights[i];
+    }
 
-    // convert decimal degrees to radians 
-    lon1 = deg_to_rad(lon1);
-    lon2 = deg_to_rad(lon2);
-    lat1 = deg_to_rad(lat1);
-    lat2 = deg_to_rad(lat2);
-    // haversine formula 
-    double dlon = lon2 - lon1;
-    double dlat = lat2 - lat1;
-    double a = pow(sin(dlat/2),2) + cos(lat1) * cos(lat2) * pow(sin(dlon/2),2);
-    double c = 2 * asin(sqrt(a));
-    double km = 6371 * c;
-    return km;
+    uniform_real_distribution<double> runif(0.0, total_weight);
+    double r = runif(rng);
+
+    for (unsigned int i = 0; i < raw_weights.size(); ++i) {
+        if (r < raw_weights[i]) {
+            chosen_place = nearby_places[i];
+            break; 
+        } else {
+            r -= raw_weights[i];
+        }
+    }
+    return chosen_place;
 }
 
 
 int main() {
     // Import household location data
     vector<HouseType*> hh_loc = import_households("locations-yucatan_prelim.txt");
-cerr << hh_loc.size() << endl;
+
     // Import workplace and school location data
     //
     // We are using workplace size (# employees) as a weight, but ignoring
     // school size data currently, as we feel it is more realistic to send
     // students to the nearest school.
-    /*max_loc_id = hh_loc.size() - 1;
     map<int, int> workplace_lookup;
-    int total_raw_workers = 0;
-    vector<LocationType*> workplaces_and_schools = import_workplaces_and_schools("schools_and_workplaces.out", max_loc_id, workplace_lookup, total_raw_workers);
+    double total_raw_workers = 0;
+    vector<LocationType*> workplaces_and_schools = import_workplaces_and_schools("schools_and_workplaces.out", hh_loc.size(), workplace_lookup, total_raw_workers);
+    cerr << workplaces_and_schools.size() << endl;
 
     // Import population data
-    //pop = OrderedDict()
-    vector<int> pop_ids;
     map<char, int> day_loc_ctr = {{'h', 0}, {'w', 0}, {'s', 0}}; // home / work / school
-    map<> pop = import_population("population-yucatan_prelim.txt", pop_ids, hh_loc, day_loc_ctr);
+    vector<PersonType*> pop = import_population("population-yucatan_prelim.txt", hh_loc, day_loc_ctr);
 
-    print "Total number of non-teacher jobs (DENUE):", total_raw_workers
-    print "Student:Teacher ratio (World Bank):", student_teacher_ratio
-    print "Total number of needed teachers:", day_loc_ctr['s']/student_teacher_ratio
-    print "Total raw number of jobs (DENUE + needed teachers):", total_raw_workers + day_loc_ctr['s']/student_teacher_ratio
+    cerr << "Total number of non-teacher jobs (DENUE):" << total_raw_workers << endl;
+    cerr << "Student:Teacher ratio (World Bank):" << student_teacher_ratio << endl;
+    cerr << "Total number of needed teachers:" << day_loc_ctr['s']/student_teacher_ratio << endl;
+    cerr << "Total raw number of jobs (DENUE + needed teachers):" << total_raw_workers + day_loc_ctr['s']/student_teacher_ratio << endl;
 
-    shuffle(pop_ids)
+    vector<int> pop_ids(pop.size());
+    iota(pop_ids.begin(), pop_ids.end(), 0); // populate with sequential integers
+    const unsigned int seed = 0;
+    mt19937 rng(seed); // FIXED SEED -- for the time being, we don't need to generate multiple populations
+    shuffle(pop_ids.begin(), pop_ids.end(), rng);
+
 
     // Send kids to nearest school
     // Needs to happen first so we know how many teachers are needed
-    total_raw_workers = send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers, workplace_lookup)
+    send_kids_to_school(pop, pop_ids, workplaces_and_schools, total_raw_workers);
 
     // normalize workplace sizes
-    employment_rescaling_factor = day_loc_ctr['w'] / float(total_raw_workers)
-    for place in workplaces_and_schools:
-        place['workers'] = place['raw_workers'] * employment_rescaling_factor
+    double employment_rescaling_factor = day_loc_ctr['w'] / total_raw_workers;
+    for (LocationType* L: workplaces_and_schools) L->workers = L->raw_workers * employment_rescaling_factor;
 
     // Filehandle for file we're going to write
     //fo = file('population-yucatan_no_copy.txt','w')
-    fo = file('population-yucatan-silvio.txt','w')
-    fo.write('pid hid age sex hh_serial pernum workid\n')
+    //fo = file('population-yucatan-silvio.txt','w')
+    ofstream fh_out("population-yucatan-cpp.txt");
+    fh_out << "pid hid age sex hh_serial pernum workid" << endl;
 
     // Make a copy so we can delete places from the original data structure as they fill up
-    W_AND_S_COPY = deepcopy(workplaces_and_schools)
-    ctr = 0
+    //W_AND_S_COPY = deepcopy(workplaces_and_schools)
+    int ctr = 0;
 
-    // For each person
-    for(const auto& [pid, person]: pop) {
-    //for pid in pop.keys():
-        //person = pop[pid]
-        loc_type = person[field_idx['day_loc']]
-        // Have them stay at home if they don't work or go to school
-        if loc_type == 'h':
-            person[field_idx['workid']] = person[field_idx['hid']] # person stays home
-        // If they work, probabilistically choose a workplace based on where they live
-        // and how many positions are available at each workplace
-        elif loc_type == 'w':
-            px, py = person[field_idx['x']], person[field_idx['y']]
-            pxi, pyi = x_to_col_num(px), y_to_row_num(py)
+    for (PersonType* p: pop) {
+        char loc_type = p->day_loc;
 
-            nearby_places, positions_found = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood)
-            //print len(nearby_places), positions_found
-            workplace = choose_workplace(px, py, nearby_places, W_AND_S_COPY, workplace_lookup)
-            workplace['workers'] -= 1 # remove one available job
-            // If the selected workplace no longer has openings,
-            // remove it from the list, so we don't have to consider it again
-            if workplace['workers'] <= 0:
-                for i,v in enumerate(workplaces_and_schools):
-                    if v['workid'] == workplace['workid']:
-                        del workplaces_and_schools[i]
-                        break
-            person[field_idx['workid']] = workplace['workid'] # assign worker
+        if (loc_type == 'h') {
+            p->workid = p->hid; // person stays home
+        } else if (loc_type == 'w') {
+            // If they work, probabilistically choose a workplace based on where they live
+            // and how many positions are available at each workplace
+            const int pxi = x_to_col_num(p->x);
+            const int pyi = y_to_row_num(p->y);
+            
+            int positions_found = 0;
+            vector<LocationType*> nearby_places = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood, positions_found);
+            LocationType* w = choose_workplace(p->x, p->y, nearby_places, rng);
+            w->workers--; // remove one available job
+            // POSSIBLY RE-IMPLEMENT: If the selected workplace no longer has openings, remove it from the list, so we don't have to consider it again
+            p->workid = w->workid; // assign worker
+        }
 
         // Students already have the "workid" (prob should be called day_loc_id to avoid
         // confusion), so we don't have to do much for them, just output their info
-        fo.write(' '.join(map(str,[
-                           pid,
-                           person[field_idx['hid']],
-                           person[field_idx['age']],
-                           person[field_idx['sex']],
-                           person[field_idx['hh_serial']],
-                           person[field_idx['pernum']],
-                           person[field_idx['workid']],
-                          ])) + '\n')
-        ctr += 1
-        if ctr % 1000 == 0:
-            print "placed", ctr, "people"
-            print "workplace list size:", len(workplaces_and_schools)
-        '''
+        fh_out << p->pid << " " << p->hid << " " << p->age << " " << p->sex << " " << p->hh_serial << " " << p->pernum << " " << p->workid << endl;
+
+        ++ctr;
+        if (ctr % 1000 == 0) {
+            cerr << "placed " << ctr << " people" << endl;
+            cerr << "workplace list size: " << workplaces_and_schools.size() << endl;
+        }
+        /*
         pid hid age sex hh_serial pernum workid
         1 1 31 1 0 0 -1 2748179000 1 110
         2 1 29 2 0 0 -1 2748179000 2 110
         3 1 10 2 0 0 -1 2748179000 3 0
         4 2 32 1 0 0 -1 2748114000 1 110
-        '''
+        */
     }
-    fo.close()*/
+    fh_out.close();
 }
