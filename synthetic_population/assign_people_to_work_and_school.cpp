@@ -41,7 +41,7 @@ const int school_age   = 5; // children under this stay home
                               {"workid",    5},
                               {"hh_serial", 6},
                               {"pernum",    7},
-                              {"day_loc",   8}};*/ 
+                              {"day_loc",   8}};*/
 
 struct HouseType {
     int hid;
@@ -58,7 +58,7 @@ struct LocationType {
     //int xi;
     //int yi;
     int raw_workers;
-    int workers;
+    double workers;
     int students;
 };
 
@@ -102,15 +102,15 @@ bool xy_cmp(LocationType* a, LocationType* b) {
 
 
 double haversine(double lon1, double lat1, double lon2, double lat2) {
-    // Calculate the great circle distance between two points 
+    // Calculate the great circle distance between two points
     // on the earth (specified in decimal degrees)
 
-    // convert decimal degrees to radians 
+    // convert decimal degrees to radians
     lon1 = deg_to_rad(lon1);
     lon2 = deg_to_rad(lon2);
     lat1 = deg_to_rad(lat1);
     lat2 = deg_to_rad(lat2);
-    // haversine formula 
+    // haversine formula
     double dlon = lon2 - lon1;
     double dlat = lat2 - lat1;
     double a = pow(sin(dlat/2),2) + cos(lat1) * cos(lat2) * pow(sin(dlon/2),2);
@@ -201,7 +201,7 @@ vector<LocationType*> import_workplaces_and_schools(const string filename, const
     istringstream line;
     ifstream fh_in(filename);
 	string buffer;
-	ofstream fh_out("w_and_s_locs_w_id.txt");
+	ofstream fh_out("w_and_s_locs_w_id-cpptest.txt");
     if (fh_in) {
         while (getline(fh_in, buffer)) {
             line.clear();
@@ -284,13 +284,13 @@ vector<PersonType*> import_population(string filename, vector<HouseType*>& hh_lo
             int pernum;
             int empstat;
 
-       /* 
+       /*
         pid hid age sex gridx gridy workid hh_serial pernum empstatd
         1 1 31 1 0 0 -1 2748179000 1 110
         2 1 29 2 0 0 -1 2748179000 2 110
         3 1 10 2 0 0 -1 2748179000 3 0
         4 2 32 1 0 0 -1 2748114000 1 110
-       */ 
+       */
 
             if (line >> pid >> hid >> age >> sex >> _dummy_x >> _dummy_y >> workid >> hh_serial >> pernum >> empstat) {
                 assert(pid == per_ctr); // make sure pids are sequential integers starting with 0, because anything else would be stupid
@@ -324,12 +324,12 @@ vector<PersonType*> import_population(string filename, vector<HouseType*>& hh_lo
 }
 
 
-unsigned int binary_search(vector<LocationType*> loc_vec, int search_coord, string label, unsigned int start, unsigned int end_plus_one) {
+unsigned int binary_search(const vector<LocationType*> &loc_vec, int search_coord, string label, unsigned int start, unsigned int end_plus_one) {
     if (start >= end_plus_one) return end_plus_one;
     if (loc_vec[start]->pixel[label] > search_coord)  return start;
     if (loc_vec[end_plus_one-1]->pixel[label] < search_coord) return end_plus_one;
 
-    unsigned int imin = start; 
+    unsigned int imin = start;
     unsigned int imax = end_plus_one;
 
     while (imin < imax) {
@@ -344,7 +344,7 @@ unsigned int binary_search(vector<LocationType*> loc_vec, int search_coord, stri
     return imin;
 }
 
-vector<LocationType*> get_nearby_places(int pxi, int pyi, char loc_type, vector<LocationType*> places, int num_loc_needed, int& positions_found) {
+vector<LocationType*> get_nearby_places(int pxi, int pyi, char loc_type, const vector<LocationType*> &places, int num_loc_needed, int& positions_found) {
     int commute_range = -1;
     positions_found = 0;
     vector<LocationType*> nearby_places; // by index in places
@@ -366,7 +366,7 @@ vector<LocationType*> get_nearby_places(int pxi, int pyi, char loc_type, vector<
             end_pos_plus_one = binary_search(places, pyi+commute_range+1, "yi", start_pos, end_pos_plus_one);
 
             for (unsigned int i = start_pos; i < end_pos_plus_one; ++i) {
-                LocationType* w = places[i]; 
+                LocationType* w = places[i];
                 if (pos_type == "students") {
                     positions_found++;
                     nearby_places.push_back(w);
@@ -386,7 +386,7 @@ LocationType* select_nearest_school(const double px, const double py, vector<Loc
     assert(nearby_places.size() > 0);
     LocationType* closest_school = nearby_places[0];
     min_dist = numeric_limits<double>::max();
-    for (auto s: nearby_places) { 
+    for (auto s: nearby_places) {
         const double d = haversine(px, py, s->x, s->y);
         if (d < min_dist) {
             min_dist = d;
@@ -404,7 +404,7 @@ void send_kids_to_school(vector<PersonType*> &pop, const vector<int> &pop_ids, c
     }
     //schools = [location for location in workplaces_and_schools if location['type'] == 's']
 
-	ofstream fh_out("student_placement.log");
+	ofstream fh_out("student_placement-cpptest.log");
     int students_allocated = 0;
     for (int pid: pop_ids) { // we're looping through pop in a shuffled order
         PersonType* p = pop[pid];
@@ -458,7 +458,7 @@ LocationType* choose_workplace(const double px, const double py, vector<Location
     for (unsigned int i = 0; i < raw_weights.size(); ++i) {
         if (r < raw_weights[i]) {
             chosen_place = nearby_places[i];
-            break; 
+            break;
         } else {
             r -= raw_weights[i];
         }
@@ -508,11 +508,13 @@ int main() {
     // Filehandle for file we're going to write
     //fo = file('population-yucatan_no_copy.txt','w')
     //fo = file('population-yucatan-silvio.txt','w')
-    ofstream fh_out("population-yucatan-cpp.txt");
+    ofstream fh_out("population-yucatan-cpptest.txt");
     fh_out << "pid hid age sex hh_serial pernum workid" << endl;
 
     // Make a copy so we can delete places from the original data structure as they fill up
-    //W_AND_S_COPY = deepcopy(workplaces_and_schools)
+    //vector<LocationType*> W_AND_S_COPY(workplaces_and_schools.size());
+    //for (unsigned int i = 0; i < workplaces_and_schools.size(); ++i) W_AND_S_COPY[i] = new LocationType(*(workplaces_and_schools[i]));
+
     int ctr = 0;
 
     for (PersonType* p: pop) {
@@ -525,13 +527,13 @@ int main() {
             // and how many positions are available at each workplace
             const int pxi = x_to_col_num(p->x);
             const int pyi = y_to_row_num(p->y);
-            
+
             int positions_found = 0;
             vector<LocationType*> nearby_places = get_nearby_places(pxi, pyi, loc_type, workplaces_and_schools, workplace_neighborhood, positions_found);
             LocationType* w = choose_workplace(p->x, p->y, nearby_places, rng);
+            p->workid = w->workid; // assign worker
             w->workers--; // remove one available job
             // POSSIBLY RE-IMPLEMENT: If the selected workplace no longer has openings, remove it from the list, so we don't have to consider it again
-            p->workid = w->workid; // assign worker
         }
 
         // Students already have the "workid" (prob should be called day_loc_id to avoid
@@ -542,6 +544,16 @@ int main() {
         if (ctr % 1000 == 0) {
             cerr << "placed " << ctr << " people" << endl;
             cerr << "workplace list size: " << workplaces_and_schools.size() << endl;
+            // should properly be calling delete on these locations, but we're not talking about a lot of memory and I don't think it can
+            // be done using this idiom.  Basically, this should be faster and memory leaks shouldn't cause a problem.
+            workplaces_and_schools.erase(
+                    remove_if(
+                        workplaces_and_schools.begin(),
+                        workplaces_and_schools.end(),
+                        [](LocationType* const &L) { return L->workers <= 0; }
+                        ),
+                    workplaces_and_schools.end()
+                    );
         }
         /*
         pid hid age sex hh_serial pernum workid
