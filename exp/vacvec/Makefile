@@ -48,3 +48,18 @@ clean:
 	$(MAKE) -C $(DENDIR) -f Makefile clean
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
 	rm -f abc abc_sql
+
+baseline.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+	Rscript $^ $@
+
+intervention.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+	Rscript $^ $@
+
+effectiveness.rds: eff.R baseline.rds intervention.rds
+	Rscript $^ $@
+
+comboeff.rds: comboeff.R effectiveness.rds
+	Rscript $^ $@
+
+effstats.rds: effstats.R comboeff.rds
+	Rscript $^ $@
