@@ -1,7 +1,7 @@
 require(data.table)
 require(ggplot2)
 
-args <- c("effstats.rds","main_fig.png")
+args <- c("effstats.rds","fig_2.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 stat.eff.dt <- readRDS(args[1])
@@ -51,5 +51,5 @@ p<-ggplot(stat.eff.dt[variable %in% c("combo.eff", "syn")]) +
 
 ggsave(
   tail(args,1), p, device = "png",
-  width = 6, height = 6, dpi = "retina", units = "in"
+  width = 7.5, height = 5, dpi = "retina", units = "in"
 )
