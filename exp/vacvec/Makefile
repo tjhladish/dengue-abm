@@ -63,3 +63,6 @@ comboeff.rds: comboeff.R effectiveness.rds
 
 effstats.rds: effstats.R comboeff.rds
 	Rscript $^ $@
+
+main_fig.png: main_fig.R effstats.rds
+	Rscript $^ $@
