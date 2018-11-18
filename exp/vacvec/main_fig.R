@@ -11,7 +11,7 @@ vac_cols <- c("blue", "green")
 names(vac_cols) <- vac_mechs
 vacfact <- function(i) factor(vac_mechs[i+1], levels = vac_mechs, ordered = T)
 
-vec_lines <- c(`25`="dotted",`50`="dashed",`75`="solid")
+vec_lines <- c(`0`=3,`25`=2,`50`=5,`75`=1) # c(`25`="dotted",`50`="dashed",`75`="solid")
 
 catchuplabels <- c("No Catchup","Catchup")
 cfact <- function(i) factor(catchuplabels[i+1], levels = catchuplabels, ordered = T)
@@ -28,10 +28,15 @@ limits <- data.table(
   med = c(c(0, 1),c(-.15,.25))
 )
 
+no_vc <- stat.eff.dt[variable == "vac.eff" & vc_coverage == 25,
+  .(variable = "combo.eff", catchup, year, med, vac_mech, vc_coverage = 0)
+]
+
 p<-ggplot(stat.eff.dt[variable %in% c("combo.eff", "syn")]) +
   facet_grid(varfact(variable) ~ cfact(catchup), scales="free_y", switch = "y") +
   aes(x=year, y=med, color=vacfact(vac_mech), linetype=factor(vc_coverage)) +
   geom_line() +
+  geom_line(data = no_vc) +
   geom_blank(data=limits) +
   scale_color_manual("Vaccine Mech.", values=vac_cols) +
   scale_linetype_manual("VC Coverage %", values=vec_lines) +
