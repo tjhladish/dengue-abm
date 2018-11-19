@@ -47,16 +47,19 @@ p<-ggplot(plot.dt) +
   geom_blank(data=limits) +
   facet_grid(measure ~ ., scales="free", switch = "y") +
   scale_linetype_manual("VC Coverage %", values=vec_lines) +
+  scale_x_continuous("Year", expand = expand_scale(0.03, 0)) +
+  scale_y_continuous(expand = expand_scale(0, 0)) +
   theme_minimal() + theme(
     legend.direction = "horizontal",
     axis.title.y = element_blank(),
     strip.placement = "outside",
     legend.position = c(0.5, 0.5),
     legend.justification = c(0.5, 0.5),
-    legend.margin = margin(), legend.spacing = unit(0, "pt")
+    legend.margin = margin(), legend.spacing = unit(0, "pt"),
+    panel.spacing.y = unit(15, "pt")
   )
 
 ggsave(
   tail(args,1), p, device = "png",
-  width = 6, height = 6, dpi = "retina", units = "in"
+  width = 4, height = 6, dpi = "retina", units = "in"
 )
