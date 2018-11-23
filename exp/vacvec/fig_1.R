@@ -21,13 +21,13 @@ inte.inc <- intervention.dt[vac==0,{
 }, keyby=.(vc_coverage, year)]
 
 eff.mlt <- melt.data.table(
-  effstats.rds[variable == "vec.eff", .(effectiveness=unique(med)), keyby=.(vc_coverage, year)],
+  effstats.rds[variable == "vec.eff", .(Effectiveness=unique(med)), keyby=.(vc_coverage, year)],
   id.vars = c("vc_coverage","year"),
   variable.name = "measure"
 )
   
 plot.dt <- rbind(melt.data.table(
-  rbind(base.inc, inte.inc)[,.(incidence=med),keyby=.(vc_coverage, year)],
+  rbind(base.inc, inte.inc)[,.(Incidence=med),keyby=.(vc_coverage, year)],
   id.vars = c("vc_coverage","year"),
   variable.name = "measure"
 ), eff.mlt)
@@ -35,7 +35,7 @@ plot.dt <- rbind(melt.data.table(
 vec_lines <- c(`0`=3,`25`=2,`50`=5,`75`=1) # c(`25`="dotted",`50`="dashed",`75`="solid")
 
 limits <- data.table(
-  measure = factor(c(rep("incidence", 2), rep("effectiveness", 2))),
+  measure = factor(c(rep("Incidence", 2), rep("Effectiveness", 2))),
   vc_coverage = rep(25, 4),
   year = rep(1, 4),
   value = c(c(0., 22500.0), c(0.0, 1.0))
@@ -46,7 +46,7 @@ p<-ggplot(plot.dt) +
   geom_line() +
   geom_blank(data=limits) +
   facet_grid(measure ~ ., scales="free", switch = "y") +
-  scale_linetype_manual("VC Coverage %", values=vec_lines) +
+  scale_linetype_manual("Coverage %", values=vec_lines) +
   scale_x_continuous("Year", expand = expand_scale(0.03, 0)) +
   scale_y_continuous(expand = expand_scale(0, 0)) +
   theme_minimal() + theme(
