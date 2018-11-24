@@ -140,14 +140,13 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
     for (int i=0; i<NUM_AGE_CLASSES; i++) agecounts[i] = 0;
 
     istringstream line;
-    int id, age, house, work;
-    string hh_serial;
-    int pernum;
-    int sex; // per IPUMS, expecting 1 for male, 2 for female
+    // per IPUMS, expecting 1 for male, 2 for female for sex
+    int id, house, age, sex, work, empstat;
     while ( getline(iss,buffer) ) {
         line.clear();
         line.str(buffer);
         /*
+        pid hid age sex workid empstat
         pid hid age sex hh_serial pernum workid
         1 1 31 1 2748179000 1 442670
         2 1 29 2 2748179000 2 395324
@@ -155,7 +154,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         4 2 32 1 2748114000 1 397104
         5 2 30 2 2748114000 2 396166
         */
-        if (line >> id >> house >> age >> sex >> hh_serial >> pernum >> work) {
+        if (line >> id >> house >> age >> sex >> work >> empstat) {
             Person* p = new Person();
             _people.push_back(p);
             p->setAge(age);
@@ -278,9 +277,9 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     _location.clear();
 
     // This is a hack for backward compatibility.  Indices should start at zero.
-    Location* dummy = new Location();
-    dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
-    _location.push_back(dummy); // first val is a dummy, for backward compatibility
+    //Location* dummy = new Location();
+    //dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
+    //_location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
     char buffer[500];
     int locID;
@@ -297,7 +296,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
                 cerr << "WARNING: Location ID's must be sequential integers" << endl;
                 return false;
             }
-            const LocationType locType = (locTypeStr == "house") ? HOME : (locTypeStr == "work") ? WORK : (locTypeStr == "school") ? SCHOOL : NUM_OF_LOCATION_TYPES;
+            const LocationType locType = (locTypeStr == "h") ? HOME : (locTypeStr == "w") ? WORK : (locTypeStr == "s") ? SCHOOL : NUM_OF_LOCATION_TYPES;
             if (locType == NUM_OF_LOCATION_TYPES) {
                 cerr << "ERROR: Parsed unknown location type: " << locTypeStr << " from location file: " << locationFilename << endl;
                 return false;
@@ -427,11 +426,14 @@ Person* Community::getPersonByID(int id) {
     // This assumes that IDs start at 1, and tries to guess
     // that person with ID id is in position id-1
     // TODO - make that not true (about starting at 1)
-    if(id < 1 or id > getNumPeople()) {
+    if(id < 0 or id > getNumPeople()) {
         cerr << "ERROR: failed to find person with id " << id << " max: " << getNumPeople() << endl;
         assert(id > 0 and id <= getNumPeople());
     }
 
+    assert (_people[id]->getID() == id);
+    return _people[id];
+/*
     int i = 0;
     Person* person = NULL;
     if (_people[id-1]->getID()==id) {
@@ -450,7 +452,7 @@ Person* Community::getPersonByID(int id) {
         cerr << "ERROR: failed to find person with id " << id << endl;
         exit(-2001);
     }
-    return person;
+    return person;*/
 }
 
 
