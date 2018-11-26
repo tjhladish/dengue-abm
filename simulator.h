@@ -269,13 +269,13 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     if (date.endOfYear()) {
         if (par->abcVerbose) {
             cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: ";
-            for (auto v: periodic_incidence["yearly"]) cout << v << " "; cout << endl;
+            for (auto v: periodic_incidence["yearly"]) { cout << v << " "; } cout << endl;
         }
 
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-        if (par->yearlyOutput) _reporter(ss, periodic_incidence, par, process_id, " year: ", date.year(), "yearly"); ss << endl;
+        if (par->yearlyOutput) { _reporter(ss, periodic_incidence, par, process_id, " year: ", date.year(), "yearly"); ss << endl; }
         periodic_incidence["yearly"] = vector<int>(NUM_OF_REPORTING_TYPES, 0);
     }
 
