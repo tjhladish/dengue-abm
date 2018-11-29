@@ -332,8 +332,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     //seed_epidemic(par, community);
     double seropos_87 = 0.0;
     vector<double> seropos_14_by_age(9, 0.0); // age cats = c('0-4', '5-9', '10-14', '15-19', '20-29', '30-39', '40-49', '50-59', '60+')
-    vector<int> serotested_ids_87 = read_pop_ids("../pop-" + SIM_POP + "/8-14_merida_ids.txt");
-    vector<int> serotested_ids_14 = read_pop_ids("../pop-" + SIM_POP + "/merida_ids.txt");
+    vector<int> serotested_ids_87 = read_pop_ids("../../pop-" + SIM_POP + "/8-14_merida_ids.txt");
+    vector<int> serotested_ids_14 = read_pop_ids("../../pop-" + SIM_POP + "/merida_ids.txt");
     simulate_abc(par, community, process_id, serotested_ids_87, seropos_87, serotested_ids_14, seropos_14_by_age);
 
     // output immunity file for immunity profile comparison with empirical data

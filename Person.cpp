@@ -19,7 +19,7 @@
 
 using namespace dengue::standard;
 
-int Person::_nNextID = 1;
+int Person::_nNextID = 0;
 
 const Parameters* Person::_par;
 
