@@ -66,10 +66,15 @@ vac.only.lines <- rbind(
   copy(vac.only)[, vc_coverage := 75 ]
 )
 
+facet_labs <- labeller(
+  catchup = c(`0`="No Catchup", `1`="Catchup"),
+  vc_coverage = c(`25`="\n25%", `50`="Vector Control Coverage\n50%", `75`="\n75%")
+)
+
 p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=factor(vac_mech)) +
   geom_line(aes(x=year, y=vac.eff, size="simulated"), vac.only.lines, color="grey") +
   geom_altribbon(other.ribbon[,.(x=year, y=assume.eff, ycmp=eff), by=.(vc_coverage, vac_mech, catchup)], by=c("vc_coverage","vac_mech","catchup")) +
-  facet_grid(c("No Catchup","Catchup")[catchup+1] ~ factor(vc_coverage)) +
+  facet_grid(catchup ~ vc_coverage, labeller = facet_labs) +
   scale_size_manual("Combination",
     values=c(simulated=0.5, assumed=0.2),
     guide=guide_legend(order=1, direction = "horizontal", title.position = "top")
@@ -90,8 +95,10 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=facto
     )
   ) + theme(
     legend.box = "horizontal",
-    legend.position = c(0.50,0.475), legend.justification = c(0.5, 0.5),
-    panel.spacing.y = unit(20,"pt")
+    legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
+    panel.spacing.y = unit(30,"pt"), strip.text.y = element_text(angle=90),
+    legend.text = element_text(size=rel(0.6)),
+    legend.title = element_text(size=rel(0.7))
   )
 
 ggsave(
