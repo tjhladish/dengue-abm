@@ -62,20 +62,45 @@ twoplot <- rbind(plot.dt, vec.eff, vac.eff)
 
 extend <- copy(twoplot[year == 39])[, year := 40 ]
 
-gds <- function(ord) guide_legend(title.position = "top", direction = "horizontal", order = ord)
+gds <- function(ord) guide_legend(
+  title.position = "top", direction = "horizontal", order = ord,
+  label.position = "top"
+)
 
 facet_labels <- labeller(
   measure = c(effectiveness="Annual Effectiveness", incidence="Annual Incidence per 100k"),
   scenario = c(vaccine="Vaccine Only",vc="Vector Control Only")
 )
 
-p<-ggplot(rbind(twoplot, extend)) + aes(x=year, y=value, color=vac_mech, linetype=catchup,
+sizebase <- 0.5
+sizestep <- 0.2
+sizes <- seq(from=sizebase, by=0.2, length.out = 4)
+names(sizes) <- c(0,25,50,75)
+
+limits.dt <- twoplot[,.(value=c(0, ceiling(max(value))), year=-1), by=measure]
+
+limits.dt[measure == "incidence", value := { ceiling(value/250)*250 }]
+
+p <- ggplot(
+#  rbind(twoplot, extend) # for step / segment versions
+  twoplot
+) + aes(
+  # x=year,
+  x=year + 1,
+  y=value, color=vac_mech, linetype=catchup,
     size=factor(vc_coverage), group=interaction(vc_coverage, catchup, vac_mech)) +
   facet_grid(measure ~ scenario, scales = "free_y", switch = "y", labeller = facet_labels) +
-  geom_step() + theme_minimal() +
+#  geom_segment(mapping = aes(yend=value, xend=year+1)) +
+# geom_step() +
+  geom_blank(mapping=aes(color=NULL, linetype=NULL, size=NULL, group=NULL), data=limits.dt) +
+  geom_line() +
+  theme_minimal() +
   scale_color_manual("Vaccine Mechanism", values=c(none="black",cmdvi="blue",traditional="green"), guide=gds(1)) +
-  scale_linetype_manual("Catchup", values=c(none="solid", catchup="dotted"), guide=gds(2)) +
-  scale_size_manual("Vector Control Coverage %",values=c(`0`=0.5,`25`=0.75,`50`=1,`75`=1.25), guide=gds(3)) +
+  scale_linetype_manual("Catchup", values=c(none="solid", catchup="dashed"), guide=gds(2)) +
+  scale_size_manual("Vector Control Coverage %",values=sizes, guide=gds(3)) +
+  scale_x_continuous("Year", expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  coord_cartesian(xlim=c(0,40)) +
   theme(
     axis.title.y = element_blank(),
     strip.placement = "outside",
@@ -84,8 +109,9 @@ p<-ggplot(rbind(twoplot, extend)) + aes(x=year, y=value, color=vac_mech, linetyp
     legend.justification = c(0.5, 0.5),
     legend.margin = margin(), legend.spacing = unit(25, "pt"),
     legend.text = element_text(size=rel(0.5)),
-    legend.title = element_text(size=rel(0.6)),
-    panel.spacing.y = unit(40, "pt")
+    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
+    panel.spacing.y = unit(30, "pt"), panel.spacing.x = unit(15, "pt"),
+    legend.key.height = unit(1,"pt")
   )
 
 ggsave(
