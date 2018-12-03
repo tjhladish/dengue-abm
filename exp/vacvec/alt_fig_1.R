@@ -8,7 +8,7 @@ baseline.dt <- readRDS(args[1])
 intervention.dt <- readRDS(args[2])
 effstats.rds <- readRDS(args[3])
 
-int.keys <- grep("particle", key(intervention.dt), invert = T, value = T)
+int.keys <- grep("particle|replicate", key(intervention.dt), invert = T, value = T)
 
 intervention.dt[vc == 0, vc_coverage := 0]
 vac_mechs <- c("cmdvi","traditional","none")

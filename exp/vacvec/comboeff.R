@@ -6,19 +6,19 @@ args <- commandArgs(trailingOnly = TRUE)
 
 effectiveness.dt <- readRDS(args[1])
 
-vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff), by=.(particle, vc_coverage, year)]
-vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff), by=.(particle, vac_mech, catchup, year)]
+vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff), by=.(particle, replicate, vc_coverage, year)]
+vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff), by=.(particle, replicate, vac_mech, catchup, year)]
 combo.dt <- effectiveness.dt[(vc != 0) & (vac != 0)]
 
 syn.dt <- combo.dt[
-  vec.dt, on=.(particle, vc_coverage, year) # join vector control only results
+  vec.dt, on=.(particle, replicate, vc_coverage, year) # join vector control only results
 ][
-  vac.dt, on=.(particle, vac_mech, catchup, year) # join vaccine only results
+  vac.dt, on=.(particle, replicate, vac_mech, catchup, year) # join vaccine only results
 ][, # get the interesting measures
   .(
     combo.eff=eff, ind.eff = (vec.eff + vac.eff - vec.eff*vac.eff),
     vec.eff, vac.eff
-  ), by=.(particle, year, vc_coverage, vac_mech, catchup)
+  ), by=.(particle, replicate, year, vc_coverage, vac_mech, catchup)
   # ...organized by relevant divisions
 ]
 

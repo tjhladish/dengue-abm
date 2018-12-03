@@ -13,7 +13,7 @@ tar <- args[2]
 if (tar == "baseline.rds") {
   tar.dt <- data.table(dbGetQuery(db,
      "select M.*,
-     posterior as particle
+     posterior as particle, CAST(realization AS INT) as replicate
      from met M, par P, job J
      where M.serial = P.serial and M.serial = J.serial
      and status = 'D'
@@ -23,7 +23,7 @@ if (tar == "baseline.rds") {
 } else {
   tar.dt <- data.table(dbGetQuery(db,
      "select M.*,
-     posterior as particle,
+     posterior as particle, CAST(realization AS INT) as replicate,
      vector_control as vc,
      vac,
      vc_coverage*100 as vc_coverage,
@@ -50,10 +50,9 @@ parse.meas.yr <- function(dt) {
 rmv <- c(grep("s_|imm\\d__",names(tar.dt), value = T), "serial")
 tar.dt <- tar.dt[,.SD,.SDcols=-rmv]
 
-if (tar == "baseline.rds") {
-  idvs <- "particle"
-} else {
-  idvs <- c("vc", "vac", "vc_coverage","vac_mech","catchup","particle")
+idvs <- c("particle", "replicate")
+if (tar != "baseline.rds") {
+  idvs <- c("vc", "vac", "vc_coverage","vac_mech","catchup", idvs)
 }
 
 tar.mlt <- melt.data.table(tar.dt, id.vars = idvs)
