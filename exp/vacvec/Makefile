@@ -49,10 +49,12 @@ clean:
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
 	rm -f abc abc_sql
 
-baseline.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+REFDB ?= ~/Dropbox/who/vacvec/vacvec.sqlite
+
+baseline.rds: parse.R $(REFDB)
 	Rscript $^ $@
 
-intervention.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+intervention.rds: parse.R $(REFDB)
 	Rscript $^ $@
 
 effectiveness.rds: eff.R baseline.rds intervention.rds
@@ -82,4 +84,4 @@ combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
 
 .PHONY: figures
 
-figures: fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png
+figures: alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png

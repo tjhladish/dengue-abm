@@ -95,7 +95,7 @@ p <- ggplot(
   geom_blank(mapping=aes(color=NULL, linetype=NULL, size=NULL, group=NULL), data=limits.dt) +
   geom_line() +
   theme_minimal() +
-  scale_color_manual("Vaccine Mechanism", values=c(none="black",cmdvi="blue",traditional="green"), guide=gds(1)) +
+  scale_color_manual("Vaccine", values=c(none="black",cmdvi="blue",traditional="green"), guide=gds(1)) +
   scale_linetype_manual("Catchup", values=c(none="solid", catchup="dashed"), guide=gds(2)) +
   scale_size_manual("Vector Control Coverage %",values=sizes, guide=gds(3)) +
   scale_x_continuous("Year", expand = c(0,0)) +
@@ -116,5 +116,5 @@ p <- ggplot(
 
 ggsave(
   tail(args,1), p, device = "png",
-  width = 6, height = 4, dpi = "retina", units = "in"
+  width = 7.5, height = 5, dpi = "retina", units = "in"
 )

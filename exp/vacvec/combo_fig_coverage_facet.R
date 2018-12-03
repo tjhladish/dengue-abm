@@ -96,8 +96,8 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=facto
   scale_x_continuous("Year", expand = c(0,0)) + scale_y_continuous("Annual Effectiveness", expand=c(0,0)) +
   coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
   scale_linetype_discrete(
-    "Mechanism",
-    labels=c(`0`="5th Sero",`1`="Traditional"),
+    "Vaccine",
+    labels=c(`0`="CMDVI",`1`="Traditional"),
     guide=gds(order=2, override.aes = list(fill=NA), keyheight = unit(1,"pt"))
   ) + theme(
     legend.box = "horizontal",
