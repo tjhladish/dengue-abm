@@ -47,7 +47,7 @@ clean:
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
 	rm -f abc abc_sql
 
-REFDB ?= ~/Dropbox/who/vacvec/vacvec.sqlite
+-include local.mk
 
 baseline.rds: parse.R $(REFDB)
 	Rscript $^ $@
