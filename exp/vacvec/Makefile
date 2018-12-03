@@ -82,4 +82,9 @@ combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
 
 .PHONY: figures
 
-figures: alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png
+MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png
+
+figures: $(MANUSCRIPTFIGS)
+
+clean_figs: $(MANUSCRIPTFIGS)
+	rm $^
