@@ -9,11 +9,11 @@ stat.eff.dt <- readRDS(args[1])
 vac.only <- stat.eff.dt[variable == "vac.eff", .(vac.eff=unique(med)), keyby=.(vac_mech, catchup, year)]
 naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
 
-ribbon.dt <- naive[vac.only, on=.(vac_mech, catchup, year)]
+ribbon.dt <- naive[vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=T]
 
 combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
 
-other.ribbon <- combo.dt[naive, on=.(vc_coverage, vac_mech, catchup, year)][vac.only, on=.(vac_mech, catchup, year)]
+other.ribbon <- combo.dt[naive, on=.(vc_coverage, vac_mech, catchup, year), nomatch=0][vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=T]
 
 ribbon_intercepts <- function(x, y, ycmp) {
   sp <- cumsum(head(rle(ycmp > y)$lengths, -1))

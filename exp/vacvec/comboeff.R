@@ -11,9 +11,9 @@ vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff), by=.(particle, replicate, va
 combo.dt <- effectiveness.dt[(vc != 0) & (vac != 0)]
 
 syn.dt <- combo.dt[
-  vec.dt, on=.(particle, replicate, vc_coverage, year) # join vector control only results
+  vec.dt, on=.(particle, replicate, vc_coverage, year), nomatch=0 # join vector control only results
 ][
-  vac.dt, on=.(particle, replicate, vac_mech, catchup, year) # join vaccine only results
+  vac.dt, on=.(particle, replicate, vac_mech, catchup, year), nomatch=0 # join vaccine only results
 ][, # get the interesting measures
   .(
     combo.eff=eff, ind.eff = (vec.eff + vac.eff - vec.eff*vac.eff),
