@@ -81,10 +81,12 @@ combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
 combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
 	Rscript $^ $@
 
+SI_IQ_fig.png: IQ_fig.R effectiveness.rds
+	Rscript $^ $@
 
 .PHONY: figures
 
-MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png
+MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
 
 figures: $(MANUSCRIPTFIGS)
 

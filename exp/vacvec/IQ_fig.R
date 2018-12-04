@@ -17,7 +17,12 @@ stats.dt[vc == 0, vc_coverage := 0]
 stats.dt[, vac_mech := factor(ifelse(vac==1,c("cmdvi","trad")[vac_mech+1],"none"))]
 stats.dt[, catchup := factor(c("none","catchup")[catchup+1])]
 
-ggplot(stats.dt) + aes(x=year+1, y=med, ymin=IQlo, ymax=IQhi, fill=vac_mech, color=vac_mech) +
+p<-ggplot(stats.dt) + aes(x=year+1, y=med, ymin=IQlo, ymax=IQhi, fill=vac_mech, color=vac_mech) +
   facet_grid(catchup ~ vc_coverage) +
   geom_ribbon(mapping = aes(color=NULL), alpha=.5) + geom_line() +
   theme_minimal()
+
+ggsave(
+  tail(args,1), p, device = "png",
+  width = 7.5, height = 5, dpi = "retina", units = "in"
+)
