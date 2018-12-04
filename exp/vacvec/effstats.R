@@ -8,7 +8,7 @@ comboeff.dt <- readRDS(args[1])
 
 mlt <- melt.data.table(
   comboeff.dt,
-  id.vars = c("year","vc_coverage","vac_mech","catchup", "particle")
+  id.vars = c("year","vc_coverage","vac_mech","catchup", "particle", "replicate")
 )
 
 setkeyv(mlt, c("variable", "vc_coverage","vac_mech", "catchup", "year"))

@@ -8,11 +8,11 @@ baseline.dt <- readRDS(args[1])
 intervention.dt <- readRDS(args[2])
 
 ## perform effectiveness calcs
-eff.dt <- intervention.dt[baseline.dt, on=c("particle", "year")][,
+eff.dt <- intervention.dt[baseline.dt, on=.(particle = particle, replicate = replicate, year = year), nomatch=0][,
   # join baseline to interventions on particle basis
   # baseline has *only* particle as key
-  .(eff=(i.s-s)/i.s),
-  keyby=.(vc, vac, vc_coverage, vac_mech, catchup, particle, year)
+  .(eff = ifelse(i.s == s, 1.0, (i.s-s)/i.s)),
+  keyby=.(vc, vac, vc_coverage, vac_mech, catchup, particle, replicate, year)
 ]
 
 saveRDS(eff.dt, args[3])

@@ -28,8 +28,6 @@ INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
 GSL_LIB = -lm -L$(GSL_PATH)/lib/ -lgsl -lgslcblas -lpthread -ldl
 
-default: figures
-
 libabc:
 	$(MAKE) -C $(ABCDIR) -f Makefile
 
@@ -49,10 +47,12 @@ clean:
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
 	rm -f abc abc_sql
 
-baseline.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+-include local.mk
+
+baseline.rds: parse.R $(REFDB)
 	Rscript $^ $@
 
-intervention.rds: parse.R ~/Dropbox/who/vacvec/vacvec.sqlite
+intervention.rds: parse.R $(REFDB)
 	Rscript $^ $@
 
 effectiveness.rds: eff.R baseline.rds intervention.rds
@@ -64,10 +64,15 @@ comboeff.rds: comboeff.R effectiveness.rds
 effstats.rds: effstats.R comboeff.rds
 	Rscript $^ $@
 
+digests: baseline.rds intervention.rds effectiveness.rds comboeff.rds effstats.rds
+
 fig_2.png: fig_2.R effstats.rds
 	Rscript $^ $@
 
 fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ $@
+
+alt_fig_1.png: alt_fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
 combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
@@ -76,7 +81,14 @@ combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
 combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
 	Rscript $^ $@
 
+SI_IQ_fig.png: IQ_fig.R effectiveness.rds
+	Rscript $^ $@
 
 .PHONY: figures
 
-figures: fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png
+MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
+
+figures: $(MANUSCRIPTFIGS)
+
+clean_figs: $(MANUSCRIPTFIGS)
+	rm $^
