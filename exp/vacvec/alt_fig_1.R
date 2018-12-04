@@ -1,7 +1,7 @@
 require(data.table)
 require(ggplot2)
 
-args <- c("baseline.rds","intervention.rds","effstats.rds","alt_fig_2.png")
+args <- c("baseline.rds","intervention.rds","effstats.rds","alt_fig_1.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 baseline.dt <- readRDS(args[1])
@@ -77,7 +77,7 @@ sizestep <- 0.2
 sizes <- seq(from=sizebase, by=0.2, length.out = 4)
 names(sizes) <- c(0,25,50,75)
 
-limits.dt <- twoplot[,.(value=c(0, ceiling(max(value))), year=-1), by=measure]
+limits.dt <- twoplot[,.(value=c(0, ceiling(max(value, na.rm = T))), year=-1), by=measure]
 
 limits.dt[measure == "incidence", value := { ceiling(value/250)*250 }]
 
