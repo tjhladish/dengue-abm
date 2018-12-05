@@ -15,8 +15,9 @@
 #SBATCH --array=0-2999
 #SBATCH --partition=hpg2-compute
 
-module load gcc/5.2.0 gsl
-for i in `seq 1 20`;
+module load gcc/7.3.0 gsl
+
+for i in `seq 1 50`;
 do
     ./abc_sql abc_vacvec.json --simulate
 done
