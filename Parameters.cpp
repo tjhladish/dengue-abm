@@ -342,15 +342,16 @@ void Parameters::validate_parameters() {
     }
     if (eMosquitoDistribution==CONSTANT) {
         cerr << "mosquito capacity distribution is constant" << endl;
-    } else if (eMosquitoDistribution==EXPONENTIAL)
+    } else if (eMosquitoDistribution==EXPONENTIAL) {
         cerr << "mosquito capacity distribution is exponential" << endl;
-        if (mosquitoMultipliers.size()>0) {
-            cerr << "mosquito seasonal multipliers (days,mult) =";
-            for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
-                cerr << " (" << mosquitoMultipliers[j].duration << "," << mosquitoMultipliers[j].value << ")";
-            }
-            cerr << endl;
+    }
+    if (mosquitoMultipliers.size()>0) {
+        cerr << "mosquito seasonal multipliers (days,mult) =";
+        for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
+            cerr << " (" << mosquitoMultipliers[j].duration << "," << mosquitoMultipliers[j].value << ")";
         }
+        cerr << endl;
+    }
     if (extrinsicIncubationPeriods.size()>0) {
         cerr << "extrinsic incubation periods (days,EIP) =";
         for (unsigned int j=0; j<extrinsicIncubationPeriods.size(); j++) {
@@ -532,7 +533,7 @@ void Parameters::generateAnnualSerotypes(int total_num_years) { // default arg v
     if (not abcVerbose) {
         cerr << "Serotype runs:" << endl;
         for (auto &y: nDailyExposed) {
-            for (auto v: y)  cerr << v << " "; cerr << endl;
+            for (auto v: y) { cerr << v << " "; } cerr << endl;
         }
     }
     if (normalizeSerotypeIntros) {
@@ -547,7 +548,7 @@ void Parameters::generateAnnualSerotypes(int total_num_years) { // default arg v
     if (not abcVerbose) {
         cerr << "Serotype runs (normalized):" << endl;
         for (auto &y: nDailyExposed) {
-            for (auto v: y)  cerr << v << " "; cerr << endl;
+            for (auto v: y) { cerr << v << " "; } cerr << endl;
         }
     }
     return;
