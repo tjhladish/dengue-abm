@@ -308,13 +308,16 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const int target              = (int) args[20];
     const bool catchup            = (bool) args[21];
     const int catchup_to          = (int) args[22];
+    const bool vac_first          = (bool) args[23];
+    const int intervention_lag    = (int) args[24];
 
     Community* community = build_community(par);
 
     if (vector_control) {
+        double vc_lag = vac_first ? intervention_lag : 0;
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
-        for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
+        for (int vec_cont_year = RESTART_BURNIN + vc_lag; vec_cont_year < RESTART_BURNIN + vc_lag + vc_years; vec_cont_year++) {
         //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
             // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
             int startDate = 0;
@@ -327,18 +330,22 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         }
     }
     if (vaccine) {
+        double vac_lag = vac_first ? 0 : intervention_lag;
         double target_coverage  = coverage;
-        double catchup_coverage = coverage;
+        const int catchup_duration = 2; // years to spread catchup over
+        double catchup_coverage = 1.0 - pow(1.0-coverage, 1.0/catchup_duration);
 
         if (catchup) {
             for (int catchup_age = target; catchup_age <= catchup_to; catchup_age++) {
-                par->catchupVaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
+                for (int y = 0; y < catchup_duration; ++y) {
+                    par->catchupVaccinationEvents.emplace_back(catchup_age, (RESTART_BURNIN + vac_lag + y)*365, catchup_coverage);
+                }
             }
         } 
 
         par->vaccineTargetAge = target;
         par->vaccineTargetCoverage = target_coverage;
-        par->vaccineTargetStartDate = RESTART_BURNIN*365;
+        par->vaccineTargetStartDate = (RESTART_BURNIN + vac_lag) *365;
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
