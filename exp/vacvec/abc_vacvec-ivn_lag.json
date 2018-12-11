@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 1920000,
+    "num_samples"    : 20000,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "vacvec-new_yuc.sqlite",
+    "database_filename"             : "vacvec-new_yuc-ivn_lag.sqlite",
     "posterior_database_filename"   : "new_yuc_posterior.sqlite",
     "retain_posterior_rank"         : "true",
 
@@ -74,7 +74,7 @@
         {"name"       : "vector_control",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "campaign_duration",
@@ -94,9 +94,8 @@
         {"name"       : "vc_coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 0.25,
-         "par2"       : 0.75,
-         "step"       : 0.25},
+         "par1"       : 0.75,
+         "par2"       : 0.75},
 
         {"name"       : "vc_efficacy",
          "dist_type"  : "PSEUDO",
@@ -131,13 +130,13 @@
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "vac_mech",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "vac_coverage",
@@ -150,21 +149,31 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 2,
-         "par2"       : 9,
-         "step"       : 7},
+         "par2"       : 2},
 
         {"name"       : "catchup",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "catchup_to",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 50,
-         "par2"       : 100,
-         "step"       : 50}
+         "par1"       : 100,
+         "par2"       : 100},
+
+        {"name"       : "vac_first",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 1},
+
+        {"name"       : "ivn_lag",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 2,
+         "par2"       : 2}
     ],
 
     "metrics" : [

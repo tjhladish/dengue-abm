@@ -47,14 +47,20 @@ inc.plot.dt <- rbind(
 
 yucpop <- 18.17734 # 100ks
 
-plot.dt <- inc.plot.dt[, value := med/yucpop ][, measure := "incidence" ][, .(value), by=.(vc_coverage, vac_mech, catchup, year, scenario, measure)]
+plot.dt <- inc.plot.dt[, value := med/yucpop ][,
+  measure := factor("incidence", levels = c("incidence","effectiveness"), ordered = T)
+][, .(value), by=.(vc_coverage, vac_mech, catchup, year, scenario, measure)]
 
 vac.eff <- effstats.rds[variable == "vac.eff", .(
-  value=unique(med), measure="effectiveness", vc_coverage=0, scenario="vaccine"),
+  value=unique(med),
+  measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
+  vc_coverage=0, scenario="vaccine"),
   keyby=.(vac_mech = vac_mechs[vac_mech+1], catchup=catchups[catchup+1], year)
 ]
 vec.eff <- effstats.rds[variable == "vec.eff", .(
-  value=unique(med), measure="effectiveness", scenario="vc", vac_mech=vac_mechs[3], catchup=catchups[1]),
+  value=unique(med),
+  measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
+  scenario="vc", vac_mech=vac_mechs[3], catchup=catchups[1]),
   keyby=.(vc_coverage, year)
 ]
 
