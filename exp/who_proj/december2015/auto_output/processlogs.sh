@@ -1,1 +1,0 @@
-../../processlogs.sh

@@ -137,7 +137,7 @@ void seed_epidemic(const Parameters* par, Community* community) {
         if (par->nInitialExposed[serotype] > 0) {
             attempt_initial_infection = false;
             for (int i=0; i<par->nInitialExposed[serotype]; i++)
-                community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()) + 1, (Serotype) serotype,0);
+                community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()), (Serotype) serotype,0);
         }
     }
     if (attempt_initial_infection) {
@@ -148,7 +148,7 @@ void seed_epidemic(const Parameters* par, Community* community) {
 
                 // must infect nInitialInfected persons -- this bit is mysterious
                 while (community->getNumInfected(0) < count + par->nInitialInfected[serotype]) {
-                    community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()) + 1, (Serotype) serotype,0);
+                    community->infect(gsl_rng_uniform_int(RNG, community->getNumPeople()), (Serotype) serotype,0);
                 }
             }
         }
@@ -338,7 +338,7 @@ int seed_epidemic(const Parameters* par, Community* community, const Date &date)
         const int num_exposed = gsl_ran_poisson(RNG, expected_num_exposed);
         for (int i=0; i<num_exposed; i++) {
             // gsl_rng_uniform_int returns on [0, numperson-1]
-            int transmit_to_id = gsl_rng_uniform_int(RNG, numperson) + 1;
+            int transmit_to_id = gsl_rng_uniform_int(RNG, numperson);
             if (community->infect(transmit_to_id, (Serotype) serotype, date.day())) {
                 introduced_infection_ct++;
             }
