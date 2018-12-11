@@ -55,7 +55,13 @@ baseline.rds: parse.R $(REFDB)
 intervention.rds: parse.R $(REFDB)
 	Rscript $^ $@
 
+lagged_intervention.rds: lagparse.R $(LAGDB)
+	Rscript $^ $@
+
 effectiveness.rds: eff.R baseline.rds intervention.rds
+	Rscript $^ $@
+
+lag_effectiveness.rds: eff.R baseline.rds lagged_intervention.rds
 	Rscript $^ $@
 
 comboeff.rds: comboeff.R effectiveness.rds
@@ -64,12 +70,15 @@ comboeff.rds: comboeff.R effectiveness.rds
 effstats.rds: effstats.R comboeff.rds
 	Rscript $^ $@
 
-digests: baseline.rds intervention.rds effectiveness.rds comboeff.rds effstats.rds
+digests: effectiveness.rds lag_effectiveness.rds comboeff.rds effstats.rds
 
 fig_2.png: fig_2.R effstats.rds
 	Rscript $^ $@
 
 fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ $@
+
+lag_plot.png: lag_plot.R baseline.rds lagged_intervention.rds lag_effectiveness.rds
 	Rscript $^ $@
 
 alt_fig_1.png: alt_fig_1.R baseline.rds intervention.rds effstats.rds
