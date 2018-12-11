@@ -6,8 +6,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 effectiveness.dt <- readRDS(args[1])
 
-vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff), by=.(particle, replicate, vc_coverage, year)]
-vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff), by=.(particle, replicate, vac_mech, catchup, year)]
+vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff, c.vec.eff=c.eff), by=.(particle, replicate, vc_coverage, year)]
+vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff, c.vac.eff=c.eff), by=.(particle, replicate, vac_mech, catchup, year)]
 combo.dt <- effectiveness.dt[(vc != 0) & (vac != 0)]
 
 syn.dt <- combo.dt[
@@ -17,7 +17,9 @@ syn.dt <- combo.dt[
 ][, # get the interesting measures
   .(
     combo.eff=eff, ind.eff = (vec.eff + vac.eff - vec.eff*vac.eff),
-    vec.eff, vac.eff
+    vec.eff, vac.eff,
+    c.combo.eff=c.eff, c.ind.eff = (c.vec.eff + c.vac.eff - c.vec.eff*c.vac.eff),
+    c.vec.eff, c.vac.eff
   ), by=.(particle, replicate, year, vc_coverage, vac_mech, catchup)
   # ...organized by relevant divisions
 ]
@@ -31,16 +33,16 @@ syn.dt[,
 
 saveRDS(syn.dt, args[2])
 
-stat.syn.dt <- syn.dt[,
-  .(
-    med.syn = stats::median(syn, na.rm=T),
-    med.syn.frac = stats::median(syn.frac, na.rm=T)
-  ),
-  #.(med.eff = sum(eff)),
-  keyby=.(
-    vc_coverage,
-    vac_mech,
-    catchup,
-    year
-  )
-]
+# stat.syn.dt <- syn.dt[,
+#   .(
+#     med.syn = stats::median(syn, na.rm=T),
+#     med.syn.frac = stats::median(syn.frac, na.rm=T)
+#   ),
+#   #.(med.eff = sum(eff)),
+#   keyby=.(
+#     vc_coverage,
+#     vac_mech,
+#     catchup,
+#     year
+#   )
+# ]

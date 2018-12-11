@@ -11,7 +11,10 @@ intervention.dt <- readRDS(args[2])
 eff.dt <- intervention.dt[baseline.dt, on=.(particle = particle, replicate = replicate, year = year), nomatch=0][,
   # join baseline to interventions on particle basis
   # baseline has *only* particle as key
-  .(eff = ifelse(i.s == s, 1.0, (i.s-s)/i.s)),
+  .(
+    eff = ifelse(i.s == s, 1.0, (i.s-s)/i.s),
+    c.eff = ifelse(i.c.s == c.s, 1.0, (i.c.s-c.s)/i.c.s)
+  ),
   keyby=.(vc, vac, vc_coverage, vac_mech, catchup, particle, replicate, year)
 ]
 

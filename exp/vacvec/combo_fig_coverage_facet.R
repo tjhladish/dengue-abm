@@ -102,12 +102,12 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=facto
   ) + theme(
     legend.box = "horizontal",
     legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
-    panel.spacing.y = unit(30,"pt"),
-    panel.spacing.x = unit(15,"pt"),
-    strip.text.y = element_text(angle=90),
     legend.text = element_text(size=rel(0.6)),
     legend.title = element_text(size=rel(0.7)),
-    legend.title.align = 0.5
+    legend.title.align = 0.5,
+    panel.spacing.y = unit(30,"pt"),
+    panel.spacing.x = unit(15,"pt"),
+    strip.text.y = element_text(angle=90)
     # legend.key = element_rect(),
     # legend.key.height = unit(1, "pt")
 #    , strip.background = element_rect(fill="lightgrey", color=NA)

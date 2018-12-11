@@ -1,7 +1,7 @@
 require(data.table)
 require(RSQLite)
 
-args <- c('~/Dropbox/who/vacvec/vacvec.sqlite', "baseline.rds")
+args <- c('vacvec-new_yuc.sqlite', "baseline.rds")
 args <- c('vacvec-new_yuc.sqlite', "intervention.rds")
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
@@ -46,7 +46,7 @@ parse.meas.yr <- function(dt) {
         measure := gsub("(s|imm\\d).+","\\1", variable)
     ]
   dt$variable <- NULL
-  dt
+  return(dt)
 }
 
 # from stopping baseline
@@ -67,6 +67,11 @@ tar.dt <- dcast.data.table(tar.mlt,
 )
 
 tar.dt[, seropositive := 1-imm0 ]
+
+tar.dt[order(year),
+  c.s := cumsum(s),
+  by=c(idvs)
+]
 
 # from stopping intervention
 
