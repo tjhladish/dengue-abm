@@ -1,65 +1,158 @@
 require(data.table)
 require(ggplot2)
 
-args <- c("baseline.rds","intervention.rds","effstats.rds","fig_2.png")
+args <- c("baseline.rds","intervention.rds","effstats.rds", "only=eff", "fig_1.png")
+args <- c("baseline.rds","intervention.rds","effstats.rds", "fig_1.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 baseline.dt <- readRDS(args[1])
 intervention.dt <- readRDS(args[2])
 effstats.rds <- readRDS(args[3])
 
+int.keys <- grep("particle|replicate", key(intervention.dt), invert = T, value = T)
+
+intervention.dt[vc == 0, vc_coverage := 0]
+vac_mechs <- c("cmdvi","traditional","none")
+
+intervention.dt[, vac_mech := factor(vac_mechs[vac_mech + 1], levels = vac_mechs, ordered = T)]
+intervention.dt[vac == 0, vac_mech := factor(vac_mechs[3], levels = vac_mechs, ordered = T)]
+
+catchups <- c("none","catchup")
+intervention.dt[, catchup := factor(catchups[catchup+1], levels = catchups, ordered = T) ]
+
 base.inc <- baseline.dt[,{
   qs <- quantile(s, probs = c(0.025, .25, .5, .75, .975))
   names(qs) <- c("lo.lo","lo","med","hi","hi.hi")
   as.list(qs)
-}, keyby=.(vc_coverage = rep(0,length(year)), year)]
+}, keyby=.(
+  vc = rep(0, length(year)), vac = rep(0, length(year)),
+  vc_coverage = rep(0, length(year)),
+  vac_mech =factor(rep("none", length(year)), levels = vac_mechs, ordered = T),
+  catchup = factor(rep("none", length(year)), levels = catchups, ordered = T),
+  year
+)]
 
-inte.inc <- intervention.dt[vac==0,{
+inte.inc <- intervention.dt[xor(vc,vac), {
   qs <- quantile(s, probs = c(0.025, .25, .5, .75, .975))
   names(qs) <- c("lo.lo","lo","med","hi","hi.hi")
   as.list(qs)  
-}, keyby=.(vc_coverage, year)]
+}, keyby=int.keys ]
 
-eff.mlt <- melt.data.table(
-  effstats.rds[variable == "vec.eff", .(Effectiveness=unique(med)), keyby=.(vc_coverage, year)],
-  id.vars = c("vc_coverage","year"),
-  variable.name = "measure"
-)
-  
-plot.dt <- rbind(melt.data.table(
-  rbind(base.inc, inte.inc)[,.(Incidence=med),keyby=.(vc_coverage, year)],
-  id.vars = c("vc_coverage","year"),
-  variable.name = "measure"
-), eff.mlt)
+scn.lvls <- c("vaccine","vec")
 
-vec_lines <- c(`0`=3,`25`=2,`50`=5,`75`=1) # c(`25`="dotted",`50`="dashed",`75`="solid")
-
-limits <- data.table(
-  measure = factor(c(rep("Incidence", 2), rep("Effectiveness", 2))),
-  vc_coverage = rep(25, 4),
-  year = rep(1, 4),
-  value = c(c(0., 22500.0), c(0.0, 1.0))
+inc.plot.dt <- rbind(
+  copy(base.inc)[, scenario := factor(scn.lvls[1], levels=scn.lvls, ordered = T ) ],
+  copy(base.inc)[, scenario := factor(scn.lvls[2], levels=scn.lvls, ordered = T ) ],
+  inte.inc[, scenario := factor(scn.lvls[vc+1], levels=scn.lvls, ordered = T) ]
 )
 
-p<-ggplot(plot.dt) +
-  aes(x=year, y=value, linetype=factor(vc_coverage)) +
-  geom_line() +
-  geom_blank(data=limits) +
-  facet_grid(measure ~ ., scales="free", switch = "y") +
-  scale_linetype_manual("Coverage %", values=vec_lines) +
-  scale_x_continuous("Year", expand = expand_scale(0.03, 0)) +
-  scale_y_continuous(expand = expand_scale(0, 0)) +
-  theme_minimal() + theme(
-    legend.direction = "horizontal",
-    axis.title.y = element_blank(),
-    strip.placement = "outside",
+yucpop <- 18.17734 # 100ks
+
+plot.dt <- inc.plot.dt[, value := med/yucpop ][,
+  measure := factor("incidence", levels = c("incidence","effectiveness"), ordered = T)
+][, .(value), by=.(vc_coverage, vac_mech, catchup, year, scenario, measure)]
+
+vac.eff <- effstats.rds[variable == "vac.eff", .(
+  value={
+    if (length(unique(med)) != 1) warning("non unique median vac.eff")
+    median(med)
+  },
+  measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
+  vc_coverage=0, scenario="vaccine"),
+  keyby=.(vac_mech = vac_mechs[vac_mech+1], catchup=catchups[catchup+1], year)
+]
+vec.eff <- effstats.rds[variable == "vec.eff", .(
+  value={
+    if (length(unique(med)) != 1) warning("non unique median vec.eff")
+    median(med)
+  },
+  measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
+  scenario="vec", vac_mech=vac_mechs[3], catchup=catchups[1]),
+  keyby=.(vc_coverage, year)
+]
+
+twoplot <- rbind(plot.dt, vec.eff, vac.eff)
+
+extend <- copy(twoplot[year == 39])[, year := 40 ]
+
+gds <- function(ord) guide_legend(
+  title.position = "top", direction = "horizontal", order = ord,
+  label.position = "top"
+)
+
+facet_labels <- labeller(
+  measure = c(effectiveness="Annual Effectiveness", incidence="Annual Incidence per 100k"),
+  scenario = c(vaccine="Vaccine Only",vec="Vector Control Only")
+)
+
+sizebase <- 0.5
+sizestep <- 0.2
+sizes <- seq(from=sizebase, by=0.2, length.out = 4)
+names(sizes) <- c(0,25,50,75)
+
+limits.dt <- twoplot[,.(value=c(0, ceiling(max(value, na.rm = T))), year=-1), by=measure]
+
+limits.dt[measure == "incidence", value := { ceiling(value/250)*250 }]
+
+if (length(args) == 5) {
+  if (!grepl("only=(eff|inc|vac|vec)", args[4])) stop(sprintf("Provided incorrect 'only=' arg: %s", args[4]))
+  only <- gsub("only=","",args[4])
+  if ((only == "eff") | (only == "inc")) {
+    limits.dt <- limits.dt[grepl(only, measure)]
+    filter.dt <- twoplot[grepl(only, measure)]
+    legend_theme <- theme(
+      legend.position = "bottom"#, legend.justification = c(0.5, 0.5)
+    )
+  } else {
+    filter.dt <- twoplot[grepl(only, scenario)]
+    legend_theme <- theme(
+      legend.position = "right",
+      legend.justification = c(0, 0.5),
+      legend.box = "vertical"
+    )
+  }
+} else {
+  filter.dt <- twoplot
+  legend_theme <- theme(
     legend.position = c(0.5, 0.5),
     legend.justification = c(0.5, 0.5),
-    legend.margin = margin(), legend.spacing = unit(0, "pt"),
-    panel.spacing.y = unit(15, "pt")
+    legend.box = "horizontal"
+  )
+}
+
+p <- ggplot(
+#  rbind(twoplot, extend) # for step / segment versions
+  filter.dt
+) + aes(
+  # x=year,
+  x=year + 1,
+  y=value, color=vac_mech, linetype=catchup,
+    size=factor(vc_coverage)
+  ) +
+  facet_grid(measure ~ scenario, scales = "free_y", switch = "y", labeller = facet_labels) +
+#  geom_segment(mapping = aes(yend=value, xend=year+1)) +
+# geom_step() +
+  geom_blank(mapping=aes(color=NULL, linetype=NULL, size=NULL, group=NULL), data=limits.dt) +
+  geom_line(linejoin = "mitre", lineend = "butt") +
+  theme_minimal() +
+  scale_color_manual("Vaccine", values=c(none="black",cmdvi="blue",traditional="green"), guide=gds(1)) +
+  scale_linetype_manual("Catchup", values=c(none="solid", catchup="dashed"), guide=gds(2)) +
+  scale_size_manual("Vector Control Coverage %", values=sizes, guide=gds(3)) +
+  scale_x_continuous("Year", expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  coord_cartesian(xlim=c(0,40)) +
+  legend_theme +
+  theme(
+    axis.title.y = element_blank(),
+    strip.placement = "outside",
+    legend.margin = margin(), legend.spacing = unit(25, "pt"),
+    legend.text = element_text(size=rel(0.5)),
+    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
+    panel.spacing.y = unit(30, "pt"), panel.spacing.x = unit(15, "pt"),
+    legend.key.height = unit(1,"pt")
   )
 
 ggsave(
   tail(args,1), p, device = "png",
-  width = 4, height = 6, dpi = "retina", units = "in"
+  width = 7.5, height = 5, dpi = "retina", units = "in"
 )
