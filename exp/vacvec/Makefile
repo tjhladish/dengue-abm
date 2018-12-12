@@ -79,8 +79,8 @@ fig_2.png: fig_2.R effstats.rds
 	Rscript $^ $@
 
 # old version
-#fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
-#	Rscript $^ $@
+old_fig_1.png: old_fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ $@
 
 lag_plot.png: lag_plot.R baseline.rds lagged_intervention.rds lag_effectiveness.rds
 	Rscript $^ $@
@@ -88,21 +88,14 @@ lag_plot.png: lag_plot.R baseline.rds lagged_intervention.rds lag_effectiveness.
 fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
-# show only the incidence panels of fig 1
-fig_1_inc.png: fig_1.R baseline.rds intervention.rds effstats.rds
-	Rscript $^ only=inc $@
+# show only the * panels of fig 1
+#  if % = vac / vec, then show just the vaccine-only (vector control only, resp) results
+#  if % = inc / eff, then show just the incidence (effectiveness, resp) results
+fig_1_vac.png fig_1_vec.png fig_1_inc.png fig_1_eff.png: fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ only=$(patsubst fig_1_%.png,%,$@) $@
 
-# show only the effectiveness panels of fig 1
-fig_1_eff.png: fig_1.R baseline.rds intervention.rds effstats.rds
-	Rscript $^ only=eff $@
-
-# show only the vaccine panels of fig 1
-fig_1_vac.png: fig_1.R baseline.rds intervention.rds effstats.rds
-	Rscript $^ only=vac $@
-
-# show only the vector control panels of fig 1
-fig_1_vec.png: fig_1.R baseline.rds intervention.rds effstats.rds
-	Rscript $^ only=vec $@
+clean_fig_1_slices: | fig_1_*.png
+	rm $|
 
 combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
 	Rscript $^ $@
@@ -118,7 +111,7 @@ SI_ceff_fig.png: ceff_fig.R effectiveness.rds comboeff.rds
 
 .PHONY: figures
 
-MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
+MANUSCRIPTFIGS := fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
 
 figures: $(MANUSCRIPTFIGS)
 

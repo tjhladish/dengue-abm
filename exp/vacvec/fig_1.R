@@ -152,7 +152,14 @@ p <- ggplot(
     legend.key.height = unit(1,"pt")
   )
 
-ggsave(
+figdim <- within(as.list(Sys.getenv(c("WIDTH","HEIGHT"), unset = NA)),{
+  if (is.na(HEIGHT)) HEIGHT <- 5
+  if (is.na(WIDTH)) WIDTH <- 7.5
+  HEIGHT <- as.numeric(HEIGHT)
+  WIDTH <- as.numeric(WIDTH)
+})
+
+with(figdim, ggsave(
   tail(args,1), p, device = "png",
-  width = 7.5, height = 5, dpi = "retina", units = "in"
-)
+  width = WIDTH, height = HEIGHT, dpi = "retina", units = "in"
+))
