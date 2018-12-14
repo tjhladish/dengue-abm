@@ -7,12 +7,12 @@ args <- commandArgs(trailingOnly = TRUE)
 baseline.dt <- readRDS(args[1])
 intervention.dt <- readRDS(args[2])
 
+bkeys <- key(baseline.dt)
 ikeys <- key(intervention.dt)
 
 ## perform effectiveness calcs
-eff.dt <- intervention.dt[baseline.dt, on=.(particle = particle, replicate = replicate, year = year), nomatch=0][,
-  # join baseline to interventions on particle basis
-  # baseline has *only* particle as key
+eff.dt <- intervention.dt[baseline.dt, on=bkeys, nomatch=0][,
+  # join baseline to interventions on sample (e.g., particle; particle + replicate; p/r/foi; etc) basis
   .(
     eff = ifelse(i.s == s, 1.0, (i.s-s)/i.s),
     c.eff = ifelse(i.c.s == c.s, 1.0, (i.c.s-c.s)/i.c.s)

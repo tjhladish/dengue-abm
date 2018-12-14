@@ -1,36 +1,33 @@
 require(data.table)
 require(ggplot2)
 
+source("utils.R")
+source("projref.R")
+
+# example inputs for debugging
 args <- c("baseline.rds","intervention.rds","effstats.rds", "only=eff", "fig_1.png")
 args <- c("baseline.rds","intervention.rds","effstats.rds", "fig_1.png")
+
+# expected args:
+#  1-3 required: reference_results, interventions_results, effectiveness_stats
+#  optional: slice of plot facets
+#  required: target plot file
 args <- commandArgs(trailingOnly = TRUE)
 
-baseline.dt <- readRDS(args[1])
+# load the reference digests
+baseline.dt     <- readRDS(args[1])
 intervention.dt <- readRDS(args[2])
-effstats.rds <- readRDS(args[3])
+effstats.rds    <- readRDS(args[3])
 
-int.keys <- grep("particle|replicate", key(intervention.dt), invert = T, value = T)
+# introspect the scenario keys - all the keys for intervention.dt
+#  *except* those specified by `samplecols`
+int.keys <- setdiff(key(intervention.dt), samplecols)
 
-intervention.dt[vc == 0, vc_coverage := 0]
-vac_mechs <- c("cmdvi","traditional","none")
-
-intervention.dt[, vac_mech := factor(vac_mechs[vac_mech + 1], levels = vac_mechs, ordered = T)]
-intervention.dt[vac == 0, vac_mech := factor(vac_mechs[3], levels = vac_mechs, ordered = T)]
-
-catchups <- c("none","catchup")
-intervention.dt[, catchup := factor(catchups[catchup+1], levels = catchups, ordered = T) ]
-
-base.inc <- baseline.dt[,{
+base.inc <- setkeyv(cbind(baseline.dt[,{
   qs <- quantile(s, probs = c(0.025, .25, .5, .75, .975))
   names(qs) <- c("lo.lo","lo","med","hi","hi.hi")
   as.list(qs)
-}, keyby=.(
-  vc = rep(0, length(year)), vac = rep(0, length(year)),
-  vc_coverage = rep(0, length(year)),
-  vac_mech =factor(rep("none", length(year)), levels = vac_mechs, ordered = T),
-  catchup = factor(rep("none", length(year)), levels = catchups, ordered = T),
-  year
-)]
+}, by=year], reference.scenario), int.keys)
 
 inte.inc <- intervention.dt[xor(vc,vac), {
   qs <- quantile(s, probs = c(0.025, .25, .5, .75, .975))
@@ -50,16 +47,17 @@ yucpop <- 18.17734 # 100ks
 
 plot.dt <- inc.plot.dt[, value := med/yucpop ][,
   measure := factor("incidence", levels = c("incidence","effectiveness"), ordered = T)
-][, .(value), by=.(vc_coverage, vac_mech, catchup, year, scenario, measure)]
+][, .(value), by=c(setdiff(int.keys,c("vc","vac")), "scenario", "measure")]
 
 vac.eff <- effstats.rds[variable == "vac.eff", .(
   value={
     if (length(unique(med)) != 1) warning("non unique median vac.eff")
     median(med)
   },
-  measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
-  vc_coverage=0, scenario="vaccine"),
-  keyby=.(vac_mech = vac_mechs[vac_mech+1], catchup=catchups[catchup+1], year)
+  measure = factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
+  vc_coverage=0, scenario="vaccine"
+  ),
+  keyby=.(vaccine, catchup, year)
 ]
 vec.eff <- effstats.rds[variable == "vec.eff", .(
   value={
@@ -67,7 +65,7 @@ vec.eff <- effstats.rds[variable == "vec.eff", .(
     median(med)
   },
   measure=factor("effectiveness", levels = c("incidence","effectiveness"), ordered = T),
-  scenario="vec", vac_mech=vac_mechs[3], catchup=catchups[1]),
+  scenario="vec", vaccine=reference.scenario$vaccine[1], catchup=reference.scenario$catchup[1]),
   keyby=.(vc_coverage, year)
 ]
 
@@ -126,7 +124,7 @@ p <- ggplot(
 ) + aes(
   # x=year,
   x=year + 1,
-  y=value, color=vac_mech, linetype=catchup,
+  y=value, color=vaccine, linetype=catchup,
     size=factor(vc_coverage)
   ) +
   facet_grid(measure ~ scenario, scales = "free_y", switch = "y", labeller = facet_labels) +
@@ -135,7 +133,7 @@ p <- ggplot(
   geom_blank(mapping=aes(color=NULL, linetype=NULL, size=NULL, group=NULL), data=limits.dt) +
   geom_line(linejoin = "mitre", lineend = "butt") +
   theme_minimal() +
-  scale_color_manual("Vaccine", values=c(none="black",cmdvi="blue",traditional="green"), guide=gds(1)) +
+  scale_color_manual("Vaccine", values=vac_cols, guide=gds(1)) +
   scale_linetype_manual("Catchup", values=c(none="solid", catchup="dashed"), guide=gds(2)) +
   scale_size_manual("Vector Control Coverage %", values=sizes, guide=gds(3)) +
   scale_x_continuous("Year", expand = c(0,0)) +
@@ -152,14 +150,4 @@ p <- ggplot(
     legend.key.height = unit(1,"pt")
   )
 
-figdim <- within(as.list(Sys.getenv(c("WIDTH","HEIGHT"), unset = NA)),{
-  if (is.na(HEIGHT)) HEIGHT <- 5
-  if (is.na(WIDTH)) WIDTH <- 7.5
-  HEIGHT <- as.numeric(HEIGHT)
-  WIDTH <- as.numeric(WIDTH)
-})
-
-with(figdim, ggsave(
-  tail(args,1), p, device = "png",
-  width = WIDTH, height = HEIGHT, dpi = "retina", units = "in"
-))
+plotutil(p, h=5, w=7.5, args)

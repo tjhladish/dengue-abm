@@ -52,16 +52,23 @@ clean:
 
 -include local.mk
 
-baseline.rds: parse.R $(REFDB)
+baseline.rds intervention.rds: parse.R $(REFDB) projref.R
 	Rscript $^ $@
 
-intervention.rds: parse.R $(REFDB)
+foi_baseline.rds foi_intervention.rds: parse.R $(FOIDB) projref.R
 	Rscript $^ $@
+
+rootdigests: baseline.rds intervention.rds
+
+foidigests: foi_baseline.rds foi_intervention.rds
 
 lagged_intervention.rds: lagparse.R $(LAGDB)
 	Rscript $^ $@
 
 effectiveness.rds: eff.R baseline.rds intervention.rds
+	Rscript $^ $@
+
+foi_effectiveness.rds: eff.R foi_baseline.rds foi_intervention.rds
 	Rscript $^ $@
 
 lag_effectiveness.rds: eff.R baseline.rds lagged_intervention.rds
@@ -70,7 +77,13 @@ lag_effectiveness.rds: eff.R baseline.rds lagged_intervention.rds
 comboeff.rds: comboeff.R effectiveness.rds
 	Rscript $^ $@
 
+foi_comboeff.rds: comboeff.R foi_effectiveness.rds
+	Rscript $^ $@
+
 effstats.rds: effstats.R comboeff.rds
+	Rscript $^ $@
+
+foi_effstats.rds: effstats.R foi_comboeff.rds
 	Rscript $^ $@
 
 digests: effectiveness.rds lag_effectiveness.rds comboeff.rds effstats.rds
@@ -85,7 +98,15 @@ old_fig_1.png: old_fig_1.R baseline.rds intervention.rds effstats.rds
 lag_plot.png: lag_plot.R baseline.rds lagged_intervention.rds lag_effectiveness.rds
 	Rscript $^ $@
 
-fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
+foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds
+	Rscript $^ $@
+
+foi_fig_2.png: foi_fig_2.R foi_effstats.rds effstats.rds
+	Rscript $^ $@
+
+
+
+fig_1.png fig_1.tiff: fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
 # show only the * panels of fig 1
@@ -117,3 +138,5 @@ figures: $(MANUSCRIPTFIGS)
 
 clean_figs: $(MANUSCRIPTFIGS)
 	rm $^
+
+# NEW DB IS *ivn_lag2.sqlite

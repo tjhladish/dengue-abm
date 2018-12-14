@@ -1,23 +1,25 @@
 require(data.table)
 
 args <- c("comboeff.rds", "effstats.rds")
+args <- c("foi_comboeff.rds", "effstats.rds")
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
 comboeff.dt <- readRDS(args[1])
+ckeys <- key(comboeff.dt)
 
 mlt <- melt.data.table(
   comboeff.dt,
-  id.vars = c("year","vc_coverage","vac_mech","catchup", "particle", "replicate")
+  id.vars = ckeys
 )
 
-setkeyv(mlt, c("variable", "vc_coverage","vac_mech", "catchup", "year"))
+mkeys <- c("variable", setdiff(ckeys,c("particle","replicate")))
 
 res <- mlt[,{
   qs <- quantile(value, probs = c(0.025,.25,.5,.75,.975), na.rm=T)
   names(qs) <- c("lo.lo","lo","med","hi","hi.hi")
   as.list(qs)
   # .(med=qs[3])
-}, by=key(mlt)]
+}, by=mkeys]
 
 saveRDS(res, args[2])

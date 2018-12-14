@@ -1,26 +1,30 @@
 require(data.table)
 
 args <- c("effectiveness.rds", "comboeff.rds")
+args <- c("foi_effectiveness.rds", "comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
 effectiveness.dt <- readRDS(args[1])
 
-vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff, c.vec.eff=c.eff), by=.(particle, replicate, vc_coverage, year)]
-vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff, c.vac.eff=c.eff), by=.(particle, replicate, vac_mech, catchup, year)]
+veckeys <- setdiff(key(effectiveness.dt), c("vac","vc","vaccine","catchup"))
+vackeys <- setdiff(key(effectiveness.dt), c("vac","vc","vc_coverage"))
+
+vec.dt <- effectiveness.dt[vac == 0, .(vec.eff=eff, c.vec.eff=c.eff), by=veckeys]
+vac.dt <- effectiveness.dt[vc == 0, .(vac.eff=eff, c.vac.eff=c.eff), by=vackeys]
 combo.dt <- effectiveness.dt[(vc != 0) & (vac != 0)]
 
 syn.dt <- combo.dt[
-  vec.dt, on=.(particle, replicate, vc_coverage, year), nomatch=0 # join vector control only results
+  vec.dt, on=veckeys, nomatch=0 # join vector control only results
 ][
-  vac.dt, on=.(particle, replicate, vac_mech, catchup, year), nomatch=0 # join vaccine only results
+  vac.dt, on=vackeys, nomatch=0 # join vaccine only results
 ][, # get the interesting measures
   .(
     combo.eff=eff, ind.eff = (vec.eff + vac.eff - vec.eff*vac.eff),
     vec.eff, vac.eff,
     c.combo.eff=c.eff, c.ind.eff = (c.vec.eff + c.vac.eff - c.vec.eff*c.vac.eff),
     c.vec.eff, c.vac.eff
-  ), by=.(particle, replicate, year, vc_coverage, vac_mech, catchup)
+  ), keyby = c(union(vackeys, veckeys))
   # ...organized by relevant divisions
 ]
 
@@ -41,7 +45,7 @@ saveRDS(syn.dt, args[2])
 #   #.(med.eff = sum(eff)),
 #   keyby=.(
 #     vc_coverage,
-#     vac_mech,
+#     vaccine,
 #     catchup,
 #     year
 #   )
