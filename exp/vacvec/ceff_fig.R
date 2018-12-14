@@ -2,6 +2,8 @@ require(data.table)
 require(ggplot2)
 # inter-quartile plots
 
+source("projref.R")
+
 args <- c("effectiveness.rds","comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -12,11 +14,7 @@ stats.dt <- effectiveness.dt[,{
   qs <- quantile(c.eff, probs = c(.25,.5,.75), na.rm = T)
   names(qs) <- c("IQlo","med","IQhi")
   as.list(qs)
-}, keyby=.(vc, vac, vc_coverage, vac_mech, catchup, year)]
-
-stats.dt[vc == 0, vc_coverage := 0]
-stats.dt[, vac_mech := factor(ifelse(vac==1,c("cmdvi","trad")[vac_mech+1],"none"))]
-stats.dt[, catchup := factor(c("none","catchup")[catchup+1])]
+}, keyby=.(vc, vac, vc_coverage, vaccine, catchup, year)]
 
 flabs <- labeller(
   catchup=c(none="None", catchup="Catchup"),
@@ -32,19 +30,19 @@ gds <- function(
 )
 
 p <- ggplot(stats.dt) +
-  aes(x=year+1, y=med, ymin=IQlo, ymax=IQhi, fill=vac_mech) +
+  aes(x=year+1, y=med, ymin=IQlo, ymax=IQhi, fill=vaccine) +
   facet_grid(catchup ~ vc_coverage, labeller = flabs) +
   geom_ribbon(alpha=.5) +
-  geom_line(mapping=aes(color=vac_mech)) +
+  geom_line(mapping=aes(color=vaccine)) +
   theme_minimal() +
   scale_color_manual("Vaccine",
     labels=c(cmdvi="CMDVI",trad="Traditional", none="None"),
-    values=c(cmdvi="blue", trad="green", none="black"),
+    values=vac_cols,
     guide=gds(order=1)
   ) +
   scale_fill_manual("Vaccine",
     labels=c(cmdvi="CMDVI",trad="Traditional", none="None"),
-    values=c(cmdvi="blue", trad="green", none="black"),
+    values=vac_cols,
     guide=gds(order=1)
   ) +
   scale_x_continuous("Year", expand = c(0,0)) +

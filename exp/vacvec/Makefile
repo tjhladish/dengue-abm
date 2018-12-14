@@ -132,7 +132,7 @@ SI_ceff_fig.png: ceff_fig.R effectiveness.rds comboeff.rds
 
 .PHONY: figures
 
-MANUSCRIPTFIGS := fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
+MANUSCRIPTFIGS := $(addsuffix .png,fig_1 combo_fig_coverage_facet foi_fig_2 SI_IQ_fig SI_ceff_fig)
 
 figures: $(MANUSCRIPTFIGS)
 
