@@ -41,3 +41,7 @@ dbutil <- function(dbfile, sql) {
   dbDisconnect(db)
   return(res)
 }
+
+scale_fillcolor_manual <- function(...) {
+  return(list(scale_fill_manual(...), scale_color_manual(...)))
+}

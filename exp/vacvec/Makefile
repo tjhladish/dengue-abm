@@ -58,12 +58,12 @@ baseline.rds intervention.rds: parse.R $(REFDB) projref.R
 foi_baseline.rds foi_intervention.rds: parse.R $(FOIDB) projref.R
 	Rscript $^ $@
 
+lag_intervention.rds: parse.R $(LAGDB) projref.R
+	Rscript $^ $@
+
 rootdigests: baseline.rds intervention.rds
 
 foidigests: foi_baseline.rds foi_intervention.rds
-
-lagged_intervention.rds: lagparse.R $(LAGDB)
-	Rscript $^ $@
 
 effectiveness.rds: eff.R baseline.rds intervention.rds
 	Rscript $^ $@
@@ -71,7 +71,7 @@ effectiveness.rds: eff.R baseline.rds intervention.rds
 foi_effectiveness.rds: eff.R foi_baseline.rds foi_intervention.rds
 	Rscript $^ $@
 
-lag_effectiveness.rds: eff.R baseline.rds lagged_intervention.rds
+lag_effectiveness.rds: eff.R baseline.rds lag_intervention.rds
 	Rscript $^ $@
 
 comboeff.rds: comboeff.R effectiveness.rds
@@ -88,6 +88,7 @@ foi_effstats.rds: effstats.R foi_comboeff.rds
 
 digests: effectiveness.rds lag_effectiveness.rds comboeff.rds effstats.rds
 
+# not the real fig 2
 fig_2.png: fig_2.R effstats.rds
 	Rscript $^ $@
 
@@ -104,8 +105,6 @@ foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness
 foi_fig_2.png: foi_fig_2.R foi_effstats.rds effstats.rds
 	Rscript $^ $@
 
-
-
 fig_1.png fig_1.tiff: fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
@@ -121,6 +120,7 @@ clean_fig_1_slices: | fig_1_*.png
 combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
 	Rscript $^ $@
 
+# real fig 2
 combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
 	Rscript $^ $@
 

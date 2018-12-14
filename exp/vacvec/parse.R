@@ -64,6 +64,19 @@ if (tar == "baseline.rds") {
           and status = 'D'
           and vector_control = 0
           and vac = 0;", samplecols[1], samplecols[2])
+} else if (tar == "lag_intervention.rds") {
+  qry <- "select M.*,
+          posterior as particle, CAST(realization AS INT) as replicate,
+          vector_control as vc,
+          vac,
+          vc_coverage*100 as vc_coverage,
+          vac_mech,
+          catchup,
+          vac_first
+          from met M, par P, job J
+          where M.serial = P.serial and M.serial = J.serial
+          and status = 'D'
+          and (vector_control = 1 or vac = 1);"
 } else stop(sprintf("don't know the appropriate query for %s",tar))
 
 # dbutil from utils.R
@@ -75,7 +88,11 @@ rmv <- c(grep("s_|imm\\d__",names(tar.dt), value = T), "serial")
 tar.dt <- tar.dt[,.SD,.SDcols=-rmv]
 
 idvs <- samplecols
+
+# add extra keys for special analyses
 if (grepl("foi",tar)) idvs <- c("foi", idvs)
+if (grepl("lag",tar)) idvs <- c("vac_first", idvs)
+
 if (grepl("intervention", tar)) {
   idvs <- c("vc", "vac", "vc_coverage","vaccine","catchup", idvs)
   tar.dt[vc == 0, vc_coverage := 0]

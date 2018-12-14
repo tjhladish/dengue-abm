@@ -2,13 +2,14 @@ require(data.table)
 require(ggplot2)
 # inter-quartile plots
 
+source("utils.R")
 source("projref.R")
 
 args <- c("effectiveness.rds","comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
 effectiveness.dt <- readRDS(args[1])
-comboeff.dt <- readRDS(args[2])
+comboeff.dt      <- readRDS(args[2])
 
 stats.dt <- effectiveness.dt[,{
   qs <- quantile(c.eff, probs = c(.25,.5,.75), na.rm = T)
@@ -35,12 +36,7 @@ p <- ggplot(stats.dt) +
   geom_ribbon(alpha=.5) +
   geom_line(mapping=aes(color=vaccine)) +
   theme_minimal() +
-  scale_color_manual("Vaccine",
-    labels=c(cmdvi="CMDVI",trad="Traditional", none="None"),
-    values=vac_cols,
-    guide=gds(order=1)
-  ) +
-  scale_fill_manual("Vaccine",
+  scale_fillcolor_manual("Vaccine",
     labels=c(cmdvi="CMDVI",trad="Traditional", none="None"),
     values=vac_cols,
     guide=gds(order=1)
@@ -59,7 +55,4 @@ p <- ggplot(stats.dt) +
     legend.title.align = 0.5
   )
 
-ggsave(
-  tail(args,1), p, device = "png",
-  width = 7.5, height = 5, dpi = "retina", units = "in"
-)
+plotutil(p, h=5, w=7.5, args)
