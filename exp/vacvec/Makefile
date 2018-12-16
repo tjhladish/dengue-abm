@@ -80,6 +80,9 @@ comboeff.rds: comboeff.R effectiveness.rds
 foi_comboeff.rds: comboeff.R foi_effectiveness.rds
 	Rscript $^ $@
 
+lag_comboeff.rds: lag_comboeff.R lag_effectiveness.rds effectiveness.rds
+	Rscript $^ $@
+
 effstats.rds: effstats.R comboeff.rds
 	Rscript $^ $@
 
