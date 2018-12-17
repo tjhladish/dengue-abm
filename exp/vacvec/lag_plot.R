@@ -3,19 +3,20 @@ require(ggplot2)
 
 source("projref.R")
 
-args <- c("lag_effstats.rds")
+args <- c("lag_effstats.rds", "effstats.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
 stat.eff.dt <- readRDS(args[1])
+ref.stat.dt <- readRDS(args[2])
 
 ekeys <- key(stat.eff.dt)
 
 vac.only <- stat.eff.dt[variable == "vac.eff", .(vac.eff=unique(med)), keyby=.(vaccine, catchup, year, vac_first)]
-naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vc_coverage, vaccine, catchup, year, vac_first)]
+naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
 
 ribbon.dt <- naive[vac.only, on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T]
 
-combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vc_coverage, vaccine, catchup, year, vac_first)]
+combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
 
 other.ribbon <- combo.dt[naive, on=.(vc_coverage, vaccine, catchup, year, vac_first), nomatch=0][vac.only, on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T]
 
@@ -59,11 +60,10 @@ geom_altribbon <- function(dt, withlines = TRUE, by=NULL) {
   res
 }
 
-# vac.only.lines <- rbind(
-#   copy(vac.only)[, vc_coverage := 25 ],
-#   copy(vac.only)[, vc_coverage := 50 ],
-#   copy(vac.only)[, vc_coverage := 75 ]
-# )
+ref.combo <- rbind(
+  copy(ref.stat.dt)[, vac_first := 1 ],
+  copy(ref.stat.dt)[, vac_first := 0 ]
+)[variable == "combo.eff" & vaccine == "traditional" & catchup == "catchup" & vc_coverage == 75]
 
 facet_labs <- labeller(
   vac_first = c(`0`="Vector Control First", `1`="Vaccine First")
@@ -79,7 +79,7 @@ gds <- function(order,
 )
 
 p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=factor(vaccine)) +
-#  geom_line(aes(x=year+1, y=vac.eff, size="simulated", color="reference"), vac.only.lines) +
+  geom_line(mapping=aes(x=year+1, y=med, size="simulated", color="reference"), data=ref.combo) +
   geom_altribbon(other.ribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup, vac_first)], by=c("vc_coverage","vaccine","catchup","vac_first")) +
   facet_grid(vac_first ~ ., labeller = facet_labs) +
   scale_size_manual("Combination",
@@ -89,11 +89,11 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
   scale_fill_manual("Interaction",
                     labels=c(`FALSE`="interfere",`TRUE`="enhance"),
                     values=c(`FALSE`="red",`TRUE`="blue"),
-                    guide=gds(order=3, override.aes=list(alpha=0.2/6), keyheight = unit(5,"pt"))
+                    guide=gds(order=3, override.aes=list(alpha=0.2/2), keyheight = unit(5,"pt"))
   ) +
   scale_x_continuous("Year", expand = c(0,0)) +
   scale_y_continuous("Annual Effectiveness", expand=c(0,0)) +
-  coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
+  coord_cartesian(ylim=c(0.5,1), xlim=c(0,40)) +
 # scale_linetype_discrete(
 #   "Vaccine",
 #   labels=c(cmdvi="CMDVI",traditional="Traditional"),
@@ -113,7 +113,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
     #    , strip.background = element_rect(fill="lightgrey", color=NA)
   ) +
   scale_colour_manual(name=NULL,
-                      values=c(`reference`="grey"), labels=c(reference="Vaccine-only Reference"),
+                      values=c(`reference`="grey"), labels=c(reference="Simultaneous Reference"),
                       guide = guide_legend(
                         override.aes = list(fill=NA)
                       )
