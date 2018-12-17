@@ -106,7 +106,7 @@ fig_2.png: fig_2.R effstats.rds
 old_fig_1.png: old_fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
-lag_plot.png: lag_plot.R lag_effstats.rds
+lag_plot.png: lag_plot.R lag_effstats.rds effstats.rds
 	Rscript $^ $@
 
 foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds
