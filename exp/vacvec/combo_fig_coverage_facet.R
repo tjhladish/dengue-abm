@@ -82,7 +82,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vaccine, linetype=factor
   geom_altribbon(other.ribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup)], by=c("vc_coverage","vaccine","catchup")) +
   facet_grid(catchup ~ vc_coverage, labeller = facet_labs) +
   scale_size_manual("Combination",
-    values=c(simulated=0.5, assumed=0.2),
+    values=c(simulated=1, assumed=0.5),
     guide=gds(order=1, override.aes=list(fill=NA), keyheight = unit(1,"pt"))
   ) +
   scale_fill_manual("Interaction",
@@ -100,7 +100,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vaccine, linetype=factor
     legend.box = "horizontal",
     legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
     legend.text = element_text(size=rel(0.6)),
-    legend.title = element_text(size=rel(0.7)),
+    legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
     panel.spacing.y = unit(30,"pt"),
     panel.spacing.x = unit(15,"pt"),
@@ -112,7 +112,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vaccine, linetype=factor
   scale_colour_manual(name=NULL,
     values=c(`reference`="grey"), labels=c(reference="Vaccine-only Reference"),
     guide = guide_legend(
-      override.aes = list(fill=NA)
+      override.aes = list(fill=NA, size=1)
     )
   ) +
   scale_alpha_manual(values=c(delta=0.2), guide="none")

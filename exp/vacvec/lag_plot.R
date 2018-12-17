@@ -99,7 +99,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
   geom_altribbon(allribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup, vac_first, measure)], by=c("vc_coverage","vaccine","catchup","vac_first","measure")) +
   facet_grid(vac_first ~ measure, labeller = facet_labs) +
   scale_size_manual("Combination",
-                    values=c(simulated=0.5, assumed=0.2),
+                    values=c(simulated=1, assumed=0.5),
                     guide=gds(order=1, override.aes=list(fill=NA), keyheight = unit(1,"pt"))
   ) +
   scale_fill_manual("Interaction",
@@ -110,29 +110,21 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
   scale_x_continuous("Year", expand = c(0,0)) +
   scale_y_continuous("Effectiveness", expand=c(0,0)) +
   coord_cartesian(ylim=c(0.5,1), xlim=c(0,40)) +
-# scale_linetype_discrete(
-#   "Vaccine",
-#   labels=c(cmdvi="CMDVI",traditional="Traditional"),
-#   guide=gds(order=2, override.aes = list(fill=NA), keyheight = unit(1,"pt"))
-# ) +
   theme(
     legend.box = "horizontal",
     legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
     legend.text = element_text(size=rel(0.6)),
-    legend.title = element_text(size=rel(0.7)),
+    legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
     panel.spacing.y = unit(30,"pt"),
     panel.spacing.x = unit(15,"pt"),
     strip.text.y = element_text(angle=90)
-    # legend.key = element_rect(),
-    # legend.key.height = unit(1, "pt")
-    #    , strip.background = element_rect(fill="lightgrey", color=NA)
   ) +
   scale_colour_manual(name=NULL,
-                      values=c(`reference`="grey"), labels=c(reference="Simultaneous Reference"),
-                      guide = guide_legend(
-                        override.aes = list(fill=NA)
-                      )
+    values=c(`reference`="grey"), labels=c(reference="Simultaneous Reference"),
+    guide = guide_legend(
+      override.aes = list(fill=NA, size=1)
+    )
   ) +
   scale_alpha_manual(values=c(delta=0.2), guide="none")
 
