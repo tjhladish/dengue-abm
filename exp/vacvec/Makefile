@@ -74,6 +74,8 @@ foi_effectiveness.rds: eff.R foi_baseline.rds foi_intervention.rds
 lag_effectiveness.rds: eff.R baseline.rds lag_intervention.rds
 	Rscript $^ $@
 
+effectiveness: effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds
+
 comboeff.rds: comboeff.R effectiveness.rds
 	Rscript $^ $@
 
@@ -83,13 +85,18 @@ foi_comboeff.rds: comboeff.R foi_effectiveness.rds
 lag_comboeff.rds: lag_comboeff.R lag_effectiveness.rds effectiveness.rds
 	Rscript $^ $@
 
+comboeff: comboeff.rds foi_comboeff.rds lag_comboeff
+
 effstats.rds: effstats.R comboeff.rds
 	Rscript $^ $@
 
 foi_effstats.rds: effstats.R foi_comboeff.rds
 	Rscript $^ $@
 
-digests: effectiveness.rds lag_effectiveness.rds comboeff.rds effstats.rds
+lag_effstats.rds: effstats.R lag_comboeff.rds
+	Rscript $^ $@
+
+effstat: effstats.rds foi_effstats.rds lag_effstats.rds
 
 # not the real fig 2
 fig_2.png: fig_2.R effstats.rds
@@ -99,7 +106,7 @@ fig_2.png: fig_2.R effstats.rds
 old_fig_1.png: old_fig_1.R baseline.rds intervention.rds effstats.rds
 	Rscript $^ $@
 
-lag_plot.png: lag_plot.R baseline.rds lagged_intervention.rds lag_effectiveness.rds
+lag_plot.png: lag_plot.R lag_effstats.rds
 	Rscript $^ $@
 
 foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds

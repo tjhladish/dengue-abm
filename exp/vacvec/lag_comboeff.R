@@ -12,8 +12,8 @@ nolag_effectiveness.dt <- readRDS(args[2])
 vecref <- nolag_effectiveness.dt[vc == 1 & vac == 0 & vc_coverage == 75]
 vacref <- nolag_effectiveness.dt[vc == 0 & vac == 1 & vaccine == "traditional" & catchup == "catchup"]
 
-veckeys <- setdiff(key(effectiveness.dt), c("vac","vc","vaccine","catchup"))
-vackeys <- setdiff(key(effectiveness.dt), c("vac","vc","vc_coverage"))
+veckeys <- setdiff(key(nolag_effectiveness.dt), c("vac","vc","vaccine","catchup"))
+vackeys <- setdiff(key(nolag_effectiveness.dt), c("vac","vc","vc_coverage"))
 bothkeys <- intersect(veckeys, vackeys)
 
 vec.lag <- vecref[,
@@ -63,4 +63,4 @@ syn.dt[,
   syn.frac := syn / ifelse(syn < 0, ind.eff, 1-ind.eff)
 ]
 
-saveRDS(syn.dt, args[2])
+saveRDS(syn.dt, tail(args, 1))

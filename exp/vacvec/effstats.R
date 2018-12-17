@@ -1,7 +1,8 @@
 require(data.table)
 
 args <- c("comboeff.rds", "effstats.rds")
-args <- c("foi_comboeff.rds", "effstats.rds")
+args <- c("foi_comboeff.rds", "foi_effstats.rds")
+args <- c("lag_comboeff.rds", "lag_effstats.rds")
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
@@ -20,6 +21,6 @@ res <- mlt[,{
   names(qs) <- c("lo.lo","lo","med","hi","hi.hi")
   as.list(qs)
   # .(med=qs[3])
-}, by=mkeys]
+}, keyby=mkeys]
 
 saveRDS(res, args[2])
