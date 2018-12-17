@@ -12,13 +12,26 @@ ref.stat.dt <- readRDS(args[2])
 ekeys <- key(stat.eff.dt)
 
 vac.only <- stat.eff.dt[variable == "vac.eff", .(vac.eff=unique(med)), keyby=.(vaccine, catchup, year, vac_first)]
+cvac.only <- stat.eff.dt[variable == "c.vac.eff", .(vac.eff=unique(med)), keyby=.(vaccine, catchup, year, vac_first)]
 naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
-
-ribbon.dt <- naive[vac.only, on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T]
+cnaive <- stat.eff.dt[variable == "c.ind.eff", .(assume.eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
 
 combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
+ccombo.dt <- stat.eff.dt[variable == "c.combo.eff",.(eff = med), keyby=.(vac_first, vc_coverage, vaccine, catchup, year)]
 
-other.ribbon <- combo.dt[naive, on=.(vc_coverage, vaccine, catchup, year, vac_first), nomatch=0][vac.only, on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T]
+other.ribbon <- combo.dt[naive,
+  on=.(vc_coverage, vaccine, catchup, year, vac_first), nomatch=0
+][vac.only,
+  on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T
+][, measure := factor("annual", levels = c("annual","cumulative"), ordered = T) ]
+
+cother.ribbon <- ccombo.dt[cnaive,
+  on=.(vc_coverage, vaccine, catchup, year, vac_first), nomatch=0
+][cvac.only,
+  on=.(vaccine, catchup, year, vac_first), nomatch=0, allow.cartesian=T
+][, measure := factor("cumulative", levels = c("annual","cumulative"), ordered = T) ]
+
+allribbon <- rbind(other.ribbon, cother.ribbon)
 
 ribbon_intercepts <- function(x, y, ycmp) {
   sp <- cumsum(head(rle(ycmp > y)$lengths, -1))
@@ -63,10 +76,13 @@ geom_altribbon <- function(dt, withlines = TRUE, by=NULL) {
 ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 1 ],
   copy(ref.stat.dt)[, vac_first := 0 ]
-)[variable == "combo.eff" & vaccine == "traditional" & catchup == "catchup" & vc_coverage == 75]
+)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "traditional" & catchup == "catchup" & vc_coverage == 75]
+
+ref.combo[, measure := ifelse(variable == "combo.eff","annual","cumulative") ]
 
 facet_labs <- labeller(
-  vac_first = c(`0`="Vector Control First", `1`="Vaccine First")
+  vac_first = c(`0`="Vector Control First", `1`="Vaccine First"),
+  measure = c(annual="Annual", cumulative="Cumulative")
 )
 
 gds <- function(order,
@@ -80,8 +96,8 @@ gds <- function(order,
 
 p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=factor(vaccine)) +
   geom_line(mapping=aes(x=year+1, y=med, size="simulated", color="reference"), data=ref.combo) +
-  geom_altribbon(other.ribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup, vac_first)], by=c("vc_coverage","vaccine","catchup","vac_first")) +
-  facet_grid(vac_first ~ ., labeller = facet_labs) +
+  geom_altribbon(allribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup, vac_first, measure)], by=c("vc_coverage","vaccine","catchup","vac_first","measure")) +
+  facet_grid(vac_first ~ measure, labeller = facet_labs) +
   scale_size_manual("Combination",
                     values=c(simulated=0.5, assumed=0.2),
                     guide=gds(order=1, override.aes=list(fill=NA), keyheight = unit(1,"pt"))
@@ -92,7 +108,7 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
                     guide=gds(order=3, override.aes=list(alpha=0.2/2), keyheight = unit(5,"pt"))
   ) +
   scale_x_continuous("Year", expand = c(0,0)) +
-  scale_y_continuous("Annual Effectiveness", expand=c(0,0)) +
+  scale_y_continuous("Effectiveness", expand=c(0,0)) +
   coord_cartesian(ylim=c(0.5,1), xlim=c(0,40)) +
 # scale_linetype_discrete(
 #   "Vaccine",

@@ -8,51 +8,44 @@ delay <- 2 # TODO could fetch this from db, and have on=.(year = year+delay)
 
 combo.dt <- readRDS(args[1])
 nolag_effectiveness.dt <- readRDS(args[2])
+allkeys <- key(nolag_effectiveness.dt)
 
-vecref <- nolag_effectiveness.dt[vc == 1 & vac == 0 & vc_coverage == 75]
-vacref <- nolag_effectiveness.dt[vc == 0 & vac == 1 & vaccine == "traditional" & catchup == "catchup"]
 
-veckeys <- setdiff(key(nolag_effectiveness.dt), c("vac","vc","vaccine","catchup"))
-vackeys <- setdiff(key(nolag_effectiveness.dt), c("vac","vc","vc_coverage"))
-bothkeys <- intersect(veckeys, vackeys)
+delayer <- function(dt, del) { 
+  slice <- dt[order(year),
+    .(year, bcases, eff=c(rep(0, del), head(eff,-del)), c.bcases),
+    keyby=.(particle, replicate)
+  ]
+  slice[, icases := ceiling((1-eff)*bcases) ][
+    order(year), c.icases := cumsum(icases), by=.(particle, replicate)
+  ]
+  slice[, c.eff := ifelse(c.bcases == c.icases, 0, (c.bcases - c.icases)/c.bcases) ]
+  return(slice)
+}
 
-vec.lag <- vecref[,
-  .(vec.eff=eff, c.vec.eff=c.eff, year = year + delay),
-  by=c(setdiff(veckeys,"year"))
-][vacref, on=bothkeys, mult="first"][,
-  .(vac_first = 1, vc_coverage=75,
-    vec.eff=ifelse(is.na(vec.eff),0,vec.eff),
-    c.vec.eff=ifelse(is.na(c.vec.eff),0,c.vec.eff),
-    vac.eff = eff, c.vac.eff = c.eff,
-    vaccine, catchup
-    ),
-  by=bothkeys
-]
+vecnolag <- nolag_effectiveness.dt[vc == 1 & vac == 0 & vc_coverage == 75]
+vacnolag <- nolag_effectiveness.dt[vc == 0 & vac == 1 & vaccine == "traditional" & catchup == "catchup"]
 
-vac.lag <- vacref[,
-  .(vac.eff=eff, c.vac.eff=c.eff, year = year + delay),
-  by=c(setdiff(vackeys,"year"))
-][vecref, on=bothkeys, mult="first"][,
-.(vac_first = 0, vc_coverage,
- vac.eff=ifelse(is.na(vac.eff),0,vac.eff),
- c.vac.eff=ifelse(is.na(c.vac.eff),0,c.vac.eff),
- vec.eff = eff, c.vec.eff = c.eff,
- vaccine="traditional", catchup="catchup"
-),
-by=bothkeys
-]
+veclag <- delayer(vecnolag, del=delay)[, .(vec.eff=eff, c.vec.eff=c.eff),keyby=.(particle, replicate, year)]
+vaclag <- delayer(vacnolag, del=delay)[, .(vac.eff=eff, c.vac.eff=c.eff),keyby=.(particle, replicate, year)]
+
+vacref <- vacnolag[,.(vac.eff = eff, c.vac.eff = c.eff), keyby=.(particle, replicate, year)]
+vecref <- vecnolag[,.(vec.eff = eff, c.vec.eff = c.eff), keyby=.(particle, replicate, year)]
+
+vec.lag <- veclag[vacref][, vac_first := 1 ]
+vac.lag <- vaclag[vecref][, vac_first := 0 ]
 
 lags <- rbind(vec.lag, vac.lag)
 
 syn.dt <- combo.dt[lags,
-  on=.(vc_coverage, vaccine, catchup, vac_first, particle, replicate, year)
+  on=.(vac_first, particle, replicate, year)
 ][, # get the interesting measures
   .(
     combo.eff=eff, ind.eff = (vec.eff + vac.eff - vec.eff*vac.eff),
     vec.eff, vac.eff,
     c.combo.eff=c.eff, c.ind.eff = (c.vec.eff + c.vac.eff - c.vec.eff*c.vac.eff),
     c.vec.eff, c.vac.eff
-  ), keyby = c(union(vackeys, veckeys),"vac_first")
+  ), keyby = c("vac_first", allkeys)
   # ...organized by relevant divisions
 ]
 
