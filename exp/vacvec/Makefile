@@ -142,7 +142,7 @@ SI_ceff_fig.png: ceff_fig.R effectiveness.rds comboeff.rds
 
 .PHONY: figures
 
-MANUSCRIPTFIGS := $(addsuffix .png,fig_1 combo_fig_coverage_facet foi_fig_2 SI_IQ_fig SI_ceff_fig)
+MANUSCRIPTFIGS := $(addsuffix .png,fig_1 combo_fig_coverage_facet foi_fig_2 lag_plot SI_IQ_fig SI_ceff_fig)
 
 figures: $(MANUSCRIPTFIGS)
 
