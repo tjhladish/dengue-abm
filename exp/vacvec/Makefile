@@ -52,51 +52,113 @@ clean:
 
 -include local.mk
 
-baseline.rds intervention.rds: parse.R $(REFDB) projref.R
+# INJESTING DB
+
+# specific output database dependencies for each digest target
+baseline.rds intervention.rds: $(REFDB)
+foi_baseline.rds foi_intervention.rds: $(FOIDB)
+lag_intervention.rds: $(LAGDB)
+ALLDIG := $(addsuffix .rds,baseline intervention foi_baseline foi_intervention lag_intervention)
+
+# create data.table translations of baseline / intervention results
+# includes the specific digest<-database dependencies (above)
+# via make dependency combination rules
+#
+# baseline schema:
+# key(particle, replicate, year), seronegative + imm1-imm4 (all %), s, c.s (ints)
+#
+# intervention schema, same, but with:
+# key(vc, vac, vc_coverage, vaccine, catchup) added (on the left) to cols
+#
+# foi_% schema: same as baseline + intervention, w/ key(foi) added on the left
+# lag_% schema: same as intervention, w/ key(vac_first) added on the left
+baseline.rds intervention.rds foi_baseline.rds foi_intervention.rds lag_intervention.rds: parse.R projref.R
 	Rscript $^ $@
 
-foi_baseline.rds foi_intervention.rds: parse.R $(FOIDB) projref.R
+# NB: make -j safe
+digests: $(ALLDIG)
+clean_digests:
+	rm -f $(ALLDIG)
+
+# EFFECTIVENESS CALCULATIONS
+
+# specific input digest dependencies for each effectiveness target
+effectiveness.rds: baseline.rds intervention.rds
+foi_effectiveness.rds: foi_baseline.rds foi_intervention.rds
+lag_effectiveness.rds: baseline.rds lag_intervention.rds
+ALLEFF := $(addsuffix .rds,effectiveness foi_effectiveness lag_effectiveness)
+
+# create data.table effectiveness computations
+#
+# basic (effectiveness.rds) schema:
+# key(vc, vac, vc_coverage, vaccine, catchup, particle, replicate, year)
+# bcases (baseline cases), icases (int. cases), c.bcases, c.icases (cum. cases of base and int.)
+# eff ((bcases - icases)/bcases), c.eff ((c.bcases - c.icases)/c.bcases),
+# logm (log(icases/bcases)), c.logm(log(c.icases/c.bcases))
+#
+# foi_% schema: same as basic, w/ key(foi) added on the left
+# lag_% schema: same as basic, w/ key(vac_first) added on the left
+effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds: eff.R
 	Rscript $^ $@
 
-lag_intervention.rds: parse.R $(LAGDB) projref.R
+# make -j safe
+effectiveness: $(ALLEFF)
+clean_effectiveness:
+	rm -f $(ALLEFF)
+
+# COMBINATION EFFECTIVENESS CALCULATIONS
+# combination effectiveness calcs compare naive combinations of interventions
+# (naive == each intervention is acting independently)
+# with observed combined outcomes
+# schema:
+# key'd according to underlying effectiveness, then
+# combo.eff, c.combo.eff
+# vec.eff, c.vec.eff, vac.eff, c.vac.eff
+# ind.eff, c.ind.eff
+comboeff.rds: effectiveness.rds
+foi_comboeff.rds: foi_effectiveness.rds
+
+comboeff.rds foi_comboeff.rds: comboeff.R
 	Rscript $^ $@
 
-rootdigests: baseline.rds intervention.rds
-
-foidigests: foi_baseline.rds foi_intervention.rds
-
-effectiveness.rds: eff.R baseline.rds intervention.rds
-	Rscript $^ $@
-
-foi_effectiveness.rds: eff.R foi_baseline.rds foi_intervention.rds
-	Rscript $^ $@
-
-lag_effectiveness.rds: eff.R baseline.rds lag_intervention.rds
-	Rscript $^ $@
-
-effectiveness: effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds
-
-comboeff.rds: comboeff.R effectiveness.rds
-	Rscript $^ $@
-
-foi_comboeff.rds: comboeff.R foi_effectiveness.rds
-	Rscript $^ $@
-
+# lag effectiveness has to be treated specially
 lag_comboeff.rds: lag_comboeff.R lag_effectiveness.rds effectiveness.rds
 	Rscript $^ $@
 
-comboeff: comboeff.rds foi_comboeff.rds lag_comboeff
+# NB: make -j safe
+comboeff: comboeff.rds foi_comboeff.rds lag_comboeff.rds
 
-effstats.rds: effstats.R comboeff.rds
+## EFFECTIVENESS STATS CALCS
+# collapses the particle*replicate keys for effectiveness results
+# schema is key of underlying effectiveness / comboeff.rds +
+# variable (the combo.eff non-key cols) +
+# lo.lo (2.5%), lo (25%), med (50%), hi (75%), hi.hi (97.5%) quantiles
+
+effstats.rds: comboeff.rds
+foi_effstats.rds: foi_comboeff.rds
+lag_effstats.rds: lag_comboeff.rds
+ALLEFS := $(addsuffix .rds,effstats foi_effstats lag_effstats)
+
+effstats.rds foi_effstats.rds lag_effstats.rds: effstats.R
 	Rscript $^ $@
 
-foi_effstats.rds: effstats.R foi_comboeff.rds
-	Rscript $^ $@
+# NB: make -j safe
+effstat: $(ALLEFS)
+clean_effstat:
+	rm -f $(ALLEFS)
 
-lag_effstats.rds: effstats.R lag_comboeff.rds
-	Rscript $^ $@
 
-effstat: effstats.rds foi_effstats.rds lag_effstats.rds
+
+
+
+
+
+
+
+
+
+
+
 
 # not the real fig 2
 fig_2.png: fig_2.R effstats.rds
@@ -149,4 +211,34 @@ figures: $(MANUSCRIPTFIGS)
 clean_figs: $(MANUSCRIPTFIGS)
 	rm $^
 
-# NEW DB IS *ivn_lag2.sqlite
+# christmas figures
+# fig 1 - diagram, probably not managed via make
+
+# fig 2: single intervention incidence, annual effectiveness, cumulative effectiveness
+# row 1: incidence
+# row 2: ann. effectiveness
+# row 3: cum. effectiveness
+# one col; show only "best" versions of intervention (w/ catchup, max vc)
+# distinguish vaccine by line type = solid, none; dashes, EDV; dotted, Dengvaxia-like
+# complementary SI fig:
+# multiple cols: one for each vaccine type (none, EDV, Dengvaxia-like)
+# IQs
+
+new_SI_fig_2.png new_SI_fig_2.tiff new_fig_2.png new_fig_2.tiff: new_fig_2.R baseline.rds intervention.rds effectiveness.rds
+	Rscript $^ $@
+	# 1 col, 3 rows - incidence, annual effectiveness, cumulative effectiveness
+	# both vaccines w/ catchup, 75% vc - IQs?
+
+new_fig_3.png new_fig_3.tiff: new_fig_3.R effectiveness.rds comboeff.rds
+	Rscript $^ $@
+	# 2 rows, 3 cols - annual effectiveness of combination interventions, with background ref lines
+	# for single interventions; rows are vaccine type, cols are vc level
+
+new_fig_4.png new_fig_4.tiff: new_fig_4.R effectiveness.rds
+	Rscript $^ $@
+	# repeat fig 3, but with shaded effect regions?
+	# for single interventions; rows are vaccine type, cols are vc level
+
+new_fig_5.png new_fig_5.tiff: new_fig_5.R lag_effectiveness.rds
+	Rscript $^ $@
+	# lagged interventions

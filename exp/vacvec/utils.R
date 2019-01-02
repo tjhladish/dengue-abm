@@ -42,6 +42,48 @@ dbutil <- function(dbfile, sql) {
   return(res)
 }
 
-scale_fillcolor_manual <- function(...) {
-  return(list(scale_fill_manual(...), scale_color_manual(...)))
+#' Convenience constructor for matched color + fill ggplot::scale
+#'
+#' @param ..., any arguments to color + fill manual scales
+#' @return a list of ggplot scale objects
+#' OBE due to aesthetics arg in scale_fill|color?
+scale_fillcolor_manual <- function(...) list(
+  ggplot::scale_fill_manual(...),
+  ggplot::scale_color_manual(...)
+)
+
+#' Convenience method providing different y-axis labels on facet plots
+#' with different y scales (using facet labels as the scale labels)
+#'
+#' MUST BE USED AFTER ANY COMPLETE THEME (e.g., `theme_minimal()`), I.E.
+#' `gg` OBJECTS THAT RESET THEME ELEMENTS
+#'
+#' @param ..., typical arguments to facet_grid *except* `scales` and `switch`
+facet_grid_freey <- function(...) list(
+  facet_grid(..., scales = "free_y", switch = "y"),
+  theme(axis.title.y = element_blank(), strip.placement = "outside")
+)
+
+geom_limits <- function(dt) geom_blank(
+  mapping = aes(color=NULL, linetype=NULL, size=NULL, group=NULL, alpha=NULL),
+  data = dt
+)
+
+#' Convenience method for calculating quantiles in data.table context
+#'
+#' @param probs, same as \code{quantile} `probs` argument (though can be a list).
+#' @param val, the data.table column to be \code{quantile}'d
+#' @param pnames, resulting column names in data.table; defaults to names of `probs`
+#' @param na.rm, same as \code{quantile}; defaults to `TRUE`
+#' @return same as \code{quantile}, but as a list with appropriate names
+#' @example 
+#' dt <- data.table(x=runif(100), y=sample(2, size=100, repl=T))
+#' dt[, dtquantiles(.(med=.5), x), by=y]
+#' dt[, dtquantiles(.(med=.5), x)]
+#' # compare to
+#' median(dt$x)
+dtquantiles <- function(probs, val, pnames = names(probs), na.rm = T) {
+  qs <- quantile(val, probs = unlist(probs), na.rm = na.rm)
+  names(qs) <- pnames
+  as.list(qs)
 }

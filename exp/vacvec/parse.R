@@ -1,100 +1,84 @@
+# parses the sqlite databases that result from HPC runs
+# uses definitions set in projref.R (proJECT refERENCE)
+
 # make command line output less verbose
 suppressPackageStartupMessages({
   require(data.table)
   require(RSQLite)
+  source("utils.R")
 })
 
 # developer args
-args <- c('vacvec-new_yuc.sqlite', "projref.R", "baseline.rds")
-args <- c('vacvec-new_yuc.sqlite', "projref.R", "intervention.rds")
+args <- c("projref.R", 'vacvec-new_yuc.sqlite', "baseline.rds")
+args <- c("projref.R", 'vacvec-new_yuc.sqlite', "intervention.rds")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
-# db should be first arg
-srcdb <- args[1]
+# sources for shared definitions;
+# TODO convert to rda for shared functions?
+source(args[1])
+
+# db should be second arg
+srcdb <- args[2]
 # target rds should be last arg
 tar <- tail(args, 1)
 
-# TODO convert to rda for shared functions?
-source(args[2])
-source("utils.R")
-
 # TODO change to input dependency
+# build up SQLite query based on which results being parsed
 # samplecols from projref.R: c(particle, replicate)
-if (tar == "baseline.rds") {
-  qry <- sprintf("select M.*,
-          posterior as %s, CAST(realization AS INT) as %s
-          from met M, par P, job J
-          where M.serial = P.serial and M.serial = J.serial
-          and status = 'D'
-          and vector_control = 0
-          and vac = 0;", samplecols[1], samplecols[2])
-} else if (tar == "intervention.rds") {
-  qry <- sprintf("select M.*,
-          posterior as %s, CAST(realization AS INT) as %s,
-          vector_control as vc,
-          vac,
-          vc_coverage*100 as vc_coverage,
-          vac_mech,
-          catchup
-          from met M, par P, job J
-          where M.serial = P.serial and M.serial = J.serial
-          and status = 'D'
-          and (vector_control = 1 or vac = 1);", samplecols[1], samplecols[2])
-} else if (tar == "foi_intervention.rds") {
-  qry <- sprintf("select M.*,
-          posterior as %s, CAST(realization AS INT) as %s,
-          vector_control as vc,
-          vac,
-          vc_coverage*100 as vc_coverage,
-          vac_mech,
-          catchup,
-          foi
-          from met M, par P, job J
-          where M.serial = P.serial and M.serial = J.serial
-          and status = 'D'
-          and (vector_control = 1 or vac = 1);", samplecols[1], samplecols[2])
-} else if (tar == "foi_baseline.rds") {
-  qry <- sprintf("select M.*,
-          posterior as %s, CAST(realization AS INT) as %s, foi
-          from met M, par P, job J
-          where M.serial = P.serial and M.serial = J.serial
-          and status = 'D'
-          and vector_control = 0
-          and vac = 0;", samplecols[1], samplecols[2])
-} else if (tar == "lag_intervention.rds") {
-  qry <- "select M.*,
-          posterior as particle, CAST(realization AS INT) as replicate,
-          vector_control as vc,
-          vac,
-          vc_coverage*100 as vc_coverage,
-          vac_mech,
-          catchup,
-          vac_first
-          from met M, par P, job J
-          where M.serial = P.serial and M.serial = J.serial
-          and status = 'D'
-          and (vector_control = 1 or vac = 1);"
-} else stop(sprintf("don't know the appropriate query for %s",tar))
+selcols <- c(
+  "M.*", # TODO could be more parsimonious here to speed up, e.g., digesting interventions
+  sprintf(c("posterior AS %s", "CAST(realization AS INT) AS %s"), samplecols)
+)
+filters <- c("status == 'D'")
+
+## applies to basic, foi, lag (intervention only)
+if (grepl("baseline", tar)) {
+  # need no additional columns
+  # want only results with no vector control AND no vaccine
+  filters <- c(filters, "vector_control == 0", "vac == 0")
+} else if (grepl("intervention", tar)) {
+  # need the scenario columns
+  selcols <- c(selcols, "vector_control AS vc", "vac", "vc_coverage*100 AS vc_coverage", "vac_mech", "catchup")
+  # want only results with some intervention
+  filters <- c(filters, "(vector_control == 1 OR vac == 1)")
+}
+
+## only special analyses foi, lag
+if (grepl("foi", tar)) {
+  # need extra scenario column
+  # applies to both baseline & intervention
+  selcols <- c(selcols, "foi")
+} else if (grepl("lag", tar)) {
+  # need extra scenario column
+  selcols <- c(selcols, "vac_first")
+}
+
+## assemble pieces into query
+qry <- sprintf(
+  "SELECT %s FROM %s WHERE %s;", # select COLS from TABLE+JOINS where FILTER
+  paste(selcols, collapse=", "),
+  "met M JOIN par P USING(serial) JOIN job J USING(serial)",
+  paste(filters, collapse=" AND ")
+)
 
 # dbutil from utils.R
 tar.dt <- dbutil(srcdb, qry)
 
-# exclude pre-intervention data & job serial
-rmv <- c(grep("s_|imm\\d__",names(tar.dt), value = T), "serial")
+# columns associated with pre-intervention data & job serial
+rmv <- c(grep("s_|imm\\d__", names(tar.dt), value = T), "serial")
 # data.table syntax for drop columns
 tar.dt <- tar.dt[,.SD,.SDcols=-rmv]
 
-idvs <- samplecols
+# from projref.R
+keycols <- samplecols
 
-# add extra keys for special analyses
-if (grepl("foi",tar)) idvs <- c("foi", idvs)
-if (grepl("lag",tar)) idvs <- c("vac_first", idvs)
-
+# if parsing intervention file, add keys + translate scenario info
+# trans_% functions from projref.R
 if (grepl("intervention", tar)) {
-  idvs <- c("vc", "vac", "vc_coverage","vaccine","catchup", idvs)
+  keycols <- c("vc", "vac", "vc_coverage","vaccine","catchup", keycols)
   tar.dt[vc == 0, vc_coverage := 0]
   # translate vaccine & catchup to standardized lingo for post processing
   tar.dt[, vaccine := trans_vac(vac_mech, vac) ]
@@ -102,30 +86,43 @@ if (grepl("intervention", tar)) {
   tar.dt$vac_mech <- NULL
 }
 
+# add extra keys for special analyses
+if (grepl("foi", tar)) keycols <- c("foi", keycols)
+if (grepl("lag", tar)) keycols <- c("vac_first", keycols)
+
+# when the data.table gets melted to long format
+# will have a variable column, with values corresponding to wide cols
+# (s_00, s_01, ...; imm0_00, imm0_01, ...) names
+# need to extract the measure (before _) and year (after _)
 parse.meas.yr <- function(dt) {
   dt[,
-    year    := as.integer(gsub("(s|imm\\d_)","", variable))
-  ][,
     measure := gsub("(s|imm\\d).+","\\1", variable)
+  ][,
+    year    := as.integer(gsub("(s|imm[0-4]_)","", variable))
   ]
   dt$variable <- NULL
   return(dt)
 }
 
-tar.mlt <- parse.meas.yr(melt.data.table(tar.dt, id.vars = idvs))
-
-tar.dt <- dcast.data.table(tar.mlt,
-  as.formula(paste(paste(c(idvs,"year"), collapse=" + "), "measure", sep = " ~ ")),
+# melt the data.table, then parse it to get measure and year
+tar.mlt <- parse.meas.yr(
+  melt.data.table(tar.dt, id.vars = keycols, variable.factor = FALSE)
+)
+result.dt <- dcast.data.table(tar.mlt,
+  as.formula(paste(
+    paste(c(keycols, "year"), collapse=" + "),
+    "measure", sep = " ~ ")
+  ),
   value.var = "value"
 )
 
-tar.dt[, seropositive := 1-imm0 ]
+# rename imm0 to seronegative
+setnames(result.dt, "imm0", "seronegative")
 
-tar.dt[order(year),
+# compute cumulative incidence for each scenario
+result.dt[order(year),
   c.s := cumsum(s),
-  by=c(idvs)
+  by = keycols
 ]
 
-# from stopping intervention
-
-saveRDS(tar.dt, tar)
+saveRDS(result.dt, tar)

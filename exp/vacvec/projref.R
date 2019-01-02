@@ -12,8 +12,8 @@ trans_vac <- function(mech, vac=rep(1, length(mech))) factor(
   levels = vac_names, ordered = T
 )
 
-vac_cols <- c("blue", "green", "black")
-names(vac_cols) <- vac_names
+int_names <- c("false", "true")
+trans_int <- function(combo_gt_assumed) factor(int_names[combo_gt_assumed+1], levels=rev(int_names), ordered = TRUE)
 
 # in DB, catchup = 0/1
 catchup_names <- c("none", "catchup")
@@ -28,8 +28,11 @@ trans_catchup <- function(cu, vac=rep(1, length(cu))) factor(
 )
 
 reference.scenario <- data.table(
-  vc = 0, vac = 0, vc_coverage = 0,
+  vc_coverage = 0, vc = 0, vac = 0,
   vaccine = trans_vac(0, 0), catchup = trans_catchup(0, 0)
 )
 
 samplecols <- c("particle", "replicate")
+
+quantile_probs <- c(0.025, .25, .5, .75, .975)
+names(quantile_probs) <- c("lo.lo","lo","med","hi","hi.hi")
