@@ -23,8 +23,8 @@ delayer <- function(dt, del) {
   return(slice)
 }
 
-vecnolag <- nolag_effectiveness.dt[vc == 1 & vac == 0 & vc_coverage == 75]
-vacnolag <- nolag_effectiveness.dt[vc == 0 & vac == 1 & vaccine == "traditional" & catchup == "catchup"]
+vecnolag <- nolag_effectiveness.dt[scenario == "vc" & vc_coverage == 75]
+vacnolag <- nolag_effectiveness.dt[scenario == "vac" & vaccine == "edv" & catchup == "vac-only"]
 
 veclag <- delayer(vecnolag, del=delay)[, .(vec.eff=eff, c.vec.eff=c.eff),keyby=.(particle, replicate, year)]
 vaclag <- delayer(vacnolag, del=delay)[, .(vac.eff=eff, c.vac.eff=c.eff),keyby=.(particle, replicate, year)]

@@ -36,10 +36,11 @@ p <- ggplot(stats.dt) +
   geom_ribbon(alpha=.5) +
   geom_line(mapping=aes(color=vaccine)) +
   theme_minimal() +
-  scale_fillcolor_manual("Vaccine",
+  scale_color_manual("Vaccine",
     labels=c(cmdvi="CMDVI",trad="Traditional", none="None"),
     values=vac_cols,
-    guide=gds(order=1)
+    guide=gds(order=1),
+    aesthetics = c("color","fill")
   ) +
   scale_x_continuous("Year", expand = c(0,0)) +
   scale_y_continuous("Cumulative Effectiveness", expand = c(0,0)) +

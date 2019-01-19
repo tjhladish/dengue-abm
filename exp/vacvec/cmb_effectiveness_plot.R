@@ -43,7 +43,23 @@ vec.eff <- effstats.dt[variable == "vec.eff", .(
   )
 ]
 
+combo.eff <- effstats.dt[variable == "combo.eff", .(
+  value = warnnonunique(med, variable),
+  scenario = trans_scnario(1, 1)
+), keyby=.(
+  vaccine, catchup, vc_coverage, year,
+  measure = trans_meas(gsub("vec\\.","",variable))
+)
+]
+
 plot.dt <- rbind(vec.eff, vac.eff)
+
+# extend <- copy(plot.dt[year == 39])[, year := 40 ]
+
+# gds <- function(ord) guide_legend(
+#   title.position = "top", direction = "vertical", order = ord,
+#   label.position = "top"
+# )
 
 limits.dt <- plot.dt[,
   .(value=c(0, 1), year=-1),
@@ -63,16 +79,37 @@ p <- ggplot(
   geom_limits(limits.dt) +
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_point() +
-  scale_size_vectorcontrol(breaks=rev(vc_lvls), guide=gds(
-    1, direction="vertical",
-    override.aes=list(
-      shape=c(NA,NA,NA,15),
-      color=c("blue","blue","blue","darkgreen")
-    ))
-  ) +
-  scale_color_scenario(guide=gds(2, direction="vertical")) +
-  scale_shape_vaccine(guide=gds(3, direction="vertical"), breaks=c("cmdvi", "edv")) +
-  scale_fill_catchup(guide=gds(4, direction="vertical"), na.value=NA) +
+  scale_shape_vaccine(guide=gds(2)) +
+  scale_color_scenario(guide=gds(3)) +
+  scale_fill_catchup(guide=gds(4), na.value=NA) +
+  scale_size_vectorcontrol(guide=gds(1)) +
+  scale_year() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(
+    legend.margin = margin(), legend.spacing = unit(25, "pt"),
+    legend.text = element_text(size=rel(0.5)),
+    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
+    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+    legend.key.height = unit(1,"pt")
+  )
+
+p2 <- ggplot(
+  combo.eff
+) + theme_minimal() + aes(
+  x=year + 1, y=value, color=scenario,
+  fill=catchup, shape=vaccine, size=factor(vc_coverage),
+  group=interaction(scenario, catchup, vaccine, vc_coverage)
+) +
+  facet_grid_freey(vaccine ~ ., labeller = facet_labels) +
+  #  geom_segment(mapping = aes(yend=value, xend=year+1)) +
+  # geom_step() +
+  geom_limits(limits.dt) +
+  geom_line(linejoin = "mitre", lineend = "butt") +
+  geom_point() +
+  scale_shape_vaccine(guide=gds(2)) +
+  scale_color_scenario(guide=gds(3)) +
+  scale_fill_catchup(guide=gds(4), na.value=NA) +
+  scale_size_vectorcontrol(guide=gds(1)) +
   scale_year() +
   scale_y_continuous(expand = c(0,0)) +
   theme(

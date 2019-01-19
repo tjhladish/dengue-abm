@@ -65,7 +65,10 @@ facet_grid_freey <- function(...) list(
 )
 
 geom_limits <- function(dt) geom_blank(
-  mapping = aes(color=NULL, linetype=NULL, size=NULL, group=NULL, alpha=NULL),
+  mapping = aes(
+    shape=NULL, fill=NULL, color=NULL,
+    linetype=NULL, size=NULL, group=NULL, alpha=NULL
+  ),
   data = dt
 )
 
@@ -86,4 +89,55 @@ dtquantiles <- function(probs, val, pnames = names(probs), na.rm = T) {
   qs <- quantile(val, probs = unlist(probs), na.rm = na.rm)
   names(qs) <- pnames
   as.list(qs)
+}
+
+#' Factory-pattern function for making reuseable (gg|cow)plot scale generator
+#' 
+#' Returns a function that can be invoked to make `scale_%_manual` elements with several
+#' defaults set.
+#'
+#' @param scale, what aesthetic being scaled; defaults to "color", def arg list shows
+#'  which scales can be generated
+#' @param defname, simple string (or any other legal `name` arg to `scale_manual``);
+#'  default name for scale
+#' @param deflabels, named vector of characters (or any other legal `labels` arg to `scale_manual``);
+#'  default labels
+#' @param defvalues, named vector (or any other legal `values` arg to `scale_manual``); default values
+#' @return function(name=defname, labels=deflabels, values=defvalues, ...) that can be invoked to produce
+#'  scale_%_manual
+#' @example 
+#' require(ggplot2)
+#' require(data.table)
+#' scale_color_things <- scale_generator("color", "Things",
+#'   c(thing1="One", thing2="Two"), c(thing1="red",thing2="blue")
+#' )
+#' p.dt <- data.table(x=1:10, y=1:10, thing=sample(c("thing1","thing2"), 10, rep=T))
+#' p.dt[thing == "thing1"]
+#' p.dt[thing == "thing2"]
+#' ggplot(p.dt) +
+#'  aes(x=x,y=y,color=thing) + geom_point() +
+#'  scale_color_things()
+scale_generator <- function(
+  scale = c("color", "fill", "linetype", "size", "shape", "alpha")[1],
+  defname, deflabels, defvalues
+) {
+  scalef <- switch(scale,
+    color = ggplot2::scale_color_manual,
+    fill = ggplot2::scale_fill_manual,
+    linetype = ggplot2::scale_linetype_manual,
+    size = ggplot2::scale_size_manual,
+    shape = ggplot2::scale_shape_manual,
+    alpha = ggplot2::scale_alpha_manual
+  )
+  return(function(
+    name=defname, labels=deflabels, values=defvalues,
+    ...
+  ) {
+    otherargs <- list(...)
+    if(any(grepl("breaks",names(otherargs)))) labels <- labels[as.character(otherargs$breaks)]
+    scalef(
+      name = name, labels = labels,
+      values = values, ...
+    )
+  })
 }

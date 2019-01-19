@@ -12,21 +12,22 @@ effectiveness.dt <- readRDS(args[1])
 ekeys <- key(effectiveness.dt)
 
 # extract the vector-control only results
-veckeys <- setdiff(ekeys, c("vac","vc","vaccine","catchup"))
-vec.dt <- effectiveness.dt[vaccine == "none",
+veckeys <- setdiff(ekeys, c("scenario", "vaccine","catchup"))
+vec.dt <- effectiveness.dt[scenario == "vc",
   .(vec.eff=eff, c.vec.eff=c.eff),
   keyby=veckeys
 ]
 
 # extract the vaccine only results
-vackeys <- setdiff(ekeys, c("vac","vc","vc_coverage"))
-vac.dt <- effectiveness.dt[vc_coverage == 0,
+vackeys <- setdiff(ekeys, c("scenario", "vc_coverage"))
+vac.dt <- effectiveness.dt[scenario == "vac",
   .(vac.eff=eff, c.vac.eff=c.eff),
   keyby=vackeys
 ]
+vac.dt[catchup=="vac-only", catchup := "vc+vac" ]
 
 # extract the combo-only results
-combo.dt <- effectiveness.dt[(vaccine != "none") & (vc_coverage != 0)]
+combo.dt <- effectiveness.dt[scenario == "vc+vac"]
 
 syn.dt <- combo.dt[
   # join vector control only results

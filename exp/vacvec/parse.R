@@ -14,7 +14,6 @@ args <- c("projref.R", 'vacvec-new_yuc.sqlite', "intervention.rds")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
-# args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
 # sources for shared definitions;
 # TODO convert to rda for shared functions?
@@ -23,7 +22,14 @@ source(args[1])
 # db should be second arg
 srcdb <- args[2]
 # target rds should be last arg
+# use the target name to determine proper keys
 tar <- tail(args, 1)
+
+
+
+
+
+################################# GET THE DATA #################################
 
 # TODO change to input dependency
 # build up SQLite query based on which results being parsed
@@ -67,6 +73,12 @@ qry <- sprintf(
 # dbutil from utils.R
 tar.dt <- dbutil(srcdb, qry)
 
+
+
+
+
+################################# NORMALIZATION #################################
+
 # columns associated with pre-intervention data & job serial
 rmv <- c(grep("s_|imm\\d__", names(tar.dt), value = T), "serial")
 # data.table syntax for drop columns
@@ -78,17 +90,27 @@ keycols <- samplecols
 # if parsing intervention file, add keys + translate scenario info
 # trans_% functions from projref.R
 if (grepl("intervention", tar)) {
-  keycols <- c("vc", "vac", "vc_coverage","vaccine","catchup", keycols)
+  keycols <- c("scenario", "vc_coverage","vaccine","catchup", keycols)
   tar.dt[vc == 0, vc_coverage := 0]
   # translate vaccine & catchup to standardized lingo for post processing
-  tar.dt[, vaccine := trans_vac(vac_mech, vac) ]
-  tar.dt[, catchup := trans_catchup(catchup, vac) ]
+  trans_vaccine.data.table(tar.dt)
+  trans_catchup.data.table(tar.dt)
+  trans_scnario.data.table(tar.dt)
   tar.dt$vac_mech <- NULL
+  tar.dt$vac <- NULL
+  tar.dt$vc <- NULL
 }
 
 # add extra keys for special analyses
 if (grepl("foi", tar)) keycols <- c("foi", keycols)
 if (grepl("lag", tar)) keycols <- c("vac_first", keycols)
+
+
+
+
+
+
+############################## TO LONG(ISH) FORMAT #############################
 
 # when the data.table gets melted to long format
 # will have a variable column, with values corresponding to wide cols
@@ -108,6 +130,8 @@ parse.meas.yr <- function(dt) {
 tar.mlt <- parse.meas.yr(
   melt.data.table(tar.dt, id.vars = keycols, variable.factor = FALSE)
 )
+
+# recast the data.table to (keys, year, imm proportions, s) cols
 result.dt <- dcast.data.table(tar.mlt,
   as.formula(paste(
     paste(c(keycols, "year"), collapse=" + "),
@@ -119,10 +143,18 @@ result.dt <- dcast.data.table(tar.mlt,
 # rename imm0 to seronegative
 setnames(result.dt, "imm0", "seronegative")
 
+
+
+
+############################ FINAL CALC & SAVE #########################################
+
 # compute cumulative incidence for each scenario
 result.dt[order(year),
   c.s := cumsum(s),
   by = keycols
 ]
+
+keycols <- c(keycols, "year")
+setkeyv(result.dt, keycols)
 
 saveRDS(result.dt, tar)

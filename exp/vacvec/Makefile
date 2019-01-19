@@ -55,10 +55,16 @@ clean:
 # INJESTING DB
 
 # specific output database dependencies for each digest target
-baseline.rds intervention.rds: $(REFDB)
-foi_baseline.rds foi_intervention.rds: $(FOIDB)
-lag_intervention.rds: $(LAGDB)
+baseline.rds intervention.rds baseline.csv intervention.csv: $(REFDB)
+foi_baseline.rds foi_intervention.rds foi_baseline.csv foi_intervention.csv: $(FOIDB)
+lag_intervention.rds lag_intervention.csv: $(LAGDB)
 ALLDIG := $(addsuffix .rds,baseline intervention foi_baseline foi_intervention lag_intervention)
+
+baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.R
+	Rscript $^ $@
+
+%.csv: %.sql
+	sqlite3 -csv $(word 2,$^) < $< > $@
 
 # create data.table translations of baseline / intervention results
 # includes the specific digest<-database dependencies (above)
@@ -87,6 +93,10 @@ effectiveness.rds: baseline.rds intervention.rds
 foi_effectiveness.rds: foi_baseline.rds foi_intervention.rds
 lag_effectiveness.rds: baseline.rds lag_intervention.rds
 ALLEFF := $(addsuffix .rds,effectiveness foi_effectiveness lag_effectiveness)
+
+# TODO document c = cumulative
+# TODO rename ind = naive?
+# TODO breaking comment bars in R?
 
 # create data.table effectiveness computations
 #
@@ -188,7 +198,7 @@ fig1p3back.png: diagram_panel_model_background.R $(LOCATIONS) $(CONNECTIONS) $(T
 fig1.png: fig1p1.png fig1p2.png fig1p3.png fig1p4.png
 	@echo $^
 
-
+# figure 2: show prereq results (single interventions), raw main results (combo effectiveness) 
 raw_effectiveness_plot.png: raw_effectiveness_plot.R effstats.rds
 	Rscript $^ $@
 
