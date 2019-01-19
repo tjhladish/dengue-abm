@@ -5,24 +5,28 @@
 suppressPackageStartupMessages({
   require(data.table)
   require(RSQLite)
-  source("utils.R")
 })
 
 # developer args
-args <- c("projref.R", 'vacvec-new_yuc.sqlite', "baseline.rds")
-args <- c("projref.R", 'vacvec-new_yuc.sqlite', "intervention.rds")
+args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc.sqlite', "baseline.rds")
+args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc-alt_foi.sqlite', "foi_intervention.rds")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
 
-# sources for shared definitions;
-# TODO convert to rda for shared functions?
+# TODO turn into generic cabp-pkg
 source(args[1])
 
-# db should be second arg
-srcdb <- args[2]
+# bring in reference project definitions
+load(args[2])
+
+# TODO just read in SQL files
+
+# db should be 2nd-to-last arg
+srcdb <- tail(args, 2)[1]
+
 # target rds should be last arg
-# use the target name to determine proper keys
+# will sniff target name to determine proper keys
 tar <- tail(args, 1)
 
 

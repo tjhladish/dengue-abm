@@ -2,29 +2,22 @@
 # uses definitions set in projref.R (proJECT refERENCE)
 
 # developer args
-args <- c("projref.R", "baseline.sql")
-args <- c("projref.R", "intervention.sql")
+args <- c("projref.rda", "baseline.sql")
+args <- c("projref.rda", "intervention.sql")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
 
 # sources for shared definitions;
-# TODO convert to rda for shared functions?
-source(args[1])
+load(args[1])
 
 # target sql should be last arg
 # use the target name to determine proper keys
 tar <- tail(args, 1)
 
 
-
-
-
-################################# GET THE DATA #################################
-
-# TODO change to input dependency
 # build up SQLite query based on which results being parsed
-# samplecols from projref.R: c(particle, replicate)
+# samplecols from projref.rda: c(particle, replicate)
 selcols <- c(
   "M.*", # TODO could be more parsimonious here to speed up, e.g., digesting interventions
   sprintf(c("posterior AS %s", "CAST(realization AS INT) AS %s"), samplecols)

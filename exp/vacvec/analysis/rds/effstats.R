@@ -1,17 +1,18 @@
 suppressPackageStartupMessages({
   require(data.table)
-  source("utils.R")
-  source("projref.R")
 })
 
 # debugging args for interactive use
-args <- c("comboeff.rds", "effstats.rds")
-args <- c("foi_comboeff.rds", "foi_effstats.rds")
-args <- c("lag_comboeff.rds", "lag_effstats.rds")
+args <- c("../utils.R", "projref.rda", "comboeff.rds", "effstats.rds")
+args <- c("../utils.R", "projref.rda", "foi_comboeff.rds", "foi_effstats.rds")
+args <- c("../utils.R", "projref.rda", "lag_comboeff.rds", "lag_effstats.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
+source(args[1])
+load(args[2])
+
 # read in the relevant comboeff.rds file
-comboeff.dt <- readRDS(args[1])
+comboeff.dt <- readRDS(args[3])
 # ...and introspect keys
 ckeys <- key(comboeff.dt)
 
@@ -31,4 +32,4 @@ res <- mlt[,
   keyby=mkeys
 ]
 
-saveRDS(res, args[2])
+saveRDS(res, tail(args, 1))

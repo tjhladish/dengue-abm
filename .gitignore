@@ -20,4 +20,5 @@ abc/yuc_posterior_output/*annual
 *.log
 .Rhistory
 *.rds
+*.rda
 local.mk

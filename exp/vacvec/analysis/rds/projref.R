@@ -1,4 +1,9 @@
+suppressPackageStartupMessages({
+	require(data.table)
+})
 # reference definitions for project
+
+.args <- commandArgs(trailingOnly = TRUE)
 
 # in DB, vac_mech = 0/1
 vac_lvls <- c("cmdvi", "edv", "none")
@@ -55,3 +60,5 @@ samplecols <- c("particle", "replicate")
 
 quantile_probs <- c(0.025, .25, .5, .75, .975)
 names(quantile_probs) <- c("lo.lo","lo","med","hi","hi.hi")
+
+save(list=ls(), file = tail(.args,1))

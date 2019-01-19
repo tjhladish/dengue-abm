@@ -1,4 +1,6 @@
-require(data.table)
+suppressPackageStartupMessages(
+	require(data.table)
+)
 
 args <- c("lag_effectiveness.rds","effectiveness.rds", "lag_comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
