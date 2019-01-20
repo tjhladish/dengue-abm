@@ -78,7 +78,7 @@ names(cuscn_fills) <- c(cu_lvls, scn_lvls)
 ## INTERACTIONS - FOR COMBINATION INTERVENTION PLOTS
 # int_names <- c("under", "over")
 int_name <- "Interaction"
-int_labels <- c("Interference", "Amplification")
+int_labels <- c("Interfere", "Amplify")
 int_fills <- c("red", "blue")
 names(int_labels) <- names(int_fills) <- int_names
 scale_fill_interaction <- scale_generator(

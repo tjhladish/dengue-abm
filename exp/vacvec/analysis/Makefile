@@ -21,24 +21,33 @@ cleanparse:
 %.rds:
 	make -C rds $@
 
-fig:
+FIGDIR := fig
+RFIG = Rscript $^ $(FIGDIR)/$@
+
+$(FIGDIR):
 	mkdir $@
 
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-alt_fig_2.png fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | fig
-	Rscript $^ fig/$@
+alt_fig_2.png fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
 
 # TODO add incidence as a top row? move legend?
 # TODO modify fig_raw_effectiveness to sniff title for expanded version
-SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | fig
-	Rscript $^ fig/$@
+SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
 
-fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | fig
-	Rscript $^ fig/$@
+fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
 
-figures: fig_2.png SIfig_2.png fig_3.png
+fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
+
+figures: fig_2.png SIfig_2.png fig_3.png fig_4.png
+
+clean_figures:
+	rm -rf $(FIGDIR)
 
 ## FIGURES
 

@@ -84,7 +84,10 @@ p1 <- ggplot(
   scale_size_vectorcontrol(breaks=vc_lvls[c(1,4)], guide=gds(1)) +
   scale_color_scenario(
   	name = gsub(" ", "\n", scn_name),
-  	guide = gds(2, direction="vertical")
+  	guide = gds(2, direction="vertical", override.aes=list(
+  		shape = vac_pchs[c("none","edv","edv")],
+  		fill = scn_cols[c("vc","vac","vc+vac")]
+  	))
   ) +
   scale_pchlty_vaccine(
   	name = gsub(" ", "\n", vac_name),
@@ -129,8 +132,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 		inner.dt <- cbind(rbind(
 			.SD,
 			data.table(x=xint, y=yint, ycmp=yint)
-		)[order(x)], .BY)
-		# browser()
+		)[order(x)], as.data.table(.BY))
 		res <- lapply(1:(length(xlims)-1), function(i) {
 			slice <- inner.dt[between(x, xlims[i], xlims[i+1])]
 			geom_polygon(
@@ -140,7 +142,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 				),
 				data=cbind(slice[,.(
 					x=c(x,rev(x)), y=c(y,rev(ycmp)), col=trans_int(slice[,any(ycmp>y)])
-				)], .BY),
+				)], as.data.table(.BY)),
 				show.legend = F
 			)
 		})
@@ -149,8 +151,8 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res[[1]]$show.legend <- T
 	if (withlines) {
 		res <- c(res,
-			geom_line(aes(x=x, y=y,    alpha="reference"), data=dt),
-			geom_line(aes(x=x, y=ycmp, alpha="compareto"), data=dt)
+						 geom_line(aes(x=x, y=y,    alpha="reference"), data=dt),
+						 geom_line(aes(x=x, y=ycmp, alpha="compareto"), data=dt)
 		)
 	}
 	res
