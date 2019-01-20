@@ -18,7 +18,7 @@ parse:
 cleanparse:
 	make -C rds clean
 
-%.rds:
+%.rds %.rda:
 	make -C rds $@
 
 FIGDIR := fig
