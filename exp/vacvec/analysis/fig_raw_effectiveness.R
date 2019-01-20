@@ -1,8 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
   require(cowplot)
-  source("utils.R")
-  source("labelref.R")
 })
 
 warnnonunique <- function(var, variable, collapse = median) {
@@ -11,7 +9,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("effstats.rds", "raw_effectiveness_plot.png")
+args <- c("labelref.rda", "effstats.rds", "fig/fig_2.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -20,7 +18,8 @@ args <- c("effstats.rds", "raw_effectiveness_plot.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 # load the reference digests
-effstats.dt    <- readRDS(args[1])
+load(args[1])
+effstats.dt    <- readRDS(args[2])
 
 vac.eff <- effstats.dt[variable == "vac.eff", .(
     value = warnnonunique(med, variable),

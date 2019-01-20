@@ -1,8 +1,14 @@
+suppressPackageStartupMessages({
+	require(cowplot)
+})
 # plot normalization functions
 # elements re-used when building shared plot elements
 
-source("utils.R")
-source("projref.R")
+.args <- c("utils.R","rds/projref.rda", "figref.rda")
+.args <- commandArgs(trailingOnly = TRUE)
+
+source(.args[1])
+load(.args[2])
 
 # scales:
 #  color = scenario (ref/none, vc-only, vac-only, combination)
@@ -148,3 +154,5 @@ gds <- function(
   title.position = title.position, direction = direction, order = order,
   label.position = "top", ...
 )
+
+save(list = ls(), file = tail(.args, 1))
