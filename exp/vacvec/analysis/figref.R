@@ -21,7 +21,7 @@ load(.args[2])
 # scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
 scn_name <- "Intervention Scenario"
 scn_labels <- c("None", "Vector Control Only", "Vaccine Only", "Combination")
-scn_cols <- c("black","blue","darkgreen","turquoise")
+scn_cols <- c("grey","orange","darkgreen","black")
 names(scn_labels) <- names(scn_cols) <- scn_lvls
 scale_color_scenario <- scale_generator(
   "color", scn_name, scn_labels, scn_cols
@@ -43,10 +43,17 @@ scale_size_vectorcontrol <- scale_generator(
 vac_lvls <- c("cmdvi","edv","none")
 vac_name <- "Vaccine Model"
 vac_labels <- c("Dengvaxia", "D70E", "None")
-vac_pchs <- c(22,21,NA) # c(15,16,NA)
-names(vac_labels) <- names(vac_pchs) <- vac_lvls
+vac_pchs <- c(24,21,NA) # c(15,16,NA)
+vac_ltys <- c("12","61","solid")
+names(vac_labels) <- names(vac_pchs) <- names(vac_ltys) <- vac_lvls
 scale_shape_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_pchs
+)
+scale_linetype_vaccine <- scale_generator(
+	"linetype", vac_name, vac_labels, vac_ltys
+)
+scale_pchlty_vaccine <- function(...) list(
+	scale_shape_vaccine(...), scale_linetype_vaccine(...)
 )
 
 # CATCHUP DIMENSIONING
@@ -69,11 +76,15 @@ names(cuscn_fills) <- c(cu_lvls, scn_lvls)
 
 
 ## INTERACTIONS - FOR COMBINATION INTERVENTION PLOTS
+# int_names <- c("under", "over")
+int_name <- "Interaction"
+int_labels <- c("Interference", "Amplification")
+int_fills <- c("red", "blue")
+names(int_labels) <- names(int_fills) <- int_names
+scale_fill_interaction <- scale_generator(
+	"fill", int_name, int_labels, int_fills
+)
 
-# int_title <- "Interaction"
-# int_labels <- c("Interference", "Amplification")
-# int_cols <- c("red", "blue")
-# names(int_labels) <- names(int_cols) <- int_names
 # 
 # ## VACCINE MECHANISM
 # 
@@ -129,20 +140,7 @@ meas_labels <- c(
   "Combined Effectiveness", "Interaction"
 )
 names(meas_labels) <- meas_names
-# 
-# scen_title <- "Scenario"
-# scen_names <- c("none","vec","vac","comb")
-# trans_scen <- function(scn) factor(scn, levels = scen_names, ordered = T)
-# scen_labels <- c("Reference", "Vector Control Only", "Vaccine Only", "Combined Interventions")
-# scen_cols <- c("black", "green", "blue", "purple")
-# names(scen_cols) <- names(scen_labels) <- scen_names
-# scale_color_scenario <- function(
-#   name = scen_title, labels = scen_labels,
-#   values = scen_cols, ...
-# ) scale_color_manual(
-#   name = name, labels = labels,
-#   values = values, ...
-# )
+
 
 facet_labels <- labeller(
   measure = meas_labels,

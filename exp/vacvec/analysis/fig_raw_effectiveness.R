@@ -59,7 +59,7 @@ p <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, size=factor(vc_coverage),
+  fill=catchup, shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
   group=interaction(scenario, catchup, vaccine, vc_coverage)
 ) +
   facet_grid_freey(scenario ~ ., labeller = facet_labels) +
@@ -67,19 +67,24 @@ p <- ggplot(
 # geom_step() +
   geom_limits(limits.dt) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point() +
+  geom_point(size=1) +
   scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
     1,
     override.aes=list(
-      shape=c(NA,NA,NA),
-      color=c("blue","blue","blue")
+      shape=rep(NA,3 ),
+      color=rep(scn_cols["vc"])
     ))
   ) +
-  scale_color_scenario(
-  	name = gsub(" ", "\n", scn_name),
-  	guide = gds(2, direction="vertical")
-  ) +
-  scale_shape_vaccine(
+	scale_color_scenario(
+		name = gsub(" ", "\n", scn_name),
+		guide = gds(2, direction="vertical",
+			override.aes = list(
+				shape=c(vc=vac_pchs["none"], vac=vac_pchs["edv"]),
+				fill=scn_cols[c("vc","vac")] # TODO figure out how to make this work?
+			)
+		)
+	) +
+  scale_pchlty_vaccine(
   	name = gsub(" ", "\n", vac_name),
   	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
   ) +

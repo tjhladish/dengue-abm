@@ -29,7 +29,7 @@ trans_scnario <- function(vc, vac) factor(
 )
 trans_scnario.data.table <- function(dt) dt[, scenario := trans_scnario(vc, vac) ]
 
-int_names <- c("false", "true")
+int_names <- c("under", "over")
 trans_int <- function(combo_gt_assumed) factor(int_names[combo_gt_assumed+1], levels=rev(int_names), ordered = TRUE)
 
 # in DB, catchup = 0/1

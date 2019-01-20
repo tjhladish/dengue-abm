@@ -55,17 +55,17 @@ p <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  shape=vaccine, size=factor(vc_coverage),
+  shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
   group=interaction(scenario, catchup, vaccine, vc_coverage)
 ) +
-  facet_grid_freey(measure ~ scenario + vaccine, labeller = facet_labels, drop = T) +
   geom_limits(limits.dt) +
+	facet_grid_freey(measure ~ scenario + vaccine, labeller = facet_labels, drop = T) +
 	geom_ribbon(
 		aes(fill=scenario, x=year+1, ymin=lo, ymax=hi, group=interaction(vc_coverage, catchup)),
 		alpha=0.5, show.legend = F, inherit.aes = F
 	) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(aes(fill=catchup)) +
+  geom_point(aes(fill=catchup), size=1) +
   scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
     1,
     override.aes=list(
@@ -82,7 +82,7 @@ p <- ggplot(
   		)
   	)
   ) +
-  scale_shape_vaccine(
+  scale_pchlty_vaccine(
   	name = gsub(" ", "\n", vac_name),
   	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
   ) +

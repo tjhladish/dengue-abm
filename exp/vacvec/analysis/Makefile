@@ -8,7 +8,7 @@ vpath %.gif fig
 
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: parse
+default: figures
 
 .PHONY: parse
 
@@ -31,8 +31,14 @@ alt_fig_2.png fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.
 	Rscript $^ fig/$@
 
 # TODO add incidence as a top row? move legend?
+# TODO modify fig_raw_effectiveness to sniff title for expanded version
 SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | fig
 	Rscript $^ fig/$@
+
+fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | fig
+	Rscript $^ fig/$@
+
+figures: fig_2.png SIfig_2.png fig_3.png
 
 ## FIGURES
 
