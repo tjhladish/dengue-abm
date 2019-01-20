@@ -27,7 +27,11 @@ fig:
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | fig
+alt_fig_2.png fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | fig
+	Rscript $^ fig/$@
+
+# TODO add incidence as a top row? move legend?
+SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | fig
 	Rscript $^ fig/$@
 
 ## FIGURES
@@ -71,20 +75,6 @@ fig1p3back.png: diagram_panel_model_background.R $(LOCATIONS) $(CONNECTIONS) $(T
 fig1.png: fig1p1.png fig1p2.png fig1p3.png fig1p4.png
 	@echo $^
 
-# figure 2: show prereq results (single interventions), raw main results (combo effectiveness)
-# raw_effectiveness_plot.png: raw_effectiveness_plot.R effstats.rds
-# 	Rscript $^ $@
-#
-#
-#
-# # not the real fig 2
-# fig_2.png: fig_2.R effstats.rds
-# 	Rscript $^ $@
-#
-# # old version
-# old_fig_1.png: old_fig_1.R baseline.rds intervention.rds effstats.rds
-# 	Rscript $^ $@
-#
 # lag_plot.png: lag_plot.R lag_effstats.rds effstats.rds
 # 	Rscript $^ $@
 #

@@ -64,6 +64,10 @@ scale_alpha_catchup <- scale_generator(
   "alpha", cu_name, cu_labels, cu_alpha
 )
 
+cuscn_fills <- c(cu_fills, scn_cols)
+names(cuscn_fills) <- c(cu_lvls, scn_lvls)
+
+
 ## INTERACTIONS - FOR COMBINATION INTERVENTION PLOTS
 
 # int_title <- "Interaction"
@@ -143,16 +147,17 @@ names(meas_labels) <- meas_names
 facet_labels <- labeller(
   measure = meas_labels,
   scenario = scn_labels,
-  catchup = cu_labels
+  catchup = cu_labels,
+  vaccine = vac_labels
 )
 
 gds <- function(
   order,
-  title.position = "top", direction = "horizontal",
+  title.position = "top", direction = "horizontal", label.position = "top",
   ...
 ) guide_legend(
   title.position = title.position, direction = direction, order = order,
-  label.position = "top", ...
+  label.position = label.position, ...
 )
 
 save(list = ls(), file = tail(.args, 1))

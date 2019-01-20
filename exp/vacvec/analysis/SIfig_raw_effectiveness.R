@@ -9,7 +9,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "fig/fig_2.png")
+args <- c("figref.rda", "rds/effstats.rds", "rds/baseline.rds", "rds/intervention.rds", "fig/SIfig_2.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -20,71 +20,74 @@ args <- commandArgs(trailingOnly = TRUE)
 # load the reference digests
 load(args[1])
 effstats.dt    <- readRDS(args[2])
-tar <- tail(args, 1)
 
-vac.eff <- effstats.dt[variable == "vac.eff", .(
+vac.eff <- effstats.dt[variable %in% c("vac.eff","c.vac.eff"), .(
     value = warnnonunique(med, variable),
+    lo = warnnonunique(lo, variable),
+    hi = warnnonunique(hi, variable),
     vc_coverage = 0,
     scenario = trans_scnario(0, 1)
   ), keyby=.(
     vaccine, catchup = ifelse(catchup=="vc+vac","vac-only","routine"), year
-    #, measure = trans_meas(gsub("vac\\.","",variable))
+    , measure = trans_meas(gsub("vac\\.","",variable))
   )
 ]
 
-vec.eff <- cbind(effstats.dt[variable == "vec.eff", .(
+vec.eff <- cbind(effstats.dt[variable %in% c("vec.eff","c.vec.eff"), .(
     value = warnnonunique(med, variable),
+    lo = warnnonunique(lo, variable),
+    hi = warnnonunique(hi, variable),
     scenario = trans_scnario(1, 0)
   ), keyby=.(
     vc_coverage, year
-    #, measure = trans_meas(gsub("vec\\.","",variable))
+    , measure = trans_meas(gsub("vec\\.","",variable))
   )
 ], reference.scenario[,.(vaccine, catchup)])
 
-cmb.eff <- effstats.dt[variable == "combo.eff", .(
-	value = warnnonunique(med, variable),
-	scenario = trans_scnario(1, 1)
-), keyby=.(vaccine, catchup, vc_coverage, year)]
-
 plot.dt <- rbind(vec.eff, vac.eff)
 
-if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
-
 limits.dt <- plot.dt[,
-  .(value=c(0, 1), year=-1),
-  by=scenario
+  .(value=c(-0.125, 1), year=-1),
+  by=.(scenario, measure, vaccine)
 ]
 
 p <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, size=factor(vc_coverage),
+  shape=vaccine, size=factor(vc_coverage),
   group=interaction(scenario, catchup, vaccine, vc_coverage)
 ) +
-  facet_grid_freey(scenario ~ ., labeller = facet_labels) +
-#  geom_segment(mapping = aes(yend=value, xend=year+1)) +
-# geom_step() +
+  facet_grid_freey(measure ~ scenario + vaccine, labeller = facet_labels, drop = T) +
   geom_limits(limits.dt) +
+	geom_ribbon(
+		aes(fill=scenario, x=year+1, ymin=lo, ymax=hi, group=interaction(vc_coverage, catchup)),
+		alpha=0.5, show.legend = F, inherit.aes = F
+	) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point() +
+  geom_point(aes(fill=catchup)) +
   scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
     1,
     override.aes=list(
-      shape=c(NA,NA,NA),
-      color=c("blue","blue","blue")
+      shape=rep(NA, 3),
+      color=rep(scn_cols["vc"],3)
     ))
   ) +
   scale_color_scenario(
   	name = gsub(" ", "\n", scn_name),
-  	guide = gds(2, direction="vertical")
+  	guide = gds(2, direction="vertical",
+  		override.aes = list(
+  			shape=c(vc=vac_pchs["none"], vac=vac_pchs["edv"]),
+  			fill=scn_cols[c("vc","vac")] # TODO figure out how to make this work?
+  		)
+  	)
   ) +
   scale_shape_vaccine(
   	name = gsub(" ", "\n", vac_name),
   	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
   ) +
   scale_fill_catchup(name=gsub(" ", "\n", cu_name),
-  	breaks = c("routine", "vac-only"),
+  	breaks = c("routine", "vac-only"), values = cuscn_fills,
   	guide=gds(4, direction="vertical", label.position = "right",
   		override.aes = list(
   			shape = c(21, 21),
@@ -105,7 +108,7 @@ p <- ggplot(
     legend.box.spacing = unit(2.5, "pt")
   )
 
-plotutil(p, h=7.5, w=3.25, tar)
+plotutil(p, h=7.5, w=10, args)
 
 ## TODO SI version:
 ##  - add cumulative effectiveness row
