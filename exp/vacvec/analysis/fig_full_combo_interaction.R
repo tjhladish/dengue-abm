@@ -46,13 +46,11 @@ ribbon_intercepts <- function(x, y, ycmp) {
 
 geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res <- dt[, with(ribbon_intercepts(x, y, ycmp), {
-		# browser()
 		xlims <- c(x[1], xint, x[.N])
 		inner.dt <- cbind(rbind(
 			.SD,
 			data.table(x=xint, y=yint, ycmp=yint)
 		)[order(x)], as.data.table(.BY))
-		# browser()
 		res <- lapply(1:(length(xlims)-1), function(i) {
 			slice <- inner.dt[between(x, xlims[i], xlims[i+1])]
 			geom_polygon(
@@ -78,27 +76,22 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res
 }
 
-# dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup)]
-
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
 p2 <- ggplot(plot2.dt) + aes(
 	linetype=vaccine, shape=vaccine, color=scenario, size=factor(vc_coverage),
 	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
-) + theme_minimal() + #aes(linetype=vaccine, shape=vaccine) +
-	facet_grid(. ~ vc_coverage, labeller = facet_labels) +
+) + theme_minimal() +
+	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels) +
 	geom_altribbon(plot2.dt, withlines = F) +
-#	geom_line(alpha=0.3) + 
-	#geom_point(fill=scn_cols["vc+vac"]) +
-#	geom_line(aes(y=ycmp)) + 
-	geom_point(aes(y=ycmp), data=plot2.dt[catchup != "routine"], fill=scn_cols["vc+vac"], alpha=1, size=1) +
-	geom_point(aes(y=ycmp), data=plot2.dt[catchup == "routine"], fill=scn_cols["routine"], alpha=1, size=1) +
+  geom_point(aes(y=ycmp), data=plot2.dt[catchup == "routine"], fill="white", alpha=1, size=1) +
+  geom_point(aes(y=ycmp), data=plot2.dt[catchup != "routine"], fill="black", alpha=1, size=1) +
 	scale_year() + scale_y_continuous("Effectiveness", expand=c(0,0)) +
 	scale_fill_interaction(
 		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
 	) +
 	scale_pchlty_vaccine(guide = "none") +
-	scale_color_scenario(guide = "none") +
+	scale_color_scenario(guide = "none", value="black") +
 	scale_size_vectorcontrol(guide="none") +
 	coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
 	theme(
@@ -111,7 +104,4 @@ p2 <- ggplot(plot2.dt) + aes(
 	) +
 	scale_alpha_manual(values=c(delta=0.4), guide = "none")
 
-ggsave(
-  tail(args,1), p2, device = "png",
-  width = 7.5, height = 3, dpi = "retina", units = "in"
-)
+plotutil(p, h=5, w=7.5, tar)

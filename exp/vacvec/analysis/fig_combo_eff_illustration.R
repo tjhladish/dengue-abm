@@ -56,7 +56,7 @@ naive.eff <- effstats.dt[variable == "ind.eff" & vc_coverage == 75 & catchup == 
 	estimate = "naive"
 ), keyby=.(vaccine, catchup, vc_coverage, year)]
 
-plot.dt <- rbind(vec.eff, vac.eff, cmb.eff, naive.eff)
+plot.dt <- rbind(vec.eff, vac.eff, cmb.eff)
 
 # if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
 
@@ -72,15 +72,15 @@ p1 <- ggplot(
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
   fill=catchup, shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
-  group = interaction(scenario, catchup, vaccine, vc_coverage, estimate),
-  alpha = estimate
+  group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
+#  , alpha = estimate
 ) +
 #  facet_grid_freey(scenario ~ ., labeller = facet_labels) +
 #  geom_segment(mapping = aes(yend=value, xend=year+1)) +
 # geom_step() +
   geom_limits(limits.dt) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(size = 1) +
+  geom_point() +
   scale_size_vectorcontrol(breaks=vc_lvls[c(1,4)], guide=gds(1)) +
   scale_color_scenario(
   	name = gsub(" ", "\n", scn_name),
@@ -94,7 +94,7 @@ p1 <- ggplot(
   	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
   ) +
   scale_fill_catchup(guide="none", na.value=NA) +
-	scale_alpha_manual("Estimation", labels=c(naive="Naive",simulated="Simulated"), values = c(naive=0.3,simulated=1)) +
+#	scale_alpha_manual("Estimation", labels=c(naive="Naive",simulated="Simulated"), values = c(naive=0.3,simulated=1)) +
   scale_year() +
   scale_y_continuous("Effectiveness",expand = c(0,0)) +
   theme(

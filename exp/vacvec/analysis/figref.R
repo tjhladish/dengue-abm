@@ -21,7 +21,7 @@ load(.args[2])
 # scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
 scn_name <- "Intervention Scenario"
 scn_labels <- c("None", "Vector Control Only", "Vaccine Only", "Combination")
-scn_cols <- c("grey","orange","darkgreen","black")
+scn_cols <- c("grey","blue","darkgreen","darkcyan")
 names(scn_labels) <- names(scn_cols) <- scn_lvls
 scale_color_scenario <- scale_generator(
   "color", scn_name, scn_labels, scn_cols
