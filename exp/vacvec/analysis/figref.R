@@ -1,4 +1,5 @@
 suppressPackageStartupMessages({
+  require(data.table)
 	require(cowplot)
 })
 # plot normalization functions
@@ -22,7 +23,7 @@ load(.args[2])
 scn_name <- "Intervention Scenario"
 scn_labels <- c("None", "Vector Control Only", "Vaccine Only", "Combination")
 scn_cols <- c("grey","blue","darkgreen","darkcyan")
-names(scn_labels) <- names(scn_cols) <- scn_lvls
+names(scn_labels) <- names(scn_cols) <- names(scn_lvls) <- scn_lvls
 scale_color_scenario <- scale_generator(
   "color", scn_name, scn_labels, scn_cols
 )
@@ -33,7 +34,7 @@ vc_lvls <- seq(from=0,to=75,by=25)
 vc_name <- "Vector Control\nCoverage %"
 vc_labels <- c("none","25%","50%","75%")
 vc_sizes <- seq(from=0.4, by=0.3, length.out = length(vc_labels))
-names(vc_labels) <- names(vc_sizes) <- vc_lvls
+names(vc_labels) <- names(vc_sizes) <- names(vc_lvls) <- vc_lvls
 scale_size_vectorcontrol <- scale_generator(
   "size", vc_name, vc_labels, vc_sizes
 )
@@ -45,7 +46,7 @@ vac_name <- "Vaccine Model"
 vac_labels <- c("Dengvaxia", "D70E", "None")
 vac_pchs <- c(24,21,NA) # c(15,16,NA)
 vac_ltys <- c("12","61","solid")
-names(vac_labels) <- names(vac_pchs) <- names(vac_ltys) <- vac_lvls
+names(vac_labels) <- names(vac_pchs) <- names(vac_ltys) <- names(vac_lvls) <- vac_lvls
 scale_shape_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_pchs
 )
@@ -63,7 +64,7 @@ cu_name <- "Vaccine Campaign"
 cu_labels <- c("Catchup", "Catchup", "Routine-Only", "None")
 cu_fills <- c(scn_cols[c("vac","vc+vac")], "white", NA)
 cu_alpha <- c(1, 1, 0.3, 0.3)
-names(cu_labels) <- names(cu_fills) <- cu_lvls
+names(cu_labels) <- names(cu_fills) <- names(cu_lvls) <- cu_lvls
 scale_fill_catchup <- scale_generator(
   "fill", cu_name, cu_labels, cu_fills
 )
@@ -156,6 +157,33 @@ gds <- function(
 ) guide_legend(
   title.position = title.position, direction = direction, order = order,
   label.position = label.position, ...
+)
+
+labels.dt <- data.table(
+  label = c(
+    vc_labels[c("25","50","75")],
+    paste(
+      vac_labels[rep(c("cmdvi","edv"), times=2)],
+      cu_labels[rep(c("routine","vac-only"), each=2)],
+      sep="\n"
+    )
+  ),
+  scenario = c(
+    rep("vc", 3),
+    rep("vac", 4)
+  ),
+  vc_coverage = c(
+    c(25, 50, 75),
+    rep(vc_lvls[c("0")], 4)
+  ),
+  vaccine = c(
+    rep("none", 3),
+    rep(c("cmdvi","edv"), times=2)
+  ),
+  catchup = c(
+    rep("none", 3),
+    rep(c("routine","vac-only"), each=2)
+  )
 )
 
 save(list = ls(), file = tail(.args, 1))
