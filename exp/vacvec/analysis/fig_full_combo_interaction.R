@@ -13,6 +13,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
 effstats.dt <- readRDS(args[2])
+tar <- tail(args, 1)
 
 cmb.eff <- effstats.dt[variable == "combo.eff", .(
 	value = warnnonunique(med, variable),
@@ -78,7 +79,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
-p2 <- ggplot(plot2.dt) + aes(
+p <- ggplot(plot2.dt) + aes(
 	linetype=vaccine, shape=vaccine, color=scenario, size=factor(vc_coverage),
 	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
 ) + theme_minimal() +

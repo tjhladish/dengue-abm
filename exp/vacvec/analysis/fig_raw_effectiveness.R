@@ -48,6 +48,30 @@ cmb.eff <- effstats.dt[variable == "combo.eff", .(
 
 plot.dt <- rbind(vec.eff, vac.eff)
 
+vec.labxy <- plot.dt[
+  year == (25+vc_coverage/25) & scenario == "vc",.(year, value=value+.025),
+  by=.(vc_coverage, vaccine, scenario, catchup)
+]
+
+vac.labxy <- plot.dt[
+  year == 25 & scenario == "vac",.(year, value),
+  by=.(vc_coverage, vaccine, scenario, catchup)
+]
+
+vac.labxy[
+  vaccine == "edv",
+  value := value + .05*ifelse(catchup == "routine",1,-1)
+]
+
+vac.labxy[
+  vaccine == "cmdvi",
+  value := value + .05*ifelse(catchup == "routine",-1,1)
+]
+
+labxy <- rbind(vec.labxy, vac.labxy)
+
+# labels.dt[labxy, on=.(vc_coverage, vaccine, scenario, catchup)]
+
 if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
 
 limits.dt <- plot.dt[,
@@ -59,7 +83,7 @@ p <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
+  fill=catchup, shape=vaccine, size=factor(vc_coverage),
   group=interaction(scenario, catchup, vaccine, vc_coverage)
 ) +
   facet_grid_freey(scenario ~ ., labeller = facet_labels) +
@@ -68,34 +92,23 @@ p <- ggplot(
   geom_limits(limits.dt) +
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_point(size=1) +
-  scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
-    1,
-    override.aes=list(
-      shape=rep(NA,3 ),
-      color=rep(scn_cols["vc"])
-    ))
+  geom_text(
+    aes(x=year+1, y=value, label=label),
+    labels.dt[labxy, on=.(vc_coverage, vaccine, scenario, catchup)],
+    size = 2
+  ) +
+  scale_size_vectorcontrol(
+    breaks=vc_lvls[2:4], guide="none"
   ) +
 	scale_color_scenario(
-		name = gsub(" ", "\n", scn_name),
-		guide = gds(2, direction="vertical",
-			override.aes = list(
-				shape=c(vc=vac_pchs["none"], vac=vac_pchs["edv"]),
-				fill=scn_cols[c("vc","vac")] # TODO figure out how to make this work?
-			)
-		)
+		guide = "none"
 	) +
-  scale_pchlty_vaccine(
-  	name = gsub(" ", "\n", vac_name),
-  	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
+  scale_shape_vaccine(
+  	guide = "none"
   ) +
-  scale_fill_catchup(name=gsub(" ", "\n", cu_name),
+  scale_fill_catchup(
   	breaks = c("routine", "vac-only"),
-  	guide=gds(4, direction="vertical", label.position = "right",
-  		override.aes = list(
-  			shape = c(21, 21),
-  			color = scn_cols[c("vac","vac")]
-  		)
-  	),
+  	guide="none",
   	na.value=NA
   ) +
   scale_year() +
