@@ -34,8 +34,11 @@ lag_intervention.rds lag_intervention.csv: $(LAGDB)
 baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.rda
 	Rscript $^ $@
 
-%.csv: %.sql
+raw_%.csv: %.sql
 	sqlite3 -csv $(word 2,$^) < $< > $@
+
+digest_%.csv: tocsv.R %.rds
+	Rscript $^ $@
 
 baseline.rds intervention.rds foi_baseline.rds foi_intervention.rds lag_intervention.rds: parse.R utils.R projref.rda
 	Rscript $^ $@
@@ -122,3 +125,6 @@ clean_effstat:
 
 clean: clean_digests clean_effectiveness clean_comboeff clean_effstat
 	rm projref.rda
+
+base_single_intervention.rds: base_single_intervention.R projref.rda effstats.rds
+	Rscript $^ $@
