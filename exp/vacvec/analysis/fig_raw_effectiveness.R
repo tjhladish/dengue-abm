@@ -41,86 +41,79 @@ vec.eff <- cbind(effstats.dt[variable == "vec.eff", .(
   )
 ], reference.scenario[,.(vaccine, catchup)])
 
-cmb.eff <- effstats.dt[variable == "combo.eff", .(
-	value = warnnonunique(med, variable),
-	scenario = trans_scnario(1, 1)
-), keyby=.(vaccine, catchup, vc_coverage, year)]
-
-plot.dt <- rbind(vec.eff, vac.eff)
-
-vec.labxy <- plot.dt[
-  year == (25+vc_coverage/25) & scenario == "vc",.(year, value=value+.025),
-  by=.(vc_coverage, vaccine, scenario, catchup)
-]
-
-vac.labxy <- plot.dt[
-  year == 25 & scenario == "vac",.(year, value),
-  by=.(vc_coverage, vaccine, scenario, catchup)
-]
-
-vac.labxy[
-  vaccine == "edv",
-  value := value + .05*ifelse(catchup == "routine",1,-1)
-]
-
-vac.labxy[
-  vaccine == "cmdvi",
-  value := value + .05*ifelse(catchup == "routine",-1,1)
-]
-
-labxy <- rbind(vec.labxy, vac.labxy)
-
-# labels.dt[labxy, on=.(vc_coverage, vaccine, scenario, catchup)]
-
-if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
-
 limits.dt <- plot.dt[,
   .(value=c(0, 1), year=-1),
   by=scenario
 ]
 
-p <- ggplot(
-  plot.dt
-) + theme_minimal() + aes(
-  x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, size=factor(vc_coverage),
-  group=interaction(scenario, catchup, vaccine, vc_coverage)
-) +
-  facet_grid_freey(scenario ~ ., labeller = facet_labels) +
-#  geom_segment(mapping = aes(yend=value, xend=year+1)) +
-# geom_step() +
-  geom_limits(limits.dt) +
-  geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(size=1) +
-  geom_text(
-    aes(x=year+1, y=value, label=label),
-    labels.dt[labxy, on=.(vc_coverage, vaccine, scenario, catchup)],
-    size = 2
-  ) +
+shared <- list(theme_minimal(), aes(
+    x=year + 1, y=value, color=scenario,
+    fill=interaction(catchup, vaccine), shape=vaccine, size=factor(vc_coverage),
+    group=interaction(scenario, catchup, vaccine, vc_coverage)
+  ), geom_limits(limits.dt),
+  scale_color_scenario(guide = "none"),
+  scale_year(),
+  geom_line(linejoin = "mitre", lineend = "butt")
+)
+
+pvec <- ggplot(
+  vec.eff
+) + shared +
   scale_size_vectorcontrol(
-    breaks=vc_lvls[2:4], guide="none"
+    breaks=vc_lvls[2:4], guide = gds(1,
+      override.aes=list(color=rep(scn_cols["vc"], 3))
+    )
   ) +
-	scale_color_scenario(
-		guide = "none"
-	) +
   scale_shape_vaccine(
-  	guide = "none"
+    guide = "none"
   ) +
   scale_fill_catchup(
-  	breaks = c("routine", "vac-only"),
-  	guide="none",
-  	na.value=NA
+    guide="none", na.value=NA
   ) +
-  scale_year() +
-  scale_y_continuous(expand = c(0,0)) +
+  scale_y_continuous(
+    name="Vector Control-Only Annual Effectiveness",
+    expand = c(0,0)
+  ) +
   theme(
     legend.margin = margin(), legend.spacing = unit(25, "pt"),
     legend.spacing.x = unit(-2,"pt"),
+    legend.position = c(35/40, 0.875),
+    legend.justification = c(1,1),
     legend.text = element_text(size=rel(0.5)),
     legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
     legend.key.height = unit(1,"pt"),
     legend.box.spacing = unit(2.5, "pt")
+  )
+
+pvac <- ggplot(
+  vac.eff
+) + theme_minimal() + shared +
+  geom_point(size=1) +
+  scale_size_vectorcontrol(
+    breaks=vc_lvls[2:4], guide="none"
+  ) +
+  scale_shape_vaccine(guide=gds(1, direction = "vertical", label.position = "right")) +
+  scale_fill_catchup(
+    labels = c("routine", "", "vac-only", ""),
+    breaks = c("routine", "routine", "vac-only", "vac-only"),
+    na.value=NA,
+    guide=gds(2, direction = "vertical", label.position = "right")
+  ) +
+  scale_y_continuous(
+    name="Vaccine-Only Annual Effectiveness",
+    expand = c(0,0)
+  ) +
+  theme(
+    legend.margin = margin(), #legend.spacing = unit(25, "pt"),
+    legend.spacing.x = unit(-2,"pt"),
+    legend.text = element_text(size=rel(0.5)),
+    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
+    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+    legend.key.height = unit(1,"pt"),
+    legend.box.spacing = unit(2.5, "pt"),
+    legend.position = c(35/40, 0.875),
+    legend.justification = c(1,1)
   )
 
 plotutil(p, h=7.5, w=3.25, tar)
