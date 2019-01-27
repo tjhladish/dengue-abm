@@ -66,39 +66,65 @@ limits.dt <- plot.dt[,
   by=scenario
 ]
 
+scn2_lvls <- with(rbind(expand.grid(scn_lvls[3], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
+scn2_labels <- c(paste(vac_labels[2:1],cu_labels["vac-only"], sep=", "), "75% Vector Control")
+scn2_cols <- scn_cols[c("vac","vac","vc")]
+names(scn2_labels) <- names(scn2_cols) <- scn2_lvls
+
+scale_color_scenario2 <- scale_generator(
+	"color", "Single Intervention", scn2_labels, scn2_cols
+)
+
+naive.eff.cmdvi <- naive.eff[vaccine == "cmdvi"]
+naive.eff.edv <- naive.eff[vaccine == "edv"]
+naive.eff.cmdvi.thin <- naive.eff.cmdvi[(((year+1) %% 5 == 0) | year == 0)]
+naive.eff.edv.thin <- naive.eff.edv[(((year+1) %% 5 == 0) | year == 0)]
+
+annos <- list(
+	annotate("line", x=naive.eff.cmdvi$year+1, y=naive.eff.cmdvi$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
+	annotate("line", x=naive.eff.edv$year+1, y=naive.eff.edv$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
+	annotate("point", x=naive.eff.cmdvi.thin$year+1, y=naive.eff.cmdvi.thin$value, shape=vac_pchs["cmdvi"], size=2, color="#55CC55", fill="#55CC55"),
+	annotate("point", x=naive.eff.edv.thin$year+1, y=naive.eff.edv.thin$value, shape=vac_pchs["edv"], size=2, color="#55CC55", fill="#55CC55")
+)
+
 # illustrate combined effectiveness
 # with coverage, catchup example
 p1 <- ggplot(
   plot.dt
-) + theme_minimal() + aes(
-  x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, size=factor(vc_coverage), alpha = estimate,
+) + aes(
+  x=year + 1, y=value, color=interaction(scenario,vaccine),
+  fill=catchup, shape=vaccine, size=factor(vc_coverage),
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
-#  , alpha = estimate
 ) +
-#  facet_grid_freey(scenario ~ ., labeller = facet_labels) +
-#  geom_segment(mapping = aes(yend=value, xend=year+1)) +
-# geom_step() +
-  geom_limits(limits.dt) +
-  geom_line(data=plot.dt[estimate != "naive"], linejoin = "mitre", lineend = "butt") +
-	geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = scn_cols["vc"]) +
-#	geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = scn_cols["vac"], size = vc_sizes["0"]) +
-#	geom_point(size=.75) +
+#  geom_limits(limits.dt) +
+	annos +
+	# geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF", show.legend = F) +
+	# geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate == "naive"], size=2, color="#55CC55", fill="#55CC55", show.legend = F) +
+
+	geom_line(data=plot.dt[estimate != "naive"], linejoin = "mitre", lineend = "butt") +
 	geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate != "naive"], size=2) +
-	geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate == "naive"], size=2, color=scn_cols["vac"], fill=scn_cols["vac"]) +
-  scale_size_vectorcontrol(breaks=vc_lvls[c(1,4)], guide="none") +
-  scale_color_scenario(guide = "none") +
+
+	scale_size_vectorcontrol(guide = "none") +
+  scale_color_scenario2(guide=guide_legend(
+  	override.aes = list(
+  		shape=vac_pchs, fill=scn_cols[c("vac","vac","vc")])
+  	)
+  ) +
   scale_shape_vaccine(guide = "none") +
-  scale_fill_catchup(guide="none", na.value=NA) +
-	scale_alpha_manual(values = c(naive=0.4,simulated=1), guide="none") +
-  scale_year() +
-  scale_y_continuous("Effectiveness",expand = c(0,0)) +
-  theme(
-    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    plot.margin = margin(r = unit(6,"pt"))
-  )
+  scale_fill_catchup(guide="none", na.value=NA)#+
+
+  # scale_year() +
+  # scale_effectiveness() +
+  # theme(
+  #   panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+  #   axis.title.x = element_blank(),
+  #   axis.text.x = element_blank(),
+  #   plot.margin = margin(r = unit(6,"pt"))
+  # )
+
+p1leg <- get_legend(p1)
+
+ggdraw(p1+theme(legend.position = "none")) + draw_grob(p1leg, x=0.5, y=0.4)
 
 # show interaction for particular example
 
