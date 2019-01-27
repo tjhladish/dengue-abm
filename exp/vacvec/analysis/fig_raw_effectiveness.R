@@ -93,12 +93,12 @@ pvac <- ggplot(
   scale_size_vectorcontrol(
     breaks=vc_lvls[2:4], guide="none"
   ) +
-  scale_shape_vaccine(guide=gds(1, direction = "vertical", label.position = "right")) +
+  scale_shape_vaccine(guide=gds(1, label.position = "right")) +
   scale_fill_catchup(
     labels = c("routine", "", "vac-only", ""),
     breaks = c("routine", "routine", "vac-only", "vac-only"),
     na.value=NA,
-    guide=gds(2, direction = "vertical", label.position = "right")
+    guide=gds(2, label.position = "right")
   ) +
   scale_y_continuous(
     name="Vaccine-Only Annual Effectiveness",
