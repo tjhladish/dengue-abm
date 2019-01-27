@@ -80,13 +80,14 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
 p <- ggplot(plot2.dt) + aes(
-	linetype=vaccine, shape=vaccine, color=scenario, size=factor(vc_coverage),
+	shape=vaccine, color=scenario, size=factor(vc_coverage),
 	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
 ) + theme_minimal() +
 	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels) +
 	geom_altribbon(plot2.dt, withlines = F) +
-  geom_point(aes(y=ycmp), data=plot2.dt[catchup == "routine"], fill="white", alpha=1, size=1) +
-  geom_point(aes(y=ycmp), data=plot2.dt[catchup != "routine"], fill="black", alpha=1, size=1) +
+	geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]) +
+  geom_point(aes(y=ycmp), data=plot2.dt[((x %% 5 == 0) | x == 1) & catchup == "routine"], fill="white", alpha=1, size=2) +
+  geom_point(aes(y=ycmp), data=plot2.dt[((x %% 5 == 0) | x == 1) & catchup != "routine"], fill="black", alpha=1, size=2) +
 	scale_year() + scale_y_continuous("Effectiveness", expand=c(0,0)) +
 	scale_fill_interaction(
 		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
@@ -104,5 +105,9 @@ p <- ggplot(plot2.dt) + aes(
 		legend.box.spacing = unit(2.5, "pt")
 	) +
 	scale_alpha_manual(values=c(delta=0.4), guide = "none")
+
+# switch vaccine precedence, spacing
+# include all lines, but not size scale
+# thin points
 
 plotutil(p, h=5, w=7.5, tar)

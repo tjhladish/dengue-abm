@@ -22,7 +22,7 @@ load(.args[2])
 # scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
 scn_name <- "Intervention Scenario"
 scn_labels <- c("None", "Vector Control Only", "Vaccine Only", "Combination")
-scn_cols <- c("grey","blue","darkgreen","darkcyan")
+scn_cols <- c("yellow","blue","darkgreen","black")
 names(scn_labels) <- names(scn_cols) <- names(scn_lvls) <- scn_lvls
 scale_color_scenario <- scale_generator(
   "color", scn_name, scn_labels, scn_cols
@@ -74,6 +74,31 @@ scale_alpha_catchup <- scale_generator(
 
 cuscn_fills <- c(cu_fills, scn_cols)
 names(cuscn_fills) <- c(cu_lvls, scn_lvls)
+
+# INTERACTION BETWEEN VACCINE & CATCHUP
+suppressWarnings(vacu_lvls <- c(levels(interaction(vac_lvls[-3], cu_lvls[-4])), levels(interaction(vac_lvls[3], cu_lvls[4]))))
+scale_vaccu_interaction <- {
+	revac <- gsub("^(.+)\\..+$","\\1",vacu_lvls)
+	vacu_pchs <- vac_pchs[sort(revac)]
+	vacu_pch_labels <- vac_labels[sort(revac)]
+	names(vacu_pchs) <- names(vacu_pch_labels) <- vacu_lvls[order(revac)]
+	
+	recu <- gsub("^.+\\.(.+)$","\\1",vacu_lvls)
+	vacu_fills <- cu_fills[sort(recu)]
+	vacu_fill_labels <- cu_labels[sort(recu)]
+	names(vacu_fills) <- names(vacu_fill_labels) <- vacu_lvls[order(recu)]
+	
+	scale_pch_vaccu <- scale_generator("shape", vac_name, vacu_pch_labels, vacu_pchs)
+	scale_fill_vaccu <- scale_generator("fill", cu_name, vacu_fill_labels, vacu_fills)
+	function(...,
+		pch.labels=c("asdf","fdsa","hjkl","lkjh"), pch.breaks = names(pch.labels)
+	) list(
+		scale_pch_vaccu(breaks=pch.breaks, labels=pch.labels,
+			guide=gds(1, override.aes=list(fill=vacu_fills[pch.breaks]), ...)
+		),
+		scale_fill_vaccu(breaks=vacu_lvls, guide="none")
+	)
+}
 
 
 ## INTERACTIONS - FOR COMBINATION INTERVENTION PLOTS

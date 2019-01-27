@@ -56,7 +56,8 @@ naive.eff <- effstats.dt[variable == "ind.eff" & vc_coverage == 75 & catchup == 
 	estimate = "naive"
 ), keyby=.(vaccine, catchup, vc_coverage, year)]
 
-plot.dt <- rbind(vec.eff, vac.eff, cmb.eff)
+# plot.dt <- rbind(vec.eff, vac.eff, cmb.eff)
+plot.dt <- rbind(vec.eff, vac.eff, naive.eff)
 
 # if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
 
@@ -71,7 +72,7 @@ p1 <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  fill=catchup, shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
+  fill=catchup, shape=vaccine, size=factor(vc_coverage), alpha = estimate,
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 #  , alpha = estimate
 ) +
@@ -79,31 +80,24 @@ p1 <- ggplot(
 #  geom_segment(mapping = aes(yend=value, xend=year+1)) +
 # geom_step() +
   geom_limits(limits.dt) +
-  geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point() +
-  scale_size_vectorcontrol(breaks=vc_lvls[c(1,4)], guide=gds(1)) +
-  scale_color_scenario(
-  	name = gsub(" ", "\n", scn_name),
-  	guide = gds(2, direction="vertical", override.aes=list(
-  		shape = vac_pchs[c("none","edv","edv")],
-  		fill = scn_cols[c("vc","vac","vc+vac")]
-  	))
-  ) +
-  scale_pchlty_vaccine(
-  	name = gsub(" ", "\n", vac_name),
-  	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
-  ) +
+  geom_line(data=plot.dt[estimate != "naive"], linejoin = "mitre", lineend = "butt") +
+	geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = scn_cols["vc"]) +
+#	geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = scn_cols["vac"], size = vc_sizes["0"]) +
+#	geom_point(size=.75) +
+	geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate != "naive"], size=2) +
+	geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate == "naive"], size=2, color=scn_cols["vac"], fill=scn_cols["vac"]) +
+  scale_size_vectorcontrol(breaks=vc_lvls[c(1,4)], guide="none") +
+  scale_color_scenario(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
   scale_fill_catchup(guide="none", na.value=NA) +
-#	scale_alpha_manual("Estimation", labels=c(naive="Naive",simulated="Simulated"), values = c(naive=0.3,simulated=1)) +
+	scale_alpha_manual(values = c(naive=0.4,simulated=1), guide="none") +
   scale_year() +
   scale_y_continuous("Effectiveness",expand = c(0,0)) +
   theme(
-    legend.margin = margin(), legend.spacing = unit(25, "pt"),
-    legend.text = element_text(size=rel(0.5)),
-    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
-    legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt")
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    plot.margin = margin(r = unit(6,"pt"))
   )
 
 # show interaction for particular example
@@ -162,17 +156,19 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
-p2 <- ggplot(plot2.dt) + aes(linetype=vaccine, shape=vaccine, color=scenario, size=factor(vc_coverage), x=x, y=y) + theme_minimal() + #aes(linetype=vaccine, shape=vaccine) +
+p2 <- ggplot(plot2.dt) + aes(shape=vaccine, color=scenario, size=factor(vc_coverage), x=x, y=y) + theme_minimal() + #aes(linetype=vaccine, shape=vaccine) +
 	geom_altribbon(plot2.dt, withlines = F) +
-	geom_line(alpha=0.3) + 
+	geom_line(alpha=0.4, color=scn_cols["vc"]) +
+	geom_point(data=plot2.dt[(x %% 5 == 0) | x == 1], size=2, alpha=0.4, fill=scn_cols["vac"], color=scn_cols["vac"]) +
 	#geom_point(fill=scn_cols["vc+vac"]) +
-	geom_line(aes(y=ycmp)) + 
-	geom_point(aes(y=ycmp), fill=scn_cols["vc+vac"], size=1) +
+	geom_line(aes(y=ycmp)) +
+#	geom_point(aes(y=ycmp), size=.75, fill=scn_cols["vc+vac"]) +
+	geom_point(aes(y=ycmp), data=plot2.dt[(x %% 5 == 0) | x == 1], size=2, fill=scn_cols["vc+vac"]) +
 	scale_year() + scale_y_continuous("Effectiveness", expand=c(0,0)) +
-	scale_fill_interaction(
-		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
+	scale_fill_interaction(guide="none"
+		#guide = gds(1, keyheight=unit(12,"pt"), label.position = "top", direction="horizontal", override.aes=list(alpha=c(0.4,0.4)))
 	) +
-	scale_pchlty_vaccine(guide = "none") +
+	scale_shape_vaccine(guide = "none") +
 	scale_color_scenario(guide = "none") +
 	scale_size_vectorcontrol(guide="none") +
 	coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
@@ -180,17 +176,15 @@ p2 <- ggplot(plot2.dt) + aes(linetype=vaccine, shape=vaccine, color=scenario, si
 		legend.margin = margin(), legend.spacing = unit(25, "pt"),
 		legend.text = element_text(size=rel(0.5)),
 		legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-		panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+		#panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
 		legend.key.height = unit(1,"pt"),
-		legend.box.spacing = unit(2.5, "pt")
+		legend.box.spacing = unit(2.5, "pt"),
+		legend.position = c(0.5, .1),
+		plot.margin = margin(t = unit(6,"pt"), r = unit(6,"pt"))
 	) +
 	scale_alpha_manual(values=c(delta=0.4), guide = "none")
 
-plotutil(plot_grid(p1, p2, align = "hv", nrow = 2), h=7.5, w=3.25, tar)
+## TODO shrink vertical gap, slightly shrink font, do labels for theoretical combos?,
+#  overflow point off end on right
 
-## TODO SI version:
-##  - add cumulative effectiveness row
-##  - "explode" interventions into sub levels
-##  (two vaccines? maybe 4 vac*catchup & 3 vc coverage)
-##  - add IQs
-##  - basically whole page, landscape fig
+plotutil(plot_grid(p1, p2, align = "hv", nrow = 2), h=4.5, w=3, tar)

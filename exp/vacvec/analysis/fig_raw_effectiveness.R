@@ -41,14 +41,14 @@ vec.eff <- cbind(effstats.dt[variable == "vec.eff", .(
   )
 ], reference.scenario[,.(vaccine, catchup)])
 
-limits.dt <- plot.dt[,
+limits.dt <- rbind(vac.eff, vec.eff)[,
   .(value=c(0, 1), year=-1),
   by=scenario
 ]
 
 shared <- list(theme_minimal(), aes(
     x=year + 1, y=value, color=scenario,
-    fill=interaction(catchup, vaccine), shape=vaccine, size=factor(vc_coverage),
+    fill=interaction(vaccine, catchup), shape=interaction(vaccine, catchup), size=factor(vc_coverage),
     group=interaction(scenario, catchup, vaccine, vc_coverage)
   ), geom_limits(limits.dt),
   scale_color_scenario(guide = "none"),
@@ -64,14 +64,10 @@ pvec <- ggplot(
       override.aes=list(color=rep(scn_cols["vc"], 3))
     )
   ) +
-  scale_shape_vaccine(
-    guide = "none"
-  ) +
-  scale_fill_catchup(
-    guide="none", na.value=NA
-  ) +
+  scale_shape_vaccine(guide = "none") +
+  scale_fill_catchup(guide="none", na.value=NA) +
   scale_y_continuous(
-    name="Vector Control-Only Annual Effectiveness",
+    name="Vector Control-Only\nEffectiveness",
     expand = c(0,0)
   ) +
   theme(
@@ -83,25 +79,31 @@ pvec <- ggplot(
     legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
     legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt")
+    legend.box.spacing = unit(2.5, "pt"),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
   )
+
+#pch.labs <- vac_labels[grep(vacu_lvls)]
 
 pvac <- ggplot(
   vac.eff
 ) + theme_minimal() + shared +
-  geom_point(size=1) +
+	geom_point(size=.75) +
+	geom_point(data=vac.eff[((year+1) %% 5 == 0) | year == 0], size=2) +
   scale_size_vectorcontrol(
     breaks=vc_lvls[2:4], guide="none"
   ) +
-  scale_shape_vaccine(guide=gds(1, label.position = "right")) +
-  scale_fill_catchup(
-    labels = c("routine", "", "vac-only", ""),
-    breaks = c("routine", "routine", "vac-only", "vac-only"),
-    na.value=NA,
-    guide=gds(2, label.position = "right")
-  ) +
+	scale_vaccu_interaction(label.position = "right") +
+  # scale_shape_vaccine(guide=gds(1, label.position = "right")) +
+  # scale_fill_catchup(
+  #   labels = c("routine", "", "vac-only", ""),
+  #   breaks = c("routine", "routine", "vac-only", "vac-only"),
+  #   na.value=NA,
+  #   guide=gds(2, label.position = "right")
+  # ) +
   scale_y_continuous(
-    name="Vaccine-Only Annual Effectiveness",
+    name="Vaccine-Only\nEffectiveness",
     expand = c(0,0)
   ) +
   theme(
@@ -116,11 +118,7 @@ pvac <- ggplot(
     legend.justification = c(1,1)
   )
 
-plotutil(p, h=7.5, w=3.25, tar)
+## TODO shrink vertical gap, slightly shrink font, actually do legend for vec,
+#  overflow point off end on right
 
-## TODO SI version:
-##  - add cumulative effectiveness row
-##  - "explode" interventions into sub levels
-##  (two vaccines? maybe 4 vac*catchup & 3 vc coverage)
-##  - add IQs
-##  - basically whole page, landscape fig
+plotutil(plot_grid(pvec, pvac, align = "hv", nrow=2), h=4.5, w=3, tar)
