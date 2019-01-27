@@ -76,7 +76,10 @@ cuscn_fills <- c(cu_fills, scn_cols)
 names(cuscn_fills) <- c(cu_lvls, scn_lvls)
 
 # INTERACTION BETWEEN VACCINE & CATCHUP
-suppressWarnings(vacu_lvls <- c(levels(interaction(vac_lvls[-3], cu_lvls[-4])), levels(interaction(vac_lvls[3], cu_lvls[4]))))
+vacu_lvls <- with(rbind(expand.grid(vac_lvls[-3], cu_lvls[-c(2,4)]),expand.grid(vac_lvls[3], cu_lvls[4])), paste(Var1, Var2, sep="."))
+vacu_labels <- with(rbind(expand.grid(vac_labels[-3], cu_labels[-c(2,4)]),expand.grid(vac_labels[3], cu_labels[4])), paste(Var1, Var2, sep=", "))
+names(vacu_labels) <- vacu_lvls
+
 scale_vaccu_interaction <- {
 	revac <- gsub("^(.+)\\..+$","\\1",vacu_lvls)
 	vacu_pchs <- vac_pchs[sort(revac)]
@@ -91,10 +94,10 @@ scale_vaccu_interaction <- {
 	scale_pch_vaccu <- scale_generator("shape", vac_name, vacu_pch_labels, vacu_pchs)
 	scale_fill_vaccu <- scale_generator("fill", cu_name, vacu_fill_labels, vacu_fills)
 	function(...,
-		pch.labels=c("asdf","fdsa","hjkl","lkjh"), pch.breaks = names(pch.labels)
+		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = rev(names(pch.labels))
 	) list(
 		scale_pch_vaccu(breaks=pch.breaks, labels=pch.labels,
-			guide=gds(1, override.aes=list(fill=vacu_fills[pch.breaks]), ...)
+			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks)], size=1), ...)
 		),
 		scale_fill_vaccu(breaks=vacu_lvls, guide="none")
 	)
@@ -111,51 +114,8 @@ scale_fill_interaction <- scale_generator(
 	"fill", int_name, int_labels, int_fills
 )
 
-# 
-# ## VACCINE MECHANISM
-# 
-# vac_title <- "Vaccine"
-# vac_cols <- c("blue", "green", "black")
-# vac_ltys <- c("dashed", "solid", "dotdash")
-# vac_labels <- c("Dengvaxia-like", "EDV", "None")
-# names(vac_ltys) <- names(vac_cols) <- names(vac_labels) <- vac_names
-# scale_color_vaccine <- scale_generator("color", vac_title, vac_labels, vac_cols)
-# scale_linetype_vaccine <- scale_generator("linetype", vac_title, vac_labels, vac_ltys)
-# 
-# ## CATCHUP
-# 
-# cu_title <- "Intervention"
-# cu_labels <- c("Routine Vac.", "Routine + Catchup", "No Vaccination")
-# cu_cols <- c("green", "black", "blue")
-# cu_ltys <- c("solid", "dashed", "dotted")
-# names(cu_ltys) <- names(cu_labels) <- names(cu_cols) <- catchup_names
-# scale_linetype_catchup <- scale_generator("linetype", cu_title, cu_labels, cu_ltys)
-# scale_color_catchup <- scale_generator("color", cu_title, cu_labels, cu_cols)
-# 
-# ## VECTOR CONTROL
-# vc_title <- "Vector Control Coverage %"
-# sizebase <- 0.5
-# sizestep <- 0.25
-# vc_sizes <- seq(from=sizebase, by=sizestep, length.out = 4)
-# vc_labels <- c("None",25,50,75)
-# vc_ltys <- c(3, 2, 5, 1) # c(`25`="dotted",`50`="dashed",`75`="solid")
-# names(vc_ltys) <- names(vc_labels) <- names(vc_sizes) <- c(0,25,50,75)
-# scale_size_vectorcontrol <- function(
-#   name = vc_title, labels = vc_labels,
-#   values = vc_sizes, ...
-# ) scale_size_manual(
-#   name=name, labels=labels,
-#   values=values, ...
-# )
-# scale_linetype_vectorcontrol <- function(
-#   name = vc_title, labels = vc_labels,
-#   values = vc_ltys, ...
-# ) scale_linetype_manual(
-#   name=name, labels=labels,
-#   values=values, ...
-# )
-# 
-scale_year <- function(...) scale_x_continuous("Year", expand = c(0,0), ...)
+scale_year <- function(name="Year", ...) scale_x_continuous(name=name, expand = c(0,0), ...)
+scale_effectiveness <- function(name="Annual Effectiveness", ...) scale_y_continuous(name=name, expand = c(0,0), ...)
 
 yucpop <- 18.17734 # 100ks
 

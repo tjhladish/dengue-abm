@@ -53,72 +53,56 @@ shared <- list(theme_minimal(), aes(
   ), geom_limits(limits.dt),
   scale_color_scenario(guide = "none"),
   scale_year(),
-  geom_line(linejoin = "mitre", lineend = "butt")
+  geom_line(linejoin = "mitre", lineend = "butt"),
+  theme(
+  	legend.margin = margin(), legend.spacing = unit(25, "pt"),
+  	legend.spacing.x = unit(-2,"pt"),
+  	legend.text = element_text(size=rel(0.4)),
+  	legend.title = element_text(size=rel(0.5)), legend.title.align = 0.5,
+  	legend.key.height = unit(1,"pt"),
+  	legend.box.spacing = unit(2.5, "pt"),
+  	axis.text.y = element_text()
+  )
 )
 
 pvec <- ggplot(
   vec.eff
 ) + shared +
-  scale_size_vectorcontrol(
-    breaks=vc_lvls[2:4], guide = gds(1,
-      override.aes=list(color=rep(scn_cols["vc"], 3))
-    )
-  ) +
-  scale_shape_vaccine(guide = "none") +
-  scale_fill_catchup(guide="none", na.value=NA) +
-  scale_y_continuous(
-    name="Vector Control-Only\nEffectiveness",
-    expand = c(0,0)
-  ) +
-  theme(
-    legend.margin = margin(), legend.spacing = unit(25, "pt"),
-    legend.spacing.x = unit(-2,"pt"),
-    legend.position = c(35/40, 0.875),
-    legend.justification = c(1,1),
-    legend.text = element_text(size=rel(0.5)),
-    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
-    legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt"),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank()
+scale_size_vectorcontrol(
+  breaks=vc_lvls[2:4], guide = gds(1,
+    override.aes=list(color=rep(scn_cols["vc"], 3))
   )
+)
+
+veclegend <- get_legend(pvec)
 
 #pch.labs <- vac_labels[grep(vacu_lvls)]
 
 pvac <- ggplot(
   vac.eff
-) + theme_minimal() + shared +
+) + shared +
+	geom_point(size=.75, show.legend = F) +
+	geom_point(data=vac.eff[((year+1) %% 5 == 0) | year == 0], size=2) +
+  scale_size_vectorcontrol(guide="none") +
+	scale_vaccu_interaction(direction = "vertical", label.position="right")
+
+vaclegend <- get_legend(pvac)
+
+basep <- ggplot(
+	rbind(vac.eff, vec.eff)
+) + facet_grid(scenario ~ ., labeller = facet_labels) + shared +
+	theme(
+		legend.position = "none", panel.spacing.y = unit(12,"pt"),
+		strip.text.y = element_text(angle=90),
+		plot.margin = margin(t=unit(6,"pt"))
+	) +
 	geom_point(size=.75) +
 	geom_point(data=vac.eff[((year+1) %% 5 == 0) | year == 0], size=2) +
-  scale_size_vectorcontrol(
-    breaks=vc_lvls[2:4], guide="none"
-  ) +
-	scale_vaccu_interaction(label.position = "right") +
-  # scale_shape_vaccine(guide=gds(1, label.position = "right")) +
-  # scale_fill_catchup(
-  #   labels = c("routine", "", "vac-only", ""),
-  #   breaks = c("routine", "routine", "vac-only", "vac-only"),
-  #   na.value=NA,
-  #   guide=gds(2, label.position = "right")
-  # ) +
-  scale_y_continuous(
-    name="Vaccine-Only\nEffectiveness",
-    expand = c(0,0)
-  ) +
-  theme(
-    legend.margin = margin(), #legend.spacing = unit(25, "pt"),
-    legend.spacing.x = unit(-2,"pt"),
-    legend.text = element_text(size=rel(0.5)),
-    legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
-    legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt"),
-    legend.position = c(35/40, 0.875),
-    legend.justification = c(1,1)
-  )
+	scale_size_vectorcontrol() +
+	scale_vaccu_interaction() + 
+	scale_effectiveness() + coord_cartesian(clip="off")
 
-## TODO shrink vertical gap, slightly shrink font, actually do legend for vec,
-#  overflow point off end on right
+p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.2, y=-0.05)
 
-plotutil(plot_grid(pvec, pvac, align = "hv", nrow=2), h=4.5, w=3, tar)
+plotutil(p,
+h=4.5, w=3, tar)
