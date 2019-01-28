@@ -45,8 +45,9 @@ vac_lvls <- c("cmdvi","edv","none")
 vac_name <- "Vaccine Model"
 vac_labels <- c("Dengvaxia", "D70E", "None")
 vac_pchs <- c(24,21,NA) # c(15,16,NA)
+vac_nofill_pchs <- c(17,19,NA) # c(15,16,NA)
 vac_ltys <- c("12","61","solid")
-names(vac_labels) <- names(vac_pchs) <- names(vac_ltys) <- names(vac_lvls) <- vac_lvls
+names(vac_labels) <- names(vac_pchs) <- names(vac_nofill_pchs) <- names(vac_ltys) <- names(vac_lvls) <- vac_lvls
 scale_shape_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_pchs
 )
