@@ -47,13 +47,10 @@ fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda effstats.rds | $(F
 fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-# foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds
-# 	Rscript $^ $@
-#
-# foi_fig_2.png: foi_fig_2.R foi_effstats.rds effstats.rds
-# 	Rscript $^ $@
+fig_6.png fig_6.tiff: fig_foi_alternatives.R figref.rda foi_effstats.rds effstats.rds
+	$(RFIG)
 
-figures: fig_2.png SIfig_2.png fig_3.png fig_4.png
+figures: fig_2.png SIfig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
 
 clean_figures:
 	rm -rf $(FIGDIR)
@@ -99,18 +96,6 @@ fig1p3back.png: diagram_panel_model_background.R $(LOCATIONS) $(CONNECTIONS) $(T
 fig1.png: fig1p1.png fig1p2.png fig1p3.png fig1p4.png
 	@echo $^
 
-# lag_plot.png: lag_plot.R lag_effstats.rds effstats.rds
-# 	Rscript $^ $@
-#
-# foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds
-# 	Rscript $^ $@
-#
-# foi_fig_2.png: foi_fig_2.R foi_effstats.rds effstats.rds
-# 	Rscript $^ $@
-#
-# fig_1.png fig_1.tiff: fig_1.R baseline.rds intervention.rds effstats.rds
-# 	Rscript $^ $@
-#
 # # show only the * panels of fig 1
 # #  if % = vac / vec, then show just the vaccine-only (vector control only, resp) results
 # #  if % = inc / eff, then show just the incidence (effectiveness, resp) results

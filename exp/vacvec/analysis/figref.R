@@ -51,6 +51,9 @@ names(vac_labels) <- names(vac_pchs) <- names(vac_nofill_pchs) <- names(vac_ltys
 scale_shape_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_pchs
 )
+scale_shapenofill_vaccine <- scale_generator(
+  "shape", vac_name, vac_labels, vac_nofill_pchs
+)
 scale_linetype_vaccine <- scale_generator(
 	"linetype", vac_name, vac_labels, vac_ltys
 )
@@ -133,7 +136,12 @@ facet_labels <- labeller(
   measure = meas_labels,
   scenario = scn_labels,
   catchup = cu_labels,
-  vaccine = vac_labels
+  vaccine = vac_labels,
+  foi = c(
+    `0.5` = "%50 M",
+    `1` = "Baseline Mosquito",
+    `1.5` = "%150 M"
+  )
 )
 
 gds <- function(
