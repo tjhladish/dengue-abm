@@ -57,7 +57,10 @@ naive.eff <- effstats.dt[variable == "ind.eff" & vc_coverage == 75 & catchup == 
 ), keyby=.(vaccine, catchup, vc_coverage, year)]
 
 # plot.dt <- rbind(vec.eff, vac.eff, cmb.eff)
-plot.dt <- rbind(vec.eff, vac.eff, naive.eff)
+plot.dt <- rbind(
+  rbind(vec.eff, vac.eff)[, intervention := factor("single", levels=c("single","combined"), ordered = T) ],
+  cmb.eff[, intervention := factor("combined", levels=c("single","combined"), ordered = T) ]
+)
 
 # if (grepl("alt", tar)) plot.dt <- rbind(plot.dt, cmb.eff)
 
@@ -66,9 +69,9 @@ limits.dt <- plot.dt[,
   by=scenario
 ]
 
-scn2_lvls <- with(rbind(expand.grid(scn_lvls[3], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
-scn2_labels <- c(paste(vac_labels[2:1],cu_labels["vac-only"], sep=", "), "75% Vector Control")
-scn2_cols <- scn_cols[c("vac","vac","vc")]
+scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
+scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), paste(Var2, Var1, sep=", ")), "75% Vector Control")
+scn2_cols <- scn_cols[c("vac","vc+vac","vac","vc+vac","vc")]
 names(scn2_labels) <- names(scn2_cols) <- scn2_lvls
 
 scale_color_scenario2 <- scale_generator(
@@ -90,20 +93,14 @@ annos <- list(
 # illustrate combined effectiveness
 # with coverage, catchup example
 p1 <- ggplot(
-  plot.dt
+  plot.dt[intervention == "single" ]
 ) + aes(
-  x=year + 1, y=value, color=interaction(scenario,vaccine),
+  x=year+1, y=value, color=interaction(scenario, vaccine),
   fill=catchup, shape=vaccine, size=factor(vc_coverage),
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 ) +
-#  geom_limits(limits.dt) +
-	annos +
-	# geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF", show.legend = F) +
-	# geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate == "naive"], size=2, color="#55CC55", fill="#55CC55", show.legend = F) +
-
-	geom_line(data=plot.dt[estimate != "naive"], linejoin = "mitre", lineend = "butt") +
-	geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate != "naive"], size=2) +
-
+	geom_line(linejoin = "mitre", lineend = "butt") +
+	geom_point(data=plot.dt[intervention == "single"][((year+1) %% 5 == 0) | (year == 0)], size=2) +
 	scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide=guide_legend(
   	override.aes = list(
@@ -111,20 +108,40 @@ p1 <- ggplot(
   	)
   ) +
   scale_shape_vaccine(guide = "none") +
-  scale_fill_catchup(guide="none", na.value=NA)#+
-
-  # scale_year() +
-  # scale_effectiveness() +
-  # theme(
-  #   panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
-  #   axis.title.x = element_blank(),
-  #   axis.text.x = element_blank(),
-  #   plot.margin = margin(r = unit(6,"pt"))
-  # )
+  scale_fill_catchup(guide="none", na.value=NA)
 
 p1leg <- get_legend(p1)
 
-ggdraw(p1+theme(legend.position = "none")) + draw_grob(p1leg, x=0.5, y=0.4)
+# ggdraw(p1+theme(legend.position = "none")) + draw_grob(p1leg, x=0.5, y=0.4)
+
+ggplot(
+  plot.dt
+) + theme_minimal() + aes(
+  x=year+1, y=value, color=interaction(scenario, vaccine),
+  fill=catchup, shape=vaccine, size=factor(vc_coverage),
+  group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
+) + facet_grid(intervention ~ ., labeller = labeller(intervention=c(single="Single Interventions",combined="Combined Interventions"))) +
+  geom_limits(limits.dt) +
+  annos +
+  # geom_line(data=plot.dt[estimate == "naive"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF", show.legend = F) +
+  # geom_point(data=plot.dt[(((year+1) %% 5 == 0) | year == 0) & estimate == "naive"], size=2, color="#55CC55", fill="#55CC55", show.legend = F) +
+  
+  geom_line(linejoin = "mitre", lineend = "butt") +
+  geom_point(data=plot.dt[((year+1) %% 5 == 0) | (year == 0)], size=2) +
+  
+  scale_size_vectorcontrol(guide = "none") +
+  scale_color_scenario2(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
+  scale_fill_catchup(guide="none", na.value=NA) +
+  scale_year() +
+  scale_effectiveness() +
+  theme(
+    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    plot.margin = margin(r = unit(6,"pt"))
+  )
+
 
 # show interaction for particular example
 
