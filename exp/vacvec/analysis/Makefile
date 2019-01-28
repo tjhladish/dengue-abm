@@ -44,6 +44,15 @@ fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | $(F
 fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda effstats.rds | $(FIGDIR)
 	$(RFIG)
 
+fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
+	$(RFIG)
+
+# foi_plot.png: foi_plot.R foi_baseline.rds foi_intervention.rds foi_effectiveness.rds
+# 	Rscript $^ $@
+#
+# foi_fig_2.png: foi_fig_2.R foi_effstats.rds effstats.rds
+# 	Rscript $^ $@
+
 figures: fig_2.png SIfig_2.png fig_3.png fig_4.png
 
 clean_figures:

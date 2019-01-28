@@ -1,13 +1,15 @@
-require(data.table)
-require(ggplot2)
+suppressPackageStartupMessages({
+  require(data.table)
+  require(ggplot2)
+})
 
-source("projref.R")
-
-args <- c("lag_effstats.rds", "effstats.rds")
+args <- c("figref.rda", "rds/lag_effstats.rds", "rds/effstats.rds", "fig/fig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
-stat.eff.dt <- readRDS(args[1])
-ref.stat.dt <- readRDS(args[2])
+load(args[1])
+stat.eff.dt <- readRDS(args[2])
+ref.stat.dt <- readRDS(args[3])
+tar <- args[4]
 
 ekeys <- key(stat.eff.dt)
 
@@ -46,28 +48,33 @@ ribbon_intercepts <- function(x, y, ycmp) {
   } else return(list(xint=double(),yint=double()))
 }
 
-geom_altribbon <- function(dt, withlines = TRUE, by=NULL) {
+geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
   res <- dt[, with(ribbon_intercepts(x, y, ycmp), {
     xlims <- c(x[1], xint, x[.N])
-    inner.dt <- rbind(.SD, data.table(x=xint, y=yint, ycmp=yint))[order(x)]
-    byvar <- .BY
-    inner.dt[, names(byvar) := byvar ]
-    # browser()
+    inner.dt <- cbind(rbind(
+      .SD,
+      data.table(x=xint, y=yint, ycmp=yint)
+    )[order(x)], as.data.table(.BY))
     res <- lapply(1:(length(xlims)-1), function(i) {
       slice <- inner.dt[between(x, xlims[i], xlims[i+1])]
       geom_polygon(
-        aes(x=x, y=y, fill=slice[,any(ycmp>y)], linetype=NA, alpha="delta"),
-        slice[,.(x=c(x,rev(x)), y=c(y,rev(ycmp))), by=names(byvar)],
-        show.legend = (i==1)
+        mapping=aes(
+          x=x, y=y, linetype=NULL, shape=NULL, color=NULL, size=NULL, alpha="delta",
+          fill=col
+        ),
+        data=cbind(slice[,.(
+          x=c(x,rev(x)), y=c(y,rev(ycmp)), col=trans_int(slice[,any(ycmp>y)])
+        )], as.data.table(.BY)),
+        show.legend = F
       )
     })
     .(polys=res)
-  }), by=by ]$polys
+  }), keyby=ky ]$polys
+  # res[[1]]$show.legend <- T
   if (withlines) {
-    res <- c(
-      res,
-      geom_line(aes(x=x, y=y, size="assumed"), alpha=0.5, data=dt),
-      geom_line(aes(x=x, y=ycmp, size="simulated"), data=dt)
+    res <- c(res,
+             geom_line(aes(x=x, y=y,    alpha="reference"), data=dt),
+             geom_line(aes(x=x, y=ycmp, alpha="compareto"), data=dt)
     )
   }
   res
@@ -76,39 +83,26 @@ geom_altribbon <- function(dt, withlines = TRUE, by=NULL) {
 ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 1 ],
   copy(ref.stat.dt)[, vac_first := 0 ]
-)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "traditional" & catchup == "catchup" & vc_coverage == 75]
+)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
 
 ref.combo[, measure := ifelse(variable == "combo.eff","annual","cumulative") ]
 
 facet_labs <- labeller(
   vac_first = c(`0`="Vector Control First", `1`="Vaccine First"),
-  measure = c(annual="Annual", cumulative="Cumulative")
+  measure = c(annual="Annual Effectiveness", cumulative="Cumulative Effectiveness")
 )
 
-gds <- function(order,
-                title.position = "top",
-                direction = "horizontal",
-                ...
-) guide_legend(
-  title.position = title.position, direction = direction, order = order,
-  label.position = "top", ...
-)
-
-p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=factor(vaccine)) +
-  geom_line(mapping=aes(x=year+1, y=med, size="simulated", color="reference"), data=ref.combo) +
-  geom_altribbon(allribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup, vac_first, measure)], by=c("vc_coverage","vaccine","catchup","vac_first","measure")) +
-  facet_grid(vac_first ~ measure, labeller = facet_labs) +
-  scale_size_manual("Combination",
-                    values=c(simulated=1, assumed=0.5),
-                    guide=gds(order=1, override.aes=list(fill=NA), keyheight = unit(1,"pt"))
+p <- ggplot() + theme_minimal() + #aes(group=vaccine, linetype=factor(vaccine)) +
+  geom_altribbon(
+    allribbon[,.(x=year+1, y=assume.eff, ycmp=eff), keyby=.(vc_coverage, vaccine, catchup, vac_first, measure)],
+    withlines = F
   ) +
-  scale_fill_manual("Interaction",
-                    labels=c(`FALSE`="interfere",`TRUE`="enhance"),
-                    values=c(`FALSE`="red",`TRUE`="blue"),
-                    guide=gds(order=3, override.aes=list(alpha=0.2/2), keyheight = unit(5,"pt"))
-  ) +
-  scale_x_continuous("Year", expand = c(0,0)) +
-  scale_y_continuous("Effectiveness", expand=c(0,0)) +
+  geom_line(mapping=aes(x=year+1, y=med, color="reference"), data=ref.combo) +
+  geom_line(mapping=aes(x=year+1, y=eff, color="observed"), data=allribbon) +
+  facet_grid_freey(vac_first ~ measure, labeller = facet_labs) +
+  scale_fill_interaction(guide="none") +
+  scale_year() +
+  scale_effectiveness() +
   coord_cartesian(ylim=c(0.5,1), xlim=c(0,40)) +
   theme(
     legend.box = "horizontal",
@@ -117,18 +111,12 @@ p <- ggplot(other.ribbon) + theme_minimal() + #aes(group=vaccine, linetype=facto
     legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
     panel.spacing.y = unit(30,"pt"),
-    panel.spacing.x = unit(15,"pt"),
-    strip.text.y = element_text(angle=90)
+    panel.spacing.x = unit(15,"pt")
   ) +
   scale_colour_manual(name=NULL,
-    values=c(`reference`="grey"), labels=c(reference="Simultaneous Reference"),
-    guide = guide_legend(
-      override.aes = list(fill=NA, size=1)
-    )
+    values=c(reference="grey",observed="black"),
+    labels=c(reference="Simultaneous Reference", observed="Lagged Result")
   ) +
   scale_alpha_manual(values=c(delta=0.2), guide="none")
 
-ggsave(
-  tail(args,1), p, device = "png",
-  width = 7.5, height = 5, dpi = "retina", units = "in"
-)
+plotutil(p, h=6, w=6, tar)
