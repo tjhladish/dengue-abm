@@ -88,6 +88,43 @@ naive.eff.edv <- naive.eff[vaccine == "edv"]
 naive.eff.cmdvi.thin <- naive.eff.cmdvi[(((year+1) %% 5 == 0) | year == 0)]
 naive.eff.edv.thin <- naive.eff.edv[(((year+1) %% 5 == 0) | year == 0)]
 
+naive.labs <- paste("75% Vector Control",vac_labels[-3],sep=" & ")
+names(naive.labs) <- names(vac_labels[-3])
+naive.leg.name <- "Hypothetical Combinations"
+naive.line.labs <- naive.labs
+names(naive.line.labs) <- scn_lvls[2:3]
+
+legtheme <- theme(
+  legend.margin = margin(), legend.spacing = unit(25, "pt"),
+  legend.spacing.x = unit(-2,"pt"),
+  legend.text = element_text(size=rel(0.3), margin = margin(l=unit(6,"pt"))),
+  legend.title = element_text(size=rel(0.4)), legend.title.align = 0.5,
+  legend.key.height = unit(1,"pt"),
+  legend.box.spacing = unit(2.5, "pt")
+)
+
+annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
+  geom_line(aes(color="vc")) +
+  geom_point(aes(color="vac"), naive.eff[(((year+1) %% 5 == 0) | year == 0)], size=2) + 
+  scale_size_vectorcontrol(guide="none") + legtheme
+  
+annopchp <- annopbase +
+  scale_color_scenario(values=light_cols, guide="none") +
+  scale_shapenofill_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
+    guide=guide_legend(override.aes=list(color=light_cols["vac"]))
+  )
+
+annolinep <- annopbase +
+  scale_color_scenario(
+    name=naive.leg.name,
+    labels = naive.line.labs,
+    guide=guide_legend(override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
+  ) +
+  scale_shapenofill_vaccine(guide = "none")
+
+annopchleg <- get_legend(annopchp)
+annolineleg <- get_legend(annolinep)
+
 annos <- list(
 	annotate("line", x=naive.eff.cmdvi$year+1, y=naive.eff.cmdvi$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
 	annotate("line", x=naive.eff.edv$year+1, y=naive.eff.edv$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
@@ -108,14 +145,7 @@ p1shared <- ggplot(
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_point(data=plot.dt[intervention == "single"][((year+1) %% 5 == 0) | (year == 0)], size=2) +
   scale_size_vectorcontrol(guide = "none") +
-  scale_fill_catchup(guide="none", na.value=NA) + theme(
-    legend.margin = margin(), legend.spacing = unit(25, "pt"),
-    legend.spacing.x = unit(-2,"pt"),
-    legend.text = element_text(size=rel(0.4), margin = margin(l=unit(6,"pt"))),
-    legend.title = element_text(size=rel(0.5)), legend.title.align = 0.5,
-    legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt")
-  )
+  scale_fill_catchup(guide="none", na.value=NA) + legtheme
 
 p1lines <- p1shared +
   scale_color_scenario2(guide=guide_legend(
@@ -131,9 +161,6 @@ p1shapes <- p1shared +
 
 p1lleg <- get_legend(p1lines)
 p1sleg <- get_legend(p1shapes)
-
-# ggdraw(p1+theme(legend.position = "none")) + draw_grob(p1lleg, x=0.5, y=0.4) + draw_grob(p1sleg, x=0.5, y=0.4)
-# ggdraw(p1+theme(legend.position = "none")) + draw_grob(p1sleg, x=0.5, y=0.4)
 
 ribbon.dt <- cmb.eff[
   naive.eff[,.(assume.eff=value, intervention=factor("combined", levels=c("single","combined"), ordered = T)), keyby=key(naive.eff)], on=key(naive.eff),
@@ -170,7 +197,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
         data=cbind(slice[,.(
           x=c(x,rev(x)), y=c(y,rev(ycmp)), col=trans_int(slice[,any(ycmp>y)])
         )], as.data.table(.BY)),
-        show.legend = F
+        show.legend = F, alpha = int_alpha
       )
     })
     .(polys=res)
@@ -185,18 +212,15 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
   res
 }
 
-# dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup)]
-
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario, intervention)]
 
 illus_labels <- rbind(
-  copy(naive.eff[year==27])[, intervention := factor("single",   levels=c("single","combined"), ordered = T)],
   copy(naive.eff[year==27])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
 )
 illus_labels[vaccine == "edv", value := value + 0.1]
-illus_labels[vaccine == "cmdvi" & intervention == "single", value := value - 0.072]
+#illus_labels[vaccine == "cmdvi" & intervention == "single", value := value - 0.072]
 illus_labels[vaccine == "cmdvi" & intervention == "combined", value := value - 0.125]
-illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
+#illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
 illus_labels[intervention == "combined", lab := ifelse(vaccine == "edv", "Amplification", "Interference") ]
 
 resp <- ggplot(
@@ -211,24 +235,29 @@ resp <- ggplot(
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_point(data=plot.dt[((year+1) %% 5 == 0) | (year == 0)], size=2) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels, size=2.5) +
+#  geom_point(data=plot.dt[intervention == "combined"][((year+1) %% 5 == 0) | (year == 0)], size=2, color="lightgrey", fill=scn_cols["vc+vac"]) +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=2.5, color="blue") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=2.5, color="red") +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
-  scale_shape_vaccine(values=vac_nofill_pchs, guide = "none") +
+  scale_shapenofill_vaccine(guide = "none") +
   scale_fill_interaction(guide="none") +
   scale_year() +
   scale_effectiveness() +
   coord_cartesian(clip = "off") +
   theme(
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+    strip.background = element_blank(),
+    strip.text.y = element_blank(),
+  #  strip.text.y = element_text(angle=90),
     plot.margin = margin(t = unit(6,"pt"), r = unit(6,"pt")),
-    strip.text.y = element_text(angle=90),
     legend.position = "none"
   )
 
-p <- ggdraw(resp) + draw_grob(p1lleg, x=0.55, y=0.45) + draw_grob(p1sleg, x=0.55, y=0.45)
+p <- ggdraw(resp) + 
+  draw_grob(p1lleg, x=0.575, y=0.42) + draw_grob(p1sleg, x=0.575, y=0.42) +
+  draw_grob(annolineleg, x=0.425, y=0.1) + draw_grob(annopchleg, x=0.425, y=0.1)
 
-## TODO shrink vertical gap, slightly shrink font, do labels for theoretical combos?,
-#  overflow point off end on right
+## TODO tried outlining points in white? looks meh?
 
-plotutil(p, h=4.5, w=3, tar)
+plotutil(p, h=4.5, w=2.75, tar)

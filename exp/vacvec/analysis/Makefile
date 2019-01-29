@@ -10,7 +10,7 @@ wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
 default: figures
 
-.PHONY: parse
+.PHONY: parse showfigs
 
 parse:
 	make -C rds
@@ -50,7 +50,12 @@ fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds eff
 fig_6.png fig_6.tiff: fig_foi_alternatives.R figref.rda foi_effstats.rds effstats.rds
 	$(RFIG)
 
-figures: fig_2.png SIfig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
+ALLFIGS := fig_2.png SIfig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
+
+figures: $(ALLFIGS)
+
+showfigs:
+	open $(addprefix fig/,$(ALLFIGS))
 
 clean_figures:
 	rm -rf $(FIGDIR)

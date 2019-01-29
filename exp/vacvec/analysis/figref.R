@@ -28,6 +28,9 @@ scale_color_scenario <- scale_generator(
   "color", scn_name, scn_labels, scn_cols
 )
 
+light_cols <- c("#AAAAFF","#77AA77")
+names(light_cols) <- c("vc", "vac")
+
 # VC COVERAGE DIMENSIONING
 
 vc_lvls <- seq(from=0,to=75,by=25)
@@ -117,6 +120,8 @@ names(int_labels) <- names(int_fills) <- int_names
 scale_fill_interaction <- scale_generator(
 	"fill", int_name, int_labels, int_fills
 )
+
+int_alpha <- 0.25
 
 scale_year <- function(name="Year", ...) scale_x_continuous(name=name, expand = c(0,0), ...)
 scale_effectiveness <- function(name="Annual Effectiveness", ...) scale_y_continuous(name=name, expand = c(0,0), ...)
