@@ -79,6 +79,8 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
+# plot2.dt$vaccine <- factor(plot2.dt$vaccine, levels=rev(levels(plot2.dt$vaccine)), ordered = T)
+
 p <- ggplot(plot2.dt) + aes(
 	shape=vaccine, color=scenario, size=factor(vc_coverage),
 	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
@@ -95,19 +97,17 @@ p <- ggplot(plot2.dt) + aes(
 	scale_pchlty_vaccine(guide = "none") +
 	scale_color_scenario(guide = "none", value="black") +
 	scale_size_vectorcontrol(guide="none") +
-	coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
+	coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +
 	theme(
 		legend.margin = margin(), legend.spacing = unit(25, "pt"),
 		legend.text = element_text(size=rel(0.5)),
 		legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-		panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+		panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
 		legend.key.height = unit(1,"pt"),
 		legend.box.spacing = unit(2.5, "pt")
 	) +
-	scale_alpha_manual(values=c(delta=0.4), guide = "none")
+	scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 
-# switch vaccine precedence, spacing
-# include all lines, but not size scale
-# thin points
+# TODO: switch vaccine precedence
 
 plotutil(p, h=5, w=7.5, tar)

@@ -114,7 +114,7 @@ scale_vaccu_interaction <- {
 ## INTERACTIONS - FOR COMBINATION INTERVENTION PLOTS
 # int_names <- c("under", "over")
 int_name <- "Interaction"
-int_labels <- c("Interfere", "Amplify")
+int_labels <- c("Interference", "Amplification")
 int_fills <- c("red", "blue")
 names(int_labels) <- names(int_fills) <- int_names
 scale_fill_interaction <- scale_generator(
@@ -136,8 +136,8 @@ meas_labels <- c(
 )
 names(meas_labels) <- meas_names
 
-
 facet_labels <- labeller(
+  vc_coverage = vc_labels,
   measure = meas_labels,
   scenario = scn_labels,
   catchup = cu_labels,
