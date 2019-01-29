@@ -77,9 +77,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res
 }
 
-plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
-
-# plot2.dt$vaccine <- factor(plot2.dt$vaccine, levels=rev(levels(plot2.dt$vaccine)), ordered = T)
+plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine = factor(vaccine, rev(levels(vaccine)), ordered = T), catchup, scenario)]
 
 p <- ggplot(plot2.dt) + aes(
 	shape=vaccine, color=scenario, size=factor(vc_coverage),
@@ -107,7 +105,5 @@ p <- ggplot(plot2.dt) + aes(
 		legend.box.spacing = unit(2.5, "pt")
 	) +
 	scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
-
-# TODO: switch vaccine precedence
 
 plotutil(p, h=5, w=7.5, tar)
