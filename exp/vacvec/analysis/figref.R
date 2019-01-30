@@ -149,11 +149,6 @@ facet_labels <- labeller(
   scenario = scn_labels,
   catchup = cu_labels,
   vaccine = vac_labels,
-  foi = c(
-    `0.5` = "%50 M",
-    `1` = "Baseline Mosquito",
-    `1.5` = "%150 M"
-  ),
   vac_first = c(`0`="Vector Control First", `1`="Vaccine First")
 )
 
