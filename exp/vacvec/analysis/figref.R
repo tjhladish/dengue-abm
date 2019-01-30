@@ -123,8 +123,15 @@ scale_fill_interaction <- scale_generator(
 
 int_alpha <- 0.25
 
-scale_year <- function(name="Year", ...) scale_x_continuous(name=name, expand = c(0,0), ...)
-scale_effectiveness <- function(name="Annual Effectiveness", ...) scale_y_continuous(name=name, expand = c(0,0), ...)
+scale_year <- function(name="Year", ...) scale_x_continuous(
+  name=name, expand = c(0,0), ...
+)
+scale_effectiveness <- function(
+  name="Annual Effectiveness",
+  breaks=seq(0,1,by=.25), ...
+) scale_y_continuous(
+  name=name,  breaks=breaks, expand = c(0,0), ...
+)
 
 yucpop <- 18.17734 # 100ks
 
@@ -146,7 +153,8 @@ facet_labels <- labeller(
     `0.5` = "%50 M",
     `1` = "Baseline Mosquito",
     `1.5` = "%150 M"
-  )
+  ),
+  vac_first = c(`0`="Vector Control First", `1`="Vaccine First")
 )
 
 gds <- function(
