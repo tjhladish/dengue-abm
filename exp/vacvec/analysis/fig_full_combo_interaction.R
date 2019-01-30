@@ -102,7 +102,8 @@ p <- ggplot(plot2.dt) + aes(
 		legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
 		panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
 		legend.key.height = unit(1,"pt"),
-		legend.box.spacing = unit(2.5, "pt")
+		legend.box.spacing = unit(2.5, "pt"),
+		legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin
 	) +
 	scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 
