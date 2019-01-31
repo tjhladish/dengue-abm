@@ -85,8 +85,8 @@ scale_shape_scenario2 <- scale_generator(
 
 naive.eff.cmdvi <- naive.eff[vaccine == "cmdvi"]
 naive.eff.edv <- naive.eff[vaccine == "edv"]
-naive.eff.cmdvi.thin <- naive.eff.cmdvi[(((year+1) %% 5 == 0) | year == 0)]
-naive.eff.edv.thin <- naive.eff.edv[(((year+1) %% 5 == 0) | year == 0)]
+naive.eff.cmdvi.thin <- naive.eff.cmdvi[pchstride(year)]
+naive.eff.edv.thin <- naive.eff.edv[pchstride(year)]
 
 naive.labs <- paste("75% Vector Control",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
@@ -105,7 +105,7 @@ legtheme <- theme(
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
   geom_line(aes(color="vc")) +
-  geom_point(aes(color="vac"), naive.eff[(((year+1) %% 5 == 0) | year == 0)], size=2) + 
+  geom_point(aes(color="vac"), naive.eff[pchstride(year)], size=pchsize) + 
   scale_size_vectorcontrol(guide="none") + legtheme
   
 annopchp <- annopbase +
@@ -125,11 +125,14 @@ annolinep <- annopbase +
 annopchleg <- get_legend(annopchp)
 annolineleg <- get_legend(annolinep)
 
+annoline <- function(ref.dt) annotate("line", x=ref.dt$year+1, y=ref.dt$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = light_cols["vc"])
+annopt <- function(ref.dt) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=pchsize, shape=vac_pchs["cmdvi"], color=light_cols["vac"], fill=light_cols["vac"])
+
 annos <- list(
-	annotate("line", x=naive.eff.cmdvi$year+1, y=naive.eff.cmdvi$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
-	annotate("line", x=naive.eff.edv$year+1, y=naive.eff.edv$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = "#AAAAFF"),
-	annotate("point", x=naive.eff.cmdvi.thin$year+1, y=naive.eff.cmdvi.thin$value, shape=vac_pchs["cmdvi"], size=2, color="#55CC55", fill="#55CC55"),
-	annotate("point", x=naive.eff.edv.thin$year+1, y=naive.eff.edv.thin$value, shape=vac_pchs["edv"], size=2, color="#55CC55", fill="#55CC55")
+	annoline(naive.eff.cmdvi),
+	annoline(naive.eff.edv),
+	annopt(naive.eff.cmdvi.thin),
+	annopt(naive.eff.edv.thin)
 )
 
 # illustrate combined effectiveness
@@ -143,7 +146,7 @@ p1shared <- ggplot(
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 ) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[intervention == "single"][((year+1) %% 5 == 0) | (year == 0)], size=2) +
+  geom_point(data=plot.dt[intervention == "single"][pchstride(year)], size=pchsize) +
   scale_size_vectorcontrol(guide = "none") +
   scale_fill_catchup(guide="none", na.value=NA) + legtheme
 
@@ -156,7 +159,7 @@ p1lines <- p1shared +
 p1shapes <- p1shared +
   scale_color_scenario2(guide="none") +
   scale_shape_scenario2(guide=guide_legend(
-    override.aes = list(linetype=0, size=2, color=scn_cols["vac"])
+    override.aes = list(linetype=0, size=pchsize, color=scn_cols["vac"])
   ))
 
 p1lleg <- get_legend(p1lines)
@@ -229,13 +232,14 @@ resp <- ggplot(
   x=year+1, y=value, color=interaction(scenario, vaccine),
   shape=vaccine, size=factor(vc_coverage),
   group = interaction(scenario, catchup, vaccine, vc_coverage)
-) + facet_grid(intervention ~ ., labeller = labeller(intervention=c(single="Single Interventions",combined="Combined Interventions"))) +
+) + facet_grid(intervention ~ .,
+  labeller = labeller(intervention=c(single="Single Interventions",combined="Combined Interventions"))
+) +
   geom_limits(limits.dt) +
   geom_altribbon(plot2.dt, withlines = F) +
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[((year+1) %% 5 == 0) | (year == 0)], size=2) +
-#  geom_point(data=plot.dt[intervention == "combined"][((year+1) %% 5 == 0) | (year == 0)], size=2, color="lightgrey", fill=scn_cols["vc+vac"]) +
+  geom_point(data=plot.dt[pchstride(year)], size=pchsize) +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=2.5, color="blue") +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=2.5, color="red") +
   scale_size_vectorcontrol(guide = "none") +

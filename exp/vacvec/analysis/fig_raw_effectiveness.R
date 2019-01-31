@@ -82,7 +82,7 @@ pvac <- ggplot(
   vac.eff
 ) + shared +
 	geom_point(size=.75, show.legend = F) +
-	geom_point(data=vac.eff[((year+1) %% 5 == 0) | year == 0], size=2) +
+	geom_point(data=vac.eff[pchstride(year)], size=pchsize) +
   scale_size_vectorcontrol(guide="none") +
 	scale_vaccu_interaction(direction = "vertical", label.position="right")
 
@@ -97,7 +97,7 @@ basep <- ggplot(
 		plot.margin = margin(t=unit(6,"pt"))
 	) +
 	geom_point(size=.75) +
-	geom_point(data=vac.eff[((year+1) %% 5 == 0) | year == 0], size=2) +
+	geom_point(data=vac.eff[pchstride(year)], size=pchsize) +
 	scale_size_vectorcontrol() +
 	scale_vaccu_interaction() + 
 	scale_effectiveness() + coord_cartesian(clip="off")

@@ -30,12 +30,7 @@ $(FIGDIR):
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-alt_fig_2.png fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
-	$(RFIG)
-
-# TODO add incidence as a top row? move legend?
-# TODO modify fig_raw_effectiveness to sniff title for expanded version
-SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
+fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | $(FIGDIR)
@@ -50,9 +45,25 @@ fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds eff
 fig_6.png fig_6.tiff: fig_foi_alternatives.R figref.rda foi_effstats.rds effstats.rds
 	$(RFIG)
 
-ALLFIGS := fig_2.png SIfig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
+# TODO add incidence as a top row? move legend?
+# TODO modify fig_raw_effectiveness to sniff title for expanded version
+SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
 
-figures: $(ALLFIGS)
+# combination IQs
+SIfig_4.png SIfig_4.tiff: SIfig_all_combos.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
+
+MTFIGS := fig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
+SIFIGS := SIfig_2.png SIfig_4.png
+
+maintextfigs: $(MTFIGS)
+
+sifigs: $(SIFIGS)
+
+figures: maintextfigs sifigs
+
+ALLFIGS := $(MTFIGS) $(SIFIGS)
 
 showfigs:
 	open $(addprefix fig/,$(ALLFIGS))

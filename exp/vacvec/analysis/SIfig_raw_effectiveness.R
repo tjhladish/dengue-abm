@@ -9,7 +9,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "rds/baseline.rds", "rds/intervention.rds", "fig/SIfig_2.png")
+args <- c("figref.rda", "rds/effstats.rds", "fig/SIfig_2.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -55,7 +55,7 @@ p <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
   x=year + 1, y=value, color=scenario,
-  shape=vaccine, linetype=vaccine, size=factor(vc_coverage),
+  shape=vaccine, size=factor(vc_coverage),
   group=interaction(scenario, catchup, vaccine, vc_coverage)
 ) +
   geom_limits(limits.dt) +
@@ -65,7 +65,7 @@ p <- ggplot(
 		alpha=0.5, show.legend = F, inherit.aes = F
 	) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(aes(fill=catchup), size=1) +
+  geom_point(aes(fill=catchup), data=plot.dt[pchstride(year)], size=pchsize) +
   scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
     1,
     override.aes=list(
@@ -82,9 +82,9 @@ p <- ggplot(
   		)
   	)
   ) +
-  scale_pchlty_vaccine(
+  scale_shape_vaccine(
   	name = gsub(" ", "\n", vac_name),
-  	guide=gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
+  	guide = gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
   ) +
   scale_fill_catchup(name=gsub(" ", "\n", cu_name),
   	breaks = c("routine", "vac-only"), values = cuscn_fills,

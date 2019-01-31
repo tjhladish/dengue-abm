@@ -188,4 +188,8 @@ labels.dt <- data.table(
   )
 )
 
+pchstride <- function(yr, offset=0, stride=5) ((yr+1+offset) %% stride == 0) | yr == offset
+pchsize <- 2
+
+
 save(list = ls(), file = tail(.args, 1))

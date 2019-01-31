@@ -32,13 +32,13 @@ offsetyr <- 2
 
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs) +
   geom_line(data=ref.combo, size=vc_sizes["75"]) +
-  geom_point(data=ref.combo[((year+1) %% 5 == 0) | year == 0], size=2) +
+  geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
   geom_line(data=combo.dt[vac_first == 1 & year <= offsetyr]) +
   geom_line(data=combo.dt[vac_first == 1 & year >= offsetyr], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 1][((year+1) %% 5 == 0) | year == 0], size=2) +
+  geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
   
   geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 0][((year+1+offsetyr) %% 5 == 0) | year == offsetyr], size=2) +
+  geom_point(data=combo.dt[vac_first == 0][pchstride(year, offset=offsetyr)], size=pchsize) +
   
   facet_grid(vac_first ~ measure, labeller = facet_labels) +
   scale_fill_interaction(guide="none") +
