@@ -88,7 +88,7 @@ p <- ggplot(plot2.dt) + aes(
 	geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]) +
   geom_point(aes(y=ycmp), data=plot2.dt[((x %% 5 == 0) | x == 1) & catchup == "routine"], fill="white", alpha=1, size=2) +
   geom_point(aes(y=ycmp), data=plot2.dt[((x %% 5 == 0) | x == 1) & catchup != "routine"], fill="black", alpha=1, size=2) +
-	scale_year() + scale_y_continuous("Effectiveness", expand=c(0,0)) +
+	scale_year() + scale_effectiveness() +
 	scale_fill_interaction(
 		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
 	) +

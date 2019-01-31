@@ -7,8 +7,8 @@ args <- c("figref.rda", "rds/lag_effstats.rds", "rds/effstats.rds", "fig/fig_5.p
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
-stat.eff.dt <- readRDS(args[2])
-ref.stat.dt <- readRDS(args[3])
+stat.eff.dt <- readRDS(args[2])[year < 20]
+ref.stat.dt <- readRDS(args[3])[year < 20]
 tar <- args[4]
 
 ekeys <- key(stat.eff.dt)
@@ -44,7 +44,7 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs) +
   scale_fill_interaction(guide="none") +
   scale_year() +
   scale_effectiveness() +
-  coord_cartesian(ylim=c(0.5,1), xlim=c(0,40), clip="off") +
+  coord_cartesian(ylim=c(0.75,1), xlim=c(0,20), clip="off") +
   theme(
     legend.direction = "horizontal",
     legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
