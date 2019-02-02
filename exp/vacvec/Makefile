@@ -37,6 +37,9 @@ dengue:
 abc_sql: libabc dengue main.cpp
 	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
+abc_sql-foi_gen: libabc dengue main.cpp
+	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-generate_alt_foi_immunity_files.cpp -o abc_sql-foi_gen $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+
 abc_sql-ivn_lag: libabc dengue main.cpp
 	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-ivn_lag.cpp -o abc_sql-ivn_lag $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
