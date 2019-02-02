@@ -1,12 +1,10 @@
--include local.mk
-
-SHELL = /bin/bash
-G++VER = $(shell command -v g++-4.9)
+SHELL=/bin/bash
+G++VER := $(shell command -v g++-4.9)
 
 ifndef G++VER
-CPP = g++
+CPP:=g++
 else
-CPP = g++-4.9
+CPP:=g++-4.9
 endif
 
 #CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
@@ -54,3 +52,49 @@ clean:
 	$(MAKE) -C $(DENDIR) -f Makefile clean
 	$(MAKE) -C $(IMMDIR) -f Makefile clean
 	rm -f abc abc_sql
+
+-include local.mk
+
+baseline.rds: parse.R $(REFDB)
+	Rscript $^ $@
+
+intervention.rds: parse.R $(REFDB)
+	Rscript $^ $@
+
+effectiveness.rds: eff.R baseline.rds intervention.rds
+	Rscript $^ $@
+
+comboeff.rds: comboeff.R effectiveness.rds
+	Rscript $^ $@
+
+effstats.rds: effstats.R comboeff.rds
+	Rscript $^ $@
+
+digests: baseline.rds intervention.rds effectiveness.rds comboeff.rds effstats.rds
+
+fig_2.png: fig_2.R effstats.rds
+	Rscript $^ $@
+
+fig_1.png: fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ $@
+
+alt_fig_1.png: alt_fig_1.R baseline.rds intervention.rds effstats.rds
+	Rscript $^ $@
+
+combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
+	Rscript $^ $@
+
+combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
+	Rscript $^ $@
+
+SI_IQ_fig.png: IQ_fig.R effectiveness.rds
+	Rscript $^ $@
+
+.PHONY: figures
+
+MANUSCRIPTFIGS := alt_fig_1.png fig_1.png fig_2.png combo_fig_mech_facet.png combo_fig_coverage_facet.png SI_IQ_fig.png
+
+figures: $(MANUSCRIPTFIGS)
+
+clean_figs: $(MANUSCRIPTFIGS)
+	rm $^
