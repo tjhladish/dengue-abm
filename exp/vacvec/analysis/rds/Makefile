@@ -27,9 +27,9 @@ projref.rda: projref.R
 
 
 # specific output database dependencies for each digest target
-baseline.rds intervention.rds baseline.csv intervention.csv: $(REFDB)
-foi_baseline.rds foi_intervention.rds foi_baseline.csv foi_intervention.csv: $(FOIDB)
-lag_intervention.rds lag_intervention.csv: $(LAGDB)
+baseline.rds intervention.rds raw_baseline.csv raw_intervention.csv: $(REFDB)
+foi_baseline.rds foi_intervention.rds raw_foi_baseline.csv raw_foi_intervention.csv: $(FOIDB)
+lag_intervention.rds raw_lag_intervention.csv: $(LAGDB)
 
 baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.rda
 	Rscript $^ $@
