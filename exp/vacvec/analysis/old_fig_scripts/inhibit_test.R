@@ -9,11 +9,9 @@ stat.eff.dt <- readRDS(args[1])
 vac.only <- stat.eff.dt[variable == "vac.eff", .(vac.eff=unique(med)), keyby=.(vac_mech, catchup, year)]
 naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
 
-ribbon.dt <- naive[vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=T]
-
 combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
 
-other.ribbon <- combo.dt[naive, on=.(vc_coverage, vac_mech, catchup, year), nomatch=0][vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=T]
+other.ribbon <- combo.dt[naive, on=.(vc_coverage, vac_mech, catchup, year)][vac.only, on=.(vac_mech, catchup, year)]
 
 ribbon_intercepts <- function(x, y, ycmp) {
   sp <- cumsum(head(rle(ycmp > y)$lengths, -1))
@@ -60,6 +58,8 @@ vac_cols <- c("green", "blue")
 names(vac_cols) <- vac_mechs
 vacfact <- function(i) factor(vac_mechs[i+1], levels = rev(vac_mechs), ordered = T)
 
+max.single <- stat.eff.dt[variable %in% c("vac.eff","vec.eff")][,.(sing.eff=max(med)),by=.(vc_coverage, vac_mech, catchup, year)]
+
 vac.only.lines <- rbind(
   copy(vac.only)[, vc_coverage := 25 ],
   copy(vac.only)[, vc_coverage := 50 ],
@@ -81,7 +81,7 @@ gds <- function(order,
 )
 
 p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=factor(vac_mech)) +
-  geom_line(aes(x=year+1, y=vac.eff, size="simulated", color="reference"), vac.only.lines) +
+  geom_line(aes(x=year+1, y=sing.eff, size="simulated", color="reference"), max.single) +
   geom_altribbon(other.ribbon[,.(x=year+1, y=assume.eff, ycmp=eff), by=.(vc_coverage, vac_mech, catchup)], by=c("vc_coverage","vac_mech","catchup")) +
   facet_grid(catchup ~ vc_coverage, labeller = facet_labs) +
   scale_size_manual("Combination",
@@ -96,8 +96,8 @@ p <- ggplot(other.ribbon) + theme_minimal() + aes(group=vac_mech, linetype=facto
   scale_x_continuous("Year", expand = c(0,0)) + scale_y_continuous("Annual Effectiveness", expand=c(0,0)) +
   coord_cartesian(ylim=c(0,1), xlim=c(0,40)) +
   scale_linetype_discrete(
-    "Vaccine",
-    labels=c(`0`="CMDVI",`1`="Traditional"),
+    "Mechanism",
+    labels=c(`0`="5th Sero",`1`="Traditional"),
     guide=gds(order=2, override.aes = list(fill=NA), keyheight = unit(1,"pt"))
   ) + theme(
     legend.box = "horizontal",

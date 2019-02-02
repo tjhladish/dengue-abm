@@ -1,19 +1,35 @@
 require(data.table)
 require(ggplot2)
 
+source("projref.R")
+
 args <- c("effstats.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
 stat.eff.dt <- readRDS(args[1])
 
-vac.only <- stat.eff.dt[variable == "vac.eff", .(vac.eff=unique(med)), keyby=.(vac_mech, catchup, year)]
-naive <- stat.eff.dt[variable == "ind.eff", .(assume.eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
+vac.only <- stat.eff.dt[variable == "vac.eff",
+  .(vac.eff=unique(med)),
+  keyby=.(vaccine, catchup, year)
+]
+naive <- stat.eff.dt[variable == "ind.eff",
+  .(assume.eff = med),
+  keyby=.(vc_coverage, vaccine, catchup, year)
+]
 
-ribbon.dt <- naive[vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=TRUE]
+ribbon.dt <- naive[
+  vac.only, on=.(vaccine, catchup, year), nomatch=0, allow.cartesian=TRUE]
 
-combo.dt <- stat.eff.dt[variable == "combo.eff",.(eff = med), keyby=.(vc_coverage, vac_mech, catchup, year)]
+combo.dt <- stat.eff.dt[
+  variable == "combo.eff",
+  .(eff = med),
+  keyby=.(vc_coverage, vaccine, catchup, year)]
 
-other.ribbon <- combo.dt[naive, on=.(vc_coverage, vac_mech, catchup, year), nomatch=0][vac.only, on=.(vac_mech, catchup, year), nomatch=0, allow.cartesian=T]
+other.ribbon <- combo.dt[naive,
+  on=.(vc_coverage, vaccine, catchup, year), nomatch=0
+][vac.only, on=.(vaccine, catchup, year), nomatch=0, allow.cartesian=T]
+
+vac.only[, vc_coverage := 0 ]
 
 ribbon_intercepts <- function(x, y, ycmp) {
   sp <- cumsum(head(rle(ycmp > y)$lengths, -1))
@@ -55,17 +71,10 @@ geom_altribbon <- function(dt, withlines = TRUE, by=NULL) {
   res
 }
 
-vac_mechs <- c("5th Sero", "Traditional")
-vac_cols <- c("green", "blue")
-names(vac_cols) <- vac_mechs
-vacfact <- function(i) factor(vac_mechs[i+1], levels = rev(vac_mechs), ordered = T)
-
-vac.only[, vc_coverage := 0 ]
-
 p <- ggplot(other.ribbon) + theme_minimal() + aes(group=factor(vc_coverage), linetype=factor(vc_coverage)) +
-  geom_altribbon(other.ribbon[,.(x=year, y=assume.eff, ycmp=eff), by=.(vc_coverage, vac_mech, catchup)], by=c("vc_coverage","vac_mech","catchup")) +
+  geom_altribbon(other.ribbon[,.(x=year, y=assume.eff, ycmp=eff), by=.(vc_coverage, vaccine, catchup)], by=c("vc_coverage","vaccine","catchup")) +
   geom_line(aes(x=year, y=vac.eff, size="simulated"), vac.only) +
-  facet_grid(vacfact(vac_mech) ~ c("No Catchup","Catchup")[catchup+1]) +
+  facet_grid(vaccine ~ catchup) +
   scale_size_manual("Combination",
     values=c(simulated=0.75, assumed=0.2),
     guide=guide_legend(order=1, direction = "horizontal", title.position = "top")
