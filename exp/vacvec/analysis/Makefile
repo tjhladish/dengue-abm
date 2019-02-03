@@ -65,8 +65,13 @@ SIfig_5.png SIfig_5.tiff: SIfig_lagged.R figref.rda lag_effstats.rds effstats.rd
 SIfig_6.png SIfig_6.tiff: SIfig_foi.R figref.rda foi_effstats.rds effstats.rds
 	$(RFIG)
 
+# foi study IQs
+SIfig_7.png SIfig_7.tiff: SIfig_foi_v_mpop.R figref.rda foi_v_mpop.rds
+	$(RFIG)
+
+
 MTFIGS := fig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
-SIFIGS := SIfig_2.png SIfig_4.png SIfig_5.png SIfig_6.png
+SIFIGS := SIfig_2.png SIfig_3.png SIfig_4.png SIfig_5.png SIfig_6.png SIfig_7.png
 
 maintextfigs: $(MTFIGS)
 
