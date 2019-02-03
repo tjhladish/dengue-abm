@@ -15,21 +15,24 @@ load(args[1])
 effstats.dt <- readRDS(args[2])
 tar <- tail(args, 1)
 
-cmb.eff <- effstats.dt[variable == "combo.eff", .(
+cmb.eff <- effstats.dt[variable %in% c("combo.eff","c.combo.eff"), .(
   value = warnnonunique(med, variable),
   lo=warnnonunique(lo, variable),
   hi=warnnonunique(hi, variable),
   scenario = trans_scnario(1, 1),
   estimate = "simulated"
-), keyby=.(vaccine = factor(vaccine, rev(levels(vaccine)), ordered = T), catchup, vc_coverage, year)]
+), keyby=.(
+  vaccine = factor(vaccine, rev(levels(vaccine)), ordered = T), catchup, vc_coverage, year,
+  measure = factor(gsub("combo.","",variable,fixed = T), levels=c("eff","c.eff"), ordered = T)
+)]
 
 p <- ggplot(cmb.eff) + aes(
   shape=vaccine, color=scenario, size=factor(vc_coverage),
-  x=year+1, y=value, group=interaction(vaccine, vc_coverage, catchup)
+  x=year+1, y=value, group=interaction(vaccine, vc_coverage, catchup, measure)
 ) + theme_minimal() +
-  facet_grid(vaccine ~ vc_coverage, labeller = facet_labels) +
+  facet_grid_freey(measure ~ vc_coverage, labeller = facet_labels) +
   geom_ribbon(
-    aes(fill=scenario, color=NULL, ymin=lo, ymax=hi, group=interaction(vc_coverage, catchup)),
+    aes(fill=scenario, color=NULL, ymin=lo, ymax=hi),
     alpha=0.5, show.legend = F
   ) +
   geom_line(alpha=1, size=vc_sizes["0"]) +

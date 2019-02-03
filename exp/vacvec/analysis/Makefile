@@ -45,19 +45,21 @@ fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds eff
 fig_6.png fig_6.tiff: fig_foi_alternatives.R figref.rda foi_effstats.rds effstats.rds
 	$(RFIG)
 
-# TODO add incidence as a top row? move legend?
-# TODO modify fig_raw_effectiveness to sniff title for expanded version
+# single intervention IQs
 SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
 	$(RFIG)
+
+# combination dels from naive effectiveness
 
 # combination IQs
 SIfig_4.png SIfig_4.tiff: SIfig_all_combos.R figref.rda effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-# combination IQs
+# lagged IQs
 SIfig_5.png SIfig_5.tiff: SIfig_lagged.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
 	$(RFIG)
 
+# foi study IQs
 SIfig_6.png SIfig_6.tiff: SIfig_foi.R figref.rda foi_effstats.rds effstats.rds
 	$(RFIG)
 
@@ -80,7 +82,7 @@ clean_figures:
 
 ## FIGURES
 
-# TODO: Figure 1 generation - should be somewhat automated? notes:
+# TODO: automate figure 1 generation:
 #  four panel diagram, as column (possibly row? if row, first three panels over fourth)
 #   * p1: night time lights + translation into network;
 #     show night lights + admin boundaries, but have a vertical (horiz if row)
@@ -100,84 +102,24 @@ clean_figures:
 #     black = completely immune), yellow (E), red (I), blue (transient immunity?)
 #     maybe show S moquito "perched" on vertix (as if feeding), with E/I mosquitos inside
 #   * p4: last panel showing state machine, colored to match human / mosquito colors in panel 3
+#
+# NIGHTLIGHT := some.csv # some csv? shapefile?
+# ADMINBOUNDS := admin.shp # seems like shapefile
+# LOCATIONS := vertices.csv # some csv? shapefile?
+# CONNECTIONS := edges.csv # some csv? shapefile?
+# TARRECT := tar.json # something specifying lat / long extent of zoom, other annotations (e.g., vertical reveal?)
+# 
+# fig1p1.png: diagram_panel_wideview.R $(NIGHTLIGHT) $(ADMINBOUNDS) $(LOCATIONS) $(CONNECTIONS) $(TARRECT)
+# 	Rscript $^ $@
+# 
+# fig1p2.png: diagram_panel_zoom.R $(LOCATIONS) $(CONNECTIONS) $(TARRECT) # $(ADMINBOUNDS)? in case the zoom rect crosses admin lines?
+# 	Rscript $^ $@
+# 
+# fig1p3back.png: diagram_panel_model_background.R $(LOCATIONS) $(CONNECTIONS) $(TARRECT) # $(ADMINBOUNDS)? in case the zoom rect crosses admin lines?
+# 	Rscript $^ $@
+# 
+# fig1.png: fig1p1.png fig1p2.png fig1p3.png fig1p4.png
+# 	@echo $^
 
-NIGHTLIGHT := some.csv # some csv? shapefile?
-ADMINBOUNDS := admin.shp # seems like shapefile
-LOCATIONS := vertices.csv # some csv? shapefile?
-CONNECTIONS := edges.csv # some csv? shapefile?
-TARRECT := tar.json # something specifying lat / long extent of zoom, other annotations (e.g., vertical reveal?)
-
-fig1p1.png: diagram_panel_wideview.R $(NIGHTLIGHT) $(ADMINBOUNDS) $(LOCATIONS) $(CONNECTIONS) $(TARRECT)
+numerical_results.tex: texgen.R defs.template effstats.rds
 	Rscript $^ $@
-
-fig1p2.png: diagram_panel_zoom.R $(LOCATIONS) $(CONNECTIONS) $(TARRECT) # $(ADMINBOUNDS)? in case the zoom rect crosses admin lines?
-	Rscript $^ $@
-
-fig1p3back.png: diagram_panel_model_background.R $(LOCATIONS) $(CONNECTIONS) $(TARRECT) # $(ADMINBOUNDS)? in case the zoom rect crosses admin lines?
-	Rscript $^ $@
-
-fig1.png: fig1p1.png fig1p2.png fig1p3.png fig1p4.png
-	@echo $^
-
-# # show only the * panels of fig 1
-# #  if % = vac / vec, then show just the vaccine-only (vector control only, resp) results
-# #  if % = inc / eff, then show just the incidence (effectiveness, resp) results
-# fig_1_vac.png fig_1_vec.png fig_1_inc.png fig_1_eff.png: fig_1.R baseline.rds intervention.rds effstats.rds
-# 	Rscript $^ only=$(patsubst fig_1_%.png,%,$@) $@
-#
-# clean_fig_1_slices: | fig_1_*.png
-# 	rm $|
-#
-# combo_fig_mech_facet.png: combo_fig_mech_facet.R effstats.rds
-# 	Rscript $^ $@
-#
-# # real fig 2
-# combo_fig_coverage_facet.png: combo_fig_coverage_facet.R effstats.rds
-# 	Rscript $^ $@
-#
-# SI_IQ_fig.png: IQ_fig.R effectiveness.rds
-# 	Rscript $^ $@
-#
-# SI_ceff_fig.png: ceff_fig.R effectiveness.rds comboeff.rds
-# 	Rscript $^ $@
-#
-# .PHONY: figures
-#
-# MANUSCRIPTFIGS := $(addsuffix .png,fig_1 combo_fig_coverage_facet foi_fig_2 lag_plot SI_IQ_fig SI_ceff_fig)
-#
-# figures: $(MANUSCRIPTFIGS)
-#
-# clean_figs: $(MANUSCRIPTFIGS)
-# 	rm $^
-#
-# # christmas figures
-# # fig 1 - diagram, probably not managed via make
-#
-# # fig 2: single intervention incidence, annual effectiveness, cumulative effectiveness
-# # row 1: incidence
-# # row 2: ann. effectiveness
-# # row 3: cum. effectiveness
-# # one col; show only "best" versions of intervention (w/ catchup, max vc)
-# # distinguish vaccine by line type = solid, none; dashes, EDV; dotted, Dengvaxia-like
-# # complementary SI fig:
-# # multiple cols: one for each vaccine type (none, EDV, Dengvaxia-like)
-# # IQs
-#
-# new_SI_fig_2.png new_SI_fig_2.tiff new_fig_2.png new_fig_2.tiff: new_fig_2.R baseline.rds intervention.rds effectiveness.rds
-# 	Rscript $^ $@
-# 	# 1 col, 3 rows - incidence, annual effectiveness, cumulative effectiveness
-# 	# both vaccines w/ catchup, 75% vc - IQs?
-#
-# new_fig_3.png new_fig_3.tiff: new_fig_3.R effectiveness.rds comboeff.rds
-# 	Rscript $^ $@
-# 	# 2 rows, 3 cols - annual effectiveness of combination interventions, with background ref lines
-# 	# for single interventions; rows are vaccine type, cols are vc level
-#
-# new_fig_4.png new_fig_4.tiff: new_fig_4.R effectiveness.rds
-# 	Rscript $^ $@
-# 	# repeat fig 3, but with shaded effect regions?
-# 	# for single interventions; rows are vaccine type, cols are vc level
-#
-# new_fig_5.png new_fig_5.tiff: new_fig_5.R lag_effectiveness.rds
-# 	Rscript $^ $@
-# 	# lagged interventions
