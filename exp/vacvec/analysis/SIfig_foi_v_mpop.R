@@ -13,14 +13,14 @@ bind.dt <- readRDS(args[2])
 # ggplot(bind.dt) + aes(x=year, y=y, alpha=foi, group=foi) + geom_line() + facet_grid(measure ~ fraction)
 
 p <- ggplot(bind.dt[, .(y=mean(y)), keyby=.(foi, measure, fraction)]) +
-  aes(x=foi, y=log10(y)) +
-  facet_grid(measure ~ fraction, labeller = labeller(
-    measure=c(cases="Cases",infections="All Infections"),
-    fraction=c(introduced="Introduced", total="All")
+  aes(x=foi, y=log10(y), linetype=fraction) +
+  facet_grid(measure ~ ., labeller = labeller(
+    measure=c(cases="Cases",infections="All Infections")
   )) +
   geom_line() +
   scale_y_continuous("Log(Count)", expand=c(0,0)) +
   scale_x_continuous("Relative Mosquito Pop.", expand=c(0,0)) +
+  scale_linetype_manual("Source", labels=c(total="Any", introduced="Introduced"), values=c(total="solid", introduced="dashed")) +
   coord_cartesian(xlim=c(0,1.5), ylim=c(2,6)) +
   theme_minimal() + theme(
     panel.spacing = unit(18,"pt")
