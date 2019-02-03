@@ -50,6 +50,8 @@ SIfig_2.png SIfig_2.tiff: SIfig_raw_effectiveness.R figref.rda effstats.rds | $(
 	$(RFIG)
 
 # combination dels from naive effectiveness
+SIfig_3.png SIfig_3.tiff: SIfig_combo_gaps.R figref.rda effstats.rds | $(FIGDIR)
+	$(RFIG)
 
 # combination IQs
 SIfig_4.png SIfig_4.tiff: SIfig_all_combos.R figref.rda effstats.rds | $(FIGDIR)
