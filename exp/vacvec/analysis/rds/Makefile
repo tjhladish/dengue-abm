@@ -128,3 +128,6 @@ clean: clean_digests clean_effectiveness clean_comboeff clean_effstat
 
 base_single_intervention.rds: base_single_intervention.R projref.rda effstats.rds
 	Rscript $^ $@
+
+foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
+	Rscript $^ $@
