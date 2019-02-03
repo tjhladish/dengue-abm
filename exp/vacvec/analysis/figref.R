@@ -46,7 +46,7 @@ scale_size_vectorcontrol <- scale_generator(
 
 vac_lvls <- c("cmdvi","edv","none")
 vac_name <- "Vaccine Model"
-vac_labels <- c("Dengvaxia", "D70E", "None")
+vac_labels <- c("CYD-TDV", "D70E", "None")
 vac_pchs <- c(24,21,NA) # c(15,16,NA)
 vac_nofill_pchs <- c(17,19,NA) # c(15,16,NA)
 vac_ltys <- c("12","61","solid")
