@@ -95,3 +95,9 @@ $(TEXDIR):
 
 numerical_results.tex: texgen.R defs.template effstats.rds | $(TEXDIR)
 	$(RFIG)
+
+posterior_par.tex: tex_posterior_params.R posterior.rds | $(TEXDIR)
+	$(RFIG)
+
+posterior_met.tex: tex_posterior_metrics.R posterior.rds | $(TEXDIR)
+	$(RFIG)
