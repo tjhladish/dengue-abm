@@ -9,21 +9,32 @@ args <- commandArgs(trailingOnly = TRUE)
 load(args[1])
 bind.dt <- readRDS(args[2])
 
-# stability check
-# ggplot(bind.dt) + aes(x=year, y=y, alpha=foi, group=foi) + geom_line() + facet_grid(measure ~ fraction)
+bind.dt[, measure := gsub("^.+([is])$","\\1", variable) ]
+bind.dt[, context := gsub("^(.+)\\.[is]$","\\1", variable) ]
+bind.dt[context %in% c("i","s"), context := "total"]
 
-p <- ggplot(bind.dt[, .(y=mean(y)), keyby=.(foi, measure, fraction)]) +
-  aes(x=foi, y=log10(y), linetype=fraction) +
-  facet_grid(measure ~ ., labeller = labeller(
-    measure=c(cases="Cases",infections="All Infections")
+# stability check
+# ggplot(bind.dt) + theme_minimal() + aes(x=year, y=med, alpha=foi, group=foi) + geom_line() + facet_grid(measure ~ context, scales="free_y")
+
+plot.dt <- bind.dt[, .(y=mean(med)/yucpop, lo=mean(lo), hi=mean(hi)), keyby=.(foi, measure, context)]
+
+p <- ggplot(plot.dt) +
+  aes(x=foi, y=y, linetype=context) +
+  facet_grid(measure ~ ., scales="free_y", labeller = labeller(
+    measure=c(s="Cases",i="Infections")
   )) +
+#  geom_ribbon(aes(y=NULL), alpha=0.5) +
   geom_line() +
-  scale_y_continuous("Log(Count)", expand=c(0,0)) +
-  scale_x_continuous("Relative Mosquito Pop.", expand=c(0,0)) +
-  scale_linetype_manual("Source", labels=c(total="Any", introduced="Introduced"), values=c(total="solid", introduced="dashed")) +
-  coord_cartesian(xlim=c(0,1.5), ylim=c(2,6)) +
+  geom_limits(plot.dt[,.(y=c(0,max(y)), foi=0), by=measure]) +
+  scale_y_continuous("Incidence per 100k", expand=c(0,0)) +
+  scale_x_continuous("Relative Mosquito Population", expand=c(0,0)) +
+  scale_linetype_manual("Source", labels=c(total="Both", intro="Introduced", local="Local"), values=c(total="solid", intro="dashed", local="dotted")) +
+  coord_cartesian(xlim=c(0,1.5), clip = "off") +
   theme_minimal() + theme(
-    panel.spacing = unit(18,"pt")
+    panel.spacing = unit(18,"pt"),
+    legend.position = c(.01,.99),
+    legend.justification = c(0,1),
+    strip.text.y = element_text(angle=90)
   )
 
 # target rds should be last arg
