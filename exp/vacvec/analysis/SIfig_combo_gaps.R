@@ -96,6 +96,7 @@ p <- ggplot(cmb.eff) + aes(
     legend.text = element_text(size=rel(0.5)),
     legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
     panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
+    strip.text.y = element_text(angle=90),
     legend.key.height = unit(1,"pt"),
     legend.box.spacing = unit(2.5, "pt"),
     legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin
