@@ -131,3 +131,6 @@ base_single_intervention.rds: base_single_intervention.R projref.rda effstats.rd
 
 foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
 	Rscript $^ $@
+
+posterior.rds: posterio.R utils.R $(ABCDB)
+	Rscript $^ $@
