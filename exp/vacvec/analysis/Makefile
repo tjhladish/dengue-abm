@@ -101,3 +101,5 @@ posterior_par.tex: tex_posterior_params.R posterior.rds | $(TEXDIR)
 
 posterior_met.tex: tex_posterior_metrics.R posterior.rds | $(TEXDIR)
 	$(RFIG)
+
+textabs: posterior_par.tex posterior_met.tex
