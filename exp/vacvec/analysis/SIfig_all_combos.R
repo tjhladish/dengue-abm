@@ -46,6 +46,7 @@ p <- ggplot(cmb.eff) + aes(
   scale_color_scenario(guide = "none", value="black", aesthetics = c("color","fill")) +
   scale_size_vectorcontrol(guide="none") +
   coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +
+  TIRSfacettitle +
   theme(
     legend.margin = margin(), legend.spacing = unit(25, "pt"),
     legend.text = element_text(size=rel(0.5)),

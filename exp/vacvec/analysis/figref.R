@@ -21,7 +21,7 @@ load(.args[2])
 
 # scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
 scn_name <- "Intervention Scenario"
-scn_labels <- c("None", "Vector Control Only", "Vaccine Only", "Combination")
+scn_labels <- c("None", "TIRS Only", "Vaccine Only", "Combination")
 scn_cols <- c("yellow","blue","darkgreen","black")
 names(scn_labels) <- names(scn_cols) <- names(scn_lvls) <- scn_lvls
 scale_color_scenario <- scale_generator(
@@ -34,7 +34,7 @@ names(light_cols) <- c("vc", "vac")
 # VC COVERAGE DIMENSIONING
 
 vc_lvls <- seq(from=0,to=75,by=25)
-vc_name <- "Vector Control\nCoverage %"
+vc_name <- "TIRS\nCoverage %"
 vc_labels <- c("none","25%","50%","75%")
 vc_sizes <- seq(from=0.4, by=0.3, length.out = length(vc_labels))
 names(vc_labels) <- names(vc_sizes) <- names(vc_lvls) <- vc_lvls
@@ -149,7 +149,12 @@ facet_labels <- labeller(
   scenario = scn_labels,
   catchup = cu_labels,
   vaccine = vac_labels,
-  vac_first = c(`0`="Vector Control First", `1`="Vaccine First")
+  vac_first = c(`0`="TIRS First", `1`="Vaccine First")
+)
+
+TIRSfacettitle <- list(
+  ggtitle("TIRS Coverage"),
+  theme(plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()))
 )
 
 gds <- function(

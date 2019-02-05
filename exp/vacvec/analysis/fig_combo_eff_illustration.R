@@ -70,7 +70,7 @@ limits.dt <- plot.dt[,
 ]
 
 scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
-scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), paste(Var2, Var1, sep=", ")), "75% Vector Control")
+scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), paste(Var2, Var1, sep=", ")), "75% TIRS Coverage")
 scn2_cols <- scn_cols[gsub("^(.+)\\..+$","\\1",scn2_lvls)]
 scn2_pchs <- vac_nofill_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
 names(scn2_labels) <- names(scn2_cols) <- names(scn2_pchs) <- scn2_lvls
@@ -88,7 +88,7 @@ naive.eff.edv <- naive.eff[vaccine == "edv"]
 naive.eff.cmdvi.thin <- naive.eff.cmdvi[pchstride(year)]
 naive.eff.edv.thin <- naive.eff.edv[pchstride(year)]
 
-naive.labs <- paste("75% Vector Control",vac_labels[-3],sep=" & ")
+naive.labs <- paste("75% TIRS Coverage",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
 naive.leg.name <- "Hypothetical Combinations"
 naive.line.labs <- naive.labs

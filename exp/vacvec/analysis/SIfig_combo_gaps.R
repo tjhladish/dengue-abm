@@ -91,6 +91,7 @@ p <- ggplot(cmb.eff) + aes(
   scale_fill_interaction() +
   scale_size_vectorcontrol(guide="none") +
   coord_cartesian(xlim=c(0,40), clip="off") +
+  TIRSfacettitle +
   theme(
     legend.margin = margin(), legend.spacing = unit(25, "pt"),
     legend.text = element_text(size=rel(0.5)),
