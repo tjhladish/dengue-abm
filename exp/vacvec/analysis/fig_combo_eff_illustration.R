@@ -126,7 +126,7 @@ annopchleg <- get_legend(annopchp)
 annolineleg <- get_legend(annolinep)
 
 annoline <- function(ref.dt) annotate("line", x=ref.dt$year+1, y=ref.dt$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = light_cols["vc"])
-annopt <- function(ref.dt) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=pchsize, shape=vac_pchs["cmdvi"], color=light_cols["vac"], fill=light_cols["vac"])
+annopt <- function(ref.dt) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=pchsize, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
 
 annos <- list(
 	annoline(naive.eff.cmdvi),
