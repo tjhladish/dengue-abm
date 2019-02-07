@@ -1,0 +1,23 @@
+{
+  "mean": "mean",
+  "min": "minimum",
+  "quant25": "$25^{th}$ percentile",
+  "median": "median",
+  "quant75": "$75^{th}$ percentile",
+  "max": "maximum",
+  "stdev": "SD",
+  "skewness" : "skewness",
+  "med_xing" : "median-crossing rate",
+  "seroprev" : "1987 seroprevalence, 8\\textendash{}14 yo",
+  "pre95_sev_frac": "pre-1995 severe proportion",
+  "mod_sev_frac" : "modern severe proportion",
+  "sp14_0_4": "2014 seroprevalence, 0\\textendash{}4 yo",
+  "sp14_5_9": "ibid., 5\\textendash{}9 yo",
+  "sp14_10_14": "ibid., 10\\textendash{}14 yo",
+  "sp14_15_19": "ibid., 15\\textendash{}19 yo",
+  "sp14_20_29": "ibid., 20\\textendash{}29 yo",
+  "sp14_30_39": "ibid., 30\\textendash{}39 yo",
+  "sp14_40_49": "ibid., 40\\textendash{}49 yo",
+  "sp14_50_59": "ibid., 50\\textendash{}59 yo",
+  "sp14_60_": "ibid., 60+ yo"
+}

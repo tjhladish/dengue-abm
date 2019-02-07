@@ -3,6 +3,8 @@ vpath %.R .:..
 
 -include local.mk
 
+POSTJSON := ../../../abc-irs_refit2/abc-irs_refit2.json
+
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
 default: effstat
@@ -132,5 +134,5 @@ base_single_intervention.rds: base_single_intervention.R projref.rda effstats.rd
 foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
 	Rscript $^ $@
 
-posterior.rds: posterio.R utils.R $(ABCDB)
+posterior.rds: posterio.R utils.R $(ABCDB) $(POSTJSON)
 	Rscript $^ $@

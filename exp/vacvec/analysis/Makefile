@@ -96,10 +96,10 @@ $(TEXDIR):
 numerical_results.tex: texgen.R defs.template effstats.rds | $(TEXDIR)
 	$(RFIG)
 
-posterior_par.tex: tex_posterior_params.R posterior.rds | $(TEXDIR)
+tab_pars.tex: tex_posterior_params.R utils.R posterior.rds parkey.json | $(TEXDIR)
 	$(RFIG)
 
-posterior_met.tex: tex_posterior_metrics.R posterior.rds | $(TEXDIR)
+tab_mets.tex: tex_posterior_metrics.R utils.R posterior.rds metkey.json | $(TEXDIR)
 	$(RFIG)
 
-textabs: posterior_par.tex posterior_met.tex
+textabs: tab_pars.tex tab_mets.tex
