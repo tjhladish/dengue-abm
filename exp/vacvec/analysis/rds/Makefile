@@ -7,7 +7,7 @@ POSTJSON := ../../../abc-irs_refit2/abc-irs_refit2.json
 
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: effstat
+default: effstat foi_v_mpop.rds posterior.rds
 
 projref.rda: projref.R
 	Rscript $^ $@

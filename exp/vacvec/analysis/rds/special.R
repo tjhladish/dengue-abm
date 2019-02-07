@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 })
 
 # developer args
-args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response.sqlite', "~/Dropbox/who/mpeak_intros.out")
+args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response-tmp.sqlite', "~/Dropbox/who/mpeak_intros-tmp.out")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
@@ -25,7 +25,7 @@ source(args[1])
 
 dt <- dbutil(args[2], qry)
 dropcols <- grep("_",names(dt))
-dt <- dt[,.SD,.SDcols=-dropcols]
+if (length(dropcols)) dt <- dt[,.SD,.SDcols=-dropcols]
 mlt <- melt.data.table(dt, id.vars = c("serial", "foi"))
 
 mlt[, measure := gsub("\\d+","",variable) ]
