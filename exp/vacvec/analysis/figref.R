@@ -149,12 +149,20 @@ facet_labels <- labeller(
   scenario = scn_labels,
   catchup = cu_labels,
   vaccine = vac_labels,
-  vac_first = c(`0`="TIRS First", `1`="Vaccine First")
+  vac_first = c(`0`="TIRS First", `1`="Vaccine First"),
+  foi = c(`0.5`="50%",`1`="100% (Fitted Reference)",`1.5`="150%")
 )
 
 TIRSfacettitle <- list(
   ggtitle("TIRS Coverage"),
   theme(plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()))
+)
+FOIfacettitle <- list(
+  ggtitle("Mosquito Population"),
+  theme(
+    plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()),
+    strip.text = element_text(size=rel(0.7))
+  )
 )
 
 gds <- function(
