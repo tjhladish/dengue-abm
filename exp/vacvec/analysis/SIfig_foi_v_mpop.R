@@ -29,7 +29,7 @@ p <- ggplot(plot.dt) +
   scale_y_continuous("Incidence per 100k", expand=c(0,0)) +
   scale_x_continuous("Relative Mosquito Population", expand=c(0,0)) +
   scale_linetype_manual("Source", labels=c(total="Both", intro="Introduced", local="Local"), values=c(total="solid", intro="dashed", local="dotted")) +
-  coord_cartesian(xlim=c(0,1.5), clip = "off") +
+  coord_cartesian(clip = "off") +
   theme_minimal() + theme(
     panel.spacing = unit(18,"pt"),
     legend.position = c(.01,.99),
