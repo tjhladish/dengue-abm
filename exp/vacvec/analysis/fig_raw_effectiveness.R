@@ -92,12 +92,12 @@ basep <- ggplot(
 	rbind(vac.eff, vec.eff)
 ) + facet_grid(scenario ~ ., labeller = facet_labels) + shared +
 	theme(
+	  # axis.title = element_text(size=rel(0.7)),
+	  # axis.text = element_text(size=rel(0.7)),
 		legend.position = "none",
 		panel.spacing.y = unit(15,"pt"),
 		strip.text.y = element_text(angle=90),
-		plot.margin = margin(t=unit(6,"pt")),
-		axis.title = element_text(size=rel(0.7)),
-		axis.text = element_text(size=rel(0.7))
+		plot.margin = margin(t=unit(6,"pt"))
 	) +
 	geom_point(size=.75) +
 	geom_point(data=vac.eff[pchstride(year)], size=pchsize) +
@@ -107,4 +107,6 @@ basep <- ggplot(
 
 p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.2, y=-0.05)
 
-plotutil(p, h=4.5, w=2.75, tar)
+save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = 3.25)
+
+# plotutil(p, h=4.5, w=2.75, tar)

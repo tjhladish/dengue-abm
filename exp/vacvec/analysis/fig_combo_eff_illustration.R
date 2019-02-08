@@ -253,8 +253,8 @@ resp <- ggplot(
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
     strip.background = element_blank(),
     strip.text.y = element_blank(),
-    axis.title = element_text(size=rel(0.7)),
-    axis.text = element_text(size=rel(0.7)),
+  #  axis.title = element_text(size=rel(0.7)),
+  #  axis.text = element_text(size=rel(0.7)),
   #  strip.text.y = element_text(angle=90),
     plot.margin = margin(t = unit(6,"pt"), r = unit(18,"pt")),
     legend.position = "none"
@@ -266,4 +266,6 @@ p <- ggdraw(resp) +
 
 ## TODO tried outlining points in white? looks meh?
 
-plotutil(p, h=4.5, w=2.75, tar)
+save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = 3.25)
+
+#plotutil(p, h=4.5, w=2.75, tar)

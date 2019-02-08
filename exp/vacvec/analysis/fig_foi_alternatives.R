@@ -44,4 +44,4 @@ p<-ggplot(
     panel.spacing.x = unit(12, "pt")
   )
 
-plotutil(p, h=3, w=6.75, tar)
+save_plot(tar, p, base_height = 3, ncol = 2)

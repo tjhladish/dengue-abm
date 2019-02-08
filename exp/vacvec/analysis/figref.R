@@ -149,7 +149,7 @@ facet_labels <- labeller(
   scenario = scn_labels,
   catchup = cu_labels,
   vaccine = vac_labels,
-  vac_first = c(`0`="TIRS First", `1`="Vaccine First"),
+  vac_first = c(`0`="TIRS First", `1`=paste0(vac_labels["edv"]," First")),
   foi = c(`0.5`="50%",`1`="100% (Fitted Reference)",`1.5`="150%")
 )
 
