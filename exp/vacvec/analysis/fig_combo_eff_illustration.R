@@ -94,12 +94,15 @@ naive.leg.name <- "Hypothetical Combinations"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
+leg.sz <- 0.7
+
 legtheme <- theme(
   legend.margin = margin(), legend.spacing = unit(25, "pt"),
   legend.spacing.x = unit(-2,"pt"),
-  legend.text = element_text(size=rel(0.3), margin = margin(l=unit(6,"pt"))),
-  legend.title = element_text(size=rel(0.4)), legend.title.align = 0.5,
-  legend.key.height = unit(1,"pt"),
+  legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(12,"pt"))),
+  legend.title = element_text(size=rel(leg.sz)),
+  legend.title.align = 0.5,
+  legend.key.height = unit(12,"pt"),
   legend.box.spacing = unit(2.5, "pt")
 )
 
@@ -226,6 +229,8 @@ illus_labels[vaccine == "cmdvi" & intervention == "combined", value := value - 0
 #illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
 illus_labels[intervention == "combined", lab := ifelse(vaccine == "edv", "Amplification", "Interference") ]
 
+label.sz = 3.5
+
 resp <- ggplot(
   plot.dt
 ) + theme_minimal() + aes(
@@ -240,8 +245,8 @@ resp <- ggplot(
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_point(data=plot.dt[pchstride(year)], size=pchsize) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=2.5, color="blue") +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=2.5, color="red") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"]) +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"]) +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
   scale_shapenofill_vaccine(guide = "none") +
@@ -260,9 +265,12 @@ resp <- ggplot(
     legend.position = "none"
   )
 
+leg.xy <- list(x=0.5,y=0.42)
+anleg.xy <- list(x=0.3,y=0.08)
+
 p <- ggdraw(resp) + 
-  draw_grob(p1lleg, x=0.575, y=0.42) + draw_grob(p1sleg, x=0.575, y=0.42) +
-  draw_grob(annolineleg, x=0.425, y=0.1) + draw_grob(annopchleg, x=0.425, y=0.1)
+  draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
+  draw_grob(annolineleg, x=anleg.xy$x, y=anleg.xy$y) + draw_grob(annopchleg, x=anleg.xy$x, y=anleg.xy$y)
 
 ## TODO tried outlining points in white? looks meh?
 
