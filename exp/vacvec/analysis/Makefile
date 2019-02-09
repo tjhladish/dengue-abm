@@ -17,13 +17,13 @@ default: figures
 .PHONY: parse showfigs
 
 parse:
-	make -C rds
+	+$(MAKE) -C rds
 
 cleanparse:
-	make -C rds clean
+	+$(MAKE) -C rds clean
 
 %.rds %.rda:
-	make -C rds $@
+	+$(MAKE) -C rds $@
 
 RFIG = Rscript $^ $|/$@
 
