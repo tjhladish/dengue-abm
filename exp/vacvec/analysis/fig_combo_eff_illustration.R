@@ -94,7 +94,7 @@ naive.leg.name <- "Hypothetical Combinations"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
-leg.sz <- 0.7
+leg.sz <- 0.55
 
 legtheme <- theme(
   legend.margin = margin(), legend.spacing = unit(25, "pt"),
@@ -229,7 +229,7 @@ illus_labels[vaccine == "cmdvi" & intervention == "combined", value := value - 0
 #illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
 illus_labels[intervention == "combined", lab := ifelse(vaccine == "edv", "Amplification", "Interference") ]
 
-label.sz = 3.5
+label.sz = 4
 
 resp <- ggplot(
   plot.dt
