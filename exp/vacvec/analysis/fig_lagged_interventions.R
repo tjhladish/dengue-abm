@@ -15,7 +15,7 @@ ekeys <- key(stat.eff.dt)
 
 # offsetyr <- 2
 
-lowylim <- .5
+#lowylim <- .75
 
 hmult <- 1
 
@@ -54,22 +54,33 @@ ref.combo <- rbind(
 
 ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
 
-p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, linetype=factor(ivn_lag)) +
+lims <- combo.dt[,.(
+  year=-1, med=c(floor(min(med)*10)/10, 1)
+), by=.(vac_first, measure)]
+
+p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
   adds +
-  geom_line(data=ref.combo, size=vc_sizes["75"]) +
+  geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
   geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
-  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
-  geom_line(data=combo.dt[vac_first == 1 & year >= ivn_lag], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
+#  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
+  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"]) +
+  geom_point(data=combo.dt[vac_first == 1], size=1) +
+  geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
+  geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
+  #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
   
-  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 0][pchstride(year, offset=ivn_lag)], size=pchsize) +
+  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"]) +
+  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
+  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
+  geom_limits(lims) +
+  facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
   
-  facet_grid(vac_first ~ measure, labeller = facet_labels) +
   scale_fill_interaction(guide="none") +
   scale_year() +
-  scale_effectiveness(name="Effectiveness") +
-  coord_cartesian(ylim=c(lowylim,1), xlim=c(0,20), clip="off") +
+  scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
+  coord_cartesian(xlim=c(0,20), clip="off") +
   theme(
     legend.direction = "horizontal",
     legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
