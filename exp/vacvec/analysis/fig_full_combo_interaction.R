@@ -96,11 +96,13 @@ p <- ggplot(plot2.dt) + aes(
 	scale_color_scenario(guide = "none", value="black") +
 	scale_size_vectorcontrol(guide="none") +
 	coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +
+  TIRSfacettitle +
 	theme(
 		legend.margin = margin(), legend.spacing = unit(25, "pt"),
 		legend.text = element_text(size=rel(0.5)),
 		legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
 		panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
+		strip.text.y = element_text(angle=90),
 		legend.key.height = unit(1,"pt"),
 		legend.box.spacing = unit(2.5, "pt"),
 		legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin

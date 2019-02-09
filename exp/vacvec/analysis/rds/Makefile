@@ -3,9 +3,11 @@ vpath %.R .:..
 
 -include local.mk
 
+POSTJSON := ../../../abc-irs_refit2/abc-irs_refit2.json
+
 wrap = $(addsuffix $(3),$(addprefix $(1),$(2)))
 
-default: effstat
+default: effstat foi_v_mpop.rds posterior.rds
 
 projref.rda: projref.R
 	Rscript $^ $@
@@ -27,9 +29,9 @@ projref.rda: projref.R
 
 
 # specific output database dependencies for each digest target
-baseline.rds intervention.rds baseline.csv intervention.csv: $(REFDB)
-foi_baseline.rds foi_intervention.rds foi_baseline.csv foi_intervention.csv: $(FOIDB)
-lag_intervention.rds lag_intervention.csv: $(LAGDB)
+baseline.rds intervention.rds raw_baseline.csv raw_intervention.csv: $(REFDB)
+foi_baseline.rds foi_intervention.rds raw_foi_baseline.csv raw_foi_intervention.csv: $(FOIDB)
+lag_intervention.rds raw_lag_intervention.csv: $(LAGDB)
 
 baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.rda
 	Rscript $^ $@
@@ -127,4 +129,10 @@ clean: clean_digests clean_effectiveness clean_comboeff clean_effstat
 	rm projref.rda
 
 base_single_intervention.rds: base_single_intervention.R projref.rda effstats.rds
+	Rscript $^ $@
+
+foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
+	Rscript $^ $@
+
+posterior.rds: posterio.R utils.R $(ABCDB) $(POSTJSON)
 	Rscript $^ $@

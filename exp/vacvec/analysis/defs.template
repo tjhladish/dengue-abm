@@ -1,0 +1,2 @@
+\renewcommand{\cumTenRedPer}{%2.1f%% (%2.1f,%2.1f)}
+\renewcommand{\lagAssessment}{%2.1f%% by %i (for vaccination first) or %i (for IRS first)}

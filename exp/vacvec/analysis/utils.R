@@ -85,8 +85,12 @@ geom_limits <- function(dt) geom_blank(
 #' dt[, dtquantiles(.(med=.5), x)]
 #' # compare to
 #' median(dt$x)
-dtquantiles <- function(probs, val, pnames = names(probs), na.rm = T) {
+dtquantiles <- function(probs, val, pnames = names(probs), na.rm = T, mn = F) {
   qs <- quantile(val, probs = unlist(probs), na.rm = na.rm)
+  if (mn) {
+    qs <- c(qs, mean(val, na.rm = na.rm))
+    pnames <- c(pnames, "mean")
+  }
   names(qs) <- pnames
   as.list(qs)
 }
@@ -141,3 +145,19 @@ scale_generator <- function(
     )
   })
 }
+
+#' Convenience method for assembling tabularx table innards
+#'
+#' @param dt, a data.table with rows already generated (via, e.g., `sprintf(...)`)
+#' @param whchcol, which column has the rows (defaults to "rows", but can also be a number)
+#' @return a string suitable for `cat` to a file
+tabularxinnards <- function(dt, whchcol = "rows") {
+  subdt <- dt[,.SD,.SDcols=whchcol]
+  firstrow <- paste0(subdt[1],"\\T ")
+  lastrow <- paste0(subdt[.N],"\\B ")
+  return(paste0(sprintf("%s\\\\\n",
+    c(firstrow, unlist(subdt[-c(1,.N)]), lastrow)
+  ), collapse = ""))
+}
+
+logistic <- function(x, x0=0, k=1, L=1) L/(1+exp(-k*(x-x0)))

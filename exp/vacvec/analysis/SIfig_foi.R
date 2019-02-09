@@ -30,7 +30,8 @@ p<-ggplot(
   scale_shape_vaccine(guide="none") +
   scale_year() +
   scale_effectiveness() +
-  facet_grid(. ~ foi, labeller=label_bquote(cols=paste(.(foi*100),"% ",M[peak]))) +
+  facet_grid(. ~ foi, labeller=facet_labels) +
+  FOIfacettitle +
   coord_cartesian(clip="off", ylim=c(-.125,1), xlim=c(0,40)) + theme(
     panel.spacing.x = unit(12, "pt")
   )
