@@ -46,6 +46,8 @@ limits.dt <- rbind(vac.eff, vec.eff)[,
   by=scenario
 ]
 
+leg.sz <- 0.7
+
 shared <- list(theme_minimal(), aes(
     x=year + 1, y=value, color=scenario,
     fill=interaction(vaccine, catchup), shape=interaction(vaccine, catchup), size=factor(vc_coverage),
@@ -57,8 +59,9 @@ shared <- list(theme_minimal(), aes(
   theme(
   	legend.margin = margin(), legend.spacing = unit(25, "pt"),
   	legend.spacing.x = unit(-2,"pt"),
-  	legend.text = element_text(size=rel(0.4)),
-  	legend.title = element_text(size=rel(0.5)), legend.title.align = 0.5,
+  	legend.key.width = unit(36,"pt"),
+  	legend.text = element_text(size=rel(leg.sz)),
+  	legend.title = element_text(size=rel(leg.sz)), legend.title.align = 0.5,
   	legend.key.height = unit(1,"pt"),
   	legend.box.spacing = unit(2.5, "pt"),
   	axis.text.y = element_text()
