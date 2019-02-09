@@ -27,6 +27,7 @@ const int RESTART_BURNIN    = 100; // was 10 for normal results, 100 for foi-eff
 const int FORECAST_DURATION = 41; // normally 41; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = false;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
+const int JULIAN_TALLY_DATE = 146; // intervention julian date - 1
 
 //Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed) {
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
@@ -195,14 +196,17 @@ void append_if_finite(vector<double> &vec, double val) {
     }
 }
 
+int julian_to_sim_day (const Parameters* par, const int julian, const int intervention_year) {
+    int startDate = intervention_year*365 + julian - par->startDayOfYear;
+    if (julian < par->startDayOfYear) { // start intervention in following year
+        startDate += 365;
+    }
+    return startDate;
+}
+
 
 vector<double> tally_counts(const Parameters* par, Community* community, int pre_intervention_output) {
-    // aggregate based on the timing of the annual start of vector control
-    int discard_days = INT_MAX;
-    for (VectorControlEvent vce: par->vectorControlEvents) {
-        discard_days = discard_days < vce.campaignStart ? discard_days : vce.campaignStart;
-    }
-    discard_days = discard_days==INT_MAX ? 365*(RESTART_BURNIN-pre_intervention_output) : discard_days - (365*pre_intervention_output);
+    const int discard_days = julian_to_sim_day(par, JULIAN_TALLY_DATE, RESTART_BURNIN-pre_intervention_output);
 
     //vector< vector<int> > severe      = community->getNumSevereCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
@@ -313,17 +317,11 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     Community* community = build_community(par);
 
     if (vector_control) {
+        assert(vc_timing - 1 == JULIAN_TALLY_DATE);
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
         for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
-        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-            // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
-            int startDate = 0;
-            if (vc_timing >= par->startDayOfYear) { // start before Jan 1
-                startDate = vec_cont_year*365 + vc_timing - par->startDayOfYear; // 151 days after Jan 1 is June 1, offset by julian startDay
-            } else {                                // start after Jan 1
-                startDate = (vec_cont_year+1)*365 + vc_timing - par->startDayOfYear;
-            }
+            const int startDate = julian_to_sim_day(par, vc_timing, vec_cont_year);
             par->vectorControlEvents.emplace_back(startDate, vc_campaignDuration, vc_coverage, vc_efficacy, efficacyDuration, locType, lss);
         }
     }
