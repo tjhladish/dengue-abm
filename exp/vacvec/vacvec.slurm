@@ -20,6 +20,7 @@ module load gcc/7.3.0 gsl
 for i in `seq 1 50`;
 do
     #./abc_sql abc_vacvec.json --simulate
-    ./abc_sql abc_vacvec-alt_foi.json --simulate
-    #./abc_sql-ivn_lag abc_vacvec-ivn_lag.json --simulate
+    #./abc_sql abc_vacvec-alt_foi.json --simulate
+    ./abc_sql-ivn_lag abc_vacvec-ivn_lag.json --simulate
+    #./abc_sql-foi_gen abc_vacvec-alt_foi.json --simulate
 done
