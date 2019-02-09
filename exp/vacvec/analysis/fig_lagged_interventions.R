@@ -13,9 +13,9 @@ tar <- tail(args, 1)
 
 ekeys <- key(stat.eff.dt)
 
-offsetyr <- 2
+# offsetyr <- 2
 
-lowylim <- .75
+lowylim <- .5
 
 hmult <- 1
 
@@ -24,17 +24,17 @@ if (!grepl("^fig/fig", tar)) {
   hmult <- 3
   
   vec.dt <- stat.eff.dt[
-    variable %in% c("vec.eff", "c.vec.eff") & ((vac_first == 0) | year >= offsetyr) & med >= lowylim
+    variable %in% c("vec.eff", "c.vec.eff") & ((vac_first == 0) | year >= ivn_lag) & med >= lowylim
     ][, measure := trans_meas(gsub("vec.","", variable, fixed = T)) ]
   
   vac.dt <- stat.eff.dt[
-    variable %in% c("vac.eff", "c.vac.eff") & ((vac_first == 1) | year >= offsetyr) & med >= lowylim
+    variable %in% c("vac.eff", "c.vac.eff") & ((vac_first == 1) | year >= ivn_lag) & med >= lowylim
     ][, measure := trans_meas(gsub("vac.","", variable, fixed = T)) ]
   
   adds <- list(
     geom_line(data=vec.dt, size=vc_sizes["75"], color=light_cols["vc"]),
     geom_line(data=vac.dt, size=vc_sizes["0"], color=light_cols["vac"]),
-    geom_point(data=vac.dt[vac_first == 0][pchstride(year, offset=offsetyr)], size=pchsize, color=light_cols["vac"]),
+    geom_point(data=vac.dt[vac_first == 0][pchstride(year, offset=ivn_lag)], size=pchsize, color=light_cols["vac"]),
     geom_point(data=vac.dt[vac_first == 1][pchstride(year)], size=pchsize, color=light_cols["vac"])
   )
 } else adds <- list()
@@ -42,7 +42,7 @@ if (!grepl("^fig/fig", tar)) {
 combo.dt <- stat.eff.dt[grepl("combo.eff", variable, fixed = T),
   .(med, obs = "observed"),
   keyby=.(
-    vac_first, vc_coverage, vaccine, catchup, year,
+    ivn_lag, vac_first, vc_coverage, vaccine, catchup, year,
     measure = trans_meas(gsub("combo.","", variable, fixed = T))
   )
 ]
@@ -52,18 +52,18 @@ ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 0 ]
 )[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
 
-ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ]
+ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
 
-p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs) +
+p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, linetype=factor(ivn_lag)) +
   adds +
   geom_line(data=ref.combo, size=vc_sizes["75"]) +
   geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
-  geom_line(data=combo.dt[vac_first == 1 & year <= offsetyr]) +
-  geom_line(data=combo.dt[vac_first == 1 & year >= offsetyr], size=vc_sizes["75"]) +
+  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
+  geom_line(data=combo.dt[vac_first == 1 & year >= ivn_lag], size=vc_sizes["75"]) +
   geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
   
   geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 0][pchstride(year, offset=offsetyr)], size=pchsize) +
+  geom_point(data=combo.dt[vac_first == 0][pchstride(year, offset=ivn_lag)], size=pchsize) +
   
   facet_grid(vac_first ~ measure, labeller = facet_labels) +
   scale_fill_interaction(guide="none") +

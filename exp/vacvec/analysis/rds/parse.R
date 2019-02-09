@@ -8,6 +8,7 @@ suppressPackageStartupMessages({
 })
 
 # developer args
+args <- c("../utils.R", "projref.rda", "~/Dropbox/who/vacvec-new_yuc-ivn_lag258-reduced_catchup.sqlite", "lag_intervention.rds")
 args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc.sqlite', "baseline.rds")
 args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc-alt_foi.sqlite', "foi_intervention.rds")
 
@@ -63,7 +64,7 @@ if (grepl("foi", tar)) {
   selcols <- c(selcols, "foi")
 } else if (grepl("lag", tar)) {
   # need extra scenario column
-  selcols <- c(selcols, "vac_first")
+  selcols <- c(selcols, "vac_first", "ivn_lag")
 }
 
 ## assemble pieces into query
@@ -107,7 +108,7 @@ if (grepl("intervention", tar)) {
 
 # add extra keys for special analyses
 if (grepl("foi", tar)) keycols <- c("foi", keycols)
-if (grepl("lag", tar)) keycols <- c("vac_first", keycols)
+if (grepl("lag", tar)) keycols <- c("vac_first", "ivn_lag", keycols)
 
 
 
