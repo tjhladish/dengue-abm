@@ -32,16 +32,24 @@ lims <- combo.dt[,.(
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=ivn_lag) +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), ref.combo, alpha=0.5) +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), combo.dt, alpha=0.5) +
-  geom_line(data=ref.combo, size=vc_sizes["75"]) +
+  geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
   geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
-  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
-  geom_line(data=combo.dt[vac_first == 1 & year >= ivn_lag], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
+  #  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
+  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"]) +
+  geom_point(data=combo.dt[vac_first == 1], size=1) +
+  geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
+  geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
+  #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
   
-  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]) +
-  geom_point(data=combo.dt[vac_first == 0][pchstride(year, offset=ivn_lag)], size=pchsize) +
+  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"]) +
+  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
+  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
   geom_limits(lims) +
   facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
+  
+#  scale_fill_interaction(guide="none") +
   scale_year() +
   scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
@@ -56,10 +64,10 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=ivn_lag)
     strip.text = element_text(size=rel(0.6)),
     strip.text.y = element_text(angle=90)
   ) +
-  scale_color_manual(name=NULL,
+  scale_colour_manual(name=NULL,
     values=c(reference="grey",observed="black"),
     labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
-    aesthetics = c("color", "fill")
+    aesthetics = c("color","fill")
   )
 
 # TODO dump shaded area, add intervention annotations, change height aspect

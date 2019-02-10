@@ -77,7 +77,7 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(i
   geom_limits(lims) +
   facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
   
-  scale_fill_interaction(guide="none") +
+#  scale_fill_interaction(guide="none") +
   scale_year() +
   scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
