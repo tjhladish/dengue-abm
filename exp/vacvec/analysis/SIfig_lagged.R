@@ -23,18 +23,18 @@ ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 0 ]
 )[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
 
-ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
+ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ]
 
 lims <- combo.dt[,.(
   year=-1, med=c(floor(min(med)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
-p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=ivn_lag) +
+p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_first) +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
-    combo.dt[vac_first == 0 & ivn_lag == max(ivn_lag) & year < ivn_lag], fill=scn_cols["vc"], alpha=0.5
+    combo.dt[vac_first == 0 & year < ivn_lag], fill=scn_cols["vc"], alpha=0.5
   ) +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
-    combo.dt[vac_first == 1 & ivn_lag == max(ivn_lag) & year < ivn_lag], fill=scn_cols["vac"], alpha=0.5
+    combo.dt[vac_first == 1 & year < ivn_lag], fill=scn_cols["vac"], alpha=0.5
   ) +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), combo.dt[year >= (ivn_lag-1)], alpha=0.5) +
   geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
@@ -52,7 +52,7 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=ivn_lag)
   geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
   geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
   geom_limits(lims) +
-  facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
+  facet_grid(measure ~ ivn_lag, labeller = facet_labels, scales = "free_y") +
   
 #  scale_fill_interaction(guide="none") +
   scale_year() +
