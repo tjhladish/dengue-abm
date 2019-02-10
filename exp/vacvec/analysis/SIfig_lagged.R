@@ -30,8 +30,13 @@ lims <- combo.dt[,.(
 ), by=.(vac_first, measure)]
 
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=ivn_lag) +
-  geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), ref.combo, alpha=0.5) +
-  geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), combo.dt, alpha=0.5) +
+  geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
+    combo.dt[vac_first == 0 & ivn_lag == max(ivn_lag) & year < ivn_lag], fill=scn_cols["vc"], alpha=0.5
+  ) +
+  geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
+    combo.dt[vac_first == 1 & ivn_lag == max(ivn_lag) & year < ivn_lag], fill=scn_cols["vac"], alpha=0.5
+  ) +
+  geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs), combo.dt[year >= (ivn_lag-1)], alpha=0.5) +
   geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
   geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
   #  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
