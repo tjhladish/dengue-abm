@@ -1,10 +1,10 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 20000,
+    "num_samples"    : 60000,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "vacvec-new_yuc-ivn_lag.sqlite",
+    "database_filename"             : "vacvec-new_yuc-ivn_lag258-reduced_catchup.sqlite",
     "posterior_database_filename"   : "new_yuc_posterior.sqlite",
     "retain_posterior_rank"         : "true",
 
@@ -160,8 +160,8 @@
         {"name"       : "catchup_to",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 100,
-         "par2"       : 100},
+         "par1"       : 50,
+         "par2"       : 50},
 
         {"name"       : "vac_first",
          "dist_type"  : "PSEUDO",
@@ -173,7 +173,8 @@
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 2,
-         "par2"       : 2}
+         "par2"       : 8,
+         "step"       : 3}
     ],
 
     "metrics" : [

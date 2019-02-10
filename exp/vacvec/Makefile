@@ -1,13 +1,6 @@
 -include local.mk
 
-SHELL = /bin/bash
-G++VER = $(shell command -v g++-4.9)
-
-ifndef G++VER
 CPP = g++
-else
-CPP = g++-4.9
-endif
 
 #CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
