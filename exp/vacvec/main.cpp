@@ -27,6 +27,7 @@ const int RESTART_BURNIN    = 10; // was 10 for normal results, 100 for foi-effe
 const int FORECAST_DURATION = 41; // normally 41; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
+const int JULIAN_TALLY_DATE = 146; // intervention julian date - 1
 
 //Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed) {
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
@@ -128,7 +129,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
-    par->immunityFilename         = imm_dir    + "/immunity2030."       + process_id;
+    //par->immunityFilename         = imm_dir    + "/immunity2030."       + process_id;
     //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
@@ -195,14 +196,17 @@ void append_if_finite(vector<double> &vec, double val) {
     }
 }
 
+int julian_to_sim_day (const Parameters* par, const int julian, const int intervention_year) {
+    int startDate = intervention_year*365 + julian - par->startDayOfYear;
+    if (julian < par->startDayOfYear) { // start intervention in following year
+        startDate += 365;
+    }
+    return startDate;
+}
+
 
 vector<double> tally_counts(const Parameters* par, Community* community, int pre_intervention_output) {
-    // aggregate based on the timing of the annual start of vector control
-    int discard_days = INT_MAX;
-    for (VectorControlEvent vce: par->vectorControlEvents) {
-        discard_days = discard_days < vce.campaignStart ? discard_days : vce.campaignStart;
-    }
-    discard_days = discard_days==INT_MAX ? 365*(RESTART_BURNIN-pre_intervention_output) : discard_days - (365*pre_intervention_output);
+    const int discard_days = julian_to_sim_day(par, JULIAN_TALLY_DATE, RESTART_BURNIN-pre_intervention_output);
 
     //vector< vector<int> > severe      = community->getNumSevereCases();
     vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
@@ -300,6 +304,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const int vc_timing           = (int) args[11]; // TODO - make this ivn_timing, and consistently used for aggregation intervals
     const double vc_coverage      = args[12];
     const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
+    const double foi_mult         = args[14];
     const int vc_years            = (int) args[15];
     const int efficacyDuration    = (int) args[16]; // default was 90; number of days efficacy is maintained
     const bool vaccine            = (bool) args[17];
@@ -309,20 +314,15 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const bool catchup            = (bool) args[21];
     const int catchup_to          = (int) args[22];
 
+    par->immunityFilename         = "/ufrc/longini/tjhladish/imm_1000_yucatan-alt_foi/immunity2130." + process_id + ".foi" + to_string(foi_mult);
     Community* community = build_community(par);
 
     if (vector_control) {
+        assert(vc_timing - 1 == JULIAN_TALLY_DATE);
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = UNIFORM_STRATEGY;
         for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
-        //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
-            // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
-            int startDate = 0;
-            if (vc_timing >= par->startDayOfYear) { // start before Jan 1
-                startDate = vec_cont_year*365 + vc_timing - par->startDayOfYear; // 151 days after Jan 1 is June 1, offset by julian startDay
-            } else {                                // start after Jan 1
-                startDate = (vec_cont_year+1)*365 + vc_timing - par->startDayOfYear;
-            }
+            const int startDate = julian_to_sim_day(par, vc_timing, vec_cont_year);
             par->vectorControlEvents.emplace_back(startDate, vc_campaignDuration, vc_coverage, vc_efficacy, efficacyDuration, locType, lss);
         }
     }
