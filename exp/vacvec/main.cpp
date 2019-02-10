@@ -297,7 +297,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     const bool vector_control     = (bool) args[9];
     const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[10]]; // number of days to achieve coverage
-    const int vc_timing           = (int) args[11];
+    const int vc_timing           = (int) args[11]; // TODO - make this ivn_timing, and consistently used for aggregation intervals
     const double vc_coverage      = args[12];
     const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
     const int vc_years            = (int) args[15];
