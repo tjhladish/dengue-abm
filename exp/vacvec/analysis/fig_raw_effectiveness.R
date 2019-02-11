@@ -102,8 +102,7 @@ basep <- ggplot(
 		strip.text.y = element_text(angle=90),
 		plot.margin = margin(t=unit(6,"pt"))
 	) +
-	geom_point(size=.75) +
-	geom_point(data=vac.eff[pchstride(year)], size=pchsize) +
+  geom_pchline(vac.eff) +
 	scale_size_vectorcontrol() +
 	scale_vaccu_interaction() + 
 	scale_effectiveness() + coord_cartesian(clip="off")

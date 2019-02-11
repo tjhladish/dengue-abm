@@ -202,7 +202,15 @@ labels.dt <- data.table(
 )
 
 pchstride <- function(yr, offset=0, stride=5) ((yr+1+offset) %% stride == 0) | yr == offset
+invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset)
+
+geom_pchline <- function(dt, offset=0, stride=5, ...) list(
+  geom_point(data=dt[invpchstride(year)], size=smallpch, ...),
+  geom_point(data=dt[pchstride(year)], size=pchsize, ...)
+)
+
 pchsize <- 2
+smallpch <- 0.5
 
 
 save(list = ls(), file = tail(.args, 1))

@@ -70,7 +70,7 @@ limits.dt <- plot.dt[,
 ]
 
 scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
-scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), paste(Var2, Var1, sep=", ")), "75% TIRS Coverage")
+scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), as.character(Var2)), "75% TIRS")
 scn2_cols <- scn_cols[gsub("^(.+)\\..+$","\\1",scn2_lvls)]
 scn2_pchs <- vac_nofill_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
 names(scn2_labels) <- names(scn2_cols) <- names(scn2_pchs) <- scn2_lvls
@@ -87,10 +87,12 @@ naive.eff.cmdvi <- naive.eff[vaccine == "cmdvi"]
 naive.eff.edv <- naive.eff[vaccine == "edv"]
 naive.eff.cmdvi.thin <- naive.eff.cmdvi[pchstride(year)]
 naive.eff.edv.thin <- naive.eff.edv[pchstride(year)]
+naive.eff.cmdvi.many <- naive.eff.cmdvi[invpchstride(year)]
+naive.eff.edv.many <- naive.eff.edv[invpchstride(year)]
 
-naive.labs <- paste("75% TIRS Coverage",vac_labels[-3],sep=" & ")
+naive.labs <- paste("75% TIRS",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
-naive.leg.name <- "Hypothetical Combinations"
+naive.leg.name <- "Naive Expectation"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
@@ -108,7 +110,7 @@ legtheme <- theme(
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
   geom_line(aes(color="vc")) +
-  geom_point(aes(color="vac"), naive.eff[pchstride(year)], size=pchsize) + 
+  geom_pchline(naive.eff, mapping = aes(color="vac")) +
   scale_size_vectorcontrol(guide="none") + legtheme
   
 annopchp <- annopbase +
@@ -129,13 +131,15 @@ annopchleg <- get_legend(annopchp)
 annolineleg <- get_legend(annolinep)
 
 annoline <- function(ref.dt) annotate("line", x=ref.dt$year+1, y=ref.dt$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = light_cols["vc"])
-annopt <- function(ref.dt) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=pchsize, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
+annopt <- function(ref.dt, sz=pchsize) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=sz, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
 
 annos <- list(
 	annoline(naive.eff.cmdvi),
 	annoline(naive.eff.edv),
 	annopt(naive.eff.cmdvi.thin),
-	annopt(naive.eff.edv.thin)
+	annopt(naive.eff.cmdvi.many, sz=smallpch),
+	annopt(naive.eff.edv.thin),
+	annopt(naive.eff.edv.many, sz=smallpch)
 )
 
 # illustrate combined effectiveness
@@ -149,7 +153,8 @@ p1shared <- ggplot(
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 ) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[intervention == "single"][pchstride(year)], size=pchsize) +
+  geom_pchline(plot.dt[intervention == "single"]) +
+#  geom_point(data=plot.dt[intervention == "single"][pchstride(year)], size=pchsize) +
   scale_size_vectorcontrol(guide = "none") +
   scale_fill_catchup(guide="none", na.value=NA) + legtheme
 
@@ -244,9 +249,10 @@ resp <- ggplot(
   geom_altribbon(plot2.dt, withlines = F) +
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[pchstride(year)], size=pchsize) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"]) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"]) +
+  geom_pchline(plot.dt) +
+  geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"], fontface="bold") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"], fontface="bold") +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
   scale_shapenofill_vaccine(guide = "none") +
