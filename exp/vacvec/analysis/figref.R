@@ -68,7 +68,7 @@ scale_pchlty_vaccine <- function(...) list(
 
 cu_lvls <- c("vac-only", "vc+vac", "routine", "none")
 cu_name <- "Vaccine Campaign"
-cu_labels <- c("Catchup", "Catchup", "Routine-Only", "None")
+cu_labels <- c("inc. Catchup", "inc. Catchup", "Routine-Only", "None")
 cu_fills <- c(scn_cols[c("vac","vc+vac")], "white", NA)
 cu_alpha <- c(1, 1, 0.3, 0.3)
 names(cu_labels) <- names(cu_fills) <- names(cu_lvls) <- cu_lvls
@@ -206,12 +206,12 @@ labels.dt <- data.table(
   )
 )
 
-pchstride <- function(yr, offset=0, stride=5) ((yr+1+offset) %% stride == 0) | yr == offset
-invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset)
+pchstride <- function(yr, offset=0, stride=5) (((yr+1+offset) %% stride == 0) & yr > offset) | yr == offset
+invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset) & yr > offset
 
 geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), ...) list(
-  geom_point(data=dt[invpchstride(eval(var))], size=smallpch, ...),
-  geom_point(data=dt[pchstride(eval(var))], size=pchsize, ...)
+  geom_point(data=dt[invpchstride(eval(var), eval(offset), stride)], size=smallpch, ...),
+  geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=pchsize, ...)
 )
 
 pchsize <- 2

@@ -58,22 +58,25 @@ lims <- combo.dt[,.(
   year=-1, med=c(floor(min(med)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
+alphafactor <- 1/3.5
+
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
   adds +
   geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
   geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
 #  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
-  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2) +
-  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"]) +
+  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2, alpha=alphafactor) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"], alpha=alphafactor) +
   geom_point(data=combo.dt[vac_first == 1], size=1) +
   geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
   geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
   #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
   
-  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2) +
-  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"]) +
-  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
-  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
+  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2, alpha=alphafactor) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"], alpha=alphafactor) +
+  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag)) +
+#  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
+#  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
   geom_limits(lims) +
   facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
   
