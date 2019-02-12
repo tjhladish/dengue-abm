@@ -65,7 +65,7 @@ p <- ggplot(
 		alpha=0.5, show.legend = F, inherit.aes = F
 	) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(aes(fill=catchup), data=plot.dt[pchstride(year)], size=pchsize) +
+  geom_pchline(dt = plot.dt, mapping = aes(fill=catchup)) +
   scale_size_vectorcontrol(breaks=vc_lvls[2:4], guide=gds(
     1,
     override.aes=list(

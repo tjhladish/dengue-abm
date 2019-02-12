@@ -28,11 +28,15 @@ p<-ggplot(
   real.dt
 ) + theme_minimal() +
   aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage)) +
-  geom_line(data=stat.eff.dt[variable == "ind.eff"], color="#AAAAFF", show.legend = F) +
-  geom_point(data=stat.eff.dt[variable == "ind.eff"][pchstride(year)], size=pchsize, fill="white", color="#55CC55", show.legend = F) +
+
+  geom_line(data=stat.eff.dt[variable == "ind.eff"], color=light_cols["vc"], show.legend = F) +
+  geom_pchline(dt=stat.eff.dt[variable == "ind.eff"], fill="white", color=light_cols["vac"], show.legend = F) +
+
   geom_line(data=real.dt[scenario == "vc"]) +
+
   geom_line(data=real.dt[scenario != "vc"]) +
-  geom_point(data=real.dt[pchstride(year)], size=pchsize, fill="white", show.legend = F) +
+  geom_pchline(dt=real.dt, fill="white", show.legend = F) +
+
   scale_color_scenario(guide="none") +
   scale_size_vectorcontrol(guide="none") +
   scale_shape_vaccine(guide="none") +

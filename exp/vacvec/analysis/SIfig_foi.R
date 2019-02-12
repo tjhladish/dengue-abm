@@ -24,7 +24,7 @@ p<-ggplot(
   aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage)) +
   geom_ribbon(aes(color=NULL, fill=scenario, ymax=hi, ymin=lo), alpha=0.5) +
   geom_line() +
-  geom_point(data=stat.eff.dt[pchstride(year)], size=pchsize, fill="white", show.legend = F) +
+  geom_pchline(dt=stat.eff.dt, fill="white", show.legend = F) +
   scale_color_scenario(guide="none", aesthetics = c("color","fill")) +
   scale_size_vectorcontrol(guide="none") +
   scale_shape_vaccine(guide="none") +

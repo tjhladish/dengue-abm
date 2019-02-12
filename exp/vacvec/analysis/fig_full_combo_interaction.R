@@ -86,8 +86,8 @@ p <- ggplot(plot2.dt) + aes(
 	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels) +
 	geom_altribbon(plot2.dt, withlines = F) +
 	geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]) +
-  geom_point(aes(y=ycmp), data=plot2.dt[pchstride(x-1) & catchup == "routine"], fill="white", alpha=1, size=pchsize) +
-  geom_point(aes(y=ycmp), data=plot2.dt[pchstride(x-1) & catchup != "routine"], fill="black", alpha=1, size=pchsize) +
+  geom_pchline(dt=plot2.dt[catchup == "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="white", alpha=1) +
+  geom_pchline(dt=plot2.dt[catchup != "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="black", alpha=1) +
 	scale_year() + scale_effectiveness() +
 	scale_fill_interaction(
 		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))

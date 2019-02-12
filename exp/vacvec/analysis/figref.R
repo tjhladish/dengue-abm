@@ -150,7 +150,12 @@ facet_labels <- labeller(
   catchup = cu_labels,
   vaccine = vac_labels,
   vac_first = c(`0`="TIRS First", `1`=paste0(vac_labels["edv"]," First")),
-  foi = c(`0.5`="50%",`1`="100% (Fitted Reference)",`1.5`="150%")
+  foi = function(f) {
+    res <- sprintf("%i%%", 100*as.numeric(f))
+    res[f=="1"] <- paste0(res[f=="1"], " (Fitted Reference)")
+    res
+  },
+  intervention=c(single="Single Interventions",combined="Combined Interventions")
 )
 
 TIRSfacettitle <- list(
@@ -204,9 +209,9 @@ labels.dt <- data.table(
 pchstride <- function(yr, offset=0, stride=5) ((yr+1+offset) %% stride == 0) | yr == offset
 invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset)
 
-geom_pchline <- function(dt, offset=0, stride=5, ...) list(
-  geom_point(data=dt[invpchstride(year)], size=smallpch, ...),
-  geom_point(data=dt[pchstride(year)], size=pchsize, ...)
+geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), ...) list(
+  geom_point(data=dt[invpchstride(eval(var))], size=smallpch, ...),
+  geom_point(data=dt[pchstride(eval(var))], size=pchsize, ...)
 )
 
 pchsize <- 2
