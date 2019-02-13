@@ -35,7 +35,12 @@ mlt$variable <- NULL
 
 rdt <- dcast.data.table(mlt, serial + year + foi ~ measure, value.var = "value")
 
-intros <- fread(args[3], col.names = c("serial", "year", "intro.i", "intro.s"))[, year := year - 101L][year >= 0]
+intros <- fread(args[3], col.names = c("serial", "year", "intro.i", "intro.s"))[, year := year - 101L][year >= 0][,.(
+	intro.i = unique(intro.i), intro.s = unique(intro.s)
+), keyby=.(serial, year)]
+
+# TODO assert check here
+
 plot.dt <- rdt[
   intros,
   on=.(serial, year), nomatch = 0
