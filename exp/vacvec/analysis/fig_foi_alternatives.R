@@ -59,7 +59,13 @@ pbase <- ggplot(
   	legend.box.spacing = unit(2.5, "pt")
   )
 
-ppchleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
+labs <- scn_labels
+labs["vc"] <- paste0(vc_labels["75"]," ",scn_labels["vc"])
+labs["vac"] <- paste0("Routine ", vac_labels["cmdvi"]," Only")
+labs["vc+vac"] <- paste0("TIRS"," & ",vac_labels["cmdvi"])
+labs["vc+naive"] <- labs["vac+naive"] <- paste0("Naive ",labs["vc+vac"])
+
+ppchleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(
 		shape = c(vac_pchs["cmdvi"],NA,vac_pchs["cmdvi"],vac_pchs["cmdvi"]),
 		linetype = 0,
@@ -67,7 +73,7 @@ ppchleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
 	)
 )))
 
-pltyleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
+pltyleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(
 		shape = NA,
 		linetype = "solid",
@@ -75,6 +81,6 @@ pltyleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
 	)
 )))
 
-p <- ggdraw(pbase + scale_color_scenario(guide="none")) + draw_grob(pltyleg, x=0.1, y=.2) + draw_grob(ppchleg, x=0.1, y=.2)
+p <- ggdraw(pbase + scale_color_scenario(guide="none")) + draw_grob(pltyleg, x=0.05, y=.2) + draw_grob(ppchleg, x=0.05, y=.2)
 
 save_plot(tar, p, base_height = baseh*1.125, base_width = 3.75, ncol = 3)
