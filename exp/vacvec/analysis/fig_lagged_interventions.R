@@ -55,14 +55,16 @@ ref.combo <- rbind(
 ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
 
 lims <- combo.dt[,.(
-  year=-1, med=c(floor(min(med)*10)/10, 1)
+  year=-1, med=c(round(min(med)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
 alphafactor <- 1/3.5
 
+fat <- 4/3
+
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
   adds +
-  geom_line(data=ref.combo, size=vc_sizes["75"]*2, linetype = "21") +
+  geom_line(data=ref.combo, size=vc_sizes["75"]*fat, linetype = "21") +
   geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2, alpha=alphafactor) +
   geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"], alpha=alphafactor) +
 	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], color=scn_cols["vac"]) +
@@ -96,7 +98,7 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(i
     guide=guide_legend(label.position = "top", override.aes = list(
     	linetype = c(reference="21", observed="solid"),
     	shape = c(reference=NA, observed=vac_nofill_pchs["edv"]),
-    	size = c(vc_sizes["75"]*2, vc_sizes["75"]/2)
+    	size = c(vc_sizes["75"]*fat, vc_sizes["75"]/2)
     ))
   )
 
