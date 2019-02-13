@@ -29,8 +29,10 @@ lims <- combo.dt[,.(
   year=-1, med=c(floor(min(lo)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
+fat <- 4/3
+
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_first) +
-  geom_line(data=ref.combo, size=vc_sizes["75"]*2, linetype="21") +
+  geom_line(data=ref.combo, size=vc_sizes["75"]*fat, linetype="21") +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
     combo.dt[vac_first == 0 & year < ivn_lag], fill=scn_cols["vc"], alpha=0.5
   ) +
