@@ -68,7 +68,7 @@ scale_pchlty_vaccine <- function(...) list(
 
 cu_lvls <- c("vac-only", "vc+vac", "routine", "none")
 cu_name <- "Vaccine Campaign"
-cu_labels <- c("inc. Catchup", "inc. Catchup", "Routine-Only", "None")
+cu_labels <- c("w/ Catchup", "w/ Catchup", "Routine-Only", "None")
 cu_fills <- c(scn_cols[c("vac","vc+vac")], "white", NA)
 cu_alpha <- c(1, 1, 0.3, 0.3)
 names(cu_labels) <- names(cu_fills) <- names(cu_lvls) <- cu_lvls
