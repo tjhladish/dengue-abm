@@ -62,45 +62,45 @@ alphafactor <- 1/3.5
 
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
   adds +
-  geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
-  geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
-#  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
+  geom_line(data=ref.combo, size=vc_sizes["75"]*2, linetype = "21") +
   geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2, alpha=alphafactor) +
   geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"], alpha=alphafactor) +
-  geom_point(data=combo.dt[vac_first == 1], size=1) +
-  geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
-  geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
-  #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
-  
+	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], color=scn_cols["vac"]) +
+  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag]) +
   geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2, alpha=alphafactor) +
   geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"], alpha=alphafactor) +
   geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag)) +
-#  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
-#  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
   geom_limits(lims) +
-  facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
+  facet_grid(vac_first ~ measure, labeller = facet_labels) +
   
 #  scale_fill_interaction(guide="none") +
   scale_year() +
-  scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
+  scale_effectiveness(name="Effectiveness", expand = c(0.1, 0, 0, 0)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
   theme(
-    legend.direction = "horizontal",
-    legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
+    legend.direction = "vertical",
+    # legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
     legend.text = element_text(size=rel(0.6)),
     legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
     panel.spacing.y = unit(20,"pt"),
     panel.spacing.x = unit(15,"pt"),
     strip.text = element_text(size=rel(0.6)),
-    strip.text.y = element_text(angle=90)
+    strip.text.y = element_text(angle=90),
+    legend.key.width = unit(30, "pt")
   ) +
   scale_colour_manual(name=NULL,
     values=c(reference="grey",observed="black"),
-    labels=c(reference="Simultaneous Reference", observed="Lagged Result")
+    breaks=c("reference", "observed"),
+    labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
+    guide=guide_legend(label.position = "top", override.aes = list(
+    	linetype = c(reference="21", observed="solid"),
+    	shape = c(reference=NA, observed=vac_nofill_pchs["edv"]),
+    	size = c(vc_sizes["75"]*2, vc_sizes["75"]/2)
+    ))
   )
 
 # TODO dump shaded area, add intervention annotations, change height aspect
 
-save_plot(tar, p, base_height = 1.25*hmult, base_width = 3.25*1.25, ncol = 2, nrow = 2)
+save_plot(tar, p, base_height = baseh*0.55, base_width = 3.75, ncol = 2.5, nrow = 2)
 #plotutil(p, h=3, w=5.75, tar)
