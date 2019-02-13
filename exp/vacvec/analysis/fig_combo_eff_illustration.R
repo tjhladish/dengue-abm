@@ -92,7 +92,8 @@ naive.eff.edv.many <- naive.eff.edv[invpchstride(year)]
 
 naive.labs <- paste("75% TIRS",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
-naive.leg.name <- "Naive Expectation"
+naive.leg.name <- "Naive Combination"
+sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
@@ -112,12 +113,17 @@ annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), 
   geom_line(aes(color="vc")) +
   geom_pchline(naive.eff, mapping = aes(color="vac"), fill=light_cols["vac"]) +
   scale_size_vectorcontrol(guide="none") + legtheme
-  
+
 annopchp <- annopbase +
   scale_color_scenario(values=light_cols, guide="none") +
   scale_shape_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
     guide=guide_legend(override.aes=list(color=light_cols["vac"]))
   )
+
+simpchleg <- get_legend(annopbase + scale_color_scenario(values=rep(scn_cols["vc+vac"], 2), guide="none") +
+	scale_shape_vaccine(sim.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
+		guide=guide_legend(override.aes=list(color=scn_cols["vc+vac"], fill=scn_cols["vc+vac"]))
+	))
 
 annolinep <- annopbase +
   scale_color_scenario(
@@ -126,6 +132,15 @@ annolinep <- annopbase +
     guide=guide_legend(override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
   ) +
   scale_shapenofill_vaccine(guide = "none")
+
+simlineleg <- get_legend(annopbase +
+	scale_color_scenario(
+		name = sim.leg.name,
+		labels = naive.line.labs,
+		guide=guide_legend(override.aes = list(color = scn_cols["vc+vac"], shape=NA, size=vc_sizes["75"]))
+	) +
+	scale_shapenofill_vaccine(guide = "none"))
+
 
 annopchleg <- get_legend(annopchp)
 annolineleg <- get_legend(annolinep)
@@ -250,7 +265,7 @@ resp <- ggplot(
   geom_line(linejoin = "mitre", lineend = "butt") +
   geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
 	geom_pchline(plot.dt[intervention == "combined"], fill=scn_cols["vc+vac"]) +
-  geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28") +
+  geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28", fill="grey28") +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"], fontface="bold") +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"], fontface="bold") +
   scale_size_vectorcontrol(guide = "none") +
@@ -270,12 +285,14 @@ resp <- ggplot(
     legend.position = "none"
   )
 
-leg.xy <- list(x=0.5,y=0.42)
-anleg.xy <- list(x=0.3,y=0.08)
+leg.xy <- list(x=0.65,y=0.43)
+anleg.xy <- list(x=0.27,y= 0.08)
+simleg.xy <- list(x=0.27,y= -0.4)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
-  draw_grob(annolineleg, x=anleg.xy$x, y=anleg.xy$y) + draw_grob(annopchleg, x=anleg.xy$x, y=anleg.xy$y)
+  draw_grob(annolineleg, x=anleg.xy$x, y=anleg.xy$y) + draw_grob(annopchleg, x=anleg.xy$x, y=anleg.xy$y) +
+	draw_grob(simlineleg, x=simleg.xy$x, y=simleg.xy$y) + draw_grob(simpchleg, x=simleg.xy$x, y=simleg.xy$y)
 
 ## TODO tried outlining points in white? looks meh?
 
