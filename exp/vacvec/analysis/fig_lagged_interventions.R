@@ -62,7 +62,7 @@ alphafactor <- 1/3.5
 
 fat <- 4/3
 
-p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
+pbase <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
   adds +
   geom_line(data=ref.combo, size=vc_sizes["75"]*fat, linetype = "21") +
   geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2, alpha=alphafactor) +
@@ -90,8 +90,9 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(i
     strip.text = element_text(size=rel(0.6)),
     strip.text.y = element_text(angle=90),
     legend.key.width = unit(30, "pt")
-  ) +
-  scale_colour_manual(name=NULL,
+  )
+
+p <- base + scale_colour_manual(name=NULL,
     values=c(reference="grey",observed="black"),
     breaks=c("reference", "observed"),
     labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
@@ -101,6 +102,8 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(i
     	size = c(vc_sizes["75"]*fat, vc_sizes["75"]/2)
     ))
   )
+
+pleg <- get_legend(p)
 
 # TODO dump shaded area, add intervention annotations, change height aspect
 
