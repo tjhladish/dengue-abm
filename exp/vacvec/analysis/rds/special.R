@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 })
 
 # developer args
-args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response-expanded.sqlite', "~/Dropbox/who/mpeak_intros-tmp2.out")
+args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response-expanded.sqlite', "~/Dropbox/who/mpeak_intros-expanded.out")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
@@ -42,8 +42,8 @@ plot.dt <- rdt[
 ]
 
 # plot.dt[, intro.s := floor((s/i)*intro.i) ]
-# plot.dt[, local.i := i - intro.i ]
-# plot.dt[, local.s := s - intro.s ]
+plot.dt[, local.i := i - intro.i ]
+plot.dt[, local.s := s - intro.s ]
 
 res <- melt.data.table(plot.dt, id.vars = c("serial","year","foi"))[,
   dtquantiles(probs = c(.25,.5,.75), value, c("lo","med", "hi")),
