@@ -72,7 +72,7 @@ limits.dt <- plot.dt[,
 scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
 scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), as.character(Var2)), "75% TIRS")
 scn2_cols <- scn_cols[gsub("^(.+)\\..+$","\\1",scn2_lvls)]
-scn2_pchs <- vac_nofill_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
+scn2_pchs <- vac_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
 names(scn2_labels) <- names(scn2_cols) <- names(scn2_pchs) <- scn2_lvls
 
 scale_color_scenario2 <- scale_generator(
@@ -110,12 +110,12 @@ legtheme <- theme(
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
   geom_line(aes(color="vc")) +
-  geom_pchline(naive.eff, mapping = aes(color="vac")) +
+  geom_pchline(naive.eff, mapping = aes(color="vac"), fill=light_cols["vac"]) +
   scale_size_vectorcontrol(guide="none") + legtheme
   
 annopchp <- annopbase +
   scale_color_scenario(values=light_cols, guide="none") +
-  scale_shapenofill_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
+  scale_shape_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
     guide=guide_legend(override.aes=list(color=light_cols["vac"]))
   )
 
@@ -153,8 +153,7 @@ p1shared <- ggplot(
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 ) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_pchline(plot.dt[intervention == "single"]) +
-#  geom_point(data=plot.dt[intervention == "single"][pchstride(year)], size=pchsize) +
+  geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
   scale_size_vectorcontrol(guide = "none") +
   scale_fill_catchup(guide="none", na.value=NA) + legtheme
 
@@ -249,16 +248,16 @@ resp <- ggplot(
   geom_altribbon(plot2.dt, withlines = F) +
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_pchline(plot.dt) +
+  geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
+	geom_pchline(plot.dt[intervention == "combined"], fill=scn_cols["vc+vac"]) +
   geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28") +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"], fontface="bold") +
   geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"], fontface="bold") +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
-  scale_shapenofill_vaccine(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
   scale_fill_interaction(guide="none") +
-  scale_year() +
-  scale_effectiveness() +
+  scale_year() + scale_effectiveness() +
   coord_cartesian(clip = "off") +
   theme(
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),

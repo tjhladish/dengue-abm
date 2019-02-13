@@ -104,7 +104,7 @@ scale_vaccu_interaction <- {
 		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = rev(names(pch.labels))
 	) list(
 		scale_pch_vaccu(breaks=pch.breaks, labels=pch.labels,
-			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks)], size=1), ...)
+			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks)], size=pchsize), ...)
 		),
 		scale_fill_vaccu(breaks=vacu_lvls, guide="none")
 	)
@@ -209,13 +209,12 @@ labels.dt <- data.table(
 pchstride <- function(yr, offset=0, stride=5) (((yr+1+offset) %% stride == 0) & yr > offset) | yr == offset
 invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset) & yr > offset
 
-geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), ...) list(
-  geom_point(data=dt[invpchstride(eval(var), eval(offset), stride)], size=smallpch, ...),
-  geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=pchsize, ...)
-)
-
 pchsize <- 2
 smallpch <- 0.5
 
+geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), sz=c(small=smallpch, large=pchsize), ...) list(
+  geom_point(data=dt[invpchstride(eval(var), eval(offset), stride)], size=sz["small"], ...),
+  geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=sz["large"], ...)
+)
 
 save(list = ls(), file = tail(.args, 1))
