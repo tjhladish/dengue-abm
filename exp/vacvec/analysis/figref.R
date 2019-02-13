@@ -160,7 +160,7 @@ facet_labels <- labeller(
 
 TIRSfacettitle <- list(
   ggtitle("TIRS Coverage"),
-  theme(plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()))
+  theme(plot.title = element_text(size=rel(1.1), hjust = 0.5, margin=margin()))
 )
 FOIfacettitle <- list(
   ggtitle("Mosquito Population"),
@@ -212,9 +212,9 @@ invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0
 pchsize <- 2
 smallpch <- 0.5
 
-geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), sz=c(small=smallpch, large=pchsize), ...) list(
-  geom_point(data=dt[invpchstride(eval(var), eval(offset), stride)], size=sz["small"], ...),
-  geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=sz["large"], ...)
+geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), sz=c(small=smallpch, large=pchsize), show.legend=T, ...) list(
+  geom_point(data=dt[invpchstride(eval(var), eval(offset), stride)], size=sz["small"], show.legend = F, ...),
+  geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=sz["large"], show.legend = show.legend, ...)
 )
 
 baseh <- 2.75
