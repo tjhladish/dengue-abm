@@ -217,4 +217,6 @@ geom_pchline <- function(dt, offset=0, stride=5, var=expression(year), sz=c(smal
   geom_point(data=dt[pchstride(eval(var), eval(offset), stride)], size=sz["large"], ...)
 )
 
+baseh <- 2.75
+
 save(list = ls(), file = tail(.args, 1))

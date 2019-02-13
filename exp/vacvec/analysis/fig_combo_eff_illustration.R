@@ -278,16 +278,16 @@ resp <- ggplot(
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
     strip.background = element_blank(),
     strip.text.y = element_blank(),
-  #  axis.title = element_text(size=rel(0.7)),
+    axis.title = element_text(size=rel(0.9)),
   #  axis.text = element_text(size=rel(0.7)),
   #  strip.text.y = element_text(angle=90),
     plot.margin = margin(t = unit(6,"pt"), r = unit(18,"pt")),
     legend.position = "none"
   )
 
-leg.xy <- list(x=0.65,y=0.43)
-anleg.xy <- list(x=0.27,y= 0.08)
-simleg.xy <- list(x=0.27,y= -0.4)
+leg.xy <- list(x=0.65,y=0.405)
+anleg.xy <- list(x=0.26,y= 0.09)
+simleg.xy <- list(x=0.26,y= -0.385)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
@@ -296,6 +296,6 @@ p <- ggdraw(resp) +
 
 ## TODO tried outlining points in white? looks meh?
 
-save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = 3.25)
+save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
 
 #plotutil(p, h=4.5, w=2.75, tar)

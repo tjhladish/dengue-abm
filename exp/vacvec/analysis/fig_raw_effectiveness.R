@@ -95,7 +95,7 @@ basep <- ggplot(
 	rbind(vac.eff, vec.eff)
 ) + facet_grid(scenario ~ ., labeller = facet_labels) + shared +
 	theme(
-	  # axis.title = element_text(size=rel(0.7)),
+	  axis.title = element_text(size=rel(0.9)),
 	  # axis.text = element_text(size=rel(0.7)),
 		legend.position = "none",
 		panel.spacing.y = unit(15,"pt"),
@@ -107,8 +107,8 @@ basep <- ggplot(
 	scale_vaccu_interaction() + 
 	scale_effectiveness() + coord_cartesian(clip="off")
 
-p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.2, y=-0.05)
+p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.2, y=-0.07)
 
-save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = 3.25)
+save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
 
 # plotutil(p, h=4.5, w=2.75, tar)
