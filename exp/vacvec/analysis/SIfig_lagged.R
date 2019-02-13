@@ -30,8 +30,7 @@ lims <- combo.dt[,.(
 ), by=.(vac_first, measure)]
 
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_first) +
-  geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
-  geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
+  geom_line(data=ref.combo, size=vc_sizes["75"]*2, linetype="21") +
   geom_ribbon(aes(color=NULL, ymax=hi, ymin=lo, fill=obs),
     combo.dt[vac_first == 0 & year < ivn_lag], fill=scn_cols["vc"], alpha=0.5
   ) +
@@ -42,25 +41,21 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_firs
   #  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
   geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2) +
   geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"]) +
-  geom_point(data=combo.dt[vac_first == 1], size=1) +
-  geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
-  geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
-  #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
-  
+	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], color=scn_cols["vac"]) +
+	geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag]) +	
   geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2) +
   geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"]) +
-  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
-  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
+	geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag)) +
   geom_limits(lims) +
   ggtitle("Combined Intervention Stagger") +
   facet_grid(measure ~ ivn_lag, labeller = labeller(
     measure = c(eff="Annual Eff.", c.eff="Cumulative Eff."),
     ivn_lag = function(lag) sprintf("%s years", lag)
-  ), scales = "free_y") +
+  )) +
   
 #  scale_fill_interaction(guide="none") +
   scale_year() +
-  scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
+  scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.25)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
   theme(
     plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()),

@@ -83,7 +83,7 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(i
     legend.text = element_text(size=rel(0.6)),
     legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
-    panel.spacing.y = unit(20,"pt"),
+    panel.spacing.y = unit(12,"pt"),
     panel.spacing.x = unit(15,"pt"),
     strip.text = element_text(size=rel(0.6)),
     strip.text.y = element_text(angle=90),

@@ -206,8 +206,8 @@ labels.dt <- data.table(
   )
 )
 
-pchstride <- function(yr, offset=0, stride=5) (((yr+1+offset) %% stride == 0) & yr > offset) | yr == offset
-invpchstride <- function(yr, offset=0, stride=5) !(((yr+1+offset) %% stride == 0) | yr == offset) & yr > offset
+pchstride <- function(yr, offset=0, stride=5) (((yr+1) %% stride == 0) & yr > offset) | yr == offset
+invpchstride <- function(yr, offset=0, stride=5) !(((yr+1) %% stride == 0) | yr == offset) & yr > offset
 
 pchsize <- 2
 smallpch <- 0.5

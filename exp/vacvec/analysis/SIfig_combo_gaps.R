@@ -80,8 +80,8 @@ p <- ggplot(cmb.eff) + aes(
     alpha=0.5, show.legend = F
   ) +
   geom_line(alpha=1, size=vc_sizes["0"]) +
-  geom_pchline(dt=cmb.eff[catchup == "routine"], fill="white", alpha=1) +
-  geom_pchline(dt=cmb.eff[catchup != "routine"], fill="black", alpha=1) +
+  geom_pchline(dt=cmb.eff[catchup == "routine"], fill="white", alpha=1, show.legend = F) +
+  geom_pchline(dt=cmb.eff[catchup != "routine"], fill="black", alpha=1, show.legend = F) +
   scale_year() + scale_y_continuous(name="Interaction") +
   scale_shape_vaccine(guide = "none") +
   scale_color_scenario(guide = "none", value="black") +
