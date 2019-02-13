@@ -17,19 +17,21 @@ load(.args[2])
 #  pch = vaccine mechanism (none, dengvaxia, edv)
 #  pch fill = catchup (routine vs catchup)
 
-# SCENARIO DIMENSIONING
-
-# scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
-scn_name <- "Intervention Scenario"
-scn_labels <- c("None", "TIRS Only", "Vaccine Only", "Combination")
-scn_cols <- c("yellow","blue","darkgreen","black")
-names(scn_labels) <- names(scn_cols) <- names(scn_lvls) <- scn_lvls
-scale_color_scenario <- scale_generator(
-  "color", scn_name, scn_labels, scn_cols
-)
 
 light_cols <- c("#AAAAFF","#77AA77")
 names(light_cols) <- c("vc", "vac")
+
+# SCENARIO DIMENSIONING
+
+# scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
+names(scn_lvls) <- scn_lvls
+scn_name <- "Intervention Scenario"
+scn_labels <- c("None", "TIRS Only", "Vaccine Only", "Combination", "Naive Expectation", "Naive Expectation")
+scn_cols <- c("yellow","blue","darkgreen","black", light_cols["vc"], light_cols["vac"])
+names(scn_labels) <- names(scn_cols) <- c(scn_lvls, "vc+naive", "vac+naive")
+scale_color_scenario <- scale_generator(
+  "color", scn_name, scn_labels, scn_cols
+)
 
 # VC COVERAGE DIMENSIONING
 
@@ -165,8 +167,8 @@ TIRSfacettitle <- list(
 FOIfacettitle <- list(
   ggtitle("Mosquito Population"),
   theme(
-    plot.title = element_text(size=rel(0.7), hjust = 0.5, margin=margin()),
-    strip.text = element_text(size=rel(0.7))
+    plot.title = element_text(size=rel(1), hjust = 0.5, margin=margin()),
+    strip.text = element_text(size=rel(1))
   )
 )
 

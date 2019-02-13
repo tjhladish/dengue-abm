@@ -24,28 +24,57 @@ stat.eff.dt[scenario == "vc", vaccine := "none"]
 
 real.dt <- stat.eff.dt[variable %in% c("combo.eff","vac.eff","vec.eff")]
 
-p<-ggplot(
+leg.sz <- 0.8
+
+pbase <- ggplot(
   real.dt
 ) + theme_minimal() +
-  aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage)) +
+  aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage), fill=catchup) +
 
-  geom_line(data=stat.eff.dt[variable == "ind.eff"], color=light_cols["vc"], show.legend = F) +
-  geom_pchline(dt=stat.eff.dt[variable == "ind.eff"], fill="white", color=light_cols["vac"], show.legend = F) +
-
+  geom_line(mapping=aes(color="vc+naive"), data=stat.eff.dt[variable == "ind.eff"]) +
+  geom_pchline(dt=stat.eff.dt[variable == "ind.eff"], color=light_cols["vac"]) +
   geom_line(data=real.dt[scenario == "vc"]) +
 
   geom_line(data=real.dt[scenario != "vc"]) +
-  geom_pchline(dt=real.dt, fill="white", show.legend = F) +
-
-  scale_color_scenario(guide="none") +
+  geom_pchline(dt=real.dt, fill="white") +
   scale_size_vectorcontrol(guide="none") +
   scale_shape_vaccine(guide="none") +
   scale_year() +
   scale_effectiveness() +
+	scale_fill_catchup(guide="none") +
   facet_grid(. ~ foi, labeller=facet_labels) +
   FOIfacettitle +
   coord_cartesian(clip="off", ylim=c(-.125,1), xlim=c(0,40)) + theme(
     panel.spacing.x = unit(12, "pt")
+  ) + theme(
+  	axis.title = element_text(size=rel(1)),
+  	axis.text = element_text(size=rel(0.9)),
+  	legend.margin = margin(), legend.spacing = unit(25, "pt"),
+  	legend.text = element_text(size=rel(leg.sz)),
+  	legend.title = element_text(size=rel(leg.sz)), legend.title.align = 0.5,
+  	panel.spacing.x = unit(15, "pt"),
+  	strip.text = element_text(size=rel(1)),
+  	strip.text.y = element_text(angle=90),
+  	legend.key.height = unit(1,"pt"),
+  	legend.box.spacing = unit(2.5, "pt")
   )
 
-save_plot(tar, p, base_height = 3, ncol = 2)
+ppchleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
+	override.aes = list(
+		shape = c(vac_pchs["cmdvi"],NA,vac_pchs["cmdvi"],vac_pchs["cmdvi"]),
+		linetype = 0,
+		color = c(scn_cols["vac"], NA, scn_cols["vac+naive"], scn_cols["vc+vac"])
+	)
+)))
+
+pltyleg <- get_legend(pbase + scale_color_scenario(guide=guide_legend(
+	override.aes = list(
+		shape = NA,
+		linetype = "solid",
+		size = c(vc_sizes["0"], rep(vc_sizes["75"], 3))
+	)
+)))
+
+p <- ggdraw(pbase + scale_color_scenario(guide="none")) + draw_grob(pltyleg, x=0.1, y=.2) + draw_grob(ppchleg, x=0.1, y=.2)
+
+save_plot(tar, p, base_height = baseh*1.125, base_width = 3.75, ncol = 3)
