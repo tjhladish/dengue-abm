@@ -52,7 +52,7 @@ ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 0 ]
 )[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
 
-ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
+ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, scenario := "simref" ][, ivn_lag := 0][, obs := "reference" ]
 
 lims <- combo.dt[,.(
   year=-1, med=c(round(min(med)*10)/10, 1)
@@ -62,18 +62,30 @@ alphafactor <- 1/3.5
 
 fat <- 4/3
 
-pbase <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
-  adds +
-  geom_line(data=ref.combo, size=vc_sizes["75"]*fat, linetype = "21") +
-  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2, alpha=alphafactor) +
-  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"], alpha=alphafactor) +
-	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], color=scn_cols["vac"]) +
-  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag]) +
-  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2, alpha=alphafactor) +
-  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"], alpha=alphafactor) +
-  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag)) +
+pbase <- ggplot() + theme_minimal() + aes(
+  x=year+1, y=med, color=scenario, group=factor(ivn_lag), linetype=obs
+) +
+  adds + facet_grid(vac_first ~ measure, labeller = facet_labels) +
+  geom_line(data=ref.combo, size=vc_sizes["75"]*fat) +
+  geom_line(data=combo.dt[vac_first == 1 & year >= (ivn_lag-1)],
+    mapping=aes(color="vc+vac"), size=vc_sizes["75"]/2, alpha=alphafactor
+  ) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag],
+    mapping=aes(color="vac"), size=vc_sizes["75"]/2, alpha=alphafactor) +
+	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag],
+	  mapping=aes(color="vac")
+	) +
+  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag],
+    mapping=aes(color="vc+vac")
+  ) +
+  geom_line(data=combo.dt[vac_first == 0 & year >= (ivn_lag-1)],
+    mapping=aes(color="vc+vac"), size=vc_sizes["75"]/2, alpha=alphafactor
+  ) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag],
+    mapping=aes(color="vc"), size=vc_sizes["75"]/2, alpha=alphafactor
+  ) +
+  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag), mapping=aes(color="vc+vac")) +
   geom_limits(lims) +
-  facet_grid(vac_first ~ measure, labeller = facet_labels) +
   
 #  scale_fill_interaction(guide="none") +
   scale_year() +
@@ -90,18 +102,26 @@ pbase <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=fact
     strip.text = element_text(size=rel(0.6)),
     strip.text.y = element_text(angle=90),
     legend.key.width = unit(30, "pt")
-  )
+  ) + scale_linetype_manual(guide = "none", values = c(reference="21", observed="solid"))
 
-p <- base + scale_colour_manual(name=NULL,
-    values=c(reference="grey",observed="black"),
-    breaks=c("reference", "observed"),
-    labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
-    guide=guide_legend(label.position = "top", override.aes = list(
-    	linetype = c(reference="21", observed="solid"),
-    	shape = c(reference=NA, observed=vac_nofill_pchs["edv"]),
-    	size = c(vc_sizes["75"]*fat, vc_sizes["75"]/2)
-    ))
+p <- pbase + scale_color_scenario(guide=guide_legend(
+  override.aes = list(
+    shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
+    fill=c(NA,scn_cols["vac"],NA,scn_cols["vc+vac"]),
+    linetype=c("21","solid","solid","solid")
   )
+))
+  
+  # scale_colour_manual(name=NULL,
+  #   values=c(reference="grey",observed="black"),
+  #   breaks=c("reference", "observed"),
+  #   labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
+  #   guide=guide_legend(label.position = "top", override.aes = list(
+  #   	linetype = c(reference="21", observed="solid"),
+  #   	shape = c(reference=NA, observed=vac_nofill_pchs["edv"]),
+  #   	size = c(vc_sizes["75"]*fat, vc_sizes["75"]/2)
+  #   ))
+  # )
 
 pleg <- get_legend(p)
 
