@@ -58,38 +58,27 @@ lims <- combo.dt[,.(
   year=-1, med=c(round(min(med)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
-alphafactor <- 1/3.5
+alphafactor <- 1/2.5
 
 fat <- 4/3
 
+ref.sizes <- c(reference=fat,observed=1/2)*vc_sizes["75"]
+
+
 pbase <- ggplot() + theme_minimal() + aes(
-  x=year+1, y=med, color=scenario, group=factor(ivn_lag), linetype=obs
-) +
-  adds + facet_grid(vac_first ~ measure, labeller = facet_labels) +
-  geom_line(data=ref.combo, size=vc_sizes["75"]*fat) +
-  geom_line(data=combo.dt[vac_first == 1 & year >= (ivn_lag-1)],
-    mapping=aes(color="vc+vac"), size=vc_sizes["75"]/2, alpha=alphafactor
-  ) +
-  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag],
-    mapping=aes(color="vac"), size=vc_sizes["75"]/2, alpha=alphafactor) +
-	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag],
-	  mapping=aes(color="vac")
-	) +
-  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag],
-    mapping=aes(color="vc+vac")
-  ) +
-  geom_line(data=combo.dt[vac_first == 0 & year >= (ivn_lag-1)],
-    mapping=aes(color="vc+vac"), size=vc_sizes["75"]/2, alpha=alphafactor
-  ) +
-  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag],
-    mapping=aes(color="vc"), size=vc_sizes["75"]/2, alpha=alphafactor
-  ) +
-  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag), mapping=aes(color="vc+vac")) +
+  x=year+1, y=med, color=scenario, group=factor(ivn_lag),
+  linetype=obs, size=obs, alpha=obs
+) + adds + facet_grid(vac_first ~ measure, labeller = facet_labels) +
   geom_limits(lims) +
-  
-#  scale_fill_interaction(guide="none") +
-  scale_year() +
-  scale_effectiveness(name="Effectiveness", expand = c(0.1, 0, 0, 0)) +
+  geom_line(data=ref.combo) +
+  geom_line(data=combo.dt[vac_first == 1 & year >= (ivn_lag-1)], mapping=aes(color="vc+vac")) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], mapping=aes(color="vac")) +
+	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], mapping=aes(color="vac"), alpha=1) +
+  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag], mapping=aes(color="vc+vac"), alpha=1) +
+  geom_line(data=combo.dt[vac_first == 0 & year >= (ivn_lag-1)], mapping=aes(color="vc+vac")) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], mapping=aes(color="vc")) +
+  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag), mapping=aes(color="vc+vac"), alpha=1) +
+  scale_year() + scale_effectiveness(name="Effectiveness", expand = c(0.1, 0, 0, 0)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
   theme(
     legend.direction = "vertical",
@@ -97,35 +86,38 @@ pbase <- ggplot() + theme_minimal() + aes(
     legend.text = element_text(size=rel(0.6)),
     legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
+    axis.title = element_text(size=rel(0.9)),
     panel.spacing.y = unit(12,"pt"),
     panel.spacing.x = unit(15,"pt"),
-    strip.text = element_text(size=rel(0.6)),
+    strip.text = element_text(size=rel(0.8)),
     strip.text.y = element_text(angle=90),
-    legend.key.width = unit(30, "pt")
-  ) + scale_linetype_manual(guide = "none", values = c(reference="21", observed="solid"))
+    legend.key.width = unit(20, "pt")
+  ) +
+  scale_linetype_manual(guide = "none", values = c(reference="21", observed="solid")) +
+  scale_size_manual(guide="none", values = ref.sizes) +
+  scale_alpha_manual(guide="none", values = c(reference=1, observed=alphafactor))
 
-p <- pbase + scale_color_scenario(guide=guide_legend(
-  override.aes = list(
-    shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
-    fill=c(NA,scn_cols["vac"],NA,scn_cols["vc+vac"]),
-    linetype=c("21","solid","solid","solid")
-  )
-))
+pleg <- get_legend(pbase + scale_color_scenario(
+  name=gsub(" ","\n", scn_name),
+  guide=guide_legend(
+    override.aes = list(
+      shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
+      linetype=c("21","blank","blank","blank"),
+      size=c(ref.sizes[1],0,0,0)
+    )
+)))
+
+pleg2 <- get_legend(pbase + scale_color_scenario(
+  name=gsub(" ","\n", scn_name),
+  guide=guide_legend(
+    override.aes = list(
+      shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
+      fill=c(NA,scn_cols["vac"],NA,scn_cols["vc+vac"]),
+      linetype=c("blank","solid","solid","solid")
+    )
+)))
+
+p <- ggdraw(pbase + scale_color_scenario(guide="none") + theme(plot.margin = margin(r=72))) +
+  draw_grob(pleg, x=0.44, y=0.02) + draw_grob(pleg2, x=0.44, y=0.02)
   
-  # scale_colour_manual(name=NULL,
-  #   values=c(reference="grey",observed="black"),
-  #   breaks=c("reference", "observed"),
-  #   labels=c(reference="Simultaneous Reference", observed="Lagged Result"),
-  #   guide=guide_legend(label.position = "top", override.aes = list(
-  #   	linetype = c(reference="21", observed="solid"),
-  #   	shape = c(reference=NA, observed=vac_nofill_pchs["edv"]),
-  #   	size = c(vc_sizes["75"]*fat, vc_sizes["75"]/2)
-  #   ))
-  # )
-
-pleg <- get_legend(p)
-
-# TODO dump shaded area, add intervention annotations, change height aspect
-
 save_plot(tar, p, base_height = baseh*0.55, base_width = 3.75, ncol = 2.5, nrow = 2)
-#plotutil(p, h=3, w=5.75, tar)
