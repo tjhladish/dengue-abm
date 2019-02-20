@@ -70,7 +70,7 @@ scale_pchlty_vaccine <- function(...) list(
 
 cu_lvls <- c("vac-only", "vc+vac", "routine", "none")
 cu_name <- "Vaccine Campaign"
-cu_labels <- c("w/ Catchup", "w/ Catchup", "Routine-Only", "None")
+cu_labels <- c("Routine w/ Catchup", "Routine w/ Catchup", "Routine-Only", "None")
 cu_fills <- c(scn_cols[c("vac","vc+vac")], "white", NA)
 cu_alpha <- c(1, 1, 0.3, 0.3)
 names(cu_labels) <- names(cu_fills) <- names(cu_lvls) <- cu_lvls
@@ -103,7 +103,7 @@ scale_vaccu_interaction <- {
 	scale_pch_vaccu <- scale_generator("shape", vac_name, vacu_pch_labels, vacu_pchs)
 	scale_fill_vaccu <- scale_generator("fill", cu_name, vacu_fill_labels, vacu_fills)
 	function(...,
-		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = rev(names(pch.labels))
+		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = names(pch.labels)[c(3,4,1,2)]
 	) list(
 		scale_pch_vaccu(breaks=pch.breaks, labels=pch.labels,
 			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks)], size=pchsize), ...)

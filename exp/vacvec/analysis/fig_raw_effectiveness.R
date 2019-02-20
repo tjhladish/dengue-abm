@@ -107,7 +107,7 @@ basep <- ggplot(
 	scale_vaccu_interaction() + 
 	scale_effectiveness() + coord_cartesian(clip="off")
 
-p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.2, y=-0.07)
+p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.15, y=-0.06)
 
 save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
 
