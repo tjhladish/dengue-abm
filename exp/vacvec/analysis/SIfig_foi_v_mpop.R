@@ -16,7 +16,7 @@ bind.dt[context %in% c("i","s"), context := "total"]
 # stability check
 # ggplot(bind.dt) + theme_minimal() + aes(x=year, y=med, alpha=foi, group=foi) + geom_line() + facet_grid(measure ~ context, scales="free_y")
 
-plot.dt <- bind.dt[, .(y=mean(med)/yucpop, lo=mean(lo), hi=mean(hi)), keyby=.(foi, measure, context)]
+plot.dt <- bind.dt[, .(y=median(value)/yucpop), keyby=.(foi, measure, context)]
 
 p <- ggplot(plot.dt) +
   aes(x=foi, y=y, linetype=context) +
