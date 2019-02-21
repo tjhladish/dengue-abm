@@ -51,8 +51,8 @@ plot.dt[, local.i := i - intro.i ]
 plot.dt[, local.s := s - intro.s ]
 
 res <- melt.data.table(plot.dt, id.vars = c("serial","year","foi"))[,
-  dtquantiles(probs = c(.25,.5,.75), value, c("lo","med", "hi")),
-  by=.(foi, variable, year)
+  .(value=mean(value)),
+  by=.(foi, variable, serial)
 ]
 
 tar <- tail(args, 1)

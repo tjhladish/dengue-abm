@@ -26,7 +26,7 @@ names(light_cols) <- c("vc", "vac")
 # scn_lvls <- c("ref", "vc", "vac", "vc+vac") # from projref.R
 names(scn_lvls) <- scn_lvls
 scn_name <- "Intervention Scenario"
-scn_labels <- c("None", "TIRS Only", "Vaccine Only", "Combination", "Naive Expectation", "Naive Expectation", "Simultaneous\nReference")
+scn_labels <- c("None", "TIRS Only", "Vaccine Only", "Combination", "Naive Estimate", "Naive Estimate", "Simultaneous\nReference")
 scn_cols <- c("yellow","blue","darkgreen","black", light_cols["vc"], light_cols["vac"], "grey")
 names(scn_labels) <- names(scn_cols) <- c(scn_lvls, "vc+naive", "vac+naive", "simref")
 scale_color_scenario <- scale_generator(

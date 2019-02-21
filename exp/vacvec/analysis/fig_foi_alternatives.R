@@ -63,7 +63,7 @@ labs <- scn_labels
 labs["vc"] <- paste0(vc_labels["75"]," ",scn_labels["vc"])
 labs["vac"] <- paste0("Routine ", vac_labels["cmdvi"]," Only")
 labs["vc+vac"] <- paste0("TIRS"," & ",vac_labels["cmdvi"])
-labs["vc+naive"] <- labs["vac+naive"] <- "Naive Expectation"
+labs["vc+naive"] <- labs["vac+naive"] <- "Naive Estimate"
 
 ppchleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(

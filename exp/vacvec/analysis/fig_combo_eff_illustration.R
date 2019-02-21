@@ -92,7 +92,7 @@ naive.eff.edv.many <- naive.eff.edv[invpchstride(year)]
 
 naive.labs <- paste("75% TIRS",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
-naive.leg.name <- "Naive Expectation"
+naive.leg.name <- "Naive Estimate"
 sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
