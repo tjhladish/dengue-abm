@@ -40,6 +40,9 @@ refbaseline <- ref3[foi==1,.(ref = val),by=.(foi, variable)]
 joinref3 <- ref3[variable %in% c("i","s")][refbaseline, on=.(variable), nomatch=NULL]
 
 cat("compared to 10 year mark:\n")
-joinref3[val < ref*(1-tenyearminmed), ,]
-cat(format(),"\n")
+cat("measure foi val reducedref\n")
+joinref3[val < ref*(1-tenyearminmed),cat(as.character(variable),foi,val,"vs",ref*(1-tenyearminmed),"\n"), by=.(variable, foi)]
+cat("compared to 20 year mark:\n")
+cat("measure foi val reducedref\n")
+joinref3[val < ref*(1-twentyminmed),cat(as.character(variable),foi,val,"vs",ref*(1-twentyminmed),"\n"), by=.(variable, foi)]
 
