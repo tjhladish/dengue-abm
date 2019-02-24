@@ -26,13 +26,57 @@ real.dt <- stat.eff.dt[variable %in% c("combo.eff","vac.eff","vec.eff")]
 
 leg.sz <- 0.8
 
+ribbon_intercepts <- function(x, y, ycmp) {
+	sp <- cumsum(head(rle(ycmp > y)$lengths, -1))
+	if (length(sp)) {
+		x1   = x[sp]; x2=x[sp+1]
+		yr1  = y[sp]; yr2=y[sp+1]
+		yc1  = ycmp[sp]; yc2=ycmp[sp+1]
+		yrm  = (yr2-yr1)/(x2-x1); ycm = (yc2-yc1)/(x2-x1)
+		yrb  = yr2 - yrm*x2; ycb = yc2 - ycm*x2
+		xint = (yrb-ycb)/(ycm-yrm); yint = yrm*xint + yrb
+		return(list(xint=xint, yint=yint))
+	} else return(list(xint=double(),yint=double()))
+}
+
+geom_altribbon <- function(dt, ky=key(dt)) {
+	res <- dt[, with(ribbon_intercepts(x, y, ycmp), {
+		xlims <- c(x[1], xint, x[.N])
+		inner.dt <- cbind(rbind(
+			.SD,
+			data.table(x=xint, y=yint, ycmp=yint)
+		)[order(x)], as.data.table(.BY))
+		res <- lapply(1:(length(xlims)-1), function(i) {
+			slice <- inner.dt[between(x, xlims[i], xlims[i+1])]
+			geom_polygon(
+				mapping=aes(
+					x=x, y=y, linetype=NULL, shape=NULL, color=NULL, size=NULL, alpha="delta",
+					fill=col
+				),
+				data=cbind(slice[,.(
+					x=c(x,rev(x)), y=c(y,rev(ycmp)), col=trans_int(slice[,any(ycmp>y)])
+				)], as.data.table(.BY)),
+				show.legend = F
+			)
+		})
+		.(polys=res)
+	}), keyby=ky ]$polys
+	res
+}
+
+ribbons <- dcast.data.table(stat.eff.dt[variable %in% c("combo.eff","ind.eff")], foi + vaccine + catchup + year + vc_coverage ~ variable, value.var = "med")[,
+	.(x=year+1, y=ind.eff, ycmp=combo.eff), keyby=.(foi, vc_coverage, vaccine, catchup)
+]
+
 pbase <- ggplot(
   real.dt
 ) + theme_minimal() +
-  aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage), fill=catchup) +
+  aes(shape=vaccine, color=scenario, x=year+1, y=med, size=factor(vc_coverage)) +
 
+	geom_altribbon(ribbons) +
+	
   geom_line(mapping=aes(color="vc+naive"), data=stat.eff.dt[variable == "ind.eff"]) +
-  geom_pchline(dt=stat.eff.dt[variable == "ind.eff"], color=light_cols["vac"]) +
+  geom_pchline(dt=stat.eff.dt[variable == "ind.eff"], color=light_cols["vac"], fill="white") +
   geom_line(data=real.dt[scenario == "vc"]) +
 
   geom_line(data=real.dt[scenario != "vc"]) +
@@ -41,7 +85,8 @@ pbase <- ggplot(
   scale_shape_vaccine(guide="none") +
   scale_year() +
   scale_effectiveness() +
-	scale_fill_catchup(guide="none") +
+	scale_fill_interaction(guide="none") +
+	scale_alpha_manual(values=c(delta=int_alpha), guide = "none") +
   facet_grid(. ~ foi, labeller=facet_labels) +
   FOIfacettitle +
   coord_cartesian(clip="off", ylim=c(-.125,1), xlim=c(0,40)) + theme(
