@@ -10,7 +10,7 @@ tar <- tail(args, 1)
 
 load(args[1])
 
-base.stat.eff.dt <- readRDS(args[3])[vaccine == "cmdvi" & catchup == "routine" & vc_coverage == 75]
+base.stat.eff.dt <- readRDS(args[3])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75]
 base.stat.eff.dt[, foi := 1.0 ]
 
 stat.eff.dt <- rbind(readRDS(args[2]), base.stat.eff.dt)[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
@@ -106,13 +106,13 @@ pbase <- ggplot(
 
 labs <- scn_labels
 labs["vc"] <- paste0(vc_labels["75"]," ",scn_labels["vc"])
-labs["vac"] <- paste0("Routine ", vac_labels["cmdvi"]," Only")
-labs["vc+vac"] <- paste0("TIRS"," & ",vac_labels["cmdvi"])
+labs["vac"] <- paste0("Routine ", vac_labels["t+cydtdv"]," Only")
+labs["vc+vac"] <- paste0("TIRS"," & ",vac_labels["t+cydtdv"])
 labs["vc+naive"] <- labs["vac+naive"] <- "Naive Estimate"
 
 ppchleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(
-		shape = c(vac_pchs["cmdvi"],NA,vac_pchs["cmdvi"],vac_pchs["cmdvi"]),
+		shape = c(vac_pchs["t+cydtdv"],NA,vac_pchs["t+cydtdv"],vac_pchs["t+cydtdv"]),
 		linetype = 0,
 		color = c(scn_cols["vac"], NA, scn_cols["vac+naive"], scn_cols["vc+vac"])
 	)

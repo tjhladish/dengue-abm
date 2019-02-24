@@ -42,7 +42,7 @@ p <- ggplot(cmb.eff) + aes(
   # scale_fill_interaction(
   #   guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
   # ) +
-  scale_pchlty_vaccine(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
   scale_color_scenario(guide = "none", value="black", aesthetics = c("color","fill")) +
   scale_size_vectorcontrol(guide="none") +
   coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +

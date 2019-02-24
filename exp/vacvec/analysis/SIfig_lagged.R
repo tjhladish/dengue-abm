@@ -21,7 +21,7 @@ combo.dt <- stat.eff.dt[grepl("combo.eff", variable, fixed = T),
 ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 1 ],
   copy(ref.stat.dt)[, vac_first := 0 ]
-)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
+)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "d70e" & catchup == "vc+vac" & vc_coverage == 75]
 
 ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ]
 

@@ -50,7 +50,7 @@ combo.dt <- stat.eff.dt[grepl("combo.eff", variable, fixed = T),
 ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 1 ],
   copy(ref.stat.dt)[, vac_first := 0 ]
-)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
+)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "d70e" & catchup == "vc+vac" & vc_coverage == 75]
 
 ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, scenario := "simref" ][, ivn_lag := 0][, obs := "reference" ]
 
@@ -101,7 +101,7 @@ pleg <- get_legend(pbase + scale_color_scenario(
   name=gsub(" ","\n", scn_name),
   guide=guide_legend(
     override.aes = list(
-      shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
+      shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),
       linetype=c("21","blank","blank","blank"),
       size=c(ref.sizes[1],0,0,0)
     )
@@ -111,7 +111,7 @@ pleg2 <- get_legend(pbase + scale_color_scenario(
   name=gsub(" ","\n", scn_name),
   guide=guide_legend(
     override.aes = list(
-      shape=c(NA,vac_pchs["edv"],NA,vac_pchs["edv"]),
+      shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),
       fill=c(NA,scn_cols["vac"],NA,scn_cols["vc+vac"]),
       linetype=c("blank","solid","solid","solid")
     )

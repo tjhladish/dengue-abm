@@ -14,7 +14,7 @@ load(.args[2])
 # scales:
 #  color = scenario (ref/none, vc-only, vac-only, combination)
 #  size = vector control coverage
-#  pch = vaccine mechanism (none, dengvaxia, edv)
+#  pch = vaccine mechanism (none, dengvaxia, d70e)
 #  pch fill = catchup (routine vs catchup)
 
 
@@ -46,25 +46,25 @@ scale_size_vectorcontrol <- scale_generator(
 
 # VACCINE MECH DIMENSIONING
 
-vac_lvls <- c("cmdvi","edv","none")
+vac_lvls <- c("cydtdv","d70e","t+cydtdv","none")
 vac_name <- "Vaccine Model"
-vac_labels <- c("CYD-TDV", "D70E", "None")
-vac_pchs <- c(23,21,NA) # c(15,16,NA)
-vac_nofill_pchs <- c(18,19,NA) # c(15,16,NA)
-vac_ltys <- c("12","61","solid")
-names(vac_labels) <- names(vac_pchs) <- names(vac_nofill_pchs) <- names(vac_ltys) <- names(vac_lvls) <- vac_lvls
+vac_labels <- c("CYD-TDV", "D70E", "CYD-TDV", "None")
+vac_pchs <- c(23,21,23,NA) # c(15,16,NA)
+vac_nofill_pchs <- c(18,19,18,NA) # c(15,16,NA)
+# vac_ltys <- c("12","61","solid")
+names(vac_labels) <- names(vac_pchs) <- names(vac_nofill_pchs) <- names(vac_lvls) <- vac_lvls # names(vac_ltys) <-
 scale_shape_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_pchs
 )
 scale_shapenofill_vaccine <- scale_generator(
   "shape", vac_name, vac_labels, vac_nofill_pchs
 )
-scale_linetype_vaccine <- scale_generator(
-	"linetype", vac_name, vac_labels, vac_ltys
-)
-scale_pchlty_vaccine <- function(...) list(
-	scale_shape_vaccine(...), scale_linetype_vaccine(...)
-)
+# scale_linetype_vaccine <- scale_generator(
+# 	"linetype", vac_name, vac_labels, vac_ltys
+# )
+# scale_pchlty_vaccine <- function(...) list(
+# 	scale_shape_vaccine(...), scale_linetype_vaccine(...)
+# )
 
 # CATCHUP DIMENSIONING
 
@@ -151,7 +151,7 @@ facet_labels <- labeller(
   scenario = scn_labels,
   catchup = cu_labels,
   vaccine = vac_labels,
-  vac_first = c(`0`="TIRS First", `1`=paste0(vac_labels["edv"]," First")),
+  vac_first = c(`0`="TIRS First", `1`=paste0(vac_labels["d70e"]," First")),
   foi = function(f) {
     res <- sprintf("%i%%", 100*as.numeric(f))
     res[f=="1"] <- paste0(res[f=="1"], " (Fitted Reference)")
@@ -185,7 +185,7 @@ labels.dt <- data.table(
   label = c(
     vc_labels[c("25","50","75")],
     paste(
-      vac_labels[rep(c("cmdvi","edv"), times=2)],
+      vac_labels[rep(c("t+cydtdv","d70e"), times=2)],
       cu_labels[rep(c("routine","vac-only"), each=2)],
       sep="\n"
     )
@@ -200,7 +200,7 @@ labels.dt <- data.table(
   ),
   vaccine = c(
     rep("none", 3),
-    rep(c("cmdvi","edv"), times=2)
+    rep(c("t+cydtdv","d70e"), times=2)
   ),
   catchup = c(
     rep("none", 3),

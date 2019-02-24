@@ -77,14 +77,14 @@ p <- ggplot(
   	name = gsub(" ", "\n", scn_name),
   	guide = gds(2, direction="vertical",
   		override.aes = list(
-  			shape=c(vc=vac_pchs["none"], vac=vac_pchs["edv"]),
+  			shape=c(vc=vac_pchs["none"], vac=vac_pchs["d70e"]),
   			fill=scn_cols[c("vc","vac")] # TODO figure out how to make this work?
   		)
   	)
   ) +
   scale_shape_vaccine(
   	name = gsub(" ", "\n", vac_name),
-  	guide = gds(3, direction="vertical", label.position = "right"), breaks=c("cmdvi", "edv")
+  	guide = gds(3, direction="vertical", label.position = "right"), breaks=c("t+cydtdv", "d70e")
   ) +
   scale_fill_catchup(name=gsub(" ", "\n", cu_name),
   	breaks = c("routine", "vac-only"), values = cuscn_fills,

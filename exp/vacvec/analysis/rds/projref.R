@@ -6,14 +6,14 @@ suppressPackageStartupMessages({
 .args <- commandArgs(trailingOnly = TRUE)
 
 # in DB, vac_mech = 0/1
-vac_lvls <- c("cmdvi", "edv", "none")
+vac_lvls <- c("cydtdv", "d70e", "t+cydtdv", "none")
 #' translates vac_mech (and vac = 1 or 0, if needed)
 #'
-#' @param mech, a 0 (cmdvi) or 1 (edv)
+#' @param mech, a 0 (cmdvi) or 1 (d70e) or (2) test+cydtdv
 #' @param vac, a 0 (no vaccination) or 1 (vaccination).  If not supplied, assumed = 1
 #' @return ordered factor corresponding to vac_lvls
 trans_vaccine <- function(mech, vac=rep(1, length(mech))) factor(
-  ifelse(vac, vac_lvls[mech + 1], vac_lvls[3]),
+  ifelse(vac, vac_lvls[mech + 1], tail(vac_lvls, 1)),
   levels = vac_lvls, ordered = T
 )
 trans_vaccine.data.table <- function(dt) dt[, vaccine := trans_vaccine(vac_mech, vac) ]

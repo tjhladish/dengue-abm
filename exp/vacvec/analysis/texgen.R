@@ -12,7 +12,7 @@ lagref.dt <- readRDS(.args[3])
 
 ideal.slice <- ref.dt[
   year == 9 & variable == "combo.eff" &
-  vaccine == "edv" & vc_coverage == 75 &
+  vaccine == "d70e" & vc_coverage == 75 &
   catchup == "vc+vac"
 ]
 

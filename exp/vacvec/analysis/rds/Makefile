@@ -30,7 +30,9 @@ projref.rda: projref.R
 
 # specific output database dependencies for each digest target
 baseline.rds intervention.rds raw_baseline.csv raw_intervention.csv: $(REFDB)
-foi_baseline.rds foi_intervention.rds raw_foi_baseline.csv raw_foi_intervention.csv: $(FOIDB)
+test_intervention.rds: $(TSTDB)
+foi_intervention.rds raw_foi_intervention.csv foi_baseline.rds raw_foi_baseline.csv: $(FOIDB)
+foi_test_intervention.rds: $(TSTFOIDB) # $(FOIDB)
 lag_intervention.rds raw_lag_intervention.csv: $(LAGDB)
 
 baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.rda
@@ -42,20 +44,29 @@ raw_%.csv: %.sql
 digest_%.csv: tocsv.R %.rds
 	Rscript $^ $@
 
-baseline.rds intervention.rds foi_baseline.rds foi_intervention.rds lag_intervention.rds: parse.R utils.R projref.rda
+baseline.rds intervention.rds test_intervention.rds foi_baseline.rds foi_intervention.rds foi_test_intervention.rds lag_intervention.rds: parse.R utils.R projref.rda
 	Rscript $^ $@
 
-ALLDIG := $(addsuffix .rds,baseline intervention foi_baseline foi_intervention lag_intervention)
+ALLDIG := $(addsuffix .rds,baseline intervention test_intervention foi_baseline foi_intervention foi_test_intervention lag_intervention)
 # NB: make -j safe
 digests: $(ALLDIG)
 clean_digests:
 	rm -f $(ALLDIG)
 
+mrg_intervention.rds: substitute.R intervention.rds test_intervention.rds
+	Rscript $^ $@
+
+mrg_foi_intervention.rds: substitute.R foi_intervention.rds foi_test_intervention.rds
+	Rscript $^ $@
+
+WHICHINT := intervention
+WHICHFOI := mrg_foi_intervention
+
 # EFFECTIVENESS CALCULATIONS
 
 # specific input digest dependencies for each effectiveness target
-effectiveness.rds: $(addsuffix .rds,baseline intervention)
-foi_effectiveness.rds: $(addsuffix .rds,foi_baseline foi_intervention)
+effectiveness.rds: $(addsuffix .rds,baseline $(WHICHINT))
+foi_effectiveness.rds: $(addsuffix .rds,foi_baseline $(WHICHFOI))
 lag_effectiveness.rds: $(addsuffix .rds,baseline lag_intervention)
 ALLEFF := $(addsuffix .rds,effectiveness foi_effectiveness lag_effectiveness)
 

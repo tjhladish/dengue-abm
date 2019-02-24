@@ -10,7 +10,7 @@ tar <- tail(args, 1)
 
 load(args[1])
 
-base.stat.eff.dt <- readRDS(args[3])[vaccine == "cmdvi" & catchup == "routine" & vc_coverage == 75]
+base.stat.eff.dt <- readRDS(args[3])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75]
 base.stat.eff.dt[, foi := 1.0 ]
 
 stat.eff.dt <- rbind(

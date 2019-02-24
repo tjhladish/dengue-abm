@@ -83,12 +83,12 @@ scale_shape_scenario2 <- scale_generator(
   "shape", "Single Intervention", scn2_labels, scn2_pchs
 )
 
-naive.eff.cmdvi <- naive.eff[vaccine == "cmdvi"]
-naive.eff.edv <- naive.eff[vaccine == "edv"]
-naive.eff.cmdvi.thin <- naive.eff.cmdvi[pchstride(year)]
-naive.eff.edv.thin <- naive.eff.edv[pchstride(year)]
-naive.eff.cmdvi.many <- naive.eff.cmdvi[invpchstride(year)]
-naive.eff.edv.many <- naive.eff.edv[invpchstride(year)]
+naive.eff.cydtdv <- naive.eff[vaccine == "t+cydtdv"]
+naive.eff.d70e <- naive.eff[vaccine == "d70e"]
+naive.eff.cydtdv.thin <- naive.eff.cydtdv[pchstride(year)]
+naive.eff.d70e.thin <- naive.eff.d70e[pchstride(year)]
+naive.eff.cydtdv.many <- naive.eff.cydtdv[invpchstride(year)]
+naive.eff.d70e.many <- naive.eff.d70e[invpchstride(year)]
 
 naive.labs <- paste("75% TIRS",vac_labels[-3],sep=" & ")
 names(naive.labs) <- names(vac_labels[-3])
@@ -116,12 +116,12 @@ annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), 
 
 annopchp <- annopbase +
   scale_color_scenario(values=light_cols, guide="none") +
-  scale_shape_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
+  scale_shape_vaccine(name=naive.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
     guide=guide_legend(override.aes=list(color=light_cols["vac"]))
   )
 
 simpchleg <- get_legend(annopbase + scale_color_scenario(values=rep(scn_cols["vc+vac"], 2), guide="none") +
-	scale_shape_vaccine(sim.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
+	scale_shape_vaccine(sim.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
 		guide=guide_legend(override.aes=list(color=scn_cols["vc+vac"], fill=scn_cols["vc+vac"]))
 	))
 
@@ -149,12 +149,12 @@ annoline <- function(ref.dt) annotate("line", x=ref.dt$year+1, y=ref.dt$value, s
 annopt <- function(ref.dt, sz=pchsize) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=sz, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
 
 annos <- list(
-	annoline(naive.eff.cmdvi),
-	annoline(naive.eff.edv),
-	annopt(naive.eff.cmdvi.thin),
-	annopt(naive.eff.cmdvi.many, sz=smallpch),
-	annopt(naive.eff.edv.thin),
-	annopt(naive.eff.edv.many, sz=smallpch)
+	annoline(naive.eff.cydtdv),
+	annoline(naive.eff.d70e),
+	annopt(naive.eff.cydtdv.thin),
+	annopt(naive.eff.cydtdv.many, sz=smallpch),
+	annopt(naive.eff.d70e.thin),
+	annopt(naive.eff.d70e.many, sz=smallpch)
 )
 
 # illustrate combined effectiveness
@@ -242,11 +242,11 @@ plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverag
 illus_labels <- rbind(
   copy(naive.eff[year==27])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
 )
-illus_labels[vaccine == "edv", value := value + 0.1]
-#illus_labels[vaccine == "cmdvi" & intervention == "single", value := value - 0.072]
-illus_labels[vaccine == "cmdvi" & intervention == "combined", value := value - 0.125]
+illus_labels[vaccine == "d70e", value := value + 0.1]
+#illus_labels[vaccine == "t+cydtdv" & intervention == "single", value := value - 0.072]
+illus_labels[vaccine == "t+cydtdv" & intervention == "combined", value := value - 0.125]
 #illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
-illus_labels[intervention == "combined", lab := ifelse(vaccine == "edv", "Amplification", "Interference") ]
+illus_labels[intervention == "combined", lab := ifelse(vaccine == "d70e", "Amplification", "Interference") ]
 
 label.sz = 4
 
@@ -266,8 +266,8 @@ resp <- ggplot(
   geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
 	geom_pchline(plot.dt[intervention == "combined"], fill=scn_cols["vc+vac"]) +
   geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28", fill="grey28") +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"], fontface="bold") +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"], fontface="bold") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "d70e"], size=label.sz, color=int_fills["over"], fontface="bold") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "t+cydtdv"], size=label.sz, color=int_fills["under"], fontface="bold") +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
   scale_shape_vaccine(guide = "none") +

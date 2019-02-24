@@ -7,22 +7,22 @@ args <- commandArgs(trailingOnly = TRUE)
 
 ref <- readRDS(args[1])
 
-slice1 <- ref[vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75 & variable == "combo.eff"]
+slice1 <- ref[vaccine == "d70e" & catchup == "vc+vac" & vc_coverage == 75 & variable == "combo.eff"]
 
-cat("edv w/ catchup, 75% vc, years 0:9, min(median eff):\n")
+cat("D70E w/ catchup, 75% vc, years 0:9, min(median eff):\n")
 tenyearminmed <- slice1[year < 10, min(med)]
 cat(tenyearminmed,"\n")
 
-cat("edv w/ catchup, 75% vc, years 0:19, min(median eff):\n")
+cat("D70E w/ catchup, 75% vc, years 0:19, min(median eff):\n")
 twentyminmed <- slice1[year < 20, min(med)]
 cat(twentyminmed,"\n")
 
-cat("edv w/ catchup, 75% vc, years 0:39, min(median eff):\n")
+cat("D70E w/ catchup, 75% vc, years 0:39, min(median eff):\n")
 cat(slice1[year < 40, min(med)],"\n")
 
-slice2 <- ref[vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75 & variable == "c.combo.eff" & year == 9]
+slice2 <- ref[vaccine == "d70e" & catchup == "vc+vac" & vc_coverage == 75 & variable == "c.combo.eff" & year == 9]
 
-cat("edv w/ catchup, 75% vc, year 9 cumulative eff (95% PI):\n")
+cat("D70E w/ catchup, 75% vc, year 9 cumulative eff (95% PI):\n")
 cat(slice2[, c(med, lo.lo, hi.hi)],"\n")
 
 ref2 <- readRDS(args[2])[variable == "c.combo.eff" & year == 19]

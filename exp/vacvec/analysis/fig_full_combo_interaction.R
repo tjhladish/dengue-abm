@@ -114,13 +114,13 @@ pbase <- ggplot(plot2.dt) + aes(
 )
 
 relabs <- cu_labels[c("vc+vac","routine")]
-names(relabs) <- c("edv","cmdvi")
+names(relabs) <- c("d70e","t+cydtdv")
 # get legends
-edv.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["edv"], labels=relabs, guide=guide_legend(
-	override.aes = list(shape = vac_pchs["edv"], fill=c(scn_cols["vc+vac"], "white"))
+d70e.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["d70e"], labels=relabs, guide=guide_legend(
+	override.aes = list(shape = vac_pchs["d70e"], fill=c(scn_cols["vc+vac"], "white"))
 )))
-cmdvi.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["cmdvi"], labels = relabs, guide=guide_legend(
-	override.aes = list(shape = vac_pchs["cmdvi"], fill=c(scn_cols["vc+vac"], "white"))
+cydtdv.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["t+cydtdv"], labels = relabs, guide=guide_legend(
+	override.aes = list(shape = vac_pchs["t+cydtdv"], fill=c(scn_cols["vc+vac"], "white"))
 )))
 
 pmost <- pbase + geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_vaccine(guide="none") + scale_fill_interaction(
@@ -128,7 +128,7 @@ pmost <- pbase + geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_
 )
 
 p <- ggdraw(pmost) + 
-	draw_grob(edv.lab, x=-0.3, y=-0.015) + draw_grob(cmdvi.lab, x=-0.3, y=-0.18)
+	draw_grob(d70e.lab, x=-0.3, y=-0.015) + draw_grob(cydtdv.lab, x=-0.3, y=-0.18)
 
 
 save_plot(tar, p, ncol = 3, nrow = 2, base_width = 3.75, base_height = baseh)

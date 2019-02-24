@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 # developer args
 args <- c("../utils.R", "projref.rda", "~/Dropbox/who/vacvec-new_yuc-ivn_lag258-reduced_catchup.sqlite", "lag_intervention.rds")
 args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc.sqlite', "baseline.rds")
-args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc-alt_foi.sqlite', "foi_intervention.rds")
+args <- c("../utils.R", "projref.rda", '~/Dropbox/who/vacvec-new_yuc-alt_foi-CYD_TDV-seropos_only.sqlite', "foi_intervention.rds")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
