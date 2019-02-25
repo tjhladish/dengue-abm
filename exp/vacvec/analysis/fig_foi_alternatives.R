@@ -89,7 +89,7 @@ pbase <- ggplot(
 	scale_alpha_manual(values=c(delta=int_alpha), guide = "none") +
   facet_grid(. ~ foi, labeller=facet_labels) +
   FOIfacettitle +
-  coord_cartesian(clip="off", ylim=c(-.125,1), xlim=c(0,40)) + theme(
+  coord_cartesian(clip="off", ylim=c(0,1), xlim=c(0,40)) + theme(
     panel.spacing.x = unit(12, "pt")
   ) + theme(
   	axis.title = element_text(size=rel(1)),
