@@ -59,7 +59,7 @@ mrg_intervention.rds: substitute.R intervention.rds test_intervention.rds
 mrg_foi_intervention.rds: substitute.R foi_intervention.rds foi_test_intervention.rds
 	Rscript $^ $@
 
-WHICHINT := intervention
+WHICHINT := mrg_intervention
 WHICHFOI := mrg_foi_intervention
 
 # EFFECTIVENESS CALCULATIONS

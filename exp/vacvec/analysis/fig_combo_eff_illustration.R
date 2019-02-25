@@ -69,8 +69,8 @@ limits.dt <- plot.dt[,
   by=scenario
 ]
 
-scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
-scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), as.character(Var2)), "75% TIRS")
+scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:3]),expand.grid(scn_lvls[2], vac_lvls[4])), paste(Var1, Var2, sep="."))
+scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:3]), as.character(Var2)), "75% TIRS")
 scn2_cols <- scn_cols[gsub("^(.+)\\..+$","\\1",scn2_lvls)]
 scn2_pchs <- vac_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
 names(scn2_labels) <- names(scn2_cols) <- names(scn2_pchs) <- scn2_lvls
@@ -90,8 +90,8 @@ naive.eff.d70e.thin <- naive.eff.d70e[pchstride(year)]
 naive.eff.cydtdv.many <- naive.eff.cydtdv[invpchstride(year)]
 naive.eff.d70e.many <- naive.eff.d70e[invpchstride(year)]
 
-naive.labs <- paste("75% TIRS",vac_labels[-3],sep=" & ")
-names(naive.labs) <- names(vac_labels[-3])
+naive.labs <- paste("75% TIRS",vac_labels[-4],sep=" & ")
+names(naive.labs) <- names(vac_labels[-4])
 naive.leg.name <- "Naive Estimate"
 sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
@@ -117,19 +117,19 @@ annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), 
 annopchp <- annopbase +
   scale_color_scenario(values=light_cols, guide="none") +
   scale_shape_vaccine(name=naive.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
-    guide=guide_legend(override.aes=list(color=light_cols["vac"]))
+    guide=guide_legend(title.vjust = -0.3, override.aes=list(color=light_cols["vac"]))
   )
 
 simpchleg <- get_legend(annopbase + scale_color_scenario(values=rep(scn_cols["vc+vac"], 2), guide="none") +
 	scale_shape_vaccine(sim.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
-		guide=guide_legend(override.aes=list(color=scn_cols["vc+vac"], fill=scn_cols["vc+vac"]))
+		guide=guide_legend(title.vjust = -0.3, override.aes=list(color=scn_cols["vc+vac"], fill=scn_cols["vc+vac"]))
 	))
 
 annolinep <- annopbase +
   scale_color_scenario(
     name=naive.leg.name,
     labels = naive.line.labs,
-    guide=guide_legend(override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
+    guide=guide_legend(title.vjust = -0.3, override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
   ) +
   scale_shapenofill_vaccine(guide = "none")
 
@@ -137,7 +137,7 @@ simlineleg <- get_legend(annopbase +
 	scale_color_scenario(
 		name = sim.leg.name,
 		labels = naive.line.labs,
-		guide=guide_legend(override.aes = list(color = scn_cols["vc+vac"], shape=NA, size=vc_sizes["75"]))
+		guide=guide_legend(title.vjust = -0.3, override.aes = list(color = scn_cols["vc+vac"], shape=NA, size=vc_sizes["75"]))
 	) +
 	scale_shapenofill_vaccine(guide = "none"))
 
@@ -240,11 +240,11 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario, intervention)]
 
 illus_labels <- rbind(
-  copy(naive.eff[year==27])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
+  copy(naive.eff[year==30])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
 )
 illus_labels[vaccine == "d70e", value := value + 0.1]
 #illus_labels[vaccine == "t+cydtdv" & intervention == "single", value := value - 0.072]
-illus_labels[vaccine == "t+cydtdv" & intervention == "combined", value := value - 0.125]
+illus_labels[vaccine == "t+cydtdv" & intervention == "combined", value := value - 0.15]
 #illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
 illus_labels[intervention == "combined", lab := ifelse(vaccine == "d70e", "Amplification", "Interference") ]
 
@@ -286,8 +286,8 @@ resp <- ggplot(
   )
 
 leg.xy <- list(x=0.67,y=0.405)
-anleg.xy <- list(x=0.275,y= 0.087)
-simleg.xy <- list(x=0.275,y= -0.39)
+anleg.xy <- list(x=0.37,y= 0.087)
+simleg.xy <- list(x=0.37,y= -0.39)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +

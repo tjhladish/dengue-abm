@@ -85,8 +85,8 @@ cuscn_fills <- c(cu_fills, scn_cols)
 names(cuscn_fills) <- c(cu_lvls, scn_lvls)
 
 # INTERACTION BETWEEN VACCINE & CATCHUP
-vacu_lvls <- with(rbind(expand.grid(vac_lvls[-3], cu_lvls[-c(2,4)]),expand.grid(vac_lvls[3], cu_lvls[4])), paste(Var1, Var2, sep="."))
-vacu_labels <- with(rbind(expand.grid(vac_labels[-3], cu_labels[-c(2,4)]),expand.grid(vac_labels[3], cu_labels[4])), paste(Var1, Var2, sep=", "))
+vacu_lvls <- with(rbind(expand.grid(head(vac_lvls,-1), cu_lvls[-c(2,4)]),expand.grid(tail(vac_lvls,1), cu_lvls[4])), paste(Var1, Var2, sep="."))
+vacu_labels <- with(rbind(expand.grid(head(vac_labels,-1), cu_labels[-c(2,4)]),expand.grid(tail(vac_lvls,1), cu_labels[4])), paste(Var1, Var2, sep=", "))
 names(vacu_labels) <- vacu_lvls
 
 scale_vaccu_interaction <- {
@@ -103,10 +103,10 @@ scale_vaccu_interaction <- {
 	scale_pch_vaccu <- scale_generator("shape", vac_name, vacu_pch_labels, vacu_pchs)
 	scale_fill_vaccu <- scale_generator("fill", cu_name, vacu_fill_labels, vacu_fills)
 	function(...,
-		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = names(pch.labels)[c(3,4,1,2)]
+		pch.labels=vacu_labels[order(revac)][-5], pch.breaks = names(pch.labels)[c(3,4,5,6,1,2)]
 	) list(
 		scale_pch_vaccu(breaks=pch.breaks, labels=pch.labels,
-			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks)], size=pchsize), ...)
+			guide=gds(1, override.aes=list(color=scn_cols["vac"], fill=cu_fills[gsub("^.+\\.(.+)$","\\1",pch.breaks[c(1,2,3,4)])], size=pchsize), ...)
 		),
 		scale_fill_vaccu(breaks=vacu_lvls, guide="none")
 	)

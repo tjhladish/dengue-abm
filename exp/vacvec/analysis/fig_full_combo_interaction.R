@@ -77,7 +77,7 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res
 }
 
-plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine = factor(vaccine, rev(levels(vaccine)), ordered = T), catchup, scenario)]
+plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
 leg.sz <- 0.9
 
