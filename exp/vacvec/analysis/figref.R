@@ -49,8 +49,8 @@ scale_size_vectorcontrol <- scale_generator(
 vac_lvls <- c("cydtdv","d70e","t+cydtdv","none")
 vac_name <- "Vaccine Model"
 vac_labels <- c("CYD-TDV", "D70E", "CYD-TDV", "None")
-vac_pchs <- c(23,21,23,NA) # c(15,16,NA)
-vac_nofill_pchs <- c(18,19,18,NA) # c(15,16,NA)
+vac_pchs <- c(24,21,23,NA) # c(15,16,NA)
+vac_nofill_pchs <- c(17,19,18,NA) # c(15,16,NA)
 # vac_ltys <- c("12","61","solid")
 names(vac_labels) <- names(vac_pchs) <- names(vac_nofill_pchs) <- names(vac_lvls) <- vac_lvls # names(vac_ltys) <-
 scale_shape_vaccine <- scale_generator(

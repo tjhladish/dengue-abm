@@ -5,9 +5,19 @@ suppressPackageStartupMessages({
 # debugging only lines; args overrides when actually making script
 args <- c("effectiveness.rds", "comboeff.rds")
 args <- c("foi_effectiveness.rds", "foi_comboeff.rds")
+args <- c("sub_effectiveness.rds", "effectiveness.rds", "foi_comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
-effectiveness.dt <- readRDS(args[1])
+if (length(args) == 3) {
+	tmp <- readRDS(args[1])
+	effectiveness.dt <- setkeyv(rbind(
+		tmp,
+		readRDS(args[2])[scenario == "vc"]
+	), key(tmp))
+} else {
+	effectiveness.dt <- readRDS(args[1])
+}
+
 
 ekeys <- key(effectiveness.dt)
 
