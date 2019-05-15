@@ -373,6 +373,26 @@ bool Person::fullySusceptible() const {
 }
 
 
+bool Person::isSeroEligible(VaccineSeroConstraint vsc) const {
+    bool eligible = false;
+    switch (vsc) {
+        case VACCINATE_SERONEGATIVE_ONLY:
+            eligible = fullySusceptible() == true;
+            break;
+        case VACCINATE_SEROPOSITIVE_ONLY:
+            eligible = fullySusceptible() == false;
+            break;
+        case VACCINATE_ALL_SERO_STATUSES:
+            eligible = true;
+            break;
+        default:
+            cerr << "ERROR: Unsupported VaccineSeroConstraint: " << vsc << endl;
+            exit(-878);
+    }
+    return eligible;
+}
+
+
 bool Person::vaccinate(int time) {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;

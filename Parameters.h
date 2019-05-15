@@ -72,6 +72,13 @@ enum PrimaryPathogenicityModel {
     NUM_OF_PRIMARY_PATHOGENICITY_MODELS
 };
 
+enum VaccineSeroConstraint {
+    VACCINATE_SERONEGATIVE_ONLY,
+    VACCINATE_SEROPOSITIVE_ONLY,
+    VACCINATE_ALL_SERO_STATUSES,
+    NUM_OF_VACCINE_SERO_CONSTRAINTS
+};
+
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
 // series A
@@ -376,6 +383,7 @@ public:
     bool abcVerbose;
     unsigned long int serial;
 
+    VaccineSeroConstraint vaccineSeroConstraint;
     // WHO vaccine mechanism variables
     WHO_DiseaseOutcome whoDiseaseOutcome;
 };
