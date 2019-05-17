@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "vacvec-new_yuc-alt_foi.sqlite",
+    "database_filename"             : "vacvec-new_yuc-alt_foi-CYD_TDV-seropos_only.sqlite",
     "posterior_database_filename"   : "new_yuc_posterior.sqlite",
     "retain_posterior_rank"         : "true",
 

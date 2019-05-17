@@ -23,7 +23,7 @@ const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit3");
 
-const int RESTART_BURNIN    = 10; // was 10 for normal results, 100 for foi-effect analysis
+const int RESTART_BURNIN    = 10; // 10 for normal results, 100 for foi-effect analysis if changing foi from imm file
 const int FORECAST_DURATION = 41; // normally 41; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
@@ -129,7 +129,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
 
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
-    //par->immunityFilename         = imm_dir    + "/immunity2030."       + process_id;
+    par->immunityFilename         = imm_dir    + "/immunity2030."       + process_id;
     //par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";
@@ -313,8 +313,12 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const int target              = (int) args[20];
     const bool catchup            = (bool) args[21];
     const int catchup_to          = (int) args[22];
+    const double seroTestFalsePos = args[23];
+    const double seroTestFalseNeg = args[24];
 
-    par->immunityFilename         = "/ufrc/longini/tjhladish/imm_1000_yucatan-alt_foi/immunity2130." + process_id + ".foi" + to_string(foi_mult);
+    if (foi_mult != 1.0) {
+        par->immunityFilename = "/ufrc/longini/tjhladish/imm_1000_yucatan-alt_foi/immunity2130." + process_id + ".foi" + to_string(foi_mult);
+    }
     Community* community = build_community(par);
 
     if (vector_control) {
@@ -332,13 +336,16 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
         if (catchup) {
             for (int catchup_age = target; catchup_age <= catchup_to; catchup_age++) {
-                par->catchupVaccinationEvents.emplace_back(catchup_age, RESTART_BURNIN*365, catchup_coverage);
+                const int vacDate = julian_to_sim_day(par, JULIAN_TALLY_DATE + 1, RESTART_BURNIN);
+                par->catchupVaccinationEvents.emplace_back(catchup_age, vacDate, catchup_coverage);
             }
         } 
 
         par->vaccineTargetAge = target;
         par->vaccineTargetCoverage = target_coverage;
-        par->vaccineTargetStartDate = RESTART_BURNIN*365;
+        par->vaccineTargetStartDate = julian_to_sim_day(par, JULIAN_TALLY_DATE + 1, RESTART_BURNIN);
+        par->seroTestFalsePos = seroTestFalsePos;
+        par->seroTestFalseNeg = seroTestFalseNeg;
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
@@ -352,8 +359,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->numVaccineDoses         = 3;
         par->vaccineDoseInterval     = 182;
         par->vaccineBoosting         = false;
-
-        par->whoDiseaseOutcome = INC_NUM_INFECTIONS;
+        par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
+        par->whoDiseaseOutcome       = INC_NUM_INFECTIONS;
     } else if (vaccine_mechanism == 1) { // also want A1 + B2 + C3a
         // imperfect efficacy that does not wane
         par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 0.7);
@@ -368,8 +375,21 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->numVaccineDoses         = 1;
         par->vaccineDoseInterval     = INT_MAX;
         par->vaccineBoosting         = false;
-
-        par->whoDiseaseOutcome = VAC_ISNT_INFECTION;
+        par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
+        par->whoDiseaseOutcome       = VAC_ISNT_INFECTION;
+    } if (vaccine_mechanism == 2) {        // "baseline" scenario: A2b + B2 + C3a
+        // perfect efficacy that wanes rapidly -- most benefit comes from vaccine-as-infection assumption
+        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = true;
+        par->vaccineImmunityDuration = 2*365;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 3;
+        par->vaccineDoseInterval     = 182;
+        par->vaccineBoosting         = false;
+        par->vaccineSeroConstraint   = VACCINATE_SEROPOSITIVE_ONLY;
+        par->whoDiseaseOutcome       = INC_NUM_INFECTIONS;
     } else {
         cerr << "Unsupported vaccine mechanism: " << vaccine_mechanism << endl;
         exit(-152);

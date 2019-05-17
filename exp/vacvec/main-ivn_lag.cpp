@@ -337,14 +337,15 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         if (catchup) {
             for (int catchup_age = target; catchup_age <= catchup_to; catchup_age++) {
                 for (int y = 0; y < catchup_duration; ++y) {
-                    par->catchupVaccinationEvents.emplace_back(catchup_age, (RESTART_BURNIN + vac_lag + y)*365, catchup_coverage);
+                    const int vacDate = julian_to_sim_day(par, JULIAN_TALLY_DATE + 1, RESTART_BURNIN + vac_lag + y);
+                    par->catchupVaccinationEvents.emplace_back(catchup_age, vacDate, catchup_coverage);
                 }
             }
         } 
 
         par->vaccineTargetAge = target;
         par->vaccineTargetCoverage = target_coverage;
-        par->vaccineTargetStartDate = (RESTART_BURNIN + vac_lag) *365;
+        par->vaccineTargetStartDate = julian_to_sim_day(par, JULIAN_TALLY_DATE + 1, RESTART_BURNIN + vac_lag);
     }
 
     if (vaccine_mechanism == 0) {        // "baseline" scenario: A2b + B2 + C3a
