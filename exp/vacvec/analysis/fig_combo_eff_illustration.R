@@ -69,10 +69,10 @@ limits.dt <- plot.dt[,
   by=scenario
 ]
 
-scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:1]),expand.grid(scn_lvls[2], vac_lvls[3])), paste(Var1, Var2, sep="."))
-scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:1]), paste(Var2, Var1, sep=", ")), "75% TIRS Coverage")
+scn2_lvls <- with(rbind(expand.grid(scn_lvls[-(1:2)], vac_lvls[2:3]),expand.grid(scn_lvls[2], vac_lvls[4])), paste(Var1, Var2, sep="."))
+scn2_labels <- c(with(expand.grid(cu_labels[1:2],vac_labels[2:3]), as.character(Var2)), "75% TIRS")
 scn2_cols <- scn_cols[gsub("^(.+)\\..+$","\\1",scn2_lvls)]
-scn2_pchs <- vac_nofill_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
+scn2_pchs <- vac_pchs[gsub("^.+\\.(.+)$","\\1",scn2_lvls)]
 names(scn2_labels) <- names(scn2_cols) <- names(scn2_pchs) <- scn2_lvls
 
 scale_color_scenario2 <- scale_generator(
@@ -83,14 +83,17 @@ scale_shape_scenario2 <- scale_generator(
   "shape", "Single Intervention", scn2_labels, scn2_pchs
 )
 
-naive.eff.cmdvi <- naive.eff[vaccine == "cmdvi"]
-naive.eff.edv <- naive.eff[vaccine == "edv"]
-naive.eff.cmdvi.thin <- naive.eff.cmdvi[pchstride(year)]
-naive.eff.edv.thin <- naive.eff.edv[pchstride(year)]
+naive.eff.cydtdv <- naive.eff[vaccine == "t+cydtdv"]
+naive.eff.d70e <- naive.eff[vaccine == "d70e"]
+naive.eff.cydtdv.thin <- naive.eff.cydtdv[pchstride(year)]
+naive.eff.d70e.thin <- naive.eff.d70e[pchstride(year)]
+naive.eff.cydtdv.many <- naive.eff.cydtdv[invpchstride(year)]
+naive.eff.d70e.many <- naive.eff.d70e[invpchstride(year)]
 
-naive.labs <- paste("75% TIRS Coverage",vac_labels[-3],sep=" & ")
-names(naive.labs) <- names(vac_labels[-3])
-naive.leg.name <- "Hypothetical Combinations"
+naive.labs <- paste("75% TIRS",vac_labels[-4],sep=" & ")
+names(naive.labs) <- names(vac_labels[-4])
+naive.leg.name <- "Naive Estimate"
+sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
@@ -108,34 +111,50 @@ legtheme <- theme(
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
   geom_line(aes(color="vc")) +
-  geom_point(aes(color="vac"), naive.eff[pchstride(year)], size=pchsize) + 
+  geom_pchline(naive.eff, mapping = aes(color="vac"), fill=light_cols["vac"]) +
   scale_size_vectorcontrol(guide="none") + legtheme
-  
+
 annopchp <- annopbase +
   scale_color_scenario(values=light_cols, guide="none") +
-  scale_shapenofill_vaccine(name=naive.leg.name, breaks=c("edv","cmdvi"), labels = naive.labs,
-    guide=guide_legend(override.aes=list(color=light_cols["vac"]))
+  scale_shape_vaccine(name=naive.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
+    guide=guide_legend(title.vjust = -0.3, override.aes=list(color=light_cols["vac"]))
   )
+
+simpchleg <- get_legend(annopbase + scale_color_scenario(values=rep(scn_cols["vc+vac"], 2), guide="none") +
+	scale_shape_vaccine(sim.leg.name, breaks=c("d70e","t+cydtdv"), labels = naive.labs,
+		guide=guide_legend(title.vjust = -0.3, override.aes=list(color=scn_cols["vc+vac"], fill=scn_cols["vc+vac"]))
+	))
 
 annolinep <- annopbase +
   scale_color_scenario(
     name=naive.leg.name,
     labels = naive.line.labs,
-    guide=guide_legend(override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
+    guide=guide_legend(title.vjust = -0.3, override.aes = list(color = light_cols["vc"], shape=NA, size=vc_sizes["75"]))
   ) +
   scale_shapenofill_vaccine(guide = "none")
+
+simlineleg <- get_legend(annopbase +
+	scale_color_scenario(
+		name = sim.leg.name,
+		labels = naive.line.labs,
+		guide=guide_legend(title.vjust = -0.3, override.aes = list(color = scn_cols["vc+vac"], shape=NA, size=vc_sizes["75"]))
+	) +
+	scale_shapenofill_vaccine(guide = "none"))
+
 
 annopchleg <- get_legend(annopchp)
 annolineleg <- get_legend(annolinep)
 
 annoline <- function(ref.dt) annotate("line", x=ref.dt$year+1, y=ref.dt$value, size=vc_sizes["75"], linejoin = "mitre", lineend = "butt", color = light_cols["vc"])
-annopt <- function(ref.dt) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=pchsize, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
+annopt <- function(ref.dt, sz=pchsize) annotate("point", x=ref.dt$year+1, y=ref.dt$value, size=sz, shape=vac_pchs[ref.dt[,as.character(unique(vaccine))]], color=light_cols["vac"], fill=light_cols["vac"])
 
 annos <- list(
-	annoline(naive.eff.cmdvi),
-	annoline(naive.eff.edv),
-	annopt(naive.eff.cmdvi.thin),
-	annopt(naive.eff.edv.thin)
+	annoline(naive.eff.cydtdv),
+	annoline(naive.eff.d70e),
+	annopt(naive.eff.cydtdv.thin),
+	annopt(naive.eff.cydtdv.many, sz=smallpch),
+	annopt(naive.eff.d70e.thin),
+	annopt(naive.eff.d70e.many, sz=smallpch)
 )
 
 # illustrate combined effectiveness
@@ -149,7 +168,7 @@ p1shared <- ggplot(
   group = interaction(scenario, catchup, vaccine, vc_coverage, estimate)
 ) +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[intervention == "single"][pchstride(year)], size=pchsize) +
+  geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
   scale_size_vectorcontrol(guide = "none") +
   scale_fill_catchup(guide="none", na.value=NA) + legtheme
 
@@ -221,13 +240,13 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario, intervention)]
 
 illus_labels <- rbind(
-  copy(naive.eff[year==27])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
+  copy(naive.eff[year==30])[, intervention := factor("combined", levels=c("single","combined"), ordered = T)]
 )
-illus_labels[vaccine == "edv", value := value + 0.1]
-#illus_labels[vaccine == "cmdvi" & intervention == "single", value := value - 0.072]
-illus_labels[vaccine == "cmdvi" & intervention == "combined", value := value - 0.125]
+illus_labels[vaccine == "d70e", value := value + 0.1]
+#illus_labels[vaccine == "t+cydtdv" & intervention == "single", value := value - 0.072]
+illus_labels[vaccine == "t+cydtdv" & intervention == "combined", value := value - 0.15]
 #illus_labels[intervention == "single", lab := paste("Naive 75%", vac_labels[vaccine],sep=" + ") ]
-illus_labels[intervention == "combined", lab := ifelse(vaccine == "edv", "Amplification", "Interference") ]
+illus_labels[intervention == "combined", lab := ifelse(vaccine == "d70e", "Amplification", "Interference") ]
 
 label.sz = 4
 
@@ -244,36 +263,39 @@ resp <- ggplot(
   geom_altribbon(plot2.dt, withlines = F) +
   annos +
   geom_line(linejoin = "mitre", lineend = "butt") +
-  geom_point(data=plot.dt[pchstride(year)], size=pchsize) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "edv"], size=label.sz, color=int_fills["over"]) +
-  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "cmdvi"], size=label.sz, color=int_fills["under"]) +
+  geom_pchline(plot.dt[intervention == "single"], fill=scn_cols["vac"]) +
+	geom_pchline(plot.dt[intervention == "combined"], fill=scn_cols["vc+vac"]) +
+  geom_point(data=plot.dt[intervention == "combined"][invpchstride(year)], size=smallpch, color="grey28", fill="grey28") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "d70e"], size=label.sz, color=int_fills["over"], fontface="bold") +
+  geom_text(mapping=aes(label=lab, fill=NULL, color=NULL, size=NULL), data=illus_labels[vaccine == "t+cydtdv"], size=label.sz, color=int_fills["under"], fontface="bold") +
   scale_size_vectorcontrol(guide = "none") +
   scale_color_scenario2(guide = "none") +
-  scale_shapenofill_vaccine(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
   scale_fill_interaction(guide="none") +
-  scale_year() +
-  scale_effectiveness() +
+  scale_year() + scale_effectiveness() +
   coord_cartesian(clip = "off") +
   theme(
     panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
     strip.background = element_blank(),
     strip.text.y = element_blank(),
-  #  axis.title = element_text(size=rel(0.7)),
+    axis.title = element_text(size=rel(0.9)),
   #  axis.text = element_text(size=rel(0.7)),
   #  strip.text.y = element_text(angle=90),
     plot.margin = margin(t = unit(6,"pt"), r = unit(18,"pt")),
     legend.position = "none"
   )
 
-leg.xy <- list(x=0.5,y=0.42)
-anleg.xy <- list(x=0.3,y=0.08)
+leg.xy <- list(x=0.67,y=0.405)
+anleg.xy <- list(x=0.37,y= 0.087)
+simleg.xy <- list(x=0.37,y= -0.39)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
-  draw_grob(annolineleg, x=anleg.xy$x, y=anleg.xy$y) + draw_grob(annopchleg, x=anleg.xy$x, y=anleg.xy$y)
+  draw_grob(annolineleg, x=anleg.xy$x, y=anleg.xy$y) + draw_grob(annopchleg, x=anleg.xy$x, y=anleg.xy$y) +
+	draw_grob(simlineleg, x=simleg.xy$x, y=simleg.xy$y) + draw_grob(simpchleg, x=simleg.xy$x, y=simleg.xy$y)
 
 ## TODO tried outlining points in white? looks meh?
 
-save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = 3.25)
+save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
 
 #plotutil(p, h=4.5, w=2.75, tar)

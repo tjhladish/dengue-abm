@@ -3,17 +3,19 @@ suppressPackageStartupMessages({
   require(cowplot)
 })
 
-args <- c("figref.rda", "rds/foi_effstats.rds", "rds/effstats.rds", "fig/fig_5.png")
+args <- c("figref.rda", "rds/foi_effstats.rds", "rds/sub_foi_effstats.rds", "rds/effstats.rds", "rds/sub_effstats.rds", "fig/fig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 tar <- tail(args, 1)
 
 load(args[1])
 
-base.stat.eff.dt <- readRDS(args[3])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75]
-base.stat.eff.dt[, foi := 1.0 ]
+base.stat.eff.dt <- rbind(
+	readRDS(args[4])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75],
+	readRDS(args[5])[vaccine == "cydtdv" & catchup == "routine" & vc_coverage == 75]
+)[, foi := 1.0 ]
 
-stat.eff.dt <- rbind(readRDS(args[2]), base.stat.eff.dt)[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
+stat.eff.dt <- rbind(readRDS(args[2]), readRDS(args[3]), base.stat.eff.dt)[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
 stat.eff.dt[,
   scenario := factor(ifelse(variable == "combo.eff", "vc+vac",
               ifelse(variable == "vac.eff"  , "vac",
@@ -82,21 +84,21 @@ pbase <- ggplot(
   geom_line(data=real.dt[scenario != "vc"]) +
   geom_pchline(dt=real.dt, fill="white") +
   scale_size_vectorcontrol(guide="none") +
-  scale_shape_vaccine(guide="none") +
+#  scale_shape_vaccine() +
   scale_year() +
   scale_effectiveness() +
 	scale_fill_interaction(guide="none") +
 	scale_alpha_manual(values=c(delta=int_alpha), guide = "none") +
   facet_grid(. ~ foi, labeller=facet_labels) +
   FOIfacettitle +
-  coord_cartesian(clip="off", ylim=c(0,1), xlim=c(0,40)) + theme(
+  coord_cartesian(clip="off", ylim=c(-.125,1), xlim=c(0,40)) + theme(
     panel.spacing.x = unit(12, "pt")
   ) + theme(
   	axis.title = element_text(size=rel(1)),
   	axis.text = element_text(size=rel(0.9)),
   	legend.margin = margin(), legend.spacing = unit(25, "pt"),
   	legend.text = element_text(size=rel(leg.sz)),
-  	legend.title = element_text(size=rel(leg.sz)), legend.title.align = 0.5,
+  	legend.title = element_text(size=rel(leg.sz)), legend.title.align = 0,
   	panel.spacing.x = unit(15, "pt"),
   	strip.text = element_text(size=rel(1)),
   	strip.text.y = element_text(angle=90),
@@ -110,22 +112,28 @@ labs["vac"] <- paste0("Routine ", vac_labels["t+cydtdv"]," Only")
 labs["vc+vac"] <- paste0("TIRS"," & ",vac_labels["t+cydtdv"])
 labs["vc+naive"] <- labs["vac+naive"] <- "Naive Estimate"
 
-ppchleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
+ppchleg <- get_legend(pbase + scale_shape_vaccine(guide="none") + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(
 		shape = c(vac_pchs["t+cydtdv"],NA,vac_pchs["t+cydtdv"],vac_pchs["t+cydtdv"]),
 		linetype = 0,
 		color = c(scn_cols["vac"], NA, scn_cols["vac+naive"], scn_cols["vc+vac"])
-	)
+	), title.vjust = -0.1
 )))
 
-pltyleg <- get_legend(pbase + scale_color_scenario(labels=labs, guide=guide_legend(
+pltyleg <- get_legend(pbase + scale_shape_vaccine(guide="none") + scale_color_scenario(labels=labs, guide=guide_legend(
 	override.aes = list(
 		shape = NA,
 		linetype = "solid",
 		size = c(vc_sizes["0"], rep(vc_sizes["75"], 3))
-	)
+	), title.vjust = -0.1
 )))
 
-p <- ggdraw(pbase + scale_color_scenario(guide="none")) + draw_grob(pltyleg, x=0.42, y=.18) + draw_grob(ppchleg, x=0.42, y=.18)
+p <- ggdraw(
+	pbase + scale_color_scenario(guide="none") +
+	scale_shape_vaccine(name="Serological Screening",
+		breaks=c("cydtdv","t+cydtdv"), labels = c(cydtdv="No Screening", `t+cydtdv`="Seropositive Only"), guide=guide_legend(title.vjust = -0.1)
+	) +
+	theme(legend.position = c(0.965,0.6), legend.justification = c(1,0.5))
+) + draw_grob(pltyleg, x=0.42, y=.22) + draw_grob(ppchleg, x=0.42, y=.22)
 
-save_plot(tar, p, base_height = baseh*1.125, base_width = 3.75, ncol = 3)
+save_plot(tar, p, base_height = baseh*2, base_width = 3.75, ncol = 3)

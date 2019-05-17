@@ -72,13 +72,16 @@ SIfig_6.png SIfig_6.tiff: SIfig_foi.R figref.rda foi_effstats.rds effstats.rds |
 SIfig_7.png SIfig_7.tiff: SIfig_foi_v_mpop.R figref.rda foi_v_mpop.rds | $(FIGDIR)
 	$(RFIG)
 
+SIfig_8.png SIfig_8.tiff: SIfig_foi_both_cydtdv.R figref.rda foi_effstats.rds sub_foi_effstats.rds effstats.rds sub_effstats.rds | $(FIGDIR)
+	$(RFIG)
+
 # lagged showing single interventions
 non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 
 MTFIGS := fig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
-SIFIGS := SIfig_2.png SIfig_3.png SIfig_4.png SIfig_5.png SIfig_6.png SIfig_7.png
+SIFIGS := SIfig_2.png SIfig_3.png SIfig_4.png SIfig_5.png SIfig_6.png SIfig_7.png SIfig_8.png
 
 maintextfigs: $(MTFIGS)
 
@@ -108,5 +111,5 @@ tab_mets.tex: tex_posterior_metrics.R utils.R posterior.rds metkey.json | $(TEXD
 
 textabs: tab_pars.tex tab_mets.tex
 
-pullstats: pullstats.R effstats.rds
+pullstats: pullstats.R effstats.rds lag_effstats.rds foi_v_mpop.rds
 	@Rscript $^

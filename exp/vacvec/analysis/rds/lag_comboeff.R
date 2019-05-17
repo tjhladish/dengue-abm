@@ -25,7 +25,7 @@ delayer <- function(del, dt) {
 }
 
 vecnolag <- nolag_effectiveness.dt[scenario == "vc" & vc_coverage == 75]
-vacnolag <- nolag_effectiveness.dt[scenario == "vac" & vaccine == "edv" & catchup == "vac-only"]
+vacnolag <- nolag_effectiveness.dt[scenario == "vac" & vaccine == "d70e" & catchup == "vac-only"]
 
 veclag <- rbindlist(lapply(delays, delayer, dt=vecnolag))[, .(vec.eff=eff, c.vec.eff=c.eff),keyby=.(ivn_lag, particle, replicate, year)]
 vaclag <- rbindlist(lapply(delays, delayer, dt=vacnolag))[, .(vac.eff=eff, c.vac.eff=c.eff),keyby=.(ivn_lag, particle, replicate, year)]

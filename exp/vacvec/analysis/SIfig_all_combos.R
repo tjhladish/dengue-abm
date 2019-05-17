@@ -36,13 +36,13 @@ p <- ggplot(cmb.eff) + aes(
     alpha=0.5, show.legend = F
   ) +
   geom_line(alpha=1, size=vc_sizes["0"]) +
-  geom_point(data=cmb.eff[pchstride(year) & catchup == "routine"], fill="white", alpha=1, size=pchsize) +
-  geom_point(data=cmb.eff[pchstride(year) & catchup != "routine"], fill="black", alpha=1, size=pchsize) +
+  geom_pchline(dt=cmb.eff[catchup == "routine"], fill="white", alpha=1) +
+  geom_pchline(dt=cmb.eff[catchup != "routine"], fill="black", alpha=1) +
   scale_year() + scale_effectiveness() +
   # scale_fill_interaction(
   #   guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
   # ) +
-  scale_pchlty_vaccine(guide = "none") +
+  scale_shape_vaccine(guide = "none") +
   scale_color_scenario(guide = "none", value="black", aesthetics = c("color","fill")) +
   scale_size_vectorcontrol(guide="none") +
   coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +

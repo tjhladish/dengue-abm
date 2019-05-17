@@ -26,42 +26,53 @@ cmb.eff <- effstats.dt[variable == "syn", .(
   measure = variable
 )]
 
-ribbon_regions <- function(x, y, ycmp, tfrle = rle(ycmp > y), super) {
-  sp <- cumsum(head(tfrle$lengths, -1))
-  y <- rep(y, length(ycmp))
-  if (length(sp)) {
-    x1   = x[sp]; x2=x[sp+1]
-    yr1  = y[sp]; yr2=y[sp+1]
-    yc1  = ycmp[sp]; yc2=ycmp[sp+1]
-    yrm  = (yr2-yr1)/(x2-x1); ycm = (yc2-yc1)/(x2-x1)
-    yrb  = yr2 - yrm*x2; ycb = yc2 - ycm*x2
-    xint = (yrb-ycb)/(ycm-yrm); yint = yrm*xint + yrb
-    keeps <- inverse.rle(tfrle)
-    return(data.table(
-      x = c(x[keeps], xint),
-      y = c(ycmp[keeps], yint),
-      super = c(super[keeps], rep(NA, length(xint)))
-    )[order(x)])
-  } else {
-    if (tfrle$value) {
-      return(data.table(x=x, y=ycmp, super=super))
-    } else {
-      return(data.table(x=x[integer()],y=ycmp[integer()], super=super[integer()]))
-    }
-  }
-}
+# crossings <- function(x, ycmp, tfrle = rle(ycmp > y), super) {
+#   sp <- cumsum(head(tfrle$lengths, -1))
+#   y <- rep(0, length(ycmp))
+#   if (length(sp)) {
+#   	expand <- c(1,rep(2, length(sp)))
+#   	expand[length(expand)] <- 1
+#   	
+#     x1   = x[sp]; x2=x[sp+1]
+#     yr1  = y[sp]; yr2=y[sp+1]
+#     yc1  = ycmp[sp]; yc2=ycmp[sp+1]
+#     # yrm  = (yr2-yr1)/(x2-x1); 
+#     ycm = (yc2-yc1)/(x2-x1)
+#     # yrb  = yr2 - yrm*x2;
+#     ycb = yc2 - ycm*x2
+#     xint = -ycb/ycm
+#     keeps <- inverse.rle(tfrle)
+#     return(data.table(
+#       x = c(x[keeps], x[!keeps], rep(xint,each=2)),
+#       y = c(ycmp[keeps], rep(0, length(x[!keeps])), rep(0,sum(expand))),
+#       yref = c(super[keeps], rep(0, length(x[!keeps])), rep(0,sum(expand))),
+#       side = c(keeps[keeps], rep(FALSE, length(x[!keeps])), rep(tfrle$values, expand))
+#     )[order(x)])
+#   } else {
+#     return(data.table(x=x[integer()], side=logical()))
+#   }
+# }
 
-ribs <- cmb.eff[,{
-  redregions <- ribbon_regions(as.numeric(year), 0, lo, tfrle = rle(lo < 0), super=hi)[,.(
-      year = x, ymin=y, ymax=pmin(0,super,na.rm=T), col="under"
-  )]
-  blueregions <- ribbon_regions(as.numeric(year), 0, hi, tfrle = rle(hi > 0), super=lo)[,.(
-    year = x, ymin=pmax(0,super,na.rm=T), ymax=y, col="over"
-  )]
-  rbind(redregions, blueregions)
-  },
-  keyby = .(vaccine, catchup, vc_coverage, measure)
-]
+# ribs <- cmb.eff[,{
+# 	loregions <- crossings(as.numeric(year), lo, tfrle = rle(lo < 0), pmin(0, hi))
+# 	redregions <- loregions[side==TRUE][,.(
+# 		year = x, ymin=y, ymax=yref, col="under"
+# 	)]
+# 	
+# 	# where lo regions TRUE - lb is in red region
+# 	# ... FALSE - lb is in blue region
+# 	
+# 	hiregions <- crossings(as.numeric(year), hi, tfrle = rle(hi > 0), pmax(0,lo))
+#   redregions <- ribbon_regions(as.numeric(year), lo, tfrle = rle(lo < 0), super=hi)[,.(
+#       year = x, ymin=y, ymax=pmin(0,super,na.rm=T), col="under"
+#   )]
+#   blueregions <- ribbon_regions(as.numeric(year), hi, tfrle = rle(hi > 0), super=lo)[,.(
+#     year = x, ymin=pmax(0,super,na.rm=T), ymax=y, col="over"
+#   )]
+#   rbind(redregions, blueregions)
+#   },
+#   keyby = .(vaccine, catchup, vc_coverage, measure)
+# ]
 
 p <- ggplot(cmb.eff) + aes(
   shape=vaccine, color=scenario, size=factor(vc_coverage),
@@ -69,23 +80,30 @@ p <- ggplot(cmb.eff) + aes(
 ) + theme_minimal() +
   facet_grid(vaccine + catchup ~ vc_coverage, labeller = facet_labels) +
 #  geom_ribbon(aes(color=NULL, ymin=lo, ymax=hi, y=NULL), fill="black", alpha=0.5) +
-  geom_ribbon(
-    mapping = aes(fill=col, color=NULL, ymin=ymin, ymax=ymax, y=NULL),
-    data = ribs[col=="over"],
-    alpha=0.5, show.legend = F
-  ) +
-  geom_ribbon(
-    mapping = aes(fill=col, color=NULL, ymin=ymin, ymax=ymax, y=NULL),
-    data = ribs[col=="under"],
-    alpha=0.5, show.legend = F
-  ) +
-  geom_line(alpha=1, size=vc_sizes["0"]) +
-  geom_point(data=cmb.eff[pchstride(year) & catchup == "routine"], fill="white", alpha=1, size=pchsize) +
-  geom_point(data=cmb.eff[pchstride(year) & catchup != "routine"], fill="black", alpha=1, size=pchsize) +
-  scale_year() + scale_y_continuous(name="Interaction") +
-  # scale_fill_interaction(
-  #   guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
+	geom_rect(
+		aes(xmin=year+0.5, xmax=year+1.5, ymin=pmax(0,lo), ymax=hi, color=NULL),
+		data=cmb.eff[hi > 0],
+		fill = "blue", alpha = 0.5
+	) +
+	geom_rect(
+		aes(xmin=year+0.5, xmax=year+1.5, ymin=lo, ymax=pmin(0,hi), color=NULL),
+		data=cmb.eff[lo < 0],
+		fill = "red", alpha = 0.5
+	) +
+  # geom_ribbon(
+  #   mapping = aes(fill=col, color=NULL, ymin=ymin, ymax=ymax, y=NULL),
+  #   data = ribs[col=="over"],
+  #   alpha=0.5, show.legend = F
   # ) +
+  # geom_ribbon(
+  #   mapping = aes(fill=col, color=NULL, ymin=ymin, ymax=ymax, y=NULL),
+  #   data = ribs[col=="under"],
+  #   alpha=0.5, show.legend = F
+  # ) +
+  geom_line(alpha=1, size=vc_sizes["0"]) +
+  geom_pchline(dt=cmb.eff[catchup == "routine"], fill="white", alpha=1, show.legend = F) +
+  geom_pchline(dt=cmb.eff[catchup != "routine"], fill="black", alpha=1, show.legend = F) +
+  scale_year() + scale_y_continuous(name="Interaction") +
   scale_shape_vaccine(guide = "none") +
   scale_color_scenario(guide = "none", value="black") +
   scale_fill_interaction() +

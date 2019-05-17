@@ -8,7 +8,7 @@ suppressPackageStartupMessages({
 })
 
 # developer args
-args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response-tmp.sqlite', "~/Dropbox/who/mpeak_intros-tmp.out")
+args <- c("../utils.R", '~/Dropbox/who/mpeak_incidence_response-expanded.sqlite', "~/Dropbox/who/mpeak_intros-expanded.out")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
@@ -35,21 +35,24 @@ mlt$variable <- NULL
 
 rdt <- dcast.data.table(mlt, serial + year + foi ~ measure, value.var = "value")
 
-intros <- fread(args[3])[, year := year - 101L][year >= 0]
+intros <- fread(args[3], col.names = c("serial", "year", "intro.i", "intro.s"))[, year := year - 101L][year >= 0][,.(
+	intro.i = unique(intro.i), intro.s = unique(intro.s)
+), keyby=.(serial, year)]
+
+# TODO assert check here
+
 plot.dt <- rdt[
   intros,
   on=.(serial, year), nomatch = 0
 ]
 
-setnames(plot.dt, "introduced_infections", "intro.i")
-
-plot.dt[, intro.s := floor((s/i)*intro.i) ]
+# plot.dt[, intro.s := floor((s/i)*intro.i) ]
 plot.dt[, local.i := i - intro.i ]
 plot.dt[, local.s := s - intro.s ]
 
 res <- melt.data.table(plot.dt, id.vars = c("serial","year","foi"))[,
-  dtquantiles(probs = c(.25,.5,.75), value, c("lo","med", "hi")),
-  by=.(foi, variable, year)
+  .(value=mean(value)),
+  by=.(foi, variable, serial)
 ]
 
 tar <- tail(args, 1)

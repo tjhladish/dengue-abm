@@ -77,36 +77,58 @@ geom_altribbon <- function(dt, withlines = TRUE, ky=key(dt)) {
 	res
 }
 
-plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine = factor(vaccine, rev(levels(vaccine)), ordered = T), catchup, scenario)]
+plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverage, vaccine, catchup, scenario)]
 
-p <- ggplot(plot2.dt) + aes(
+leg.sz <- 0.9
+
+shared <- list(
+	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels),
+		geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]),
+		geom_pchline(dt=plot2.dt[catchup == "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="white", alpha=1),
+		geom_pchline(dt=plot2.dt[catchup != "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="black", alpha=1),
+		scale_year(), scale_effectiveness(),
+		scale_color_scenario(guide = "none", value="black"),
+		scale_size_vectorcontrol(guide="none"),
+		coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off"),
+		theme_minimal(),
+		TIRSfacettitle,
+		theme(
+			axis.title = element_text(size=rel(1.1)),
+			axis.text = element_text(size=rel(1)),
+			legend.margin = margin(), legend.spacing = unit(25, "pt"),
+			legend.text = element_text(size=rel(leg.sz)),
+			legend.title = element_text(size=rel(leg.sz)), legend.title.align = 0.5,
+			panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
+			strip.text = element_text(size=rel(1.1)),
+			strip.text.y = element_text(angle=90),
+			legend.key.height = unit(1,"pt"),
+			legend.box.spacing = unit(2.5, "pt"),
+			legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin
+		),
+		scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
+)
+
+pbase <- ggplot(plot2.dt) + aes(
 	shape=vaccine, color=scenario, size=factor(vc_coverage),
 	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
-) + theme_minimal() +
-	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels) +
-	geom_altribbon(plot2.dt, withlines = F) +
-	geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]) +
-  geom_point(aes(y=ycmp), data=plot2.dt[pchstride(x-1) & catchup == "routine"], fill="white", alpha=1, size=pchsize) +
-  geom_point(aes(y=ycmp), data=plot2.dt[pchstride(x-1) & catchup != "routine"], fill="black", alpha=1, size=pchsize) +
-	scale_year() + scale_effectiveness() +
-	scale_fill_interaction(
-		guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4)))
-	) +
-	scale_pchlty_vaccine(guide = "none") +
-	scale_color_scenario(guide = "none", value="black") +
-	scale_size_vectorcontrol(guide="none") +
-	coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off") +
-  TIRSfacettitle +
-	theme(
-		legend.margin = margin(), legend.spacing = unit(25, "pt"),
-		legend.text = element_text(size=rel(0.5)),
-		legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-		panel.spacing.y = unit(15, "pt"), panel.spacing.x = unit(15, "pt"),
-		strip.text.y = element_text(angle=90),
-		legend.key.height = unit(1,"pt"),
-		legend.box.spacing = unit(2.5, "pt"),
-		legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin
-	) +
-	scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
+)
 
-plotutil(p, h=5, w=7.5, tar)
+relabs <- cu_labels[c("vc+vac","routine")]
+names(relabs) <- c("d70e","t+cydtdv")
+# get legends
+d70e.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["d70e"], labels=relabs, guide=guide_legend(
+	override.aes = list(shape = vac_pchs["d70e"], fill=c(scn_cols["vc+vac"], "white"))
+)))
+cydtdv.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["t+cydtdv"], labels = relabs, guide=guide_legend(
+	override.aes = list(shape = vac_pchs["t+cydtdv"], fill=c(scn_cols["vc+vac"], "white"))
+)))
+
+pmost <- pbase + geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_vaccine(guide="none") + scale_fill_interaction(
+	guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4), shape=NA))
+)
+
+p <- ggdraw(pmost) + 
+	draw_grob(d70e.lab, x=-0.3, y=-0.015) + draw_grob(cydtdv.lab, x=-0.3, y=-0.18)
+
+
+save_plot(tar, p, ncol = 3, nrow = 2, base_width = 3.75, base_height = baseh)

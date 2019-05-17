@@ -50,54 +50,74 @@ combo.dt <- stat.eff.dt[grepl("combo.eff", variable, fixed = T),
 ref.combo <- rbind(
   copy(ref.stat.dt)[, vac_first := 1 ],
   copy(ref.stat.dt)[, vac_first := 0 ]
-)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "edv" & catchup == "vc+vac" & vc_coverage == 75]
+)[variable %in% c("combo.eff","c.combo.eff") & vaccine == "d70e" & catchup == "vc+vac" & vc_coverage == 75]
 
-ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, obs := "reference" ][, ivn_lag := 0]
+ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, scenario := "simref" ][, ivn_lag := 0][, obs := "reference" ]
 
 lims <- combo.dt[,.(
-  year=-1, med=c(floor(min(med)*10)/10, 1)
+  year=-1, med=c(round(min(med)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
-p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=factor(ivn_lag)) +
-  adds +
-  geom_line(data=ref.combo, size=vc_sizes["75"]/2) +
-  geom_point(data=ref.combo[pchstride(year)], size=pchsize) +
-#  geom_line(data=combo.dt[vac_first == 1 & year <= ivn_lag]) +
-  geom_line(data=combo.dt[vac_first == 1], size=vc_sizes["75"]/2) +
-  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vac"]) +
-  geom_point(data=combo.dt[vac_first == 1], size=1) +
-  geom_point(data=combo.dt[vac_first == 1 & year < ivn_lag], size=1, color=scn_cols["vac"]) +
-  geom_point(data=combo.dt[vac_first == 1 & year == 0], size=pchsize, color=scn_cols["vac"]) +
-  #geom_point(data=combo.dt[vac_first == 1][pchstride(year)], size=pchsize) +
-  
-  geom_line(data=combo.dt[vac_first == 0], size=vc_sizes["75"]/2) +
-  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], size=vc_sizes["75"]/2, color=scn_cols["vc"]) +
-  geom_point(data=combo.dt[vac_first == 0 & year >= ivn_lag], size=1) +
-  geom_point(data=combo.dt[vac_first == 0 & year == ivn_lag], size=pchsize) +
+alphafactor <- 1/2.5
+
+fat <- 4/3
+
+ref.sizes <- c(reference=fat,observed=1/2)*vc_sizes["75"]
+
+
+pbase <- ggplot() + theme_minimal() + aes(
+  x=year+1, y=med, color=scenario, group=factor(ivn_lag),
+  linetype=obs, size=obs, alpha=obs
+) + adds + facet_grid(vac_first ~ measure, labeller = facet_labels) +
   geom_limits(lims) +
-  facet_grid(vac_first ~ measure, labeller = facet_labels, scales = "free_y") +
-  
-  scale_fill_interaction(guide="none") +
-  scale_year() +
-  scale_effectiveness(name="Effectiveness", breaks = seq(0,1,by=.1)) +
+  geom_line(data=ref.combo) +
+  geom_line(data=combo.dt[vac_first == 1 & year >= (ivn_lag-1)], mapping=aes(color="vc+vac")) +
+  geom_line(data=combo.dt[vac_first == 1 & year < ivn_lag], mapping=aes(color="vac")) +
+	geom_pchline(dt=combo.dt[vac_first == 1 & year < ivn_lag], mapping=aes(color="vac"), alpha=1) +
+  geom_pchline(dt=combo.dt[vac_first == 1 & year >= ivn_lag], mapping=aes(color="vc+vac"), alpha=1) +
+  geom_line(data=combo.dt[vac_first == 0 & year >= (ivn_lag-1)], mapping=aes(color="vc+vac")) +
+  geom_line(data=combo.dt[vac_first == 0 & year < ivn_lag], mapping=aes(color="vc")) +
+  geom_pchline(dt=combo.dt[vac_first == 0], offset = expression(ivn_lag), mapping=aes(color="vc+vac"), alpha=1) +
+  scale_year() + scale_effectiveness(name="Effectiveness", expand = c(0.1, 0, 0, 0)) +
   coord_cartesian(xlim=c(0,20), clip="off") +
   theme(
-    legend.direction = "horizontal",
-    legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
+    legend.direction = "vertical",
+    # legend.position = c(0.5,0.5), legend.justification = c(0.5, 0.5),
     legend.text = element_text(size=rel(0.6)),
     legend.title = element_text(size=rel(0.7), vjust = 0),
     legend.title.align = 0.5,
-    panel.spacing.y = unit(20,"pt"),
+    axis.title = element_text(size=rel(0.9)),
+    panel.spacing.y = unit(12,"pt"),
     panel.spacing.x = unit(15,"pt"),
-    strip.text = element_text(size=rel(0.6)),
-    strip.text.y = element_text(angle=90)
+    strip.text = element_text(size=rel(0.8)),
+    strip.text.y = element_text(angle=90),
+    legend.key.width = unit(20, "pt")
   ) +
-  scale_colour_manual(name=NULL,
-    values=c(reference="grey",observed="black"),
-    labels=c(reference="Simultaneous Reference", observed="Lagged Result")
-  )
+  scale_linetype_manual(guide = "none", values = c(reference="21", observed="solid")) +
+  scale_size_manual(guide="none", values = ref.sizes) +
+  scale_alpha_manual(guide="none", values = c(reference=1, observed=alphafactor))
 
-# TODO dump shaded area, add intervention annotations, change height aspect
+pleg <- get_legend(pbase + scale_color_scenario(
+  name=gsub(" ","\n", scn_name),
+  guide=guide_legend(
+    override.aes = list(
+      shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),
+      linetype=c("21","blank","blank","blank"),
+      size=c(ref.sizes[1],0,0,0)
+    )
+)))
 
-save_plot(tar, p, base_height = 1.25*hmult, base_width = 3.25*1.25, ncol = 2, nrow = 2)
-#plotutil(p, h=3, w=5.75, tar)
+pleg2 <- get_legend(pbase + scale_color_scenario(
+  name=gsub(" ","\n", scn_name),
+  guide=guide_legend(
+    override.aes = list(
+      shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),
+      fill=c(NA,scn_cols["vac"],NA,scn_cols["vc+vac"]),
+      linetype=c("blank","solid","solid","solid")
+    )
+)))
+
+p <- ggdraw(pbase + scale_color_scenario(guide="none") + theme(plot.margin = margin(r=72))) +
+  draw_grob(pleg, x=0.44, y=0.02) + draw_grob(pleg2, x=0.44, y=0.02)
+  
+save_plot(tar, p, base_height = baseh*0.55, base_width = 3.75, ncol = 2.5, nrow = 2)
