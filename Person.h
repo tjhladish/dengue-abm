@@ -148,7 +148,9 @@ class Person {
         double remainingEfficacy(const int time) const;
 
         bool fullySusceptible() const;
-        bool isSeroEligible(VaccineSeroConstraint vsc) const;         // does this person's immune state permit vaccination?
+                                                                      // does this person's immune state permit vaccination?
+                                                                      // NB: inaccurate test results are possible
+        bool isSeroEligible(VaccineSeroConstraint vsc, double falsePos, double falseNeg) const;
         bool vaccinate(int time);                                     // vaccinate this person
         static void setPar(const Parameters* par) { _par = par; }
 
