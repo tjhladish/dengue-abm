@@ -34,8 +34,9 @@ test_intervention.rds: $(TSTDB)
 foi_intervention.rds raw_foi_intervention.csv foi_baseline.rds raw_foi_baseline.csv: $(FOIDB)
 foi_test_intervention.rds: $(TSTFOIDB) # $(FOIDB)
 lag_intervention.rds raw_lag_intervention.csv: $(LAGDB)
+testsens_intervention.rds: $(TESTDB)
 
-baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql: sql.R projref.rda
+baseline.sql intervention.sql foi_baseline.sql foi_intervention.sql lag_intervention.sql testsens_intervention.sql: sql.R projref.rda
 	Rscript $^ $@
 
 raw_%.csv: %.sql
@@ -44,10 +45,16 @@ raw_%.csv: %.sql
 digest_%.csv: tocsv.R %.rds
 	Rscript $^ $@
 
-baseline.rds intervention.rds test_intervention.rds foi_baseline.rds foi_intervention.rds foi_test_intervention.rds lag_intervention.rds: parse.R utils.R projref.rda
+baseline.rds intervention.rds foi_intervention.rds lag_intervention.rds testsens_intervention.rds: parse.R utils.R projref.rda
 	Rscript $^ $@
 
-ALLDIG := $(addsuffix .rds,baseline intervention test_intervention foi_baseline foi_intervention foi_test_intervention lag_intervention)
+foi_baseline.rds: parse.R utils.R projref.rda | baseline.rds
+	Rscript $^ tmp_$@
+	Rscript -e "require(data.table); saveRDS({ ref <- readRDS('tmp_$@'); setkeyv(rbind(ref,readRDS('$|')[, foi := 1.0 ]), key(ref)) }, '$@')"
+	rm tmp_$@
+	
+
+ALLDIG := $(addsuffix .rds,baseline intervention foi_baseline foi_intervention lag_intervention testsens_intervention)
 # NB: make -j safe
 digests: $(ALLDIG)
 clean_digests:
@@ -75,7 +82,8 @@ foi_effectiveness.rds: $(addsuffix .rds,foi_baseline $(WHICHFOI))
 sub_foi_effectiveness.rds: $(addsuffix .rds,foi_baseline sub_foi_intervention)
 
 lag_effectiveness.rds: $(addsuffix .rds,baseline lag_intervention)
-ALLEFF := $(addsuffix .rds,effectiveness sub_effectiveness foi_effectiveness sub_foi_effectiveness lag_effectiveness)
+testsens_effectiveness.rds: $(addsuffix .rds,foi_baseline testsens_intervention)
+ALLEFF := $(addsuffix .rds,effectiveness foi_effectiveness lag_effectiveness testsens_effectiveness)
 
 # TODO document c = cumulative
 # TODO rename ind = naive?
@@ -91,7 +99,7 @@ ALLEFF := $(addsuffix .rds,effectiveness sub_effectiveness foi_effectiveness sub
 #
 # foi_% schema: same as basic, w/ key(foi) added on the left
 # lag_% schema: same as basic, w/ key(vac_first) added on the left
-effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds sub_effectiveness.rds sub_foi_effectiveness.rds: eff.R
+effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds testsens_effectiveness.rds: eff.R
 	Rscript $^ $@
 
 # make -j safe
@@ -111,11 +119,15 @@ clean_effectiveness:
 comboeff.rds: effectiveness.rds
 sub_comboeff.rds: sub_effectiveness.rds effectiveness.rds
 foi_comboeff.rds: foi_effectiveness.rds
-sub_foi_comboeff.rds: sub_foi_effectiveness.rds foi_effectiveness.rds
+testsens_comboeff.rds: testsens_effectiveness.rds effectiveness.rds
+ALLCMB := $(addsuffix .rds,comboeff foi_comboeff lag_comboeff testsens_comboeff)
 
 ALLCMB := $(addsuffix .rds,comboeff sub_comboeff foi_comboeff sub_foi_comboeff lag_comboeff)
 
 comboeff.rds sub_comboeff.rds foi_comboeff.rds sub_foi_comboeff.rds: comboeff.R
+	Rscript $^ $@
+
+testsens_comboeff.rds: ts_comboeff.R
 	Rscript $^ $@
 
 # lag effectiveness has to be treated specially
@@ -136,11 +148,15 @@ clean_comboeff:
 effstats.rds: comboeff.rds
 foi_effstats.rds: foi_comboeff.rds
 lag_effstats.rds: lag_comboeff.rds
-sub_effstats.rds: sub_comboeff.rds
-sub_foi_effstats.rds: sub_foi_comboeff.rds
-ALLEFS := $(addsuffix .rds,effstats foi_effstats sub_effstats sub_foi_effstats lag_effstats)
+# sub_effstats.rds: sub_comboeff.rds
+# sub_foi_effstats.rds: sub_foi_comboeff.rds
+# ALLEFS := $(addsuffix .rds,effstats foi_effstats sub_effstats sub_foi_effstats lag_effstats)
+# 
+# effstats.rds sub_effstats.rds foi_effstats.rds sub_foi_effstats.rds lag_effstats.rds: effstats.R utils.R projref.rda
+testsens_effstats.rds: testsens_comboeff.rds
+ALLEFS := $(addsuffix .rds,effstats foi_effstats lag_effstats testsens_effstats)
 
-effstats.rds sub_effstats.rds foi_effstats.rds sub_foi_effstats.rds lag_effstats.rds: effstats.R utils.R projref.rda
+effstats.rds foi_effstats.rds lag_effstats.rds testsens_effstats.rds: effstats.R utils.R projref.rda
 	Rscript $^ $@
 
 # NB: make -j safe

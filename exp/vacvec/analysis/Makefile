@@ -33,13 +33,13 @@ $(FIGDIR):
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds | $(FIGDIR)
+fig_2.png fig_2.tiff: fig_raw_effectiveness.R figref.rda effstats.rds testsens_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds | $(FIGDIR)
+fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda effstats.rds testsens_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda effstats.rds | $(FIGDIR)
+fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda effstats.rds testsens_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)

@@ -20,6 +20,15 @@ args <- commandArgs(trailingOnly = TRUE)
 # load the reference digests
 load(args[1])
 effstats.dt    <- readRDS(args[2])
+ts_effstats.dt    <- readRDS(args[3])
+cols <- names(effstats.dt)
+
+effstats.dt <- setkeyv(rbind(
+  effstats.dt[vaccine!="cmdvi"],
+  ts_effstats.dt[false_neg==0.20 & false_pos == 0.05 & foi==1, cols, with=F]
+), key(effstats.dt))
+
+
 tar <- tail(args, 1)
 
 vac.eff <- effstats.dt[variable == "vac.eff" & vc_coverage == 75 & catchup=="vc+vac", .(

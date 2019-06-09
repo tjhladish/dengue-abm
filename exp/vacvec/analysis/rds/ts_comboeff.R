@@ -3,27 +3,18 @@ suppressPackageStartupMessages({
 })
 
 # debugging only lines; args overrides when actually making script
-args <- c("effectiveness.rds", "comboeff.rds")
-args <- c("foi_effectiveness.rds", "foi_comboeff.rds")
-args <- c("testsens_effectiveness.rds", "testsens_comboeff.rds")
+args <- c("testsens_effectiveness.rds", "effectiveness.rds", "testsens_comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) == 3) {
-	tmp <- readRDS(args[1])
-	effectiveness.dt <- setkeyv(rbind(
-		tmp,
-		readRDS(args[2])[scenario == "vc"]
-	), key(tmp))
-} else {
-	effectiveness.dt <- readRDS(args[1])
-}
-
+effectiveness.dt <- readRDS(args[1])
+refeff.dt <- readRDS(args[2])
 
 ekeys <- key(effectiveness.dt)
+rkeys <- key(refeff.dt)
 
 # extract the vector-control only results
-veckeys <- setdiff(ekeys, c("scenario", "vaccine","catchup"))
-vec.dt <- effectiveness.dt[scenario == "vc",
+veckeys <- setdiff(rkeys, c("scenario", "vaccine","catchup"))
+vec.dt <- refeff.dt[scenario == "vc",
   .(vec.eff=eff, c.vec.eff=c.eff),
   keyby=veckeys
 ]
