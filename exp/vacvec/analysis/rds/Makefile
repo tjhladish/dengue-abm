@@ -32,7 +32,7 @@ projref.rda: projref.R
 baseline.rds intervention.rds raw_baseline.csv raw_intervention.csv: $(REFDB)
 test_intervention.rds: $(TSTDB)
 foi_intervention.rds raw_foi_intervention.csv foi_baseline.rds raw_foi_baseline.csv: $(FOIDB)
-foi_test_intervention.rds: $(TSTFOIDB) # $(FOIDB)
+foi_test_intervention.rds: $(TSTFOIDB)
 lag_intervention.rds raw_lag_intervention.csv: $(LAGDB)
 testsens_intervention.rds: $(TESTDB)
 
@@ -45,7 +45,7 @@ raw_%.csv: %.sql
 digest_%.csv: tocsv.R %.rds
 	Rscript $^ $@
 
-baseline.rds intervention.rds foi_intervention.rds lag_intervention.rds testsens_intervention.rds: parse.R utils.R projref.rda
+baseline.rds intervention.rds foi_intervention.rds foi_test_intervention.rds lag_intervention.rds testsens_intervention.rds test_intervention.rds: parse.R utils.R projref.rda
 	Rscript $^ $@
 
 foi_baseline.rds: parse.R utils.R projref.rda | baseline.rds
