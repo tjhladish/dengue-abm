@@ -9,7 +9,8 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
+args <- c("figref.rda", "rds/effstats.rds", "rds/testsens_effstats.rds", "fig/fig_3.png")
+# args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -24,7 +25,7 @@ ts_effstats.dt    <- readRDS(args[3])
 cols <- names(effstats.dt)
 
 effstats.dt <- setkeyv(rbind(
-  effstats.dt[vaccine!="cmdvi"],
+  effstats.dt[!grepl("cydtdv",vaccine)],
   ts_effstats.dt[false_neg==0.20 & false_pos == 0.05 & foi==1, cols, with=F]
 ), key(effstats.dt))
 

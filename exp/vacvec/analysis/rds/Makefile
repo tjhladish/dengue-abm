@@ -99,7 +99,7 @@ ALLEFF := $(addsuffix .rds,effectiveness foi_effectiveness lag_effectiveness tes
 #
 # foi_% schema: same as basic, w/ key(foi) added on the left
 # lag_% schema: same as basic, w/ key(vac_first) added on the left
-effectiveness.rds foi_effectiveness.rds lag_effectiveness.rds testsens_effectiveness.rds: eff.R
+effectiveness.rds foi_effectiveness.rds sub_foi_effectiveness.rds lag_effectiveness.rds testsens_effectiveness.rds: eff.R
 	Rscript $^ $@
 
 # make -j safe
@@ -118,6 +118,7 @@ clean_effectiveness:
 # ind.eff, c.ind.eff
 comboeff.rds: effectiveness.rds
 sub_comboeff.rds: sub_effectiveness.rds effectiveness.rds
+sub_foi_comboeff.rds: sub_foi_effectiveness.rds
 foi_comboeff.rds: foi_effectiveness.rds
 testsens_comboeff.rds: testsens_effectiveness.rds effectiveness.rds
 ALLCMB := $(addsuffix .rds,comboeff foi_comboeff lag_comboeff testsens_comboeff)
