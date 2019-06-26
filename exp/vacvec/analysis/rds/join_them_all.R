@@ -32,6 +32,8 @@ dbutil <- function(dbfile, sql) {
   return(res)
 }
 
+# sum(unlist(lapply(.args[1:6], function(dbf) dbGetQuery(dbConnect(dbDriver("SQLite"), dbf),"SELECT COUNT(*) FROM met JOIN job USING(serial) WHERE status=='D';"))))
+
 selcols <- c(
   paste(sprintf("s%02i",0:39), collapse = ", "),
   sprintf(c("posterior AS %s", "CAST(realization AS INT) AS %s"), samplecols)

@@ -176,3 +176,6 @@ foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
 
 posterior.rds: posterio.R utils.R $(ABCDB) $(POSTJSON)
 	Rscript $^ $@
+
+all_interventions.rds all_baseline.rds: join_them_all.R $(REFDB) $(FOIDB) $(LAGDB) $(TSTDB) $(TSTFOIDB) $(TESTDB)
+	Rscript $^ $@
