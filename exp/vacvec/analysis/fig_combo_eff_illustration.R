@@ -9,7 +9,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "rds/testsens_effstats.rds", "fig/fig_3.png")
+args <- c("figref.rda", "rds/all_effstats.rds", "fig/fig_3.png")
 # args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
 
 # expected args:
@@ -20,15 +20,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # load the reference digests
 load(args[1])
-effstats.dt    <- readRDS(args[2])
-ts_effstats.dt    <- readRDS(args[3])
-cols <- names(effstats.dt)
-
-effstats.dt <- setkeyv(rbind(
-  effstats.dt[!grepl("cydtdv",vaccine)],
-  ts_effstats.dt[false_neg==0.20 & false_pos == 0.05 & foi==1, cols, with=F]
-), key(effstats.dt))
-
+effstats.dt    <- readRDS(args[2])[eval(mainfilter)]
 
 tar <- tail(args, 1)
 
@@ -107,15 +99,15 @@ sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
-leg.sz <- 0.55
+leg.sz <- 0.5
 
 legtheme <- theme(
   legend.margin = margin(), legend.spacing = unit(25, "pt"),
   legend.spacing.x = unit(-2,"pt"),
-  legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(12,"pt"))),
+  legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(10,"pt"))),
   legend.title = element_text(size=rel(leg.sz)),
   legend.title.align = 0.5,
-  legend.key.height = unit(12,"pt"),
+  legend.key.height = unit(10,"pt"),
   legend.box.spacing = unit(2.5, "pt")
 )
 
@@ -296,8 +288,8 @@ resp <- ggplot(
   )
 
 leg.xy <- list(x=0.67,y=0.405)
-anleg.xy <- list(x=0.37,y= 0.087)
-simleg.xy <- list(x=0.37,y= -0.39)
+anleg.xy <- list(x=0.46,y= 0.087)
+simleg.xy <- list(x=0.46,y= -0.39)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +

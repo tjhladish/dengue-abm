@@ -8,18 +8,11 @@ warnnonunique <- function(var, variable, collapse = median) {
 	collapse(var)
 }
 
-args <- c("figref.rda", "rds/effstats.rds","fig/fig_4.png")
+args <- c("figref.rda", "rds/all_effstats.rds","fig/fig_4.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
-effstats.dt    <- readRDS(args[2])
-ts_effstats.dt    <- readRDS(args[3])
-cols <- names(effstats.dt)
-
-effstats.dt <- setkeyv(rbind(
-  effstats.dt[vaccine!="cmdvi"],
-  ts_effstats.dt[false_neg==0.20 & false_pos == 0.05 & foi==1, cols, with=F]
-), key(effstats.dt))
+effstats.dt    <- readRDS(args[2])[eval(mainfilter)]
 
 tar <- tail(args, 1)
 

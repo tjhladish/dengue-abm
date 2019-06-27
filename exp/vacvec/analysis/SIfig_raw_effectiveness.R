@@ -19,7 +19,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # load the reference digests
 load(args[1])
-effstats.dt    <- readRDS(args[2])
+effstats.dt    <- readRDS(args[2])[eval(mainfilter)]
 
 vac.eff <- effstats.dt[variable %in% c("vac.eff","c.vac.eff"), .(
     value = warnnonunique(med, variable),

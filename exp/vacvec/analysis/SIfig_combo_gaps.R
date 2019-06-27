@@ -12,7 +12,7 @@ args <- c("figref.rda", "rds/effstats.rds","fig/fig_4.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
-effstats.dt <- readRDS(args[2])
+effstats.dt <- readRDS(args[2])[eval(mainfilter)]
 tar <- tail(args, 1)
 
 cmb.eff <- effstats.dt[variable == "syn", .(

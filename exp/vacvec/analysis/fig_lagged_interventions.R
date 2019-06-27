@@ -3,7 +3,7 @@ suppressPackageStartupMessages({
   require(cowplot)
 })
 
-args <- c("figref.rda", "rds/lag_effstats.rds", "rds/effstats.rds", "fig/fig_5.png")
+args <- c("figref.rda", "rds/lag_effstats.rds", "rds/nolag_effstats.rds", "fig/fig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])

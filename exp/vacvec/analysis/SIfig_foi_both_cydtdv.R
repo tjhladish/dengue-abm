@@ -3,19 +3,21 @@ suppressPackageStartupMessages({
   require(cowplot)
 })
 
-args <- c("figref.rda", "rds/foi_effstats.rds", "rds/sub_foi_effstats.rds", "rds/effstats.rds", "rds/sub_effstats.rds", "fig/fig_5.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds", "fig/SIfig_8.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 tar <- tail(args, 1)
 
 load(args[1])
 
-base.stat.eff.dt <- rbind(
-	readRDS(args[4])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75],
-	readRDS(args[5])[vaccine == "cydtdv" & catchup == "routine" & vc_coverage == 75]
-)[, foi := 1.0 ]
+# base.stat.eff.dt <- rbind(
+# 	readRDS(args[4])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75],
+# 	readRDS(args[5])[vaccine == "cydtdv" & catchup == "routine" & vc_coverage == 75]
+# )[, foi := 1.0 ]
 
-stat.eff.dt <- rbind(readRDS(args[2]), readRDS(args[3]), base.stat.eff.dt)[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
+stat.eff.dt <- readRDS(args[2])[vc_coverage == 75 & catchup == "routine"][
+  vaccine == "cydtdv" | (vaccine == "t+cydtdv" & false_neg == 0.20 & false_pos == 0.05)
+][variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
 stat.eff.dt[,
   scenario := factor(ifelse(variable == "combo.eff", "vc+vac",
               ifelse(variable == "vac.eff"  , "vac",

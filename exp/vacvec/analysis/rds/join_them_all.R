@@ -42,6 +42,8 @@ filters <- c("status == 'D'")
 
 is_baseline <- grepl("baseline", tar)
 
+keycols <- c(samplecols, "foi")
+
 if (is_baseline) {
   # need no additional columns
   # want only results with no vector control AND no vaccine
@@ -115,3 +117,50 @@ queries[6] <- { if (is_baseline) {
 }}
 
 bindthemall <- rbindlist(mapply(dbutil, dbfile=.args[1:6], sql=queries, SIMPLIFY = F))
+
+load("projref.rda")
+
+if (!is_baseline) {
+  keycols <- c(keycols, "scenario", "vaccine", "vc_coverage","catchup","ivn_lag","vac_first","false_pos","false_neg")
+  bindthemall[vc == 0, vc_coverage := 0]
+  # translate vaccine & catchup to standardized lingo for post processing
+  trans_vaccine.data.table(bindthemall)
+  trans_catchup.data.table(bindthemall)
+  trans_scnario.data.table(bindthemall)
+  bindthemall$vc <- bindthemall$vac <- bindthemall$vac_mech <- NULL
+}
+
+
+parse.meas.yr <- function(dt) {
+  dt[,
+     measure := gsub("(s|imm\\d).+","\\1", variable)
+     ][,
+       year    := as.integer(gsub("(s|imm[0-4]_)","", variable))
+       ]
+  dt$variable <- NULL
+  return(dt)
+}
+
+# melt the data.table, then parse it to get measure and year
+mlt <- parse.meas.yr(
+  melt.data.table(bindthemall, id.vars = keycols, variable.factor = FALSE)
+)
+
+# recast the data.table to (keys, year, imm proportions, s) cols
+result.dt <- dcast.data.table(mlt,
+                              as.formula(paste(
+                                paste(c(keycols, "year"), collapse=" + "),
+                                "measure", sep = " ~ ")
+                              ),
+                              value.var = "value"
+)
+
+result.dt[order(year),
+          c.s := cumsum(s),
+          by = keycols
+          ]
+
+keycols <- c(keycols, "year")
+setkeyv(result.dt, keycols)
+
+saveRDS(result.dt, tar)

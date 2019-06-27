@@ -2,12 +2,12 @@ suppressPackageStartupMessages(
 	require(data.table)
 )
 
-args <- c("lag_effectiveness.rds","effectiveness.rds", "lag_comboeff.rds")
+args <- c("all_effectiveness.rds", "lag_comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 # args <- c("~/Dropbox/irs_timing-refit0_intro-fix.sqlite", "~/Dropbox/who/fig1_data/baseline.rds")
 
-combo.dt <- readRDS(args[1])
-nolag_effectiveness.dt <- readRDS(args[2])
+combo.dt <- readRDS(args[1])[ivn_lag != 0]
+nolag_effectiveness.dt <- readRDS(args[1])[ivn_lag == 0 & foi == 1.0]
 allkeys <- key(nolag_effectiveness.dt)
 
 delays <- combo.dt[,unique(ivn_lag)]
