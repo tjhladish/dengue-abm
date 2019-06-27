@@ -75,9 +75,10 @@ SIfig_7.png SIfig_7.tiff: SIfig_foi_v_mpop.R figref.rda foi_v_mpop.rds | $(FIGDI
 SIfig_8.png SIfig_8.tiff: SIfig_foi_both_cydtdv.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-SIfig_9.png SIfig_9.tiff: SIfig_test_sens.R figref.rda nolag_effstats.rds | $(FIGDIR)
+SIfig_9a.png SIfig_9a.tiff: SIfig_test_sens.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
+SIfig_9b.png SIfig_9c.png SIfig_9d.png: SIfig_9a.png
 
 # lagged showing single interventions
 non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
