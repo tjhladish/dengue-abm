@@ -288,8 +288,8 @@ resp <- ggplot(
   )
 
 leg.xy <- list(x=0.67,y=0.405)
-anleg.xy <- list(x=0.46,y= 0.087)
-simleg.xy <- list(x=0.46,y= -0.39)
+anleg.xy <- list(x=0.46,y= 0.082)
+simleg.xy <- list(x=0.46,y= -0.395)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
