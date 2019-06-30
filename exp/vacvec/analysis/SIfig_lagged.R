@@ -29,6 +29,8 @@ lims <- combo.dt[,.(
   year=-1, med=c(floor(min(lo)*10)/10, 1)
 ), by=.(vac_first, measure)]
 
+ref.combo$ivn_lag <- NULL
+
 fat <- 4/3
 
 p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_first) +
