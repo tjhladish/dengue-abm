@@ -191,3 +191,5 @@ lag_comboeff.rds: lag_comboeff.R all_effectiveness.rds
 
 %_effstats.rds: effstats.R utils.R projref.rda %_comboeff.rds
 	Rscript $^ $@
+
+effstat: nolag_effstats.rds lag_effstats.rds
