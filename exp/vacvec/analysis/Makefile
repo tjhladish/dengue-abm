@@ -116,5 +116,5 @@ tab_mets.tex: tex_posterior_metrics.R utils.R posterior.rds metkey.json | $(TEXD
 
 textabs: tab_pars.tex tab_mets.tex
 
-pullstats: pullstats.R effstats.rds lag_effstats.rds foi_v_mpop.rds
+pullstats: pullstats.R nolag_effstats.rds lag_effstats.rds foi_v_mpop.rds
 	@Rscript $^
