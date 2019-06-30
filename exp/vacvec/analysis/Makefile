@@ -42,7 +42,7 @@ fig_3.png fig_3.tiff: fig_combo_eff_illustration.R figref.rda nolag_effstats.rds
 fig_4.png fig_4.tiff: fig_full_combo_interaction.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)
+fig_5.png fig_5.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 fig_6.png fig_6.tiff: fig_foi_alternatives.R figref.rda nolag_effstats.rds | $(FIGDIR)
@@ -86,7 +86,7 @@ non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats
 
 
 MTFIGS := fig_2.png fig_3.png fig_4.png fig_5.png fig_6.png
-SIFIGS := SIfig_2.png SIfig_3.png SIfig_4.png SIfig_5.png SIfig_6.png SIfig_7.png SIfig_8.png
+SIFIGS := SIfig_2.png SIfig_3.png SIfig_4.png SIfig_5.png SIfig_6.png SIfig_7.png SIfig_8.png SIfig_9a.png SIfig_9b.png SIfig_9c.png SIfig_9d.png
 
 maintextfigs: $(MTFIGS)
 
