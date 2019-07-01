@@ -132,8 +132,8 @@ pltyleg <- get_legend(pbase + scale_shape_vaccine(guide="none") + scale_color_sc
 
 p <- ggdraw(
 	pbase + scale_color_scenario(guide="none") +
-	scale_shape_vaccine(name="Serological Screening",
-		breaks=c("cydtdv","t+cydtdv"), labels = c(cydtdv="No Screening", `t+cydtdv`="Seropositive Only"), guide=guide_legend(title.vjust = -0.1)
+	scale_shape_vaccine(name="Serological Testing",
+		breaks=c("cydtdv","t+cydtdv"), labels = c(cydtdv="No Testing", `t+cydtdv`="Seropositive Only"), guide=guide_legend(title.vjust = -0.1)
 	) +
 	theme(legend.position = c(0.965,0.6), legend.justification = c(1,0.5))
 ) + draw_grob(pltyleg, x=0.42, y=.22) + draw_grob(ppchleg, x=0.42, y=.22)
