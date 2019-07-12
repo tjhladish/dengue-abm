@@ -103,12 +103,13 @@ p <- ggplot(
     legend.spacing.x = unit(-2,"pt"),
     legend.text = element_text(size=rel(0.5)),
     legend.title = element_text(size=rel(0.6)), legend.title.align = 0.5,
-    panel.spacing.y = unit(15, "pt"), # panel.spacing.x = unit(15, "pt"),
+    panel.spacing = unit(12, "pt"), # panel.spacing.x = unit(15, "pt"),
     legend.key.height = unit(1,"pt"),
-    legend.box.spacing = unit(2.5, "pt")
+    legend.box.spacing = unit(2.5, "pt"),
+    legend.box.just = "center"
   )
 
-plotutil(p, h=7.5, w=10, args)
+save_plot(tail(args,1), p, nrow = 3, base_height=2.5, ncol=3, base_width=3.3)
 
 ## TODO SI version:
 ##  - add cumulative effectiveness row

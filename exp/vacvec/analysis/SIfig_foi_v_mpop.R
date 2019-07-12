@@ -40,5 +40,4 @@ p <- ggplot(plot.dt) +
 # target rds should be last arg
 # will sniff target name to determine proper keys
 
-
-plotutil(p, h=6, w=6, tail(args, 1))
+save_plot(tail(args,1), p, nrow = 2, base_height = 3, ncol = 1, base_width = 6)

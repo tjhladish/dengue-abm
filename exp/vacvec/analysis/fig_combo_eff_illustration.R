@@ -299,5 +299,3 @@ p <- ggdraw(resp) +
 ## TODO tried outlining points in white? looks meh?
 
 save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
-
-#plotutil(p, h=4.5, w=2.75, tar)

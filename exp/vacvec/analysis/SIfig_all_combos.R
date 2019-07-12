@@ -58,4 +58,4 @@ p <- ggplot(cmb.eff) + aes(
   ) +
   scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 
-plotutil(p, h=5, w=7.5, tar)
+save_plot(tar, p, nrow = 2, base_height = 2.5, ncol = 3, base_width = 2.5)
