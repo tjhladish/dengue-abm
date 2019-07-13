@@ -10,7 +10,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/all_effstats.rds", "fig/fig_3.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds", "fig/fig_3.pdf")
 # args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
 
 # expected args:
@@ -102,14 +102,15 @@ names(naive.line.labs) <- scn_lvls[2:3]
 
 leg.sz <- 0.5
 
-legtheme <- theme(
+legtheme <- theme_minimal() + theme(
   legend.margin = margin(), legend.spacing = unit(25, "pt"),
   legend.spacing.x = unit(-2,"pt"),
   legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(10,"pt"))),
   legend.title = element_text(size=rel(leg.sz)),
   legend.title.align = 0.5,
   legend.key.height = unit(10,"pt"),
-  legend.box.spacing = unit(2.5, "pt")
+  legend.box.spacing = unit(2.5, "pt"),
+  legend.background = element_blank()
 )
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
@@ -288,9 +289,9 @@ resp <- ggplot(
     legend.position = "none"
   )
 
-leg.xy <- list(x=0.67,y=0.405)
-anleg.xy <- list(x=0.46,y= 0.082)
-simleg.xy <- list(x=0.46,y= -0.395)
+leg.xy <- list(x=0.3,y=0.405)
+anleg.xy <- list(x=0.25,y= 0.082)
+simleg.xy <- list(x=0.25,y= -0.395)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
