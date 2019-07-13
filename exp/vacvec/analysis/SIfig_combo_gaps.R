@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 }) 
 
