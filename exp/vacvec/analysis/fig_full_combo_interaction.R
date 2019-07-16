@@ -9,7 +9,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 	collapse(var)
 }
 
-args <- c("figref.rda", "rds/all_effstats.rds","fig/fig_4.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds","fig/fig_4.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
@@ -84,7 +84,7 @@ plot2.dt <- ribbon.dt[,.(x=year+1, y=assume.eff, ycmp=value), keyby=.(vc_coverag
 leg.sz <- 0.9
 
 shared <- list(
-	facet_grid(vaccine ~ vc_coverage, labeller = facet_labels),
+	facet_grid(. ~ vc_coverage, labeller = facet_labels),
 		geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]),
 		geom_pchline(dt=plot2.dt[catchup == "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="white", alpha=1),
 		geom_pchline(dt=plot2.dt[catchup != "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="black", alpha=1),
@@ -104,8 +104,7 @@ shared <- list(
 			strip.text = element_text(size=rel(1.1)),
 			strip.text.y = element_text(angle=90),
 			legend.key.height = unit(1,"pt"),
-			legend.box.spacing = unit(2.5, "pt"),
-			legend.position = c(100/120, 0.6) # think this looks best, but can comment out to return to margin
+			legend.box.spacing = unit(2.5, "pt")
 		),
 		scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 )
@@ -125,12 +124,17 @@ cydtdv.lab <- get_legend(pbase + shared + scale_shape_vaccine(vac_labels["t+cydt
 	override.aes = list(shape = vac_pchs["t+cydtdv"], fill=c(scn_cols["vc+vac"], "white"))
 )))
 
-pmost <- pbase + geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_vaccine(guide="none") + scale_fill_interaction(
-	guide = gds(1, keyheight=unit(12,"pt"), label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4), shape=NA))
+pmost <- pbase + geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_vaccine(guide="none") + 
+  scale_fill_interaction(
+	guide = gds(1, keyheight=unit(12,"pt"),
+	  label.position = "right", direction="vertical", override.aes=list(alpha=c(0.4,0.4), shape=NA)
+	)
+) + theme(
+  legend.position = c(100/120*.285, 0.40) # think this looks best, but can comment out to return to margin
 )
 
 p <- ggdraw(pmost) + 
-	draw_grob(d70e.lab, x=-0.3, y=-0.015) + draw_grob(cydtdv.lab, x=-0.3, y=-0.18)
+	draw_grob(d70e.lab, x=-0.22, y=0.23) + draw_grob(cydtdv.lab, x=-0.22, y=-0.3)
 
 
-save_plot(tar, p, ncol = 3, nrow = 2, base_width = 3.75, base_height = baseh)
+save_plot(tar, p, ncol = 3, nrow = 1, base_width = 3.75, base_height = baseh*1.5)
