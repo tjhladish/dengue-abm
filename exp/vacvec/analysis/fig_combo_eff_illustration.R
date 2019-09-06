@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 })
 
@@ -9,7 +10,8 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds", "fig/fig_3.pdf")
+# args <- c("figref.rda", "rds/effstats.rds", "fig/fig_3.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -19,7 +21,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # load the reference digests
 load(args[1])
-effstats.dt    <- readRDS(args[2])
+effstats.dt    <- readRDS(args[2])[eval(mainfilter)]
+
 tar <- tail(args, 1)
 
 vac.eff <- effstats.dt[variable == "vac.eff" & vc_coverage == 75 & catchup=="vc+vac", .(
@@ -97,16 +100,17 @@ sim.leg.name <- "Simulated Combination"
 naive.line.labs <- naive.labs
 names(naive.line.labs) <- scn_lvls[2:3]
 
-leg.sz <- 0.55
+leg.sz <- 0.5
 
-legtheme <- theme(
+legtheme <- theme_minimal() + theme(
   legend.margin = margin(), legend.spacing = unit(25, "pt"),
   legend.spacing.x = unit(-2,"pt"),
-  legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(12,"pt"))),
+  legend.text = element_text(size=rel(leg.sz), margin = margin(l=unit(10,"pt"))),
   legend.title = element_text(size=rel(leg.sz)),
   legend.title.align = 0.5,
-  legend.key.height = unit(12,"pt"),
-  legend.box.spacing = unit(2.5, "pt")
+  legend.key.height = unit(10,"pt"),
+  legend.box.spacing = unit(2.5, "pt"),
+  legend.background = element_blank()
 )
 
 annopbase <- ggplot(naive.eff) + aes(shape = vaccine, size=factor(vc_coverage), x=year+1, y=value) +
@@ -285,9 +289,9 @@ resp <- ggplot(
     legend.position = "none"
   )
 
-leg.xy <- list(x=0.67,y=0.405)
-anleg.xy <- list(x=0.37,y= 0.087)
-simleg.xy <- list(x=0.37,y= -0.39)
+leg.xy <- list(x=0.3,y=0.405)
+anleg.xy <- list(x=0.25,y= 0.082)
+simleg.xy <- list(x=0.25,y= -0.395)
 
 p <- ggdraw(resp) + 
   draw_grob(p1lleg, x=leg.xy$x, y=leg.xy$y) + draw_grob(p1sleg, x=leg.xy$x, y=leg.xy$y) +
@@ -297,5 +301,3 @@ p <- ggdraw(resp) +
 ## TODO tried outlining points in white? looks meh?
 
 save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
-
-#plotutil(p, h=4.5, w=2.75, tar)

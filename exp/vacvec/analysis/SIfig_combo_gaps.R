@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 }) 
 
@@ -12,7 +13,7 @@ args <- c("figref.rda", "rds/effstats.rds","fig/fig_4.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
-effstats.dt <- readRDS(args[2])
+effstats.dt <- readRDS(args[2])[eval(mainfilter)]
 tar <- tail(args, 1)
 
 cmb.eff <- effstats.dt[variable == "syn", .(
@@ -73,6 +74,17 @@ cmb.eff <- effstats.dt[variable == "syn", .(
 #   },
 #   keyby = .(vaccine, catchup, vc_coverage, measure)
 # ]
+# ribs <- cmb.eff[order(year),{
+#   redregions <- ribbon_regions(as.numeric(year), 0, lo, tfrle = rle(lo < 0), super=hi)[,.(
+#       year = x, ymin=y, ymax=pmin(0,super,na.rm=T), col="under"
+#   )]
+#   blueregions <- ribbon_regions(as.numeric(year), 0, hi, tfrle = rle(hi > 0), super=lo)[,.(
+#     year = x, ymin=pmax(0,super,na.rm=T), ymax=y, col="over"
+#   )]
+#   rbind(redregions, blueregions)
+#   },
+#   keyby = .(vaccine, catchup, vc_coverage, measure)
+# ]
 
 p <- ggplot(cmb.eff) + aes(
   shape=vaccine, color=scenario, size=factor(vc_coverage),
@@ -122,4 +134,4 @@ p <- ggplot(cmb.eff) + aes(
   ) +
   scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 
-plotutil(p, h=7, w=6, tar)
+save_plot(tar, p, nrow=4, base_height=1.75, ncol=3, base_width=2)

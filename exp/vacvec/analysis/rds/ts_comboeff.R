@@ -3,18 +3,18 @@ suppressPackageStartupMessages({
 })
 
 # debugging only lines; args overrides when actually making script
-args <- c("all_effectiveness.rds", "nolag_comboeff.rds")
+args <- c("testsens_effectiveness.rds", "effectiveness.rds", "testsens_comboeff.rds")
 args <- commandArgs(trailingOnly = TRUE)
 
-tar <- tail(args, 1)
-
-effectiveness.dt <- readRDS(args[1])[ivn_lag == 0]
+effectiveness.dt <- readRDS(args[1])
+refeff.dt <- readRDS(args[2])
 
 ekeys <- key(effectiveness.dt)
+rkeys <- key(refeff.dt)
 
 # extract the vector-control only results
-veckeys <- setdiff(ekeys, c("scenario", "vaccine","catchup", "false_pos", "false_neg"))
-vec.dt <- effectiveness.dt[scenario == "vc",
+veckeys <- setdiff(rkeys, c("scenario", "vaccine","catchup"))
+vec.dt <- refeff.dt[scenario == "vc",
   .(vec.eff=eff, c.vec.eff=c.eff),
   keyby=veckeys
 ]

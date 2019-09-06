@@ -1,9 +1,10 @@
 suppressPackageStartupMessages({
   require(data.table)
   require(ggplot2)
+  require(cowplot)
 })
 
-args <- c("figref.rda", "rds/lag_effstats.rds", "rds/effstats.rds", "fig/SIfig_5.png")
+args <- c("figref.rda", "rds/lag_effstats.rds", "rds/nolag_effstats.rds", "fig/SIfig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
@@ -28,6 +29,8 @@ ref.combo[, measure := trans_meas(gsub("combo.","", variable, fixed = T)) ][, ob
 lims <- combo.dt[,.(
   year=-1, med=c(floor(min(lo)*10)/10, 1)
 ), by=.(vac_first, measure)]
+
+ref.combo$ivn_lag <- NULL
 
 fat <- 4/3
 
@@ -82,4 +85,4 @@ p <- ggplot() + theme_minimal() + aes(x=year+1, y=med, color=obs, group=vac_firs
 
 # TODO dump shaded area, add intervention annotations, change height aspect
 
-plotutil(p, h=3, w=5.75, tar)
+save_plot(tar, p, nrow=2, base_height = 1.5, ncol=3, base_width=2)

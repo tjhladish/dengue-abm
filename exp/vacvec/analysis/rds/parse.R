@@ -10,7 +10,8 @@ suppressPackageStartupMessages({
 # developer args
 args <- c("../utils.R", "projref.rda", "~/Dropbox/who/vacvec-new_yuc-ivn_lag258-reduced_catchup.sqlite", "lag_intervention.rds")
 args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc.sqlite', "baseline.rds")
-args <- c("../utils.R", "projref.rda", '~/Dropbox/who/vacvec-new_yuc-alt_foi-CYD_TDV-seropos_only.sqlite', "foi_intervention.rds")
+args <- c("../utils.R", "projref.rda", '~/Dropbox/VGRAND/vacvec-new_yuc-alt_foi.sqlite', "foi_intervention.rds")
+args <- c("../utils.R", "projref.rda", '~/Dropbox/cabpshare/vacvec-CYD_TDV-w_test.sqlite', "testsens_intervention.rds")
 
 # actual args when used with shell
 args <- commandArgs(trailingOnly = TRUE)
@@ -65,6 +66,9 @@ if (grepl("foi", tar)) {
 } else if (grepl("lag", tar)) {
   # need extra scenario column
   selcols <- c(selcols, "vac_first", "ivn_lag")
+} else if (grepl("testsens", tar)) {
+  # need extra scenario column
+  selcols <- c(selcols, "foi", "false_pos", "false_neg")
 }
 
 ## assemble pieces into query
@@ -109,6 +113,7 @@ if (grepl("intervention", tar)) {
 # add extra keys for special analyses
 if (grepl("foi", tar)) keycols <- c("foi", keycols)
 if (grepl("lag", tar)) keycols <- c("vac_first", "ivn_lag", keycols)
+if (grepl("testsens", tar)) keycols <- c("false_pos", "false_neg", "foi", keycols)
 
 
 

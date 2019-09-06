@@ -1,9 +1,10 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 })
 
-args <- c("figref.rda", "rds/lag_effstats.rds", "rds/effstats.rds", "fig/fig_5.png")
+args <- c("figref.rda", "rds/lag_effstats.rds", "rds/nolag_effstats.rds", "fig/fig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
@@ -97,8 +98,11 @@ pbase <- ggplot() + theme_minimal() + aes(
   scale_size_manual(guide="none", values = ref.sizes) +
   scale_alpha_manual(guide="none", values = c(reference=1, observed=alphafactor))
 
+scn_labels["vc"] <- paste0("75% ", scn_labels["vc"])
+
 pleg <- get_legend(pbase + scale_color_scenario(
   name=gsub(" ","\n", scn_name),
+  labels = scn_labels,
   guide=guide_legend(
     override.aes = list(
       shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),
@@ -109,6 +113,7 @@ pleg <- get_legend(pbase + scale_color_scenario(
 
 pleg2 <- get_legend(pbase + scale_color_scenario(
   name=gsub(" ","\n", scn_name),
+  labels = scn_labels,
   guide=guide_legend(
     override.aes = list(
       shape=c(NA,vac_pchs["d70e"],NA,vac_pchs["d70e"]),

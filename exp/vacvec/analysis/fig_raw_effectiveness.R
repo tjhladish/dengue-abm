@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 })
 
@@ -9,7 +10,7 @@ warnnonunique <- function(var, variable, collapse = median) {
 }
 
 # debugging args for interactive use
-args <- c("figref.rda", "rds/effstats.rds", "fig/fig_2.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds", "fig/fig_2.png")
 
 # expected args:
 #  1-3 required: reference_results, interventions_results, effectiveness_stats
@@ -19,7 +20,17 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # load the reference digests
 load(args[1])
-effstats.dt    <- readRDS(args[2])
+
+effstats.dt    <- readRDS(args[2])[eval(mainfilter)]
+
+# ts_effstats.dt    <- readRDS(args[3])
+# cols <- names(effstats.dt)
+# 
+# effstats.dt <- setkeyv(rbind(
+#   effstats.dt[vaccine!="cmdvi"],
+#   ts_effstats.dt[false_neg==0.20 & false_pos == 0.05 & foi==1, cols, with=F]
+# ), key(effstats.dt))
+
 tar <- tail(args, 1)
 
 vac.eff <- effstats.dt[variable == "vac.eff", .(
@@ -110,5 +121,3 @@ basep <- ggplot(
 p <- ggdraw(basep) + draw_grob(veclegend, x=0.2, y=0.4) + draw_grob(vaclegend, x=0.15, y=-0.06)
 
 save_plot(tar, p, ncol = 1, nrow = 2, base_width = 3.75, base_height = baseh)
-
-# plotutil(p, h=4.5, w=2.75, tar)

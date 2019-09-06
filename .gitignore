@@ -4,6 +4,7 @@
 *.png
 *.tiff
 *.pdf
+*.eps
 *.sqlite
 abc/abc_mpi
 mpi_model

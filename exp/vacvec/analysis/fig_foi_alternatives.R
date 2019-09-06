@@ -1,19 +1,20 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 })
 
-args <- c("figref.rda", "rds/foi_effstats.rds", "rds/effstats.rds", "fig/fig_5.png")
+args <- c("figref.rda", "rds/nolag_effstats.rds","fig/fig_5.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 tar <- tail(args, 1)
 
 load(args[1])
 
-base.stat.eff.dt <- readRDS(args[3])[vaccine == "t+cydtdv" & catchup == "routine" & vc_coverage == 75]
-base.stat.eff.dt[, foi := 1.0 ]
+base.stat.eff.dt <- readRDS(args[2])[catchup == "routine" & vc_coverage == 75 & false_neg == 0.20 & false_pos == 0.05]
+# base.stat.eff.dt[, foi := 1.0 ]
 
-stat.eff.dt <- rbind(readRDS(args[2]), base.stat.eff.dt)[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
+stat.eff.dt <- base.stat.eff.dt[variable %in% c("combo.eff","vac.eff","vec.eff","ind.eff")]
 stat.eff.dt[,
   scenario := factor(ifelse(variable == "combo.eff", "vc+vac",
               ifelse(variable == "vac.eff"  , "vac",

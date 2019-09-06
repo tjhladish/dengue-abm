@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
 	require(cowplot)
 })
 # plot normalization functions
@@ -10,6 +11,8 @@ suppressPackageStartupMessages({
 
 source(.args[1])
 load(.args[2])
+
+mainfilter <- expression(foi==1.0 & (vaccine == "d70e" | (false_neg==0.20 & false_pos == 0.05)))
 
 # scales:
 #  color = scenario (ref/none, vc-only, vac-only, combination)

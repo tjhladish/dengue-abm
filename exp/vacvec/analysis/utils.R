@@ -17,6 +17,7 @@ plotutil <- function(p, heightdefault, widthdefault, args="Rplot.png", units="in
   targetfile <- tail(args,1)
   ispng <- grepl("png$", targetfile)
   istiff <- !ispng && grepl("tiff$", targetfile)
+  ispdf <- grepl("pdf$", targetfile)
   figdim <- within(as.list(Sys.getenv(c("WIDTH","HEIGHT"), unset = NA)),{
     if (is.na(HEIGHT)) HEIGHT <- heightdefault
     if (is.na(WIDTH)) WIDTH <- widthdefault
@@ -28,6 +29,8 @@ plotutil <- function(p, heightdefault, widthdefault, args="Rplot.png", units="in
       png(targetfile, width = WIDTH, height = HEIGHT, units = units, res = res)
     } else if (istiff) {
       tiff(targetfile, width = WIDTH, height = HEIGHT, units = units, res = res, compression = "lzw+p", type = "cairo")
+    } else if (ispdf) {
+      pdf(targetfile, width = WIDTH, height = HEIGHT)
     } else stop("did not understand device...")
     print(p)
     dev.off()

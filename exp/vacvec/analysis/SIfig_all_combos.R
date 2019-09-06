@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   require(data.table)
+  require(ggplot2)
   require(cowplot)
 }) 
 
@@ -12,7 +13,7 @@ args <- c("figref.rda", "rds/effstats.rds","fig/fig_4.png")
 args <- commandArgs(trailingOnly = TRUE)
 
 load(args[1])
-effstats.dt <- readRDS(args[2])
+effstats.dt <- readRDS(args[2])[eval(mainfilter)]
 tar <- tail(args, 1)
 
 cmb.eff <- effstats.dt[variable %in% c("combo.eff","c.combo.eff"), .(
@@ -58,4 +59,4 @@ p <- ggplot(cmb.eff) + aes(
   ) +
   scale_alpha_manual(values=c(delta=int_alpha), guide = "none")
 
-plotutil(p, h=5, w=7.5, tar)
+save_plot(tar, p, nrow = 2, base_height = 2.5, ncol = 3, base_width = 2.5)
