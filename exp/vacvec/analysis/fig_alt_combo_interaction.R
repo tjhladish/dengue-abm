@@ -110,11 +110,16 @@ shared <- list(
 	  vc_coverage = vc_labels,
 	  vaccine = function(ve) paste0(gsub("d(\\d{2})e","\\1%",ve),c("\n","\nDurable Vaccine Efficacy","\n"))
 	)),
-		geom_line(aes(y=ycmp), alpha=1, size=vc_sizes["0"]),
-		geom_pchline(dt=plot2.dt[catchup == "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="white", alpha=1),
-		geom_pchline(dt=plot2.dt[catchup != "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="black", alpha=1),
+		geom_line(aes(y=ycmp, color=interaction(scenario, catchup)), alpha=1, size=vc_sizes["0"]),
+		geom_pchline(
+		  dt=plot2.dt[catchup == "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="white", alpha=1
+		  #, show.legend = F
+		),
+		geom_pchline(
+		  dt=plot2.dt[catchup != "routine"], mapping=aes(y=ycmp), var=expression(x-1), fill="black", alpha=1
+		  #, show.legend = F
+		),
 		scale_year(), scale_effectiveness(),
-		scale_color_scenario(guide = "none", value=c("black")),
 		scale_size_vectorcontrol(guide="none"),
 		coord_cartesian(ylim=c(0,1), xlim=c(0,40), clip="off"),
 		theme_minimal(),
@@ -136,8 +141,8 @@ shared <- list(
 
 pbase <- ggplot(plot2.dt) + aes(
 	shape="d70e",
-	color=scenario, #size=factor(vc_coverage),
-	x=x, y=y, group=interaction(vaccine, vc_coverage, catchup)
+	#color=interaction(scenario, catchup), #size=factor(vc_coverage),
+	x=x, y=y, group=catchup
 )
 
 # relabs <- cu_labels[c("vc+vac","routine")]
@@ -154,32 +159,69 @@ lum <- 60
 
 pmost <- pbase +
   geom_line(
-    aes(x=year, y=value, group=vc_coverage),
-    data = vec.eff[,.SD, .SDcols=-c("vaccine")],
-    color = scales::muted(scn_cols["vc"], lum)
+    aes(x=year, y=value, color=interaction(scenario, catchup)
+      #  , group=vc_coverage
+      ),
+    data = vec.eff[,.SD, .SDcols=-c("vaccine")]
+    #, color = scales::muted(scn_cols["vc"], lum)
   ) +
   geom_line(
-    aes(x=year, y=value, group=interaction(vaccine, catchup)),
-    data = vac.eff[,.SD, .SDcols=-c("vc_coverage")],
-    color = scales::muted(scn_cols["vac"], lum)
+    aes(x=year, y=value, color=interaction(scenario, catchup)
+        #,group=interaction(vaccine, catchup),
+#        color = "vac-only"
+    ),
+    data = vac.eff[,.SD, .SDcols=-c("vc_coverage")]
+    #, color = scales::muted(scn_cols["vac"], lum)
   ) +
   geom_pchline(
     dt = vac.eff[catchup == "routine",.SD, .SDcols=-c("vc_coverage")],
-    mapping=aes(x=year, y=value, group=interaction(vaccine, catchup)),
+    mapping=aes(x=year, y=value, group=interaction(vaccine, catchup), color=interaction(scenario, catchup)),
     var=expression(year-1),
-    color = scales::muted(scn_cols["vac"], lum),
+#    color = scales::muted(scn_cols["vac"], lum),
     fill="white", alpha=1
+    #, show.legend = F
   ) +
   geom_pchline(
     dt = vac.eff[catchup != "routine",.SD, .SDcols=-c("vc_coverage")],
-    mapping = aes(x=year, y=value, group=interaction(vaccine, catchup)),
+    mapping = aes(x=year, y=value, group=interaction(vaccine, catchup), color=interaction(scenario, catchup)),
     var=expression(year-1),
-    color = scales::muted(scn_cols["vac"], lum),
+    #color = scales::muted(scn_cols["vac"], lum),
     fill = scales::muted(scn_cols["vac"], lum), alpha=1
+    #, show.legend = F
   ) +
-  geom_altribbon(plot2.dt, withlines = F) + shared + scale_shape_vaccine(guide="none") + 
-  scale_fill_interaction(guide = "none") + theme(
-  legend.position = c(100/120*.285, 0.40) # think this looks best, but can comment out to return to margin
+  geom_altribbon(plot2.dt, withlines = F) +
+  shared +
+  scale_shape_vaccine(guide="none") + 
+  scale_fill_interaction(
+    guide = guide_legend(override.aes = list(alpha=0.4, shape=NA), title.hjust = 0)
+  ) +
+  scale_color_manual(
+    "Scenario",
+    guide = guide_legend(
+      override.aes = list(
+        color=c("black","black",scales::muted(unname(scn_cols["vac"]), lum),scales::muted(unname(scn_cols["vac"]), lum),scales::muted(unname(scn_cols["vc"]), lum)),
+        fill=c(NA,"white",NA,"white",NA),
+        shape=c(19,21,19,21,NA)
+      ), title.hjust = 0
+    ),
+    labels = c("Combined, w/ Catchup", "Combined, Routine-Only", "Vaccine Only, w/ Catchup", "Vaccine Only, Routine-Only", "Vector Control Only"),
+    breaks = c("vc+vac.vc+vac", "vc+vac.routine", "vac.vac-only", "vac.routine", "vc.none"),
+    values = c(
+      `vc+vac.routine`="black", `vc+vac.vc+vac`="black",
+      `vac.routine`=scales::muted(unname(scn_cols["vac"]), lum),
+      `vac.vac-only`=scales::muted(unname(scn_cols["vac"]), lum),
+      `vc.none`=scales::muted(unname(scn_cols["vc"]), lum)
+    )
+  #   guide = guide_legend(override.aes = list(fill=NA)),
+  #   breaks=c("vc+vac","vac","vc"),
+  #   value=c(
+  #     `vc+vac`="black",
+  #     `vac`=scales::muted(scn_cols["vac"], lum),
+  #     `vc`=scales::muted(scn_cols["vc"], lum)
+  #   )
+  ) +
+  theme(legend.key = element_blank(), legend.background = element_blank()
+  # legend.position = c(100/120*.285, 0.40) # think this looks best, but can comment out to return to margin
 )
 
-save_plot(tar, pmost, ncol = 3, nrow = 3, base_width = 4, base_height = baseh*1.5)
+save_plot(tar, pmost, ncol = 3, nrow = 3, base_width = 4.25, base_height = baseh*1.25)
