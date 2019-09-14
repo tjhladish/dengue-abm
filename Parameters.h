@@ -72,6 +72,13 @@ enum PrimaryPathogenicityModel {
     NUM_OF_PRIMARY_PATHOGENICITY_MODELS
 };
 
+enum VaccineSeroConstraint {
+    VACCINATE_SERONEGATIVE_ONLY,
+    VACCINATE_SEROPOSITIVE_ONLY,
+    VACCINATE_ALL_SERO_STATUSES,
+    NUM_OF_VACCINE_SERO_CONSTRAINTS
+};
+
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
 // series A
@@ -315,6 +322,8 @@ public:
     double infantSevereProb;                                // Probability that age 0 person experiences severe disease, given maternal immunity
     bool bVaccineLeaky;                                     // if false, vaccine is all-or-none
     bool bRetroactiveMatureVaccine;                         // if true, infection causes leaky vaccine to jump from naive to mature protection
+    double seroTestFalsePos;                                // probability that seroneg person tests positive -- leaky test
+    double seroTestFalseNeg;                                // probability that seropos person tests negative -- leaky test
     std::vector<int> nInitialExposed;                       // serotypes
     std::vector<std::vector<float> > nDailyExposed;         // dimensions are [year][serotype]
     std::vector<int> nInitialInfected;                      // serotypes
@@ -376,6 +385,7 @@ public:
     bool abcVerbose;
     unsigned long int serial;
 
+    VaccineSeroConstraint vaccineSeroConstraint;
     // WHO vaccine mechanism variables
     WHO_DiseaseOutcome whoDiseaseOutcome;
 };

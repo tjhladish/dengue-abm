@@ -373,6 +373,26 @@ bool Person::fullySusceptible() const {
 }
 
 
+bool Person::isSeroEligible(VaccineSeroConstraint vsc, double falsePos, double falseNeg) const {
+    if (vsc == VACCINATE_ALL_SERO_STATUSES) return true;
+
+    assert(falsePos >= 0.0 and falsePos <= 1.0);
+    assert(falseNeg >= 0.0 and falseNeg <= 1.0);
+    assert(vsc == VACCINATE_SEROPOSITIVE_ONLY or vsc == VACCINATE_SERONEGATIVE_ONLY);
+
+    bool isSeroPos = not fullySusceptible(); // fully susceptible == seronegative == false
+
+    if ((isSeroPos and (falseNeg > gsl_rng_uniform(RNG)))       // sero+ but tests negative
+        or (!isSeroPos and (falsePos > gsl_rng_uniform(RNG)))) { // sero- but tests positive
+        isSeroPos = !isSeroPos;
+    }
+
+    bool eligible = vsc == VACCINATE_SEROPOSITIVE_ONLY ? isSeroPos : not isSeroPos;
+
+    return eligible;
+}
+
+
 bool Person::vaccinate(int time) {
     if (!_bDead) {
         //vector<double> _fVES = _par->fVESs;
