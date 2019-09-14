@@ -44,6 +44,9 @@ $(addprefix fig_3.,$(IMGTYPES)): fig_combo_eff_illustration.R figref.rda nolag_e
 $(addprefix fig_4.,$(IMGTYPES)): fig_full_combo_interaction.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
+$(addprefix fig_4_alt.,$(IMGTYPES)): fig_alt_combo_interaction.R figref.rda alt_effstats.rds | $(FIGDIR)
+	$(RFIG)
+
 $(addprefix fig_5.,$(IMGTYPES)): fig_lagged_interventions.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
