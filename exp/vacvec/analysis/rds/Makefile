@@ -177,6 +177,15 @@ foi_v_mpop.rds: special.R utils.R $(FOISIDEDB) $(FOISIDETGZ)
 posterior.rds: posterio.R utils.R $(ABCDB) $(POSTJSON)
 	Rscript $^ $@
 
+alt_eff_interventions.rds: alt_parse.R utils.R projref.rda $(ALTEFFDB) all_interventions.rds
+	Rscript $^ $@
+
+alt_effectiveness.rds: eff.R all_baseline.rds alt_eff_interventions.rds
+	Rscript $^ $@
+
+alt_comboeff.rds: comboeff.R alt_effectiveness.rds
+	Rscript $^ $@
+
 all_baseline.rds all_interventions.rds: join_them_all.R $(REFDB) $(FOIDB) $(LAGDB) $(TSTDB) $(TSTFOIDB) $(TESTDB)
 	Rscript $^ $@
 
@@ -192,4 +201,4 @@ lag_comboeff.rds: lag_comboeff.R all_effectiveness.rds
 %_effstats.rds: effstats.R utils.R projref.rda %_comboeff.rds
 	Rscript $^ $@
 
-effstat: nolag_effstats.rds lag_effstats.rds
+effstat: nolag_effstats.rds lag_effstats.rds alt_effstats.rds

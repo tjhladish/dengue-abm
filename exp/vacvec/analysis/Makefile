@@ -25,7 +25,9 @@ cleanparse:
 %.rds %.rda:
 	+$(MAKE) -C rds $@
 
-RFIG = Rscript $^ $|/$@
+#RFIG = Rscript $^ $|/$@
+
+RFIG = Rscript $^ $@
 
 $(FIGDIR):
 	mkdir $@
@@ -33,58 +35,62 @@ $(FIGDIR):
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-IMGTYPES := png tiff eps pdf
+IMGTYPES := png tiff eps
 
-$(addprefix fig_2.,$(IMGTYPES)): fig_raw_effectiveness.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/fig_2.,$(IMGTYPES)): fig_raw_effectiveness.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix fig_3.,$(IMGTYPES)): fig_combo_eff_illustration.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/fig_3.,$(IMGTYPES)): fig_combo_eff_illustration.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix fig_4.,$(IMGTYPES)): fig_full_combo_interaction.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/fig_4.,$(IMGTYPES)): fig_full_combo_interaction.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix fig_5.,$(IMGTYPES)): fig_lagged_interventions.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/fig_4_alt.,$(IMGTYPES)): fig_alt_combo_interaction.R figref.rda alt_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix fig_6.,$(IMGTYPES)): fig_foi_alternatives.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/fig_5.,$(IMGTYPES)): fig_lagged_interventions.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
+	$(RFIG)
+
+$(addprefix fig/fig_6.,$(IMGTYPES)): fig_foi_alternatives.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # single intervention IQs
-$(addprefix SIfig_2.,$(IMGTYPES)): SIfig_raw_effectiveness.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_2.,$(IMGTYPES)): SIfig_raw_effectiveness.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # combination dels from naive effectiveness
-$(addprefix SIfig_3.,$(IMGTYPES)): SIfig_combo_gaps.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_3.,$(IMGTYPES)): SIfig_combo_gaps.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # combination IQs
-$(addprefix SIfig_4.,$(IMGTYPES)): SIfig_all_combos.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_4.,$(IMGTYPES)): SIfig_all_combos.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # lagged IQs
-$(addprefix SIfig_5.,$(IMGTYPES)): SIfig_lagged.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_5.,$(IMGTYPES)): SIfig_lagged.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # foi study IQs
-$(addprefix SIfig_6.,$(IMGTYPES)): SIfig_foi.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_6.,$(IMGTYPES)): SIfig_foi.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 # foi study IQs
-$(addprefix SIfig_7.,$(IMGTYPES)): SIfig_foi_v_mpop.R figref.rda foi_v_mpop.rds | $(FIGDIR)
+$(addprefix fig/SIfig_7.,$(IMGTYPES)): SIfig_foi_v_mpop.R figref.rda foi_v_mpop.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix SIfig_8.,$(IMGTYPES)): SIfig_foi_both_cydtdv.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_8.,$(IMGTYPES)): SIfig_foi_both_cydtdv.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-$(addprefix SIfig_9a.,$(IMGTYPES)): SIfig_test_sens.R figref.rda nolag_effstats.rds | $(FIGDIR)
+$(addprefix fig/SIfig_9a.,$(IMGTYPES)): SIfig_test_sens.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
-SIfig_9b.png SIfig_9c.png SIfig_9d.png: SIfig_9a.png
+%.pdf: fig/%.png
+	convert $^ -quality 0 -density 600 -trim +repage fig/$@
+
+$(addsuffix .png,$(addprefix fig/SIfig_9,b c d)): SIfig_9a.png
 
 SIfig_9b.eps SIfig_9c.eps SIfig_9d.eps: SIfig_9a.eps
-
-SIfig_9b.pdf SIfig_9c.pdf SIfig_9d.pdf: SIfig_9a.pdf
 
 # lagged showing single interventions
 non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats.rds effstats.rds | $(FIGDIR)

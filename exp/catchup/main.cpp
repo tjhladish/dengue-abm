@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit3");
 
 const int RESTART_BURNIN    = 10; // 10 for normal results, 100 for foi-effect analysis if changing foi from imm file
-const int FORECAST_DURATION = 41; // normally 41; using 11 for efficacy duration sensitivity analysis
+const int FORECAST_DURATION = 21; // normally 41; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const int JULIAN_TALLY_DATE = 146; // intervention julian date - 1
@@ -301,7 +301,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     const bool vector_control     = (bool) args[9];
     const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[10]]; // number of days to achieve coverage
-    const int vc_timing           = (int) args[11]; // TODO - make this ivn_timing, and consistently used for aggregation intervals
+    const int vc_timing           = (int) args[11];
     const double vc_coverage      = args[12];
     const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
     const double foi_mult         = args[14];
@@ -377,7 +377,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->vaccineBoosting         = false;
         par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
         par->whoDiseaseOutcome       = VAC_ISNT_INFECTION;
-    } if (vaccine_mechanism == 2) {        // "baseline" scenario: A2b + B2 + C3a
+    } else if (vaccine_mechanism == 2) {        // "baseline" scenario: A2b + B2 + C3a
         // perfect efficacy that wanes rapidly -- most benefit comes from vaccine-as-infection assumption
         par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
         par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);

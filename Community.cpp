@@ -477,7 +477,10 @@ void Community::vaccinate(CatchupVaccinationEvent cve) {
 
     for (Person* p: _personAgeCohort[cve.age]) {
         assert(p != NULL);
-        if (!p->isVaccinated() and gsl_rng_uniform(RNG) < cve.coverage) {
+        if (!p->isVaccinated()
+            and cve.coverage > gsl_rng_uniform(RNG)
+            and p->isSeroEligible(_par->vaccineSeroConstraint, _par->seroTestFalsePos, _par->seroTestFalseNeg)
+           ) {
             p->vaccinate(cve.simDay);
             if (_par->vaccineBoosting or p->getNumVaccinations() < _par->numVaccineDoses) _revaccinate_set.insert(p);
         }
@@ -510,7 +513,10 @@ void Community::updateVaccination() {
 void Community::targetVaccination(Person* p) {
     if (_nDay < _par->vaccineTargetStartDate) return; // not starting yet
     // expected to be run on p's birthday
-    if (p->getAge()==_par->vaccineTargetAge and not p->isVaccinated()) {
+    if (p->getAge()==_par->vaccineTargetAge
+        and not p->isVaccinated()
+        and p->isSeroEligible(_par->vaccineSeroConstraint, _par->seroTestFalsePos, _par->seroTestFalseNeg)
+       ) {
         // standard vaccination of target age; vaccinate w/ probability = coverage
         if (gsl_rng_uniform(RNG) < _par->vaccineTargetCoverage) p->vaccinate(_nDay);
         if (_par->vaccineBoosting or _par->numVaccineDoses > 1) _revaccinate_set.insert(p);

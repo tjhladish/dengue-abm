@@ -109,6 +109,9 @@ void Parameters::define_defaults() {
 
     // WHO vaccine mechanism variables
     whoDiseaseOutcome = VAC_ISNT_INFECTION;
+    vaccineSeroConstraint = VACCINATE_ALL_SERO_STATUSES;
+    seroTestFalsePos = 0.0;
+    seroTestFalseNeg = 0.0;
 }
 
 void Parameters::readParameters(int argc, char* argv[]) {
