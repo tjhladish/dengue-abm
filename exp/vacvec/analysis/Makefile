@@ -97,7 +97,7 @@ non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats
 	$(RFIG)
 
 
-MTFIGS := $(addprefix fig_,$(addsuffix .pdf,2 3 4 5 6))
+MTFIGS := $(addprefix fig_,$(addsuffix .pdf,2 3 4 4_alt 5 6))
 SIFIGS := $(addprefix SIfig_,$(addsuffix .pdf,2 3 4 5 6 7 8 9a 9b 9c 9d))
 
 maintextfigs: $(MTFIGS)
