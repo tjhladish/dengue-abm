@@ -35,7 +35,7 @@ $(FIGDIR):
 figref.rda: figref.R utils.R projref.rda
 	Rscript $^ $@
 
-IMGTYPES := png tiff eps
+IMGTYPES := png tiff eps svg
 
 $(addprefix fig/fig_2.,$(IMGTYPES)): fig_raw_effectiveness.R figref.rda nolag_effstats.rds | $(FIGDIR)
 	$(RFIG)
@@ -44,6 +44,9 @@ $(addprefix fig/fig_3.,$(IMGTYPES)): fig_combo_eff_illustration.R figref.rda nol
 	$(RFIG)
 
 $(addprefix fig/fig_4.,$(IMGTYPES)): fig_full_combo_interaction.R figref.rda nolag_effstats.rds | $(FIGDIR)
+	$(RFIG)
+
+$(addprefix fig/fig_4_alt.,$(IMGTYPES)): fig_alt_combo_interaction.R figref.rda alt_effstats.rds | $(FIGDIR)
 	$(RFIG)
 
 $(addprefix fig/fig_5.,$(IMGTYPES)): fig_lagged_interventions.R figref.rda lag_effstats.rds nolag_effstats.rds | $(FIGDIR)
@@ -94,12 +97,16 @@ non_fig_1.png non_fig_1.tiff: fig_lagged_interventions.R figref.rda lag_effstats
 	$(RFIG)
 
 
-MTFIGS := $(addprefix fig_,$(addsuffix .pdf,2 3 4 5 6))
+MTFIGS := $(addprefix fig_,$(addsuffix .pdf,2 3 4 4_alt 5 6))
+SVGFIGS := $(addprefix fig_,$(addsuffix .svg,2 3 4 4_alt 5 6))
 SIFIGS := $(addprefix SIfig_,$(addsuffix .pdf,2 3 4 5 6 7 8 9a 9b 9c 9d))
+SVGSIFIGS := $(addprefix SIfig_,$(addsuffix .svg,2 3 4 5 6 7 8 9a 9b 9c 9d))
 
 maintextfigs: $(MTFIGS)
 
 sifigs: $(SIFIGS)
+
+svgfigs: $(addprefix fig/,$(SVGFIGS))
 
 figures: maintextfigs sifigs
 
