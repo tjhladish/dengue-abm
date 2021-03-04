@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit3");
 
 const int RESTART_BURNIN    = 100; // was 10 for normal results, 100 for foi-effect analysis
-const int FORECAST_DURATION = 50;  // normally 41; using 11 for efficacy duration sensitivity analysis
+const int FORECAST_DURATION = 51;  // normally 51
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 
@@ -401,7 +401,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time (&end);
     double dif = difftime (end,start);
 
-    const int pre_intervention_output = 5; // years
+    const int pre_intervention_output = 0; // years
     vector<double> metrics = tally_counts(par, community, pre_intervention_output);
 
     stringstream ss;

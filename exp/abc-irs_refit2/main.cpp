@@ -37,7 +37,7 @@ const int LAST_YEAR           = 2015;                                 // inclusi
 const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
 const int DDT_DURATION        = 23;                                   // 23 years long
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 37 for 1979-2015 inclusive
-const int FORECAST_DURATION   = 1;                                    // use 15 to create year 2030 immunity files for restarting (e.g. for intervention forecasting)
+const int FORECAST_DURATION   = 15;                                   // use 15 to create year 2030 immunity files for restarting (e.g. for intervention forecasting)
 
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
@@ -64,7 +64,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     //string output_dir = "/scratch/lfs/thladish";
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
+    par->dailyOutput             = false;
     par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
@@ -338,8 +338,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     // output immunity file for immunity profile comparison with empirical data
     //string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
-    //string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit2/immunity2030." + process_id;
-    //write_immunity_file(community, process_id, imm_filename, par->nRunLength);
+    string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit3/immunity2030." + process_id;
+    write_immunity_file(community, process_id, imm_filename, par->nRunLength);
 
     //vector<double> profile = immune_profile(community);
 
