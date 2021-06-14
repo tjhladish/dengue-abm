@@ -1,0 +1,20 @@
+d = read.table('study_poc.out', sep=' ', header=F)
+png('tirs_study_poc.png', width=2000, height=1200, res=150)
+plot(d$V2[d$V1==2][-1], diff(d$V3[d$V1==2]), type='l', xlab='Simulation day', ylab='Incidence (infections)', lwd=2, col='red')
+lines(d$V2[d$V1==1][-1], diff(d$V3[d$V1==1]), type='l', lwd=2, col='blue')
+legend('topleft', legend=c('Treated', 'Control'), col=c('blue', 'red'), lwd=3, bty='n')
+dev.off()
+
+
+dl = read.table('study_poc-long.out', sep=' ', header=F)
+png('tirs_study_poc-long.png', width=2000, height=1200, res=150)
+plot(dl$V2[dl$V1==2][-1][15000:16500], diff(dl$V3[dl$V1==2])[15000:16500], type='l', xlab='Simulation day', ylab='Incidence (infections)', lwd=2, col='red')
+lines(dl$V2[dl$V1==1][-1][15000:16500], diff(dl$V3[dl$V1==1])[15000:16500], type='l', col='blue', lwd=2) 
+legend('topleft', legend=c('Treated', 'Control'), col=c('blue', 'red'), lwd=3, bty='n')
+dev.off()
+
+png('tirs_study_poc-longer.png', width=2000, height=1200, res=150)
+plot(dl$V2[dl$V1==2][-1], diff(dl$V3[dl$V1==2]), type='l', xlab='Simulation day', ylab='Incidence (infections)', lwd=2, col='red')
+lines(dl$V2[dl$V1==1][-1], diff(dl$V3[dl$V1==1]), type='l', col='blue', lwd=2) 
+legend('topleft', legend=c('Treated', 'Control'), col=c('blue', 'red'), lwd=3, bty='n')
+dev.off()
