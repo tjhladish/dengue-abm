@@ -301,7 +301,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     const bool vector_control     = (bool) args[9];
     const int vc_campaignDuration = vc_campaign_duration_levels[(int) args[10]]; // number of days to achieve coverage
-    const int vc_timing           = (int) args[11]; // TODO - make this ivn_timing, and consistently used for aggregation intervals
+    const int vc_timing           = (int) args[11];
     const double vc_coverage      = args[12];
     const double vc_efficacy      = args[13];       // expected % reduction in equillibrium mosquito population in treated houses
     const double foi_mult         = args[14];
@@ -377,7 +377,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->vaccineBoosting         = false;
         par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
         par->whoDiseaseOutcome       = VAC_ISNT_INFECTION;
-    } if (vaccine_mechanism == 2) {        // "baseline" scenario: A2b + B2 + C3a
+    } else if (vaccine_mechanism == 2) {        // "baseline" scenario: A2b + B2 + C3a
         // perfect efficacy that wanes rapidly -- most benefit comes from vaccine-as-infection assumption
         par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 1.0);
         par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 1.0);
@@ -390,7 +390,39 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         par->vaccineBoosting         = false;
         par->vaccineSeroConstraint   = VACCINATE_SEROPOSITIVE_ONLY;
         par->whoDiseaseOutcome       = INC_NUM_INFECTIONS;
-    } else {
+    } else if (vaccine_mechanism == 3) { // also want A1 + B2 + C3a
+        // imperfect efficacy that does not wane
+        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 0.5);
+        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 0.5);
+        //par->fVESs = {0.6, 0.54, 0.9, 0.95};
+        //par->fVESs_NAIVE = {0.3, 0.27, 0.45, 0.48};
+
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = false;
+        par->vaccineImmunityDuration = INT_MAX;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 1;
+        par->vaccineDoseInterval     = INT_MAX;
+        par->vaccineBoosting         = false;
+        par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
+        par->whoDiseaseOutcome       = VAC_ISNT_INFECTION;
+     } else if (vaccine_mechanism == 4) { // also want A1 + B2 + C3a
+        // imperfect efficacy that does not wane
+        par->fVESs                   = vector<double>(NUM_OF_SEROTYPES, 0.9);
+        par->fVESs_NAIVE             = vector<double>(NUM_OF_SEROTYPES, 0.9);
+        //par->fVESs = {0.6, 0.54, 0.9, 0.95};
+        //par->fVESs_NAIVE = {0.3, 0.27, 0.45, 0.48};
+
+        par->fVEH                    = 0.803; // fraction of hospitalized cases prevented by vaccine
+        par->linearlyWaningVaccine   = false;
+        par->vaccineImmunityDuration = INT_MAX;
+        par->bVaccineLeaky           = true;
+        par->numVaccineDoses         = 1;
+        par->vaccineDoseInterval     = INT_MAX;
+        par->vaccineBoosting         = false;
+        par->vaccineSeroConstraint   = VACCINATE_ALL_SERO_STATUSES;
+        par->whoDiseaseOutcome       = VAC_ISNT_INFECTION;
+     } else {
         cerr << "Unsupported vaccine mechanism: " << vaccine_mechanism << endl;
         exit(-152);
     }

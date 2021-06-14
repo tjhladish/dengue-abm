@@ -1,7 +1,7 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 73500,
-    "predictive_prior_fraction" : 0.0136054421768707,
+    "num_samples"    : 50000,
+    "predictive_prior_fraction" : 0.02,
     "pls_training_fraction"     : 0.8,
     "noise"                     : "MULTIVARIATE",
 

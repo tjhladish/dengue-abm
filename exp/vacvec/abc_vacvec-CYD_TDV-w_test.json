@@ -1,6 +1,6 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 2880000,
+    "num_samples"    : 1440000,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
@@ -131,7 +131,7 @@
         {"name"       : "vac",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 0,
+         "par1"       : 1,
          "par2"       : 1},
 
         {"name"       : "vac_mech",

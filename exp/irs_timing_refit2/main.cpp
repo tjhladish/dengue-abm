@@ -23,7 +23,7 @@ const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit2");
 
-const int RESTART_BURNIN    = 100; // was 10 for normal results, 100 for foi-effect analysis
+const int RESTART_BURNIN    = 10; // was 10 for normal results, 100 for foi-effect analysis
 const int FORECAST_DURATION = 41; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
@@ -65,7 +65,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true; // turn on for daily prevalence figure, probably uncomment filter in simulator.h for daily output to get only rel. days
+    par->dailyOutput             = false; // turn on for daily prevalence figure, probably uncomment filter in simulator.h for daily output to get only rel. days
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
     par->weeklyOutput            = false;

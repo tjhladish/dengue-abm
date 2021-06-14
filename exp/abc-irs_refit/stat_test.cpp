@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "AbcUtil.h"
+#include <numeric>
 //#include "ranker.h"
 
 using namespace std;

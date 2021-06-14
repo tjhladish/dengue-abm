@@ -37,7 +37,7 @@ const int LAST_YEAR           = 2015;                                 // inclusi
 const int DDT_START           = 1956 - FIRST_YEAR;                    // simulator year 77, counting from year 1
 const int DDT_DURATION        = 23;                                   // 23 years long
 const int FITTED_DURATION     = LAST_YEAR - FIRST_OBSERVED_YEAR + 1;  // 37 for 1979-2015 inclusive
-const int FORECAST_DURATION   = 1;                                    // use 15 to create year 2030 immunity files for restarting (e.g. for intervention forecasting)
+const int FORECAST_DURATION   = 15;                                   // use 15 to create year 2030 immunity files for restarting (e.g. for intervention forecasting)
 
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial) {
     Parameters* par = new Parameters();
@@ -64,7 +64,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     //string output_dir = "/scratch/lfs/thladish";
 
     par->randomseed              = rng_seed;
-    par->dailyOutput             = true;
+    par->dailyOutput             = false;
     par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->abcVerbose              = true;
