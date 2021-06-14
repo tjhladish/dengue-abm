@@ -339,6 +339,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     // output immunity file for immunity profile comparison with empirical data
     //string imm_filename = "/scratch/lfs/thladish/imm_1000_yucatan/immunity2014." + process_id;
     //string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit2/immunity2030." + process_id;
+    //string imm_filename = "./immunity2030.merida." + process_id;
     //write_immunity_file(community, process_id, imm_filename, par->nRunLength);
 
     //vector<double> profile = immune_profile(community);

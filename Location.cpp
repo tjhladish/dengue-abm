@@ -34,7 +34,7 @@ Location::~Location() {
 
 
 void Location::addPerson(Person* p, int t) {
-    //assert((unsigned) t < _person.size());
+    assert((unsigned) t < _person.size());
     _person[t].push_back(p);
 }
 

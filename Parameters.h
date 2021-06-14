@@ -55,6 +55,7 @@ enum LocationType {
 enum LocationSelectionStrategy {
     UNIFORM_STRATEGY,
     MAX_MOSQUITOES_STRATEGY,
+    TIRS_STUDY_STRATEGY,
     NUM_OF_LOCATION_SELECTION_STRATEGY_TYPES
 };
 
@@ -382,6 +383,7 @@ public:
     bool weeklyOutput;
     bool monthlyOutput;
     bool yearlyOutput;
+    bool studyOutput;
     bool abcVerbose;
     unsigned long int serial;
 

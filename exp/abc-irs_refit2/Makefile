@@ -18,7 +18,7 @@ SERDIR = $(DENDIR)/synthetic_population/serotype_runs
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
 
-INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/
+INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/ -I$(ABCDIR)/jsoncpp/include
 #ifdef TACC_GSL_INC
 #INCLUDE += -I$$TACC_GSL_INC
 #endif

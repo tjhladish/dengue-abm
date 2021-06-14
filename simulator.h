@@ -272,6 +272,13 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         }
     }
 
+    if (par->studyOutput) {
+        _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 1 ): ", date.day(), "daily-arm1");
+        ss << endl;
+        _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 2 ): ", date.day(), "daily-arm2");
+        ss << endl;
+    }
+
     // handle several things that happen yearly
     _aggregator(periodic_incidence, "yearly");
     if (date.endOfYear()) {
@@ -315,6 +322,14 @@ void schedule_vector_control(const Parameters* par, Community* community) {
         if (vce.strategy == UNIFORM_STRATEGY) {
             for (Location* loc: community->getLocations() ) {
                 if (loc->getType() == vce.locationType and  gsl_rng_uniform(RNG) < vce.coverage) {
+                   // location will be treated
+                   const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
+                   loc->scheduleVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
+                }
+            }
+        } else if (vce.strategy == TIRS_STUDY_STRATEGY) {
+            for (Location* loc: community->getLocations() ) {
+                if (loc->getType() == vce.locationType and loc->getTrialArm() == 2) {
                    // location will be treated
                    const int loc_treatment_date = vce.campaignStart + gsl_rng_uniform_int(RNG, vce.campaignDuration);
                    loc->scheduleVectorControlEvent(vce.efficacy, rho, loc_treatment_date, vce.efficacyDuration);
@@ -416,6 +431,27 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
                 periodic_incidence["daily"][TOTAL_INF]  += 1;
                 periodic_incidence["daily"][TOTAL_CASE] += symp;
                 periodic_incidence["daily"][TOTAL_DSS]  += severe;
+
+                const Location* home = p->getLocation(HOME_MORNING);
+                const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
+
+                if (arm == 1) {
+                    periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
+                    periodic_incidence["daily-arm1"][INTRO_CASE] += intro and symp;
+                    periodic_incidence["daily-arm1"][INTRO_DSS]  += intro and severe;
+
+                    periodic_incidence["daily-arm1"][TOTAL_INF]  += 1;
+                    periodic_incidence["daily-arm1"][TOTAL_CASE] += symp;
+                    periodic_incidence["daily-arm1"][TOTAL_DSS]  += severe;
+                } else if (arm == 2) {
+                    periodic_incidence["daily-arm2"][INTRO_INF]  += intro;
+                    periodic_incidence["daily-arm2"][INTRO_CASE] += intro and symp;
+                    periodic_incidence["daily-arm2"][INTRO_DSS]  += intro and severe;
+
+                    periodic_incidence["daily-arm2"][TOTAL_INF]  += 1;
+                    periodic_incidence["daily-arm2"][TOTAL_CASE] += symp;
+                    periodic_incidence["daily-arm2"][TOTAL_DSS]  += severe;
+                }
             }
         }
     }
@@ -432,7 +468,9 @@ map<string, vector<int> > construct_tally() {
                                                    {"n_day", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"weekly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"monthly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
-                                                   {"yearly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)} };
+                                                   {"yearly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
+                                                   {"daily-arm1", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
+                                                   {"daily-arm2", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)}};
     return periodic_incidence;
 }
 

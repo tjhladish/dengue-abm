@@ -141,11 +141,12 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
 
     istringstream line;
     // per IPUMS, expecting 1 for male, 2 for female for sex
-    int id, house, age, sex, work, empstat;
+    int id, house, age, sex, did;//, empstat;
     while ( getline(iss,buffer) ) {
         line.clear();
         line.str(buffer);
         /*
+        // old version:
         pid hid age sex workid empstat
         pid hid age sex hh_serial pernum workid
         1 1 31 1 2748179000 1 442670
@@ -153,18 +154,28 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
         3 1 10 2 2748179000 3 468423
         4 2 32 1 2748114000 1 397104
         5 2 30 2 2748114000 2 396166
+
+        // new version:
+        pid home_id sex age day_id
+        0 59834 1 25 21388
+        1 59834 2 25 -1
+        2 59835 1 40 9749
+        3 59836 1 83 -1
+        4 59836 1 45 -1
         */
-        if (line >> id >> house >> age >> sex >> work >> empstat) {
+
+        if (line >> id >> house >> sex >> age >> did) {// >> empstat) {
+            if (did == -1) { did = house; }
             Person* p = new Person();
             _people.push_back(p);
             p->setAge(age);
             p->setSex((SexType) sex);
             p->setHomeID(house);
             p->setLocation(_location[house], HOME_MORNING);
-            p->setLocation(_location[work], WORK_DAY);
+            p->setLocation(_location[did], WORK_DAY);
             p->setLocation(_location[house], HOME_NIGHT);
             _location[house]->addPerson(p, HOME_MORNING);
-            _location[work]->addPerson(p, WORK_DAY);
+            _location[did]->addPerson(p, WORK_DAY);
             _location[house]->addPerson(p, HOME_NIGHT);
             assert(age<NUM_AGE_CLASSES);
             agecounts[age]++;
@@ -282,7 +293,8 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     //_location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
     char buffer[500];
-    int locID;
+    int locID, trial_arm;
+    bool surveilled;
     string locTypeStr;
     double locX, locY;
     istringstream line(buffer);
@@ -291,9 +303,11 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         iss.getline(buffer,500);
         line.clear();
         line.str(buffer);
-        if (line >> locID >> locTypeStr >> locX >> locY) {
+        // locid x y type arm center
+        if (line >> locID >> locX >> locY >> locTypeStr >> trial_arm >> surveilled) {
             if (locID != (signed) _location.size()) {
-                cerr << "WARNING: Location ID's must be sequential integers" << endl;
+                cerr << "ERROR: Location ID's must be sequential integers" << endl;
+                cerr << locID << " != " << _location.size() << endl;
                 return false;
             }
             const LocationType locType = (locTypeStr == "h") ? HOME : (locTypeStr == "w") ? WORK : (locTypeStr == "s") ? SCHOOL : NUM_OF_LOCATION_TYPES;
@@ -306,6 +320,8 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
             newLoc->setX(locX);
             newLoc->setY(locY);
             newLoc->setType(locType);
+            newLoc->setTrialArm(trial_arm);
+            newLoc->setSurveilled(surveilled);
 
             if (_par->eMosquitoDistribution==CONSTANT) {
                 // all houses have same number of mosquitoes

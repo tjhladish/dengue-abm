@@ -5,7 +5,7 @@
     "pls_training_fraction"     : 0.8,
     "noise"                     : "MULTIVARIATE",
 
-    "database_filename"         : "posterior-refit2-delme.sqlite",
+    "database_filename"         : "posterior-refit2.sqlite",
 
     "parameters" : [
         {"name"         : "mild_reported_fraction",
