@@ -223,8 +223,8 @@ void initialize_seasonality(const Parameters* par, Community* community, int& ne
 }
 
 
-void _aggregator(map<string, vector<int> >& periodic_incidence, string key) {
-    for (unsigned int i = 0; i < periodic_incidence["daily"].size(); ++i) periodic_incidence[key][i] += periodic_incidence["daily"][i];
+void _aggregator(map<string, vector<int> >& periodic_incidence, string key, string daily_key = "daily") {
+    for (unsigned int i = 0; i < periodic_incidence[daily_key].size(); ++i) periodic_incidence[key][i] += periodic_incidence[daily_key][i];
 }
 
 
@@ -281,6 +281,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 
     // handle several things that happen yearly
     _aggregator(periodic_incidence, "yearly");
+    _aggregator(periodic_incidence, "yearly-arm1", "daily-arm1");
+    _aggregator(periodic_incidence, "yearly-arm2", "daily-arm2");
     if (date.endOfYear()) {
         if (par->abcVerbose) {
             cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: ";
@@ -290,11 +292,17 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-        if (par->yearlyOutput) { _reporter(ss, periodic_incidence, dummy, par, process_id, " year: ", date.year(), "yearly"); ss << endl; }
+        if (par->yearlyOutput) { 
+            _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( total ): ", date.year(), "yearly"); ss << endl;
+            _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 1 ): ", date.year(), "yearly-arm1"); ss << endl;
+            _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 2 ): ", date.year(), "yearly-arm2"); ss << endl;
+        }
         periodic_incidence["yearly"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
     }
 
     periodic_incidence["daily"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+    periodic_incidence["daily-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+    periodic_incidence["daily-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
     string output = ss.str();
     //fputs(output.c_str(), stderr);
     fputs(output.c_str(), stdout);
@@ -469,6 +477,8 @@ map<string, vector<int> > construct_tally() {
                                                    {"weekly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"monthly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"yearly", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
+                                                   {"yearly-arm1", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
+                                                   {"yearly-arm2", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"daily-arm1", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)},
                                                    {"daily-arm2", vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES,0)}};
     return periodic_incidence;
