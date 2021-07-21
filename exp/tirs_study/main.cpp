@@ -19,12 +19,12 @@ time_t GLOBAL_START_TIME;
 string calculate_process_id(vector<double> &args, string &argstring);
 const string SIM_POP = "merida";
 const string HOME_DIR(std::getenv("HOME"));
-const string pop_dir = HOME_DIR + "/work/dengue/pop/" + SIM_POP + "-tirs";
+const string pop_dir = HOME_DIR + "/documents/work/dengue/pop/" + SIM_POP + "-tirs";
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
-const int RESTART_BURNIN    = 2; // was 100 for foi-effect analysis
-const int FORECAST_DURATION = 5; // normally 51; using 11 for efficacy duration sensitivity analysis
+const int RESTART_BURNIN    = 0; // was 100 for foi-effect analysis
+const int FORECAST_DURATION = 1; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 
@@ -97,12 +97,33 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
     par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
 
-    par->betaPM = _betapm;
-    par->betaMP = _betamp;
+    // CHANGES TO PARAMETER ASSIGNMENT FOR FOI EXPERIMENT
+    double foi_exp_mult = args[18];      // multiplier for FOI experiment; will range from [0.5, 1.5] incrementing by 0.1
+
+    assert((args[17] == 0) or (args[17] == 1));
+    if(args[17] == 0) {
+        // changing beta
+        double _betapmHazard = _betapm * sqrt(foi_exp_mult);
+        double _betampHazard = _betamp * sqrt(foi_exp_mult);
+
+        par->betaPM = 1.0 - exp(-_betapmHazard);  // use hazards to test FOI multipliers and then transform hazards back into probabilities on [0, 1]
+        par->betaMP = 1.0 - exp(-_betampHazard);
+
+        par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);
+    } else if(args[17] == 1) {
+        // changing mosq_cap
+        par->nDefaultMosquitoCapacity = (int) ((_nmos * _foi_mult) * foi_exp_mult);      // no need for hazard transformation becasue mosq population can be [0, pos inf]
+
+        par->betaPM = _betapm;  // use hazards to test FOI multipliers and then transform hazards back into probabilities on [0, 1]
+        par->betaMP = _betamp;
+    }
+
+    // par->betaPM = _betapm;   // commented out for FOI experiment
+    // par->betaMP = _betamp;   // commented out for FOi experiment
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);
+    // par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);  // commented out for FOI experiment
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
@@ -335,9 +356,9 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     const int pre_intervention_output = 5; // years
     const int desired_intervention_output = FORECAST_DURATION - 1;
-    vector<double> metrics = tally_counts(par, community, pre_intervention_output);
+    vector<double> metrics = {0.0}; //tally_counts(par, community, pre_intervention_output);
 
-    assert(sero_prev.size() == 5);
+    /*assert(sero_prev.size() == 5);
     for (unsigned int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
     assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
 
@@ -346,7 +367,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         for (int year = RESTART_BURNIN-pre_intervention_output; year < RESTART_BURNIN + desired_intervention_output; ++year) {
             metrics.push_back(sero_prev_class[year]);
         }
-    }
+    }*/
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
