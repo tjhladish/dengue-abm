@@ -383,7 +383,7 @@ public:
     bool weeklyOutput;
     bool monthlyOutput;
     bool yearlyOutput;
-    bool studyOutput;
+    bool simulateTrial;
     bool abcVerbose;
     unsigned long int serial;
 

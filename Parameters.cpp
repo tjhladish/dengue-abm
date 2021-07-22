@@ -105,7 +105,7 @@ void Parameters::define_defaults() {
     weeklyOutput  = false;
     monthlyOutput = false;
     yearlyOutput  = false;
-    studyOutput   = false;
+    simulateTrial = false;
     abcVerbose    = false;
 
     // WHO vaccine mechanism variables

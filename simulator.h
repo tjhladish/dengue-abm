@@ -236,7 +236,7 @@ void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, 
 }
 
 
-void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, const Date& date, const string process_id, vector<int>& epi_sizes) {
+void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, const Date& date, const string process_id, vector<int>& proto_metrics) {
     stringstream ss;
 //if (date.day() >= 25*365 and date.day() < 36*365) {
 //if (date.day() >= 116*365) {                         // daily output starting in 1995, assuming Jan 1, 1879 simulation start
@@ -272,7 +272,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         }
     }
 
-    if (par->studyOutput) {
+    if (par->simulateTrial) {
         _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 1 ): ", date.day(), "daily-arm1");
         ss << endl;
         _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 2 ): ", date.day(), "daily-arm2");
@@ -281,28 +281,51 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 
     // handle several things that happen yearly
     _aggregator(periodic_incidence, "yearly");
-    _aggregator(periodic_incidence, "yearly-arm1", "daily-arm1");
-    _aggregator(periodic_incidence, "yearly-arm2", "daily-arm2");
+    if (par->simulateTrial) {
+        _aggregator(periodic_incidence, "yearly-arm1", "daily-arm1");
+        _aggregator(periodic_incidence, "yearly-arm2", "daily-arm2");
+    }
+
     if (date.endOfYear()) {
         if (par->abcVerbose) {
             cout << process_id << dec << " " << par->serial << " T: " << date.day() << " annual: ";
             for (auto v: periodic_incidence["yearly"]) { cout << v << " "; } cout << endl;
         }
 
-        epi_sizes.push_back(periodic_incidence["yearly"][2]);
-
-        if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
         if (par->yearlyOutput) {
             _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( total ): ", date.year(), "yearly"); ss << endl;
-            _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 1 ): ", date.year(), "yearly-arm1"); ss << endl;
-            _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 2 ): ", date.year(), "yearly-arm2"); ss << endl;
         }
         periodic_incidence["yearly"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+
+        if (par->simulateTrial) {
+            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_INF]);
+            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_CASE]);
+            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_DSS]);
+
+            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_INF]);
+            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_CASE]);
+            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_DSS]);
+
+            if (par->yearlyOutput) {
+                _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 1 ): ", date.year(), "yearly-arm1"); ss << endl;
+                _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 2 ): ", date.year(), "yearly-arm2"); ss << endl;
+            }
+
+            periodic_incidence["yearly-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+            periodic_incidence["yearly-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+        } else {
+            proto_metrics.push_back(periodic_incidence["yearly"][2]);
+        }
+
+        if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
+
     }
 
     periodic_incidence["daily"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
-    periodic_incidence["daily-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
-    periodic_incidence["daily-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+    if (par->simulateTrial) {
+        periodic_incidence["daily-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+        periodic_incidence["daily-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+    }
     string output = ss.str();
     //fputs(output.c_str(), stderr);
     fputs(output.c_str(), stdout);
@@ -407,7 +430,7 @@ void update_extrinsic_incubation_period(const Parameters* par, Community* commun
 }
 
 
-void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &epi_sizes) {
+void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &proto_metrics) {
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
     community->tick(date.day());
@@ -441,30 +464,32 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
                 periodic_incidence["daily"][TOTAL_DSS]  += severe;
 
                 const Location* home = p->getLocation(HOME_MORNING);
-                const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
+                if (par->simulateTrial) { // TODO check whether p is a surveilled person (e.g. a child, for TIRS study)
+                    const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
 
-                if (arm == 1) {
-                    periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
-                    periodic_incidence["daily-arm1"][INTRO_CASE] += intro and symp;
-                    periodic_incidence["daily-arm1"][INTRO_DSS]  += intro and severe;
+                    if (arm == 1) {
+                        periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
+                        periodic_incidence["daily-arm1"][INTRO_CASE] += intro and symp;
+                        periodic_incidence["daily-arm1"][INTRO_DSS]  += intro and severe;
 
-                    periodic_incidence["daily-arm1"][TOTAL_INF]  += 1;
-                    periodic_incidence["daily-arm1"][TOTAL_CASE] += symp;
-                    periodic_incidence["daily-arm1"][TOTAL_DSS]  += severe;
-                } else if (arm == 2) {
-                    periodic_incidence["daily-arm2"][INTRO_INF]  += intro;
-                    periodic_incidence["daily-arm2"][INTRO_CASE] += intro and symp;
-                    periodic_incidence["daily-arm2"][INTRO_DSS]  += intro and severe;
+                        periodic_incidence["daily-arm1"][TOTAL_INF]  += 1;
+                        periodic_incidence["daily-arm1"][TOTAL_CASE] += symp;
+                        periodic_incidence["daily-arm1"][TOTAL_DSS]  += severe;
+                    } else if (arm == 2) {
+                        periodic_incidence["daily-arm2"][INTRO_INF]  += intro;
+                        periodic_incidence["daily-arm2"][INTRO_CASE] += intro and symp;
+                        periodic_incidence["daily-arm2"][INTRO_DSS]  += intro and severe;
 
-                    periodic_incidence["daily-arm2"][TOTAL_INF]  += 1;
-                    periodic_incidence["daily-arm2"][TOTAL_CASE] += symp;
-                    periodic_incidence["daily-arm2"][TOTAL_DSS]  += severe;
+                        periodic_incidence["daily-arm2"][TOTAL_INF]  += 1;
+                        periodic_incidence["daily-arm2"][TOTAL_CASE] += symp;
+                        periodic_incidence["daily-arm2"][TOTAL_DSS]  += severe;
+                    }
                 }
             }
         }
     }
 
-    periodic_output(par, community, periodic_incidence, periodic_prevalence, date, process_id, epi_sizes);
+    periodic_output(par, community, periodic_incidence, periodic_prevalence, date, process_id, proto_metrics);
     return;
 }
 
@@ -487,7 +512,7 @@ map<string, vector<int> > construct_tally() {
 
 vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* community, const string process_id, bool capture_sero_prev, vector< vector<double> > &sero_prev, int sero_prev_aggregation_julian_start=0) {
     sero_prev = vector< vector<double> > (5, vector<double>(par->nRunLength/365, 0.0)); // rows are infection history: 0, 1, and 2+ infections
-    vector<int> epi_sizes;
+    vector<int> proto_metrics;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
     int nextEIPindex = 0;
@@ -505,7 +530,7 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
 
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date);
-        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
         if (capture_sero_prev and (date.julianDay() == ((sero_prev_aggregation_julian_start+364) % 365 ) + 1)) { // +1 because julianDay is [1,365])), avg(avg(interventions are specified on [0,364]
             // tally current seroprevalence stats
             int vaccinated_tally = 0;
@@ -527,7 +552,7 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
     string dailyfilename = ss_filename.str();
     write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
 */
-    return epi_sizes;
+    return proto_metrics;
 }
 
 
@@ -541,7 +566,7 @@ vector<int> simulate_epidemic(const Parameters* par, Community* community, const
 vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids) {
     assert(serotested_ids.size() > 0);
     vector<long double> metrics;
-    vector<int> epi_sizes;
+    vector<int> proto_metrics;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
     int nextEIPindex = 0;
@@ -570,7 +595,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
             metrics.push_back(seropos_9yo);
         }
 
-        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
     }
 
     return metrics;
@@ -580,7 +605,7 @@ vector<long double> simulate_who_fitting(const Parameters* par, Community* commu
 
 vector<int> simulate_abc(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids_87, double &seropos_87, vector<int> &serotested_ids_14, vector<double> &seropos_14_by_age) {
     assert(serotested_ids_87.size() > 0);
-    vector<int> epi_sizes;
+    vector<int> proto_metrics;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
     int nextEIPindex = 0;
@@ -626,7 +651,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
                 seropos_14_by_age[age_cat] /= seropos_14_sample_size[age_cat];
             }
         }
-        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, epi_sizes);
+        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
 
 /*        if ( date.julianDay() == 365 and date.year() == 121 ) { // December 31 (day 365) of 2000
             string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2000." + process_id;
@@ -642,7 +667,7 @@ vector<int> simulate_abc(const Parameters* par, Community* community, const stri
     //string dailyfilename = "";
     //write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
 
-    return epi_sizes;
+    return proto_metrics;
 }
 
 

@@ -80,13 +80,13 @@ namespace dengue {
 
         template <typename T>
         inline void cerr_vector(vector<T> & my_vector, string sep = " ") {
-            for (int i = 0; i < my_vector.size() - 1; i++ ) cerr << my_vector[i] << sep;
+            for (size_t i = 0; i < my_vector.size() - 1; i++ ) cerr << my_vector[i] << sep;
             cerr << my_vector.back();
         }
 
         template <typename T>
         inline void cout_vector(vector<T> & my_vector, string sep = " ") {
-            for (int i = 0; i < my_vector.size() - 1; i++ ) cout << my_vector[i] << sep;
+            for (size_t i = 0; i < my_vector.size() - 1; i++ ) cout << my_vector[i] << sep;
             cout << my_vector.back();
         }
 

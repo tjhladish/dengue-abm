@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
 const int RESTART_BURNIN    = 0; // was 100 for foi-effect analysis
-const int FORECAST_DURATION = 1; // normally 51; using 11 for efficacy duration sensitivity analysis
+const int FORECAST_DURATION = 2; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 
@@ -71,7 +71,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->weeklyOutput            = false;
     par->monthlyOutput           = true;
     par->yearlyOutput            = true;
-    par->studyOutput             = true;
+    par->simulateTrial           = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
     const int runLengthYears     = TOTAL_DURATION;
     par->nRunLength              = runLengthYears*365;
@@ -345,29 +345,30 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }
 
     seed_epidemic(par, community);
-    //simulate_epidemic(par, community, process_id);
-    vector< vector<double> > sero_prev;
-    bool capture_sero_prev = true;
-    int sero_prev_aggregation_start_date = vc_timing; // aggregation interval is [sero_prev_aggregation_start_date, (sero_prev_aggregation_start_date + 364) % 365] on a [0,364] calendar
-    simulate_epidemic_with_seroprev(par, community, process_id, capture_sero_prev, sero_prev, sero_prev_aggregation_start_date);
+    vector<int> proto_metrics = simulate_epidemic(par, community, process_id);
 
     time (&end);
     double dif = difftime (end,start);
 
     const int pre_intervention_output = 5; // years
     const int desired_intervention_output = FORECAST_DURATION - 1;
-    vector<double> metrics = {0.0}; //tally_counts(par, community, pre_intervention_output);
 
-    /*assert(sero_prev.size() == 5);
-    for (unsigned int i = 1; i < sero_prev.size(); ++i) assert(sero_prev[0].size() == sero_prev[i].size());
-    assert(sero_prev[0].size() >= pre_intervention_output + desired_intervention_output);
+    const size_t num_metrics = 6;
+    vector<double> metrics(num_metrics, 0.0);
+    assert(proto_metrics.size() == num_metrics*2); // 2 years of data, 2 arms, 3 outcomes each
 
-    // flatten sero_prev
-    for (auto sero_prev_class: sero_prev) {
-        for (int year = RESTART_BURNIN-pre_intervention_output; year < RESTART_BURNIN + desired_intervention_output; ++year) {
-            metrics.push_back(sero_prev_class[year]);
-        }
-    }*/
+    vector<double> arm_size = {2, 0.0};
+    for (Person* p: community->getPeople()) {
+        const Location* home = p->getLocation(HOME_MORNING);
+        const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
+        if (arm == 1 or arm ==2) { arm_size[arm - 1]++; }
+    }
+
+    for (size_t i = 0; i < num_metrics; ++i) {
+        const size_t arm_idx = (size_t) (i < num_metrics/2);
+        // sum data from years 1 and 2, and normalize by number of people in trial arm
+        metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
+    }
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
