@@ -292,7 +292,7 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         epi_sizes.push_back(periodic_incidence["yearly"][2]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
-        if (par->yearlyOutput) { 
+        if (par->yearlyOutput) {
             _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( total ): ", date.year(), "yearly"); ss << endl;
             _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 1 ): ", date.year(), "yearly-arm1"); ss << endl;
             _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 2 ): ", date.year(), "yearly-arm2"); ss << endl;
