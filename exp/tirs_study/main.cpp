@@ -365,7 +365,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }
 
     for (size_t i = 0; i < num_metrics; ++i) {
-        const size_t arm_idx = (size_t) (i < num_metrics/2);
+        const size_t arm_idx = (size_t) (i >= num_metrics/2);
         // sum data from years 1 and 2, and normalize by number of people in trial arm
         metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
     }
