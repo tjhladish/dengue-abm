@@ -1041,6 +1041,15 @@ void Community::tick(int day) {
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
 
+const Location* arm1_loc = _location[366282];
+const Location* arm2_loc = _location[365682];
+
+const double arm1_nmos   = arm1_loc->getBaseMosquitoCapacity() * (1.0-arm1_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
+const double arm2_nmos   = arm2_loc->getBaseMosquitoCapacity() * (1.0-arm2_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
+
+cerr << day << endl;
+cerr << "HID 366282 (arm 1, no vc) ID, arm, nmos: " << arm1_loc->getID() << " " << arm1_loc->getTrialArm() << " " << arm1_nmos << endl
+     << "HID 365682 (arm 2,    vc) ID, arm, nmos: " << arm2_loc->getID() << " " << arm2_loc->getTrialArm() << " " << arm2_nmos << endl << endl;
     return;
 }
 

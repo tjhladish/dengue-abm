@@ -124,7 +124,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
     // par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);  // commented out for FOI experiment
-    par->eMosquitoDistribution = EXPONENTIAL;
+    par->eMosquitoDistribution = CONSTANT;
+    //par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
     par->fVESs = vector<double>(NUM_OF_SEROTYPES, 0.0);
