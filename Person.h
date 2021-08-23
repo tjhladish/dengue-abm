@@ -68,6 +68,8 @@ class Infection {
     bool isSymptomatic() const { return symptomTime > infectedTime; }
     bool isSevere()      const { return severeDisease; }
     Serotype serotype()  const { return _serotype; }
+
+    int getInfectedPlace() const { return infectedPlace; }
 };
 
 class Person {

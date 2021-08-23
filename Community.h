@@ -76,6 +76,8 @@ class Community {
         const std::vector< std::vector<Mosquito*> > getExposedMosquitoes() const { return _exposedMosquitoQueue; }
         const std::vector<Person*> getAgeCohort(unsigned int age) const { assert(age<_personAgeCohort.size()); return _personAgeCohort[age]; }
 
+        std::vector< std::vector<int> > tallyInfectionsByLocType(bool tally_tirs);
+
     protected:
         static const Parameters* _par;
         std::vector<Person*> _people;                                 // the array index is equal to the ID

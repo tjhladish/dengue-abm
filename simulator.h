@@ -272,12 +272,12 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         }
     }
 
-    if (par->simulateTrial) {
+/*    if (par->simulateTrial) {
         _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 1 ): ", date.day(), "daily-arm1");
         ss << endl;
         _reporter(ss, periodic_incidence, periodic_prevalence, par, process_id, " day (arm 2 ): ", date.day(), "daily-arm2");
         ss << endl;
-    }
+    }*/
 
     // handle several things that happen yearly
     _aggregator(periodic_incidence, "yearly");
