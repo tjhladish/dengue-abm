@@ -31,8 +31,8 @@ class Location {
         int getSerial() const { return _serial; }
         void setType(LocationType t) { _type = t; }
         LocationType getType() const { return _type; }
-        void setTrialArm(int trial_arm) { _trial_arm = trial_arm; }
-        int getTrialArm() const { return _trial_arm; }
+        void setTrialArm(TrialArmState trial_arm) { _trial_arm = trial_arm; }
+        TrialArmState getTrialArm() const { return _trial_arm; }
         void setSurveilled(bool surveilled) { _surveilled = surveilled; }
         bool isSurveilled() const { return _surveilled; }
 
@@ -81,7 +81,7 @@ class Location {
         int _ID;                                                      // original identifier in location file
         int _serial;                                                  // unique identifier assigned on construction
         LocationType _type;
-        int _trial_arm;
+        TrialArmState _trial_arm;
         bool _surveilled;
         std::vector< std::vector<Person*> > _person;                  // pointers to person who come to this location
         int _nBaseMosquitoCapacity;                                   // "baseline" carrying capacity for mosquitoes

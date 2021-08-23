@@ -320,16 +320,16 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
             newLoc->setX(locX);
             newLoc->setY(locY);
             newLoc->setType(locType);
-            newLoc->setTrialArm(trial_arm);
+            newLoc->setTrialArm((TrialArmState) trial_arm);
             newLoc->setSurveilled(surveilled);
 
             if (_par->eMosquitoDistribution==CONSTANT) {
                 // all houses have same number of mosquitoes
-                newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
+                newLoc->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity * _par->mosquitoCapacityMultiplier[locType]);
             } else if (_par->eMosquitoDistribution==EXPONENTIAL) {
                 // exponential distribution of mosquitoes -dlc
                 // gsl takes the 1/lambda (== the expected value) as the parameter for the exp RNG
-                newLoc->setBaseMosquitoCapacity(gsl_ran_exponential(RNG, _par->nDefaultMosquitoCapacity));
+                newLoc->setBaseMosquitoCapacity(gsl_ran_exponential(RNG, _par->nDefaultMosquitoCapacity) * _par->mosquitoCapacityMultiplier[locType]);
             } else {
                 cerr << "ERROR: Invalid mosquito distribution: " << _par->eMosquitoDistribution << endl;
                 cerr << "       Valid distributions include CONSTANT and EXPONENTIAL" << endl;
@@ -1041,15 +1041,15 @@ void Community::tick(int day) {
     _advanceTimers();                                                 // advance H&M incubation periods and M ages
     _modelMosquitoMovement();                                         // probabilistic movement of mosquitos
 
-const Location* arm1_loc = _location[366282];
-const Location* arm2_loc = _location[365682];
-
-const double arm1_nmos   = arm1_loc->getBaseMosquitoCapacity() * (1.0-arm1_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
-const double arm2_nmos   = arm2_loc->getBaseMosquitoCapacity() * (1.0-arm2_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
-
-cerr << day << endl;
-cerr << "HID 366282 (arm 1, no vc) ID, arm, nmos: " << arm1_loc->getID() << " " << arm1_loc->getTrialArm() << " " << arm1_nmos << endl
-     << "HID 365682 (arm 2,    vc) ID, arm, nmos: " << arm2_loc->getID() << " " << arm2_loc->getTrialArm() << " " << arm2_nmos << endl << endl;
+//const Location* arm1_loc = _location[366282];
+//const Location* arm2_loc = _location[365682];
+//
+//const double arm1_nmos   = arm1_loc->getBaseMosquitoCapacity() * (1.0-arm1_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
+//const double arm2_nmos   = arm2_loc->getBaseMosquitoCapacity() * (1.0-arm2_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
+//
+//cerr << day << endl;
+//cerr << "HID 366282 (arm 1, no vc) ID, arm, nmos: " << arm1_loc->getID() << " " << arm1_loc->getTrialArm() << " " << arm1_nmos << endl
+//     << "HID 365682 (arm 2,    vc) ID, arm, nmos: " << arm2_loc->getID() << " " << arm2_loc->getTrialArm() << " " << arm2_nmos << endl << endl;
     return;
 }
 
@@ -1078,4 +1078,21 @@ vector<int> Community::getNumSusceptible() {
         }
     }
     return counts;
+}
+
+vector< vector<int> > Community::tallyInfectionsByLocType(bool tally_tirs = false) {
+    vector <vector<int> > tally(NUM_OF_LOCATION_TYPES, vector<int>(NUM_OF_TRIAL_ARM_STATES, 0));
+
+    for (const Person* p : _people) {
+        Location* home = _location.at(p->getHomeID());
+        for (const Infection* inf : p->getInfectionHistory()) {
+            const LocationType lt = _location.at(inf->getInfectedPlace())->getType();
+            tally[lt][EVERYONE]++;
+            if (tally_tirs ) {
+                const TrialArmState arm = home->isSurveilled() and (p->getAge() >= 2 and p->getAge() <= 15) ? home->getTrialArm() : NOT_IN_TRIAL;
+                tally[lt][arm]++;
+            }
+        }
+    }
+    return tally;
 }

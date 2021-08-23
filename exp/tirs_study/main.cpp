@@ -117,6 +117,11 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
         par->betaMP = _betamp;
     }
 
+    par->mosquitoCapacityMultiplier[HOME]   = 1.0;//args[19];
+    par->mosquitoCapacityMultiplier[WORK]   = 1.0;//args[20];
+    par->mosquitoCapacityMultiplier[SCHOOL] = 1.0;//args[21];
+    // END OF FOI EXPERIMENT CHANGES
+
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
@@ -353,8 +358,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     for (Person* p: community->getPeople()) {
         const Location* home = p->getLocation(HOME_MORNING);
         const int age = p->getAge();
-        const int arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : 0;
-        if (arm == 1 or arm ==2) { arm_size[arm - 1]++; }
+        const TrialArmState arm = home->isSurveilled() and (age >= 2 and age <= 15) ? home->getTrialArm() : NOT_IN_TRIAL;
+        if (arm == TRIAL_ARM_1 or arm == TRIAL_ARM_2) { arm_size[(int) arm - 1]++; }
     }
 
     vector<double> metrics(proto_metrics.size(), 0.0);
@@ -374,6 +379,11 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         // sum data from years 1 and 2, and normalize by number of people in trial arm
         metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
     }*/
+
+    vector< vector<int> > inf_by_lt = community->tallyInfectionsByLocType(par->simulateTrial);
+    cerr << "TOTAL POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][EVERYONE]    << ' ' << inf_by_lt[WORK][EVERYONE]    << ' ' << inf_by_lt[SCHOOL][EVERYONE] << endl;
+    cerr << "ARM 1 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_1] << ' ' << inf_by_lt[WORK][TRIAL_ARM_1] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_1] << endl;
+    cerr << "ARM 2 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_2] << ' ' << inf_by_lt[WORK][TRIAL_ARM_2] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_2] << endl;
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

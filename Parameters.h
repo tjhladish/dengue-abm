@@ -80,6 +80,14 @@ enum VaccineSeroConstraint {
     NUM_OF_VACCINE_SERO_CONSTRAINTS
 };
 
+enum TrialArmState {
+    NOT_IN_TRIAL,
+    TRIAL_ARM_1,
+    TRIAL_ARM_2,
+    EVERYONE,
+    NUM_OF_TRIAL_ARM_STATES
+};
+
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
 // series A
@@ -335,6 +343,7 @@ public:
     void defineSerotypeRelativeRisks();                     // should be called after reportedFractions (1/expansion factors) are set, if they're going to be
 
     int nDefaultMosquitoCapacity;
+    std::vector<double> mosquitoCapacityMultiplier;         // For FOI sensitivity analysis: adjusts the default mosquito capacity by location type
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
     int getMosquitoMultiplierTotalDuration() const { return mosquitoMultipliers.size() > 0 ?
