@@ -58,7 +58,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     double _pss_ratio    = args[5];
     double _exp_coef     = args[6];
     double _nmos         = args[7];
-    double _foi_mult     = args[14];
+    // CHANGES TO PARAMETER ASSIGNMENT FOR FOI EXPERIMENT
+    double _foi_mult     = args[14];      // multiplier for FOI experiment; will range from [0.5, 1.5] incrementing by 0.1
     double _betamp       = 0.25; // beta values from chao et al
     double _betapm       = 0.10; //
 
@@ -97,33 +98,28 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->tertiarySevereFraction   = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
     par->quaternarySevereFraction = vector<double>(NUM_OF_SEROTYPES, _sec_severity/5.0);
 
-    // CHANGES TO PARAMETER ASSIGNMENT FOR FOI EXPERIMENT
-    double foi_exp_mult = args[18];      // multiplier for FOI experiment; will range from [0.5, 1.5] incrementing by 0.1
 
     assert((args[17] == 0) or (args[17] == 1));
     if(args[17] == 0) {
         // changing beta
-        double _betapmHazard = _betapm * sqrt(foi_exp_mult);
-        double _betampHazard = _betamp * sqrt(foi_exp_mult);
+        double _betapmHazard = -log(1.0 - _betapm) * _foi_mult;
+        double _betampHazard = -log(1.0 - _betamp) * _foi_mult;
 
         par->betaPM = 1.0 - exp(-_betapmHazard);  // use hazards to test FOI multipliers and then transform hazards back into probabilities on [0, 1]
         par->betaMP = 1.0 - exp(-_betampHazard);
 
-        par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);
+        par->nDefaultMosquitoCapacity = (int) _nmos;
     } else if(args[17] == 1) {
         // changing mosq_cap
-        par->nDefaultMosquitoCapacity = (int) ((_nmos * _foi_mult) * foi_exp_mult);      // no need for hazard transformation becasue mosq population can be [0, pos inf]
+        par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);      // no need for hazard transformation becasue mosq population can be [0, pos inf]
 
         par->betaPM = _betapm;  // use hazards to test FOI multipliers and then transform hazards back into probabilities on [0, 1]
         par->betaMP = _betamp;
     }
 
-    // par->betaPM = _betapm;   // commented out for FOI experiment
-    // par->betaMP = _betamp;   // commented out for FOi experiment
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
-    // par->nDefaultMosquitoCapacity = (int) (_nmos * _foi_mult);  // commented out for FOI experiment
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
@@ -353,22 +349,31 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     const int pre_intervention_output = 5; // years
     const int desired_intervention_output = FORECAST_DURATION - 1;
 
-    const size_t num_metrics = 6;
-    vector<double> metrics(num_metrics, 0.0);
-    assert(proto_metrics.size() == num_metrics*2); // 2 years of data, 2 arms, 3 outcomes each
-
     vector<double> arm_size = {2, 0.0};
     for (Person* p: community->getPeople()) {
         const Location* home = p->getLocation(HOME_MORNING);
-        const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
+        const int age = p->getAge();
+        const int arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : 0;
         if (arm == 1 or arm ==2) { arm_size[arm - 1]++; }
     }
+
+    vector<double> metrics(proto_metrics.size(), 0.0);
+    vector<size_t> metric_arm = {0,0,0, 1,1,1, 0,0,0, 1,1,1};
+
+    for (size_t i = 0; i < metrics.size(); ++i) {
+        metrics[i] = (double) proto_metrics[i] / arm_size[metric_arm[i]];
+    }
+
+    /*
+    const size_t num_metrics = 6;
+    vector<double> metrics(num_metrics, 0.0);
+    assert(proto_metrics.size() == num_metrics*2); // 2 years of data, 2 arms, 3 outcomes each
 
     for (size_t i = 0; i < num_metrics; ++i) {
         const size_t arm_idx = (size_t) (i >= num_metrics/2);
         // sum data from years 1 and 2, and normalize by number of people in trial arm
         metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
-    }
+    }*/
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

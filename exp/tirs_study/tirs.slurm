@@ -11,8 +11,8 @@
 #SBATCH --chdir=/home/tjhladish/work/dengue/exp/tirs_study
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2000
-#SBATCH --time=8:00:00
-#SBATCH --array=0-249
+#SBATCH --time=12:00:00
+#SBATCH --array=0-199
 ##SBATCH --partition=hpg2-compute
 
 module load gcc/9.3.0 gsl

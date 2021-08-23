@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "tirs_trial.sqlite",
+    "database_filename"             : "tirs_trial-children.sqlite",
     "posterior_database_filename"   : "posterior-refit2.sqlite",
     "retain_posterior_rank"         : "true",
 
@@ -105,12 +105,12 @@
          "par2"       : 0.8},
 
         {"name"       : "foi_multiplier",
-         "short_name" : "foi",
+         "short_name" : "foi_mult",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 1.0,
-         "par2"       : 1.0,
-         "step"       : 0.0},
+         "par1"       : 0.5,
+         "par2"       : 1.5,
+         "step"       : 0.1},
 
         {"name"       : "vc_strategy_duration",
          "short_name" : "strat_years",
@@ -134,24 +134,25 @@
          "num_type"   : "INT",
          "par1"       : 0,
          "par2"       : 1,
-         "step"       : 1},
+         "step"       : 1}
 
-        {"name"       : "foi_exp_multiplier",
-         "short_name" : "foi_mult",
-         "dist_type"  : "PSEUDO",
-         "num_type"   : "FLOAT",
-         "par1"       : 0.5,
-         "par2"       : 1.5,
-         "step"       : 0.1}
     ],
 
     "metrics" : [
-       {"name" : "infections_arm1", "num_type" : "INT", "value" : 0},
-       {"name" : "cases_arm1",      "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm1",        "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm1_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm1_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "dss_arm1_y1", "num_type" : "INT", "value" : 0},
 
-       {"name" : "infections_arm2", "num_type" : "INT", "value" : 0},
-       {"name" : "cases_arm2",      "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm2",        "num_type" : "INT", "value" : 0}
+       {"name" : "inf_arm2_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm2_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "dss_arm2_y1", "num_type" : "INT", "value" : 0},
+
+       {"name" : "inf_arm1_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm1_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "dss_arm1_y2", "num_type" : "INT", "value" : 0},
+
+       {"name" : "inf_arm2_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm2_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "dss_arm2_y2", "num_type" : "INT", "value" : 0}
      ]
 }
