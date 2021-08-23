@@ -320,7 +320,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
             newLoc->setX(locX);
             newLoc->setY(locY);
             newLoc->setType(locType);
-            newLoc->setTrialArm(trial_arm);
+            newLoc->setTrialArm((TrialArmState) trial_arm);
             newLoc->setSurveilled(surveilled);
 
             if (_par->eMosquitoDistribution==CONSTANT) {
@@ -1081,14 +1081,15 @@ vector<int> Community::getNumSusceptible() {
 }
 
 vector< vector<int> > Community::tallyInfectionsByLocType(bool tally_tirs = false) {
-    vector <vector<int> > tally(NUM_OF_LOCATION_TYPES, vector<int>(2, 0));
+    vector <vector<int> > tally(NUM_OF_LOCATION_TYPES, vector<int>(NUM_OF_TRIAL_ARM_STATES, 0));
 
     for (const Person* p : _people) {
+        Location* home = _location.at(p->getHomeID());
         for (const Infection* inf : p->getInfectionHistory()) {
             const LocationType lt = _location.at(inf->getInfectedPlace())->getType();
-            tally[lt][0]++;
-            if (tally_tirs and (_location.at(inf->getInfectedPlace())->getTrialArm() > 0) and (p->getAge() >= 2 and p->getAge() <= 15)) {
-                const int arm = _location.at(inf->getInfectedPlace())->getTrialArm();
+            tally[lt][EVERYONE]++;
+            if (tally_tirs ) {
+                const TrialArmState arm = home->isSurveilled() and (p->getAge() >= 2 and p->getAge() <= 15) ? home->getTrialArm() : NOT_IN_TRIAL;
                 tally[lt][arm]++;
             }
         }

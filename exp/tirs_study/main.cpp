@@ -366,8 +366,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     vector<double> arm_size = {2, 0.0};
     for (Person* p: community->getPeople()) {
         const Location* home = p->getLocation(HOME_MORNING);
-        const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
-        if (arm == 1 or arm ==2) { arm_size[arm - 1]++; }
+        const TrialArmState arm = home->isSurveilled() ? home->getTrialArm() : NOT_IN_TRIAL;
+        if (arm == TRIAL_ARM_1 or arm ==TRIAL_ARM_2) { arm_size[(int) arm - 1]++; }
     }
 
     for (size_t i = 0; i < num_metrics; ++i) {
@@ -376,10 +376,10 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
     }
 
-    vector< vector<int> > infections_by_loc_type = community->tallyInfectionsByLocType(par->simulateTrial);
-    //cerr << "TOTAL POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][0] << ' ' << infections_by_loc_type[WORK][0] << ' ' << infections_by_loc_type[SCHOOL][0] << endl;
-    //cerr << "ARM 1 POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][1] << ' ' << infections_by_loc_type[WORK][1] << ' ' << infections_by_loc_type[SCHOOL][1] << endl;
-    //cerr << "ARM 2 POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][2] << ' ' << infections_by_loc_type[WORK][2] << ' ' << infections_by_loc_type[SCHOOL][2] << endl;
+    vector< vector<int> > inf_by_lt = community->tallyInfectionsByLocType(par->simulateTrial);
+    cerr << "TOTAL POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][EVERYONE]    << ' ' << inf_by_lt[WORK][EVERYONE]    << ' ' << inf_by_lt[SCHOOL][EVERYONE] << endl;
+    cerr << "ARM 1 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_1] << ' ' << inf_by_lt[WORK][TRIAL_ARM_1] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_1] << endl;
+    cerr << "ARM 2 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_2] << ' ' << inf_by_lt[WORK][TRIAL_ARM_2] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_2] << endl;
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

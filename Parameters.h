@@ -80,6 +80,14 @@ enum VaccineSeroConstraint {
     NUM_OF_VACCINE_SERO_CONSTRAINTS
 };
 
+enum TrialArmState {
+    NOT_IN_TRIAL,
+    TRIAL_ARM_1,
+    TRIAL_ARM_2,
+    EVERYONE,
+    NUM_OF_TRIAL_ARM_STATES
+};
+
 // the three WHO vaccine mechanism axes; n.b., not all used / implemented
 
 // series A
