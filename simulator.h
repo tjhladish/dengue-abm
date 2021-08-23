@@ -465,7 +465,8 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
 
                 const Location* home = p->getLocation(HOME_MORNING);
                 if (par->simulateTrial) { // TODO check whether p is a surveilled person (e.g. a child, for TIRS study)
-                    const int arm = home->isSurveilled() ? home->getTrialArm() : 0;
+                    const int age = p->getAge();
+                    const int arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : 0;
 
                     if (arm == 1) {
                         periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
