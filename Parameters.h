@@ -335,6 +335,7 @@ public:
     void defineSerotypeRelativeRisks();                     // should be called after reportedFractions (1/expansion factors) are set, if they're going to be
 
     int nDefaultMosquitoCapacity;
+    std::vector<double> mosquitoCapacityMultiplier;         // For FOI sensitivity analysis: adjusts the default mosquito capacity by location type
     MosquitoDistribution eMosquitoDistribution;
     std::vector<DynamicParameter> mosquitoMultipliers;
     int getMosquitoMultiplierTotalDuration() const { return mosquitoMultipliers.size() > 0 ?

@@ -118,6 +118,11 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
         par->betaMP = _betamp;
     }
 
+    par->mosquitoCapacityMultiplier[HOME]   = 1.0;//args[19];
+    par->mosquitoCapacityMultiplier[WORK]   = 1.0;//args[20];
+    par->mosquitoCapacityMultiplier[SCHOOL] = 1.0;//args[21];
+    // END OF FOI EXPERIMENT CHANGES
+
     // par->betaPM = _betapm;   // commented out for FOI experiment
     // par->betaMP = _betamp;   // commented out for FOi experiment
     par->fMosquitoMove = 0.15;
@@ -370,6 +375,11 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         // sum data from years 1 and 2, and normalize by number of people in trial arm
         metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
     }
+
+    vector< vector<int> > infections_by_loc_type = community->tallyInfectionsByLocType(par->simulateTrial);
+    //cerr << "TOTAL POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][0] << ' ' << infections_by_loc_type[WORK][0] << ' ' << infections_by_loc_type[SCHOOL][0] << endl;
+    //cerr << "ARM 1 POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][1] << ' ' << infections_by_loc_type[WORK][1] << ' ' << infections_by_loc_type[SCHOOL][1] << endl;
+    //cerr << "ARM 2 POP INFECTIONS (h, w, s): " << infections_by_loc_type[HOME][2] << ' ' << infections_by_loc_type[WORK][2] << ' ' << infections_by_loc_type[SCHOOL][2] << endl;
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

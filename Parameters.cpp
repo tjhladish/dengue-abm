@@ -33,6 +33,7 @@ void Parameters::define_defaults() {
     hospitalizedFraction = {0.0, 0.15, 0.9};            // rough estimates in mex
     bVaccineLeaky = false;
     nDefaultMosquitoCapacity = 50;                      // mosquitoes per location
+    mosquitoCapacityMultiplier = vector<double>(NUM_OF_LOCATION_TYPES, 1.0);
     eMosquitoDistribution = CONSTANT;
     bSecondaryTransmission = true;
     populationFilename = "population.txt";
