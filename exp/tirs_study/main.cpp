@@ -125,6 +125,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
+    //par->eMosquitoDistribution = CONSTANT;
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
@@ -381,9 +382,14 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }*/
 
     vector< vector<int> > inf_by_lt = community->tallyInfectionsByLocType(par->simulateTrial);
-    cerr << "TOTAL POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][EVERYONE]    << ' ' << inf_by_lt[WORK][EVERYONE]    << ' ' << inf_by_lt[SCHOOL][EVERYONE] << endl;
-    cerr << "ARM 1 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_1] << ' ' << inf_by_lt[WORK][TRIAL_ARM_1] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_1] << endl;
-    cerr << "ARM 2 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_2] << ' ' << inf_by_lt[WORK][TRIAL_ARM_2] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_2] << endl;
+    cerr << "TOTAL INF (h, w, s, intro): " << inf_by_lt[EVERYONE][HOME]      << ' ' << inf_by_lt[EVERYONE][WORK] << ' ' 
+                                           << inf_by_lt[EVERYONE][SCHOOL]    << ' ' << inf_by_lt[EVERYONE][NUM_OF_LOCATION_TYPES] << endl;
+
+    cerr << "ARM 1 INF (h, w, s, intro): " << inf_by_lt[TRIAL_ARM_1][HOME]   << ' ' << inf_by_lt[TRIAL_ARM_1][WORK] << ' '
+                                           << inf_by_lt[TRIAL_ARM_1][SCHOOL] << ' ' << inf_by_lt[TRIAL_ARM_1][NUM_OF_LOCATION_TYPES] << endl;
+
+    cerr << "ARM 2 INF (h, w, s, intro): " << inf_by_lt[TRIAL_ARM_2][HOME]   << ' ' << inf_by_lt[TRIAL_ARM_2][WORK] << ' ' 
+                                           << inf_by_lt[TRIAL_ARM_2][SCHOOL] << ' ' << inf_by_lt[TRIAL_ARM_2][NUM_OF_LOCATION_TYPES] << endl;
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";

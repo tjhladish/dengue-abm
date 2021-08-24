@@ -107,7 +107,6 @@ void seed_epidemic(const Parameters* par, Community* community);
 vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id = "0");
 void write_immunity_file(const Community* community, const string label, string filename, int runLength);
 void write_immunity_by_age_file(const Community* community, const int year, string filename="");
-void write_output(const Parameters* par, Community* community, vector<int> initial_susceptibles);
 void write_daily_buffer( vector<string>& buffer, const string process_id, string filename);
 
 Community* build_community(const Parameters* par) {
@@ -231,8 +230,12 @@ void _aggregator(map<string, vector<int> >& periodic_incidence, string key, stri
 void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, const Parameters* par, const string process_id, const string label, const int value, string key) {
         ss << process_id << dec << " " << par->serial << label << value << " ";
         for (auto v: periodic_incidence[key]) ss << v << " ";
-        if(key=="daily") for (auto v: periodic_prevalence) ss << v << " ";
-        for (auto v: par->reportedFraction) ss << v << " ";
+        if(key=="daily") {
+            ss << " | ";
+            for (auto v: periodic_prevalence) { ss <<  v << " "; }
+        }
+        ss << " | ";
+        for (auto v: par->reportedFraction) { ss << v << " "; }
 }
 
 
@@ -326,6 +329,9 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         periodic_incidence["daily-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
         periodic_incidence["daily-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
     }
+
+    periodic_prevalence         = vector<int>(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
+
     string output = ss.str();
     //fputs(output.c_str(), stderr);
     fputs(output.c_str(), stdout);
@@ -466,9 +472,9 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
                 const Location* home = p->getLocation(HOME_MORNING);
                 if (par->simulateTrial) { // TODO check whether p is a surveilled person (e.g. a child, for TIRS study)
                     const int age = p->getAge();
-                    const int arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : 0;
+                    const TrialArmState arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : NOT_IN_TRIAL;
 
-                    if (arm == 1) {
+                    if (arm == TRIAL_ARM_1) {
                         periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
                         periodic_incidence["daily-arm1"][INTRO_CASE] += intro and symp;
                         periodic_incidence["daily-arm1"][INTRO_DSS]  += intro and severe;
@@ -476,7 +482,7 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
                         periodic_incidence["daily-arm1"][TOTAL_INF]  += 1;
                         periodic_incidence["daily-arm1"][TOTAL_CASE] += symp;
                         periodic_incidence["daily-arm1"][TOTAL_DSS]  += severe;
-                    } else if (arm == 2) {
+                    } else if (arm == TRIAL_ARM_2) {
                         periodic_incidence["daily-arm2"][INTRO_INF]  += intro;
                         periodic_incidence["daily-arm2"][INTRO_CASE] += intro and symp;
                         periodic_incidence["daily-arm2"][INTRO_DSS]  += intro and severe;
@@ -827,102 +833,4 @@ void write_mosquito_location_data(const Community* community, string mos_filenam
         loc_file << loc->getCurrentInfectedMosquitoes() << endl;
     }
     loc_file.close();
-}
-
-
-void write_output(const Parameters* par, Community* community, vector<int> numInitialSusceptible) {
-    if (!par->bSecondaryTransmission) {
-        // outputs
-        //   number of secondary infections by serotype (4)
-        //   number of households infected
-        //   age of index case
-        //   age(s) of secondary cases
-        vector<int> numCurrentSusceptible = community->getNumSusceptible();
-        for (int s=0; s<NUM_OF_SEROTYPES; s++) {
-            cout << (numInitialSusceptible[s] - numCurrentSusceptible[s]) << " ";
-        }
-        //    cout << "secondary infections" << endl;
-
-        int ages[100];
-        int times[100];
-        int numages=0;
-        int indexage=-1;
-        int homeids[100];
-        int numhomes=0;
-        // ages of infected people
-        for (Person* p: community->getPeople()) {
-            int t = p->getInfectedTime();
-            if (t>=0) {
-                if (t==0)
-                    indexage = p->getAge();
-                else {
-                    ages[numages] = p->getAge();
-                    times[numages] = t;
-                    numages++;
-                }
-                int homeid = p->getHomeID();
-                bool bFound = false;
-                for (int j=0; j<numhomes; j++)
-                    if (homeids[j]==homeid)
-                        bFound = true;
-                if (!bFound)
-                    homeids[numhomes++] = homeid;
-            }
-        }
-        cout << indexage << " " << numhomes << " " << numages;
-        for (int i=0; i<numages; i++)
-            cout << " " << ages[i];
-        for (int i=0; i<numages; i++)
-            cout << " " << times[i];
-        cout << endl;
-    }
-
-    // output daily infected/symptomatic file
-    if (par->dailyOutputFilename.length()>0) {
-        cerr << "outputing daily infected/symptomatic information to " << par->dailyOutputFilename << endl;
-        ofstream dailyOutputFile;
-        dailyOutputFile.open(par->dailyOutputFilename.c_str());
-        if(dailyOutputFile.fail()) {
-            cerr << "ERROR: Daily file '" << par->dailyOutputFilename << "' cannot be open for writing." << endl;
-            exit(-1);
-        }
-        dailyOutputFile << "day,newly infected DENV1,newly infected DENV2,newly infected DENV3,newly infected DENV4,"
-                  << "newly symptomatic DENV1,newly symptomatic DENV2,newly symptomatic DENV3,newly symptomatic DENV4" << endl;
-        vector< vector<int> > infected =    community->getNumNewlyInfected();
-        vector< vector<int> > symptomatic = community->getNumNewlySymptomatic();
-        for (int t=0; t<par->nRunLength; t++) {
-            dailyOutputFile << t << ",";
-            for (int i=0; i<NUM_OF_SEROTYPES; i++)   dailyOutputFile << infected[i][t] << ",";
-            for (int i=0; i<NUM_OF_SEROTYPES-1; i++) dailyOutputFile << symptomatic[i][t] << ",";
-            dailyOutputFile << symptomatic[NUM_OF_SEROTYPES-1][t] << endl;
-        }
-        dailyOutputFile.close();
-    }
-
-    // output people file
-    if (par->peopleOutputFilename.length()>0) {
-        cerr << "outputing people information to " << par->peopleOutputFilename << endl;
-        ofstream peopleOutputFile;
-        peopleOutputFile.open(par->peopleOutputFilename.c_str());
-        if(peopleOutputFile.fail()) {
-            cerr << "ERROR: People file '" << par->peopleOutputFilename << "' cannot be open for writing." << endl;
-            exit(-1);
-        }
-        peopleOutputFile << "pid,serotype,infectiontime,symptomtime,withdrawtime,recoverytime,immdenv1,immdenv2,immdenv3,immdenv4,vaccinated" << endl;
-        for (Person* p: community->getPeople()) {
-            for (int j=p->getNumNaturalInfections()-1; j>=0; j--) {
-                peopleOutputFile << p->getID() << ","
-                    << 1 + (int) p->getSerotype(j) << ","
-                    << p->getInfectedTime(j) << ","
-                    << p->getSymptomTime(j) << ","
-                    << p->getWithdrawnTime(j) << ","
-                    << p->getRecoveryTime(j) << ",";
-                for (int s = 0; s < NUM_OF_SEROTYPES; ++s) {
-                    peopleOutputFile << (p->isSusceptible((Serotype) s)?0:1) << ",";
-                }
-                    peopleOutputFile << (p->isVaccinated()?1:0) << endl;
-            }
-        }
-        peopleOutputFile.close();
-    }
 }

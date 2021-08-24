@@ -733,12 +733,13 @@ double __find_rho (double efficacy) {
 
 
 double Parameters::calculate_daily_vector_control_mortality(const float efficacy) const {
-    //cerr << "max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
     if ((1.0 - efficacy) * Mref < 1.0) {
-        cerr << "ERROR: Requested efficacy (" << efficacy << ") is too high:\n";
-        cerr << "       IRS doesn't prevent mosquitoes from being born and thus\n";
-        cerr << "       has no effect on mosquitoes that are 0 days old.\n";
-        return -100;
+        cerr << "WARNING: Requested efficacy (" << efficacy << ") is too high:\n";
+        cerr << "         Max supported efficacy given irs model: " << 1.0 - (1.0/Mref) << endl;
+        cerr << "         IRS doesn't prevent mosquitoes from being born and thus\n";
+        cerr << "         has no effect on mosquitoes that are 0 days old.\n";
+        cerr << "         Assuming daily mortality of 1.0.\n";
+        return 1.0;
     }
 
     const double rho = __find_rho(efficacy);
