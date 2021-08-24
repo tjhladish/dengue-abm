@@ -170,7 +170,6 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
             _people.push_back(p);
             p->setAge(age);
             p->setSex((SexType) sex);
-            p->setHomeID(house);
             p->setLocation(_location[house], HOME_MORNING);
             p->setLocation(_location[did], WORK_DAY);
             p->setLocation(_location[house], HOME_NIGHT);
@@ -224,7 +223,7 @@ bool Community::loadPopulation(string populationFilename, string immunityFilenam
                     }
                 }
                 sort(infection_history.begin(), infection_history.end());
-                for (auto p: infection_history) person->infect(p.second, p.first + _nDay);
+                for (auto p: infection_history) person->infect(p.first + _nDay, p.second);
             } else if (parts.size() == 0) {
                 continue; // skipping blank line, or line that doesn't start with ints
             } else {
@@ -475,8 +474,10 @@ Person* Community::getPersonByID(int id) {
 // infect - infects person id
 bool Community::infect(int id, Serotype serotype, int day) {
     Person* person = getPersonByID(id);
+    Mosquito* mos = nullptr;
+    Location* loc = nullptr;
 
-    bool result =  person->infect(-1, serotype, day, 0);
+    bool result =  person->infect(mos, day, loc, serotype);
     if (result) _nNumNewlyInfected[(int) serotype][_nDay]++;
     return result;
 }
@@ -877,7 +878,7 @@ void Community::mosquitoToHumanTransmission() {
                     int idx = floor(r*pLoc->getNumPerson((TimePeriod) timeofday)/exposuretime[timeofday]);
                     Person* p = pLoc->getPerson(idx, (TimePeriod) timeofday);
                     Serotype serotype = m->getSerotype();
-                    if (p->infect(m->getID(), serotype, _nDay, pLoc->getID())) {
+                    if (p->infect(m, _nDay, pLoc, serotype)) {
                         _nNumNewlyInfected[(int) serotype][_nDay]++;
                         if (_bNoSecondaryTransmission) {
                             p->kill();                       // kill secondary cases so they do not transmit
@@ -1044,8 +1045,8 @@ void Community::tick(int day) {
 //const Location* arm1_loc = _location[366282];
 //const Location* arm2_loc = _location[365682];
 //
-//const double arm1_nmos   = arm1_loc->getBaseMosquitoCapacity() * (1.0-arm1_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
-//const double arm2_nmos   = arm2_loc->getBaseMosquitoCapacity() * (1.0-arm2_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5;
+//const double arm1_nmos   = arm1_loc->getCurrentInfectedMosquitoes() + (int) (arm1_loc->getBaseMosquitoCapacity() * (1.0-arm1_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5);
+//const double arm2_nmos   = arm2_loc->getCurrentInfectedMosquitoes() + (int) (arm2_loc->getBaseMosquitoCapacity() * (1.0-arm2_loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier() + 0.5);
 //
 //cerr << day << endl;
 //cerr << "HID 366282 (arm 1, no vc) ID, arm, nmos: " << arm1_loc->getID() << " " << arm1_loc->getTrialArm() << " " << arm1_nmos << endl
@@ -1080,19 +1081,21 @@ vector<int> Community::getNumSusceptible() {
     return counts;
 }
 
-vector< vector<int> > Community::tallyInfectionsByLocType(bool tally_tirs = false) {
-    vector <vector<int> > tally(NUM_OF_LOCATION_TYPES, vector<int>(NUM_OF_TRIAL_ARM_STATES, 0));
-
-    for (const Person* p : _people) {
-        Location* home = _location.at(p->getHomeID());
-        for (const Infection* inf : p->getInfectionHistory()) {
-            const LocationType lt = _location.at(inf->getInfectedPlace())->getType();
-            tally[lt][EVERYONE]++;
-            if (tally_tirs ) {
-                const TrialArmState arm = home->isSurveilled() and (p->getAge() >= 2 and p->getAge() <= 15) ? home->getTrialArm() : NOT_IN_TRIAL;
-                tally[lt][arm]++;
-            }
-        }
-    }
-    return tally;
-}
+//vector< vector<int> > Community::tallyInfectionsByLocType(bool tally_tirs = false) {
+//    vector <vector<int> > tally(NUM_OF_TRIAL_ARM_STATES, vector<int>(NUM_OF_LOCATION_TYPES + 1, 0));
+//
+//    for (const Person* p : _people) {
+//        const Location* home = p->getHomeLoc();
+//        for (const Infection* inf : p->getInfectionHistory()) {
+//            if (inf->getInfectedTime() < 0) { continue; }
+//            const Location* loc = inf->getInfectedLoc();
+//            const LocationType lt = loc ? loc->getType() : NUM_OF_LOCATION_TYPES;
+//            tally.at(EVERYONE).at(lt)++;
+//            if (tally_tirs) {
+//                const TrialArmState arm = home->isSurveilled() and (p->getAge() >= 2 and p->getAge() <= 15) ? home->getTrialArm() : NOT_IN_TRIAL;
+//                tally.at(arm).at(lt)++;
+//            }
+//        }
+//    }
+//    return tally;
+//}

@@ -23,7 +23,7 @@ const string pop_dir = HOME_DIR + "/work/dengue/pop/" + SIM_POP + "-tirs";
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
-const int RESTART_BURNIN    = 0; // was 100 for foi-effect analysis
+const int RESTART_BURNIN    = 30; // was 100 for foi-effect analysis
 const int FORECAST_DURATION = 2; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
@@ -125,6 +125,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->fMosquitoMove = 0.15;
     par->mosquitoMoveModel = "weighted";
     par->fMosquitoTeleport = 0.0;
+    //par->eMosquitoDistribution = CONSTANT;
     par->eMosquitoDistribution = EXPONENTIAL;
 
     par->nDaysImmune = 730;
@@ -351,8 +352,8 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     time (&end);
     double dif = difftime (end,start);
 
-    const int pre_intervention_output = 5; // years
-    const int desired_intervention_output = FORECAST_DURATION - 1;
+//    const int pre_intervention_output = 5; // years
+//    const int desired_intervention_output = FORECAST_DURATION - 1;
 
     vector<double> arm_size = {2, 0.0};
     for (Person* p: community->getPeople()) {
@@ -362,29 +363,36 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         if (arm == TRIAL_ARM_1 or arm == TRIAL_ARM_2) { arm_size[(int) arm - 1]++; }
     }
 
-    vector<double> metrics(proto_metrics.size(), 0.0);
+    const size_t metrics_per_year = proto_metrics.size() / (TOTAL_DURATION);
+    vector<double> trial_period_proto_metrics(proto_metrics.begin() + (RESTART_BURNIN * metrics_per_year), proto_metrics.end());
+    vector<double> metrics(trial_period_proto_metrics.size(), 0.0);
     vector<size_t> metric_arm = {0,0,0, 1,1,1, 0,0,0, 1,1,1};
 
     for (size_t i = 0; i < metrics.size(); ++i) {
-        metrics[i] = (double) proto_metrics[i] / arm_size[metric_arm[i]];
+        metrics[i] = (double) trial_period_proto_metrics[i] / arm_size[metric_arm[i]];
     }
 
     /*
     const size_t num_metrics = 6;
     vector<double> metrics(num_metrics, 0.0);
-    assert(proto_metrics.size() == num_metrics*2); // 2 years of data, 2 arms, 3 outcomes each
+    assert(trial_period_proto_metrics.size() == num_metrics*2); // 2 years of data, 2 arms, 3 outcomes each
 
     for (size_t i = 0; i < num_metrics; ++i) {
         const size_t arm_idx = (size_t) (i >= num_metrics/2);
         // sum data from years 1 and 2, and normalize by number of people in trial arm
-        metrics[i] = (proto_metrics[i] + proto_metrics[i+num_metrics]) / arm_size[arm_idx];
+        metrics[i] = (trial_period_proto_metrics[i] + trial_period_proto_metrics[i+num_metrics]) / arm_size[arm_idx];
     }*/
 
-    vector< vector<int> > inf_by_lt = community->tallyInfectionsByLocType(par->simulateTrial);
-    cerr << "TOTAL POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][EVERYONE]    << ' ' << inf_by_lt[WORK][EVERYONE]    << ' ' << inf_by_lt[SCHOOL][EVERYONE] << endl;
-    cerr << "ARM 1 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_1] << ' ' << inf_by_lt[WORK][TRIAL_ARM_1] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_1] << endl;
-    cerr << "ARM 2 POP INFECTIONS (h, w, s): " << inf_by_lt[HOME][TRIAL_ARM_2] << ' ' << inf_by_lt[WORK][TRIAL_ARM_2] << ' ' << inf_by_lt[SCHOOL][TRIAL_ARM_2] << endl;
-
+//    vector< vector<int> > inf_by_lt = community->tallyInfectionsByLocType(par->simulateTrial);
+//    cerr << "TOTAL INF (h, w, s, intro): " << inf_by_lt[EVERYONE][HOME]      << ' ' << inf_by_lt[EVERYONE][WORK] << ' '
+//                                           << inf_by_lt[EVERYONE][SCHOOL]    << ' ' << inf_by_lt[EVERYONE][NUM_OF_LOCATION_TYPES] << endl;
+//
+//    cerr << "ARM 1 INF (h, w, s, intro): " << inf_by_lt[TRIAL_ARM_1][HOME]   << ' ' << inf_by_lt[TRIAL_ARM_1][WORK] << ' '
+//                                           << inf_by_lt[TRIAL_ARM_1][SCHOOL] << ' ' << inf_by_lt[TRIAL_ARM_1][NUM_OF_LOCATION_TYPES] << endl;
+//
+//    cerr << "ARM 2 INF (h, w, s, intro): " << inf_by_lt[TRIAL_ARM_2][HOME]   << ' ' << inf_by_lt[TRIAL_ARM_2][WORK] << ' '
+//                                           << inf_by_lt[TRIAL_ARM_2][SCHOOL] << ' ' << inf_by_lt[TRIAL_ARM_2][NUM_OF_LOCATION_TYPES] << endl;
+//
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << dif << " ";
 
