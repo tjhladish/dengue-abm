@@ -231,10 +231,10 @@ void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, 
         ss << process_id << dec << " " << par->serial << label << value << " ";
         for (auto v: periodic_incidence[key]) ss << v << " ";
         if(key=="daily") {
-            ss << " | ";
+            ss << "| ";
             for (auto v: periodic_prevalence) { ss <<  v << " "; }
         }
-        ss << " | ";
+        ss << "| ";
         for (auto v: par->reportedFraction) { ss << v << " "; }
 }
 
@@ -310,8 +310,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
             proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_DSS]);
 
             if (par->yearlyOutput) {
-                _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 1 ): ", date.year(), "yearly-arm1"); ss << endl;
-                _reporter(ss, periodic_incidence, dummy, par, process_id, " year (arm 2 ): ", date.year(), "yearly-arm2"); ss << endl;
+                _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( arm_1 ): ", date.year(), "yearly-arm1"); ss << endl;
+                _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( arm_2 ): ", date.year(), "yearly-arm2"); ss << endl;
             }
 
             periodic_incidence["yearly-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
