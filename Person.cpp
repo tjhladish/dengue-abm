@@ -55,11 +55,11 @@ Infection& Person::initializeNewInfection(Serotype serotype) {
 }
 
 
-Infection& Person::initializeNewInfection(Serotype serotype, int time, int sourceloc, int sourceid) {
-    Infection& infection = initializeNewInfection(serotype);
+Infection& Person::initializeNewInfection(Mosquito* mos, int time, Location* loc, Serotype serotype) {
+    Infection& infection    = initializeNewInfection(serotype);
+    infection.infectedBy    = mos; // this is a mosquito ID
+    infection.infectedLoc   = loc;
     infection.infectedTime  = time;
-    infection.infectedPlace = sourceloc;
-    infection.infectedByID  = sourceid; // TODO - What kind of ID is this?
     infection.infectiousTime = Parameters::sampler(INCUBATION_CDF, gsl_rng_uniform(RNG)) + time;
     return infection;
 }
@@ -174,7 +174,7 @@ MaternalEffect _maternal_antibody_effect(Person* p, const Parameters* _par, int 
 // primary symptomatic is a scaling factor for pathogenicity of primary infections.
 // if secondaryPathogenicityOddsRatio > 1, secondary infections are more often symptomatic
 // returns true if infection occurs
-bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
+bool Person::infect(Mosquito* mos, int time, Location* loc, Serotype serotype) {
     // Bail now if this person can not become infected
     // TODO - clarify this.  why would a person not be infectable in this scope?
     if (not isInfectable(serotype, time)) return false;
@@ -201,8 +201,11 @@ bool Person::infect(int sourceid, Serotype serotype, int time, int sourceloc) {
     const double remaining_efficacy = remainingEfficacy(time);  // before initializing new infection
 
     // Create a new infection record
-    Infection& infection = initializeNewInfection(serotype, time, sourceloc, sourceid);
+    Infection& infection = initializeNewInfection(mos, time, loc, serotype);
 
+//if (loc and getHomeLoc()->isSurveilled() and (getAge() >= 2 and getAge() <= 15)) {
+//    cerr << "DEBUGGING: " << getHomeLoc()->getTrialArm() << "_" << loc->getType() << " " << getID() << endl;
+//}
     double symptomatic_probability = _par->serotypePathogenicityRelativeRisks[(int) serotype] * _par->basePathogenicity;
     double severe_given_case = 0.0;
     switch (numPrevInfections) {

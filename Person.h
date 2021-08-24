@@ -10,38 +10,39 @@
 #include "Location.h"
 
 class Location;
+class Mosquito;
 
 class Infection {
     friend class Person;
     Infection() {
-        infectedByID = INT_MIN;
-        infectedPlace = INT_MIN;
-        infectedTime = INT_MIN;
+        infectedBy     = nullptr;
+        infectedLoc    = nullptr;
+        infectedTime   = INT_MIN;
         infectiousTime = INT_MIN;
-        symptomTime = INT_MIN;
-        recoveryTime = INT_MIN;
+        symptomTime    = INT_MIN;
+        recoveryTime   = INT_MIN;
 
-        withdrawnTime = INT_MAX;
-        _serotype = NULL_SEROTYPE;
-        severeDisease = false;
+        withdrawnTime  = INT_MAX;
+        _serotype      = NULL_SEROTYPE;
+        severeDisease  = false;
     };
 
     Infection(const Serotype sero) {
-        infectedByID = INT_MIN;
-        infectedPlace = INT_MIN;
-        infectedTime = INT_MIN;
+        infectedBy     = nullptr;
+        infectedLoc    = nullptr;
+        infectedTime   = INT_MIN;
         infectiousTime = INT_MIN;
-        symptomTime = INT_MIN;
-        recoveryTime = INT_MIN;
+        symptomTime    = INT_MIN;
+        recoveryTime   = INT_MIN;
 
-        withdrawnTime = INT_MAX;
-        _serotype = sero;
-        severeDisease = false;
+        withdrawnTime  = INT_MAX;
+        _serotype      = sero;
+        severeDisease  = false;
     };
 
     Infection(const Infection* o) {
-        infectedByID   = o->infectedByID;
-        infectedPlace  = o->infectedPlace;
+        infectedBy     = o->infectedBy;
+        infectedLoc    = o->infectedLoc;
         infectedTime   = o->infectedTime;
         infectiousTime = o->infectiousTime;
         symptomTime    = o->symptomTime;
@@ -51,8 +52,8 @@ class Infection {
         severeDisease  = o->severeDisease;
     }
 
-    int infectedByID;                               // who infected this person
-    int infectedPlace;                              // where infected?
+    Mosquito* infectedBy;                           // who infected this person
+    Location* infectedLoc;                          // where infected?
     int infectedTime;                               // when infected?
     int infectiousTime;                             // when infectious period starts
     int symptomTime;                                // when symptoms start
@@ -63,13 +64,13 @@ class Infection {
 
   public:
 
-    bool isLocallyAcquired() const { return infectedByID != -1; }
+    bool isLocallyAcquired() const { return (bool) infectedBy; }
     int getInfectedTime() const { return infectedTime; }
     bool isSymptomatic() const { return symptomTime > infectedTime; }
     bool isSevere()      const { return severeDisease; }
     Serotype serotype()  const { return _serotype; }
 
-    int getInfectedPlace() const { return infectedPlace; }
+    Location* getInfectedLoc() const { return infectedLoc; }
 };
 
 class Person {
@@ -83,10 +84,8 @@ class Person {
         void setSex(SexType sex) { _sex = sex; }
         int getLifespan() const { return _nLifespan; }
         void setLifespan(int n) { _nLifespan = n; }
-        int getHomeID() const { return _nHomeID; }
-        void setHomeID(int n) { _nHomeID = n; }
-        int getWorkID() const { return _nWorkID; }
-        void setWorkID(int n) { _nWorkID = n; }
+        Location* getHomeLoc() const { return getLocation(HOME_MORNING); }
+        Location* getDayLoc() const { return getLocation(WORK_DAY); }
         void setImmunity(Serotype serotype) { _nImmunity[(int) serotype] = 1; }
         const std::bitset<NUM_OF_SEROTYPES> getImmunityBitset() const { return _nImmunity; }
         const std::string getImmunityString() const { return _nImmunity.to_string(); }
@@ -102,15 +101,15 @@ class Person {
         inline Location* getLocation(TimePeriod timeofday) const { return _pLocation[(int) timeofday]; }
         inline void setLocation(Location* p, TimePeriod timeofday) { _pLocation[(int) timeofday] = p; }
 
-        inline int getInfectedByID(int infectionsago=0) const    { return getInfection(infectionsago)->infectedByID; }
-        inline int getInfectedPlace(int infectionsago=0) const   { return getInfection(infectionsago)->infectedPlace; }
-        inline int getInfectedTime(int infectionsago=0) const    { return getInfection(infectionsago)->infectedTime; }
-        inline int getInfectiousTime(int infectionsago=0) const  { return getInfection(infectionsago)->infectiousTime; }
-        inline int getSymptomTime(int infectionsago=0) const     { return getInfection(infectionsago)->symptomTime; }
-        inline int getRecoveryTime(int infectionsago=0) const    { return getInfection(infectionsago)->recoveryTime; }
-        inline int getWithdrawnTime(int infectionsago=0) const   { return getInfection(infectionsago)->withdrawnTime; }
-        inline Serotype getSerotype(int infectionsago=0) const   { return getInfection(infectionsago)->serotype(); }
-        const Infection* getInfection(int infectionsago=0) const { return infectionHistory[getNumNaturalInfections() - 1 - infectionsago]; }
+        inline Mosquito* getInfectedBy(int infectionsago=0) const  { return getInfection(infectionsago)->infectedBy; }
+        inline Location* getInfectedLoc(int infectionsago=0) const { return getInfection(infectionsago)->infectedLoc; }
+        inline int getInfectedTime(int infectionsago=0) const      { return getInfection(infectionsago)->infectedTime; }
+        inline int getInfectiousTime(int infectionsago=0) const    { return getInfection(infectionsago)->infectiousTime; }
+        inline int getSymptomTime(int infectionsago=0) const       { return getInfection(infectionsago)->symptomTime; }
+        inline int getRecoveryTime(int infectionsago=0) const      { return getInfection(infectionsago)->recoveryTime; }
+        inline int getWithdrawnTime(int infectionsago=0) const     { return getInfection(infectionsago)->withdrawnTime; }
+        inline Serotype getSerotype(int infectionsago=0) const     { return getInfection(infectionsago)->serotype(); }
+        const Infection* getInfection(int infectionsago=0) const   { return infectionHistory[getNumNaturalInfections() - 1 - infectionsago]; }
 
         inline void setRecoveryTime(int time, int infectionsago=0) { infectionHistory[getNumNaturalInfections() - 1 - infectionsago]->recoveryTime = time; }
         bool isWithdrawn(int time) const;                             // at home sick?
@@ -131,8 +130,8 @@ class Person {
         int daysSinceVaccination(int time) const { assert( vaccineHistory.size() > 0); return time - vaccineHistory.back(); } // isVaccinated() should be called first
         double vaccineProtection(const Serotype serotype, const int time) const;
 
-        bool infect(int sourceid, Serotype serotype, int time, int sourceloc);
-        inline bool infect(Serotype serotype, int time) {return infect(INT_MIN, serotype, time, INT_MIN);}
+        bool infect(Mosquito* mos, int time, Location* loc, Serotype serotype);
+        inline bool infect(int time, Serotype serotype) {return infect(nullptr, time, nullptr, serotype);}
         bool isViremic(int time) const;
 
         void kill();
@@ -159,7 +158,7 @@ class Person {
         static const double _fIncubationDistribution[MAX_INCUBATION];
 
         Infection& initializeNewInfection(Serotype serotype);
-        Infection& initializeNewInfection(Serotype serotype, int time, int sourceloc, int sourceid);
+        Infection& initializeNewInfection(Mosquito* mos, int time, Location* loc, Serotype serotype);
 
         static void reset_ID_counter() { _nNextID = 1; }
 
