@@ -16,6 +16,7 @@
 #include "Location.h"
 #include "Community.h"
 #include "Parameters.h"
+#include "Date.h"
 
 using namespace dengue::standard;
 
@@ -1022,8 +1023,8 @@ void Community::_modelMosquitoMovement() {
 }
 
 
-void Community::tick(int day) {
-    _nDay = day;
+void Community::tick(Date &date) {
+    _nDay = date.day();
     //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
     _processDelayedBirthdays();
 
@@ -1036,6 +1037,27 @@ void Community::tick(int day) {
                                                                       // last day of simulator year
 
     updateDiseaseStatus();                                            // make people stay home or return to work
+
+    if (date.isWeekend()) {
+        for (Person* p : _people) {
+            Location* home_loc = p->getLocation(HOME_MORNING);
+            Location* day_loc = p->getLocation(WORK_DAY);
+            if (day_loc->getType() == SCHOOL) {
+                home_loc->addPerson(p, WORK_DAY);
+                day_loc->removePerson(p, WORK_DAY);
+            }
+        }
+    } else if (date.dayOfWeek() == MONDAY) {
+        for (Person* p : _people) {
+            Location* home_loc = p->getLocation(HOME_MORNING);
+            Location* day_loc = p->getLocation(WORK_DAY);
+            if (day_loc->getType() == SCHOOL) {
+                home_loc->removePerson(p, WORK_DAY);
+                day_loc->addPerson(p, WORK_DAY);
+            }
+        }
+    }
+
     mosquitoToHumanTransmission();                                    // infect people
 
     humanToMosquitoTransmission();                                    // infect mosquitoes in each location

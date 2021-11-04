@@ -77,6 +77,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     const int runLengthYears     = TOTAL_DURATION;
     par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 1;
+    par->startJulianYear         = 2021 - runLengthYears;
     par->birthdayInterval        = 1;
     par->delayBirthdayIfInfected = false;
     par->annualIntroductionsCoef = _exp_coef;
