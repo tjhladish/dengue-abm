@@ -79,6 +79,8 @@ class Community {
 
         std::vector< std::vector<int> > tallyInfectionsByLocType(bool tally_tirs);
 
+        void noSchoolOnWeekends(Date &date);
+
     protected:
         static const Parameters* _par;
         std::vector<Person*> _people;                                 // the array index is equal to the ID

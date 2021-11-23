@@ -1022,22 +1022,7 @@ void Community::_modelMosquitoMovement() {
     return;
 }
 
-
-void Community::tick(Date &date) {
-    _nDay = date.day();
-    //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
-    _processDelayedBirthdays();
-
-//vector<int> vtallies(101,0);
-//for (Person* p: _people) if (p->isVaccinated()) ++vtallies[p->getAge()];
-//for (int val: vtallies) cerr << val << " "; cerr << endl;
-    if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
-    updateVaccination();
-    if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
-                                                                      // last day of simulator year
-
-    updateDiseaseStatus();                                            // make people stay home or return to work
-
+void Community::noSchoolOnWeekends(Date &date) {
     if (date.isWeekend()) {
         for (Person* p : _people) {
             Location* home_loc = p->getLocation(HOME_MORNING);
@@ -1057,6 +1042,25 @@ void Community::tick(Date &date) {
             }
         }
     }
+}
+
+
+void Community::tick(Date &date) {
+    _nDay = date.day();
+    //if ((_nDay+1)%365==0) { swapImmuneStates(1.0); }                     // randomize and advance immune states on
+    _processDelayedBirthdays();
+
+//vector<int> vtallies(101,0);
+//for (Person* p: _people) if (p->isVaccinated()) ++vtallies[p->getAge()];
+//for (int val: vtallies) cerr << val << " "; cerr << endl;
+    if ((_nDay+1) % _par->birthdayInterval == 0) { swapImmuneStates(); }     // randomize and advance some immune states
+    updateVaccination();
+    if (_par->vectorControlEvents.size() > 0) applyVectorControl();   // also advances vector control status to next day
+                                                                      // last day of simulator year
+
+    updateDiseaseStatus();                                            // make people stay home or return to work
+
+    noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
 
     mosquitoToHumanTransmission();                                    // infect people
 
