@@ -539,7 +539,7 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
     for (; date.day() < par->nRunLength; date.increment()) {
         update_vaccinations(par, community, date);
         advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
-        if (capture_sero_prev and (date.julianDay() == ((sero_prev_aggregation_julian_start+364) % 365 ) + 1)) { // +1 because julianDay is [1,365])), avg(avg(interventions are specified on [0,364]
+        if (capture_sero_prev and ((int) date.julianDay() == ((sero_prev_aggregation_julian_start+364) % 365 ) + 1)) { // +1 because julianDay is [1,365])), avg(avg(interventions are specified on [0,364]
             // tally current seroprevalence stats
             int vaccinated_tally = 0;
             vector<double> inf_ct_tally(5,0.0);         // [0,4] past infections
