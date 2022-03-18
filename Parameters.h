@@ -25,6 +25,21 @@ enum Serotype {
     NULL_SEROTYPE      // Make sure this is last
 };
 
+inline std::ostream& operator<<(std::ostream& out, const Serotype value){
+    const char* s = 0;
+#define PROCESS_VAL(p) case(p): s = #p; break;
+    switch(value){
+        PROCESS_VAL(SEROTYPE_1);
+        PROCESS_VAL(SEROTYPE_2);
+        PROCESS_VAL(SEROTYPE_3);
+        PROCESS_VAL(SEROTYPE_4);
+        PROCESS_VAL(NUM_OF_SEROTYPES);
+        PROCESS_VAL(NULL_SEROTYPE);
+    }
+#undef PROCESS_VAL
+    return out << s;
+}
+
 enum MosquitoDistribution {
     CONSTANT,
     EXPONENTIAL,
@@ -400,6 +415,8 @@ public:
     VaccineSeroConstraint vaccineSeroConstraint;
     // WHO vaccine mechanism variables
     WHO_DiseaseOutcome whoDiseaseOutcome;
+
+    bool gen_infection_hist_db;
 };
 
 #endif

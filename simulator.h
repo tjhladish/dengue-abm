@@ -835,3 +835,50 @@ void write_mosquito_location_data(const Community* community, string mos_filenam
     }
     loc_file.close();
 }
+
+void generate_infection_db(const Community* community, const unsigned long int serial) {
+    stringstream infection_filename;
+    infection_filename << "./infection_history_" << serial << ".csv";
+
+    ofstream infection_file(infection_filename.str(), std::ios::trunc); // for the infection table
+
+    if (not infection_file) { cerr << "FILE FAILED TO OPEN" << endl; exit(-1); }
+
+    for (Person* p : community->getPeople()) {
+        for (Infection* inf : p->getInfectionHistory()) {
+            if (not inf) { continue; }
+            int inf_place_id = inf->getInfectedLoc() ? inf->getInfectedLoc()->getID() : -1;
+            int inf_by_id    = inf->getInfectedBy() ? inf->getInfectedBy()->getID() : -1;
+            int inf_owner_id = inf->getInfectionOwner() ? inf->getInfectionOwner()->getID() : -1;
+
+            infection_file << inf << ','
+                           << inf_place_id << ','
+                           << inf_by_id << ','
+                           << inf_owner_id << ','
+                           << inf->getInfectedTime() << ','
+                           << inf->getInfectiousTime() << ','
+                           << inf->getSymptomTime() << ','
+                           << inf->getRecoveryTime() << ','
+                           << inf->getWithdrawnTime() << ','
+                           << inf->isSevere() << ','
+                           << inf->serotype() << endl;
+        }
+    }
+    infection_file.close();
+
+    ofstream sql_import("import_script.sql", std::ios::trunc);
+    sql_import << ".import " << infection_filename.str() << " infection_history" << endl;
+    sql_import.close();
+
+    stringstream ss;
+    ss << "sqlite3 infection_data_" << serial << ".sqlite '.read gen_infection_db.sql' '.mode csv' '.read import_script.sql'";
+    string cmd_str = ss.str();
+    int retval = system(cmd_str.c_str());
+    if (retval == -1) { cerr << "System call to `sqlite3 infection_data_0.db '.read gen_infection_db.sql'` failed\n"; }
+
+    ss.str(string());
+    ss << "rm " << infection_filename.str() << " import_script.sql";
+    cmd_str = ss.str();
+    retval = system(cmd_str.c_str());
+    if (retval == -1) { cerr << "System call to delete infection csv files failed\n"; }
+}

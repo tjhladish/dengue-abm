@@ -17,6 +17,7 @@ class Infection {
     Infection() {
         infectedBy     = nullptr;
         infectedLoc    = nullptr;
+        infectionOwner = nullptr;
         infectedTime   = INT_MIN;
         infectiousTime = INT_MIN;
         symptomTime    = INT_MIN;
@@ -30,6 +31,7 @@ class Infection {
     Infection(const Serotype sero) {
         infectedBy     = nullptr;
         infectedLoc    = nullptr;
+        infectionOwner = nullptr;
         infectedTime   = INT_MIN;
         infectiousTime = INT_MIN;
         symptomTime    = INT_MIN;
@@ -43,6 +45,7 @@ class Infection {
     Infection(const Infection* o) {
         infectedBy     = o->infectedBy;
         infectedLoc    = o->infectedLoc;
+        infectionOwner = o->infectionOwner;
         infectedTime   = o->infectedTime;
         infectiousTime = o->infectiousTime;
         symptomTime    = o->symptomTime;
@@ -54,6 +57,7 @@ class Infection {
 
     Mosquito* infectedBy;                           // who infected this person
     Location* infectedLoc;                          // where infected?
+    Person* infectionOwner;                         // who does this infection belong to
     int infectedTime;                               // when infected?
     int infectiousTime;                             // when infectious period starts
     int symptomTime;                                // when symptoms start
@@ -65,12 +69,18 @@ class Infection {
   public:
 
     bool isLocallyAcquired() const { return (bool) infectedBy; }
-    int getInfectedTime() const { return infectedTime; }
-    bool isSymptomatic() const { return symptomTime > infectedTime; }
-    bool isSevere()      const { return severeDisease; }
-    Serotype serotype()  const { return _serotype; }
+    int getInfectedTime()    const { return infectedTime; }
+    int getInfectiousTime()  const { return infectiousTime; }
+    int getSymptomTime()     const { return symptomTime; }
+    int getRecoveryTime()    const { return recoveryTime; }
+    int getWithdrawnTime()   const { return withdrawnTime; }
+    bool isSymptomatic()     const { return symptomTime > infectedTime; }
+    bool isSevere()          const { return severeDisease; }
+    Serotype serotype()      const { return _serotype; }
 
-    Location* getInfectedLoc() const { return infectedLoc; }
+    Location* getInfectedLoc()  const { return infectedLoc; }
+    Mosquito* getInfectedBy()   const  { return infectedBy; }
+    Person* getInfectionOwner() const { return infectionOwner; }
 };
 
 class Person {

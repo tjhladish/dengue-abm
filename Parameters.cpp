@@ -115,6 +115,8 @@ void Parameters::define_defaults() {
     vaccineSeroConstraint = VACCINATE_ALL_SERO_STATUSES;
     seroTestFalsePos = 0.0;
     seroTestFalseNeg = 0.0;
+
+    gen_infection_hist_db = false;
 }
 
 void Parameters::readParameters(int argc, char* argv[]) {
