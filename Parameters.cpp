@@ -1,6 +1,7 @@
 #include "Parameters.h"
 #include "Location.h"
 #include "Utility.h"
+#include "Date.h"
 #include <fstream>
 #include <sstream>
 #include <numeric>
@@ -89,13 +90,13 @@ void Parameters::define_defaults() {
 
     const vector<float> MOSQUITO_MULTIPLIER_DEFAULTS = {0.179, 0.128, 0.123, 0.0956, 0.195, 0.777, 0.940, 0.901, 1.0, 0.491, 0.301, 0.199};
     mosquitoMultipliers.clear();
-    mosquitoMultipliers.resize(DAYS_IN_MONTH.size());
+    mosquitoMultipliers.resize(COMMON_DAYS_IN_MONTH.size());
     int running_sum = 0;
     for (unsigned int j=0; j<mosquitoMultipliers.size(); j++) {
         mosquitoMultipliers[j].start = running_sum;
-        mosquitoMultipliers[j].duration = DAYS_IN_MONTH[j];
+        mosquitoMultipliers[j].duration = COMMON_DAYS_IN_MONTH[j];
         mosquitoMultipliers[j].value = MOSQUITO_MULTIPLIER_DEFAULTS[j];
-        running_sum += DAYS_IN_MONTH[j];
+        running_sum += COMMON_DAYS_IN_MONTH[j];
     }
 
     startDayOfYear = 1;

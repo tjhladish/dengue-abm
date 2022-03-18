@@ -14,6 +14,7 @@
 class Person;
 class Mosquito;
 class Location;
+class Date;
 
 // We use this to make sure that locations are iterated through in a well-defined order (by ID), rather than by mem address
 struct LocPtrComp { bool operator()(const Location* A, const Location* B) const { return A->getID() < B->getID(); } };
@@ -42,7 +43,7 @@ class Community {
         void updateDiseaseStatus();
         void mosquitoToHumanTransmission();
         void humanToMosquitoTransmission();
-        void tick(int day);                                           // simulate one day
+        void tick(Date &date);                                           // simulate one day
         void setNoSecondaryTransmission() { _bNoSecondaryTransmission = true; }
         void setMosquitoMultiplier(double f) { _fMosquitoCapacityMultiplier = f; }  // seasonality multiplier for number of mosquitoes
         void applyMosquitoMultiplier(double f);                    // sets multiplier and kills off infectious mosquitoes as necessary
@@ -77,6 +78,8 @@ class Community {
         const std::vector<Person*> getAgeCohort(unsigned int age) const { assert(age<_personAgeCohort.size()); return _personAgeCohort[age]; }
 
         std::vector< std::vector<int> > tallyInfectionsByLocType(bool tally_tirs);
+
+        void noSchoolOnWeekends(Date &date);
 
     protected:
         static const Parameters* _par;

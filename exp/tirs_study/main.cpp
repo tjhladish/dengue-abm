@@ -27,6 +27,7 @@ const int RESTART_BURNIN    = 30; // was 100 for foi-effect analysis
 const int FORECAST_DURATION = 2; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
+const int JULIAN_START_YEAR = 2021;
 
 //Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed) {
 Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string /*process_id*/) {
@@ -75,8 +76,18 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->simulateTrial           = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
     const int runLengthYears     = TOTAL_DURATION;
-    par->nRunLength              = runLengthYears*365;
+    //par->nRunLength              = runLengthYears*365;
     par->startDayOfYear          = 1;
+    //par->startJulianYear         = JULIAN_START_YEAR - runLengthYears;
+
+    int tot_num_days = 0;
+    par->startJulianYear         = JULIAN_START_YEAR - (runLengthYears - 1);
+    for (int y = par->startJulianYear; y <= JULIAN_START_YEAR; ++y) {
+        if (Date::isLeap(y)) { tot_num_days += 366; }
+        else { tot_num_days += 365; }
+    }
+    par->nRunLength = tot_num_days;
+
     par->birthdayInterval        = 1;
     par->delayBirthdayIfInfected = false;
     par->annualIntroductionsCoef = _exp_coef;
