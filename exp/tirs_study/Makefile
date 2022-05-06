@@ -1,3 +1,5 @@
+-include local.mk
+
 SHELL=/bin/bash
 G++VER := $(shell command -v g++-4.9)
 
