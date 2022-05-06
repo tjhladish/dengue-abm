@@ -396,7 +396,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
             cumul_inf += infected[s][t];
         }
     }
-    metrics.push_back(cumul_inf / (community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
+    metrics.push_back(cumul_inf / ((double) community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
 
     /*
     const size_t num_metrics = 6;
