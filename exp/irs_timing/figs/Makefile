@@ -54,7 +54,7 @@ $(DBMAIN)/interventions.rds: $(SQMAIN) $(SQREV)
 $(DBMAIN)/extra-interventions.rds: $(SQEXT)
 
 $(DBMAIN)/stat.eff10.rds: $(DBMAIN)/baseline.rds $(DBMAIN)/interventions.rds
-	
+
 $(DBMAIN)/extra-stat.eff10.rds: stat.eff10.R $(DBMAIN)/baseline.rds $(DBMAIN)/extra-interventions.rds
 	Rscript $^ $@
 
@@ -100,6 +100,9 @@ $(DBMAIN)/4panel_foi_20yr.png: foi_annual_effectiveness_plot.R $(DBMAIN)/foi-bas
 
 TABSRCS := $(call wrap,$(DBMAIN)/,coverage duration durability efficacy,.rds)
 SRCS := $(call wrap,$(DBMAIN)/,obs sim eip R0 mos,.rds) $(TABSRCS)
+
+$(DBMAIN)/fig1.csv: export_fig_1.R $(SRCS)
+	Rscript $^ $@
 
 $(DBMAIN)/fig1.png $(DBMAIN)/fig1.tiff: main_fig.R $(SRCS)
 	Rscript $^ $@

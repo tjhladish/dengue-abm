@@ -292,15 +292,15 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     //dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
     //_location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
-    char buffer[500];
+    // char buffer[500];
+    string buffer;
     int locID, trial_arm;
     bool surveilled;
     string locTypeStr;
     double locX, locY;
     istringstream line(buffer);
 
-    while (iss) {
-        iss.getline(buffer,500);
+    while ( getline(iss, buffer) ) {
         line.clear();
         line.str(buffer);
         // locid x y type arm center
@@ -348,8 +348,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         return false;
     }
     int locID1, locID2;
-    while (iss) {
-        iss.getline(buffer,500);
+    while ( getline(iss, buffer) ) {
         line.clear();
         line.str(buffer);
         if (line >> locID1 >> locID2) { // data (non-header) line
@@ -1060,7 +1059,7 @@ void Community::tick(Date &date) {
 
     updateDiseaseStatus();                                            // make people stay home or return to work
 
-    noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
+    // noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
 
     mosquitoToHumanTransmission();                                    // infect people
 

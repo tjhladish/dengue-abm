@@ -128,9 +128,15 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
         par->betaMP = _betamp;
     }
 
-    par->mosquitoCapacityMultiplier[HOME]   = 1.0;//args[19];
-    par->mosquitoCapacityMultiplier[WORK]   = 1.0;//args[20];
-    par->mosquitoCapacityMultiplier[SCHOOL] = 1.0;//args[21];
+    const double frac_homes = 0.79; // fraction of locations that are homes in Merida pop
+    const double frac_not_homes = 1.0 - frac_homes;
+    par->mosquitoCapacityMultiplier[HOME]   = 1.0 + args[18];
+    par->mosquitoCapacityMultiplier[WORK]   = 1.0 - (args[18]*frac_homes/frac_not_homes);
+    par->mosquitoCapacityMultiplier[SCHOOL] = 1.0 - (args[18]*frac_homes/frac_not_homes);
+
+    assert(par->mosquitoCapacityMultiplier[HOME] >= 0);
+    assert(par->mosquitoCapacityMultiplier[WORK] >= 0);
+    assert(par->mosquitoCapacityMultiplier[SCHOOL] >= 0);
     // END OF FOI EXPERIMENT CHANGES
 
     par->fMosquitoMove = 0.15;
@@ -384,6 +390,15 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     for (size_t i = 0; i < metrics.size(); ++i) {
         metrics[i] = (double) trial_period_proto_metrics[i] / arm_size[metric_arm[i]];
     }
+
+    vector< vector<int> > infected = community->getNumNewlyInfected();
+    double cumul_inf = 0;
+    for (size_t s=0; s<NUM_OF_SEROTYPES; s++) {
+        for (int t=0; t<par->nRunLength; t++) {
+            cumul_inf += infected[s][t];
+        }
+    }
+    metrics.push_back(cumul_inf / ((double) community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
 
     /*
     const size_t num_metrics = 6;
