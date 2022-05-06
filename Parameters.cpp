@@ -116,7 +116,7 @@ void Parameters::define_defaults() {
     seroTestFalsePos = 0.0;
     seroTestFalseNeg = 0.0;
 
-    gen_infection_hist_db = false;
+    dump_simulation_data = false;
 }
 
 void Parameters::readParameters(int argc, char* argv[]) {

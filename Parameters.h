@@ -416,7 +416,7 @@ public:
     // WHO vaccine mechanism variables
     WHO_DiseaseOutcome whoDiseaseOutcome;
 
-    bool gen_infection_hist_db;
+    bool dump_simulation_data;
 };
 
 #endif
