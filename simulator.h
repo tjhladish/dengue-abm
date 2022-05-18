@@ -334,8 +334,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     periodic_prevalence         = vector<int>(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
 
     string output = ss.str();
-    //fputs(output.c_str(), stderr);
-    fputs(output.c_str(), stdout);
+    fputs(output.c_str(), stderr);
+    //fputs(output.c_str(), stdout);
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {

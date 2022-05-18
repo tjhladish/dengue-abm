@@ -4,7 +4,7 @@
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
-    "database_filename"             : "tirs_trial-trans_loc_sensitivity.sqlite",
+    "database_filename"             : "tirs_trial-trans_loc_sensitivity-v2.0.sqlite",
     "posterior_database_filename"   : "posterior-refit2.sqlite",
     "retain_posterior_rank"         : "true",
 
