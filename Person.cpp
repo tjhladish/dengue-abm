@@ -56,10 +56,11 @@ Infection& Person::initializeNewInfection(Serotype serotype) {
 
 
 Infection& Person::initializeNewInfection(Mosquito* mos, int time, Location* loc, Serotype serotype) {
-    Infection& infection    = initializeNewInfection(serotype);
-    infection.infectedBy    = mos; // this is a mosquito ID
-    infection.infectedLoc   = loc;
-    infection.infectedTime  = time;
+    Infection& infection     = initializeNewInfection(serotype);
+    infection.infectionOwner = this;
+    infection.infectedBy     = mos; // this is a mosquito ID
+    infection.infectedLoc    = loc;
+    infection.infectedTime   = time;
     infection.infectiousTime = Parameters::sampler(INCUBATION_CDF, gsl_rng_uniform(RNG)) + time;
     return infection;
 }

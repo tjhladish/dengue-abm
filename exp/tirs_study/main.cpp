@@ -178,6 +178,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     //par->mosquitoFilename         = output_dir + "/mos_mer_who/mos."       + to_string(process_id);
     //par->mosquitoLocationFilename = output_dir + "/mosloc_mer_who/mosloc." + to_string(process_id);
 
+    par->dump_simulation_data = false;
+
     return par;
 }
 
@@ -449,6 +451,13 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }*/
 
     cout << flush;
+
+    if (par->dump_simulation_data) {
+        vector<string> tables = {
+            "infection_history"
+        };
+        generate_sim_data_db(par, community, serial, tables);
+    }
 
     delete par;
     delete community;
