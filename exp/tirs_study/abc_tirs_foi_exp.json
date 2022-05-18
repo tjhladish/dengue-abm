@@ -94,9 +94,9 @@
         {"name"       : "vc_coverage",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 1.0,
+         "par1"       : 0.5,
          "par2"       : 1.0,
-         "step"       : 0.0},
+         "step"       : 0.1},
 
         {"name"       : "vc_efficacy",
          "dist_type"  : "PSEUDO",
@@ -142,27 +142,39 @@
          "num_type"   : "INT",
          "par1"       : 0.0,
          "par2"       : 0.25,
-         "step"       : 0.05}
+         "step"       : 0.05},
 
+        {"name"       : "full_scale_vc",
+         "short_name" : "full_vc",
+         "dist_type"  : "PSEUDO",
+         "num_type"   : "INT",
+         "par1"       : 0,
+         "par2"       : 1,
+         "step"       : 1} 
     ],
 
     "metrics" : [
-       {"name" : "inf_arm1_y1", "num_type" : "INT", "value" : 0},
-       {"name" : "sym_arm1_y1", "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm1_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm1_y30", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm1_y31", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm1_y32", "num_type" : "INT", "value" : 0},
 
-       {"name" : "inf_arm2_y1", "num_type" : "INT", "value" : 0},
-       {"name" : "sym_arm2_y1", "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm2_y1", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm1_y49", "num_type" : "INT", "value" : 0},
 
-       {"name" : "inf_arm1_y2", "num_type" : "INT", "value" : 0},
-       {"name" : "sym_arm1_y2", "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm1_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm1_y30", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm1_y31", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm1_y32", "num_type" : "INT", "value" : 0},
 
-       {"name" : "inf_arm2_y2", "num_type" : "INT", "value" : 0},
-       {"name" : "sym_arm2_y2", "num_type" : "INT", "value" : 0},
-       {"name" : "dss_arm2_y2", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm2_y30", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm2_y31", "num_type" : "INT", "value" : 0},
+       {"name" : "inf_arm2_y32", "num_type" : "INT", "value" : 0},
 
-       {"name" : "per_10k_AAR", "num_type" : "INT", "value" : 0}
+       {"name" : "sym_arm2_y30", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm2_y31", "num_type" : "INT", "value" : 0},
+       {"name" : "sym_arm2_y32", "num_type" : "INT", "value" : 0},
+
+       {"name" : "p10k_AAR_y00", "num_type" : "INT", "value" : 0},
+       {"name" : "p10k_AAR_y01", "num_type" : "INT", "value" : 0},
+
+       {"name" : "p10k_AAR_y49", "num_type" : "INT", "value" : 0}
      ]
 }
