@@ -29,18 +29,28 @@ dbExecute(db, stmt)
 # inf_by_loc_history <- dbGetQuery(db, stmt)
 # inf_by_loc_history <- setDT(inf_by_loc_history)
 
-stmt <- "select l.type, count(*) as num_inf 
-from infection_history ih, synthpop.loc l, synthpop.pop p 
-where ih.inf_place_id = l.locid and ih.inf_owner_id = p.pid and p.age >= 2 and p.age <= 15 and ih.infected_time >= 11099 
-group by l.type;"
+# stmt <- "select l.type, count(*) as num_inf 
+# from infection_history ih, synthpop.loc l, synthpop.pop p 
+# where ih.inf_place_id = l.locid and ih.inf_owner_id = p.pid and p.age >= 2 and p.age <= 15 and ih.infected_time >= 11099 
+# group by l.type;"
 
-inf_by_loc_ct <- dbGetQuery(db, stmt)
-inf_by_loc_ct <- setDT(inf_by_loc_ct)
+stmt = "select ih.inf, ih.infected_time, ih.inf_place_id, l2.type, ih.inf_owner_id, p.home_id, l.arm, p.age 
+from infection_history ih 
+join synthpop.pop p on p.pid = ih.inf_owner_id 
+join synthpop.loc l on l.locid  = p.home_id 
+join synthpop.loc l2 on l2.locid = ih.inf_place_id 
+where p.age >= 2 and p.age <= 15;" # and ih.infected_time >= 11099;"
+
+inf_by_loc <- dbGetQuery(db, stmt)
+inf_by_loc <- setDT(inf_by_loc)
+inf_by_loc[arm == 1, arm_lab := "Control"]
+inf_by_loc[arm == 2, arm_lab := "Treatment"]
 
 dbDisconnect(db)
 
-prop_TIRS_inf_by_loc <- ggplot(inf_by_loc_ct) +
-  geom_col(aes(x=paste0("Simulation serial ", serial), y=num_inf, fill=type), position = "fill") +
-  labs(x = "", y = "% of infections in trial children")
+prop_TIRS_inf_by_loc <- ggplot(inf_by_loc[arm > 0, .(num_inf = .N), by = .(type, arm_lab)]) +
+  geom_col(aes(x=factor(arm_lab), y=num_inf, fill=type), position = "fill") +
+  labs(title = paste0("Serial ", serial), x = "TIRS trial arm", y = "% of infections in trial children", fill = "Location type") +
+  theme(legend.position = "bottom")
 
-ggsave(filename = paste0(figPath, "/TIRS_inf_by_loc.png"), plot = prop_TIRS_inf_by_loc, device = 'png', units = 'in', height = 12, width = 6, dpi = 300)
+ggsave(filename = paste0(figPath, "/TIRS_inf_by_loc.png"), plot = prop_TIRS_inf_by_loc, device = 'png', units = 'in', height = 6, width = 6, dpi = 300)
