@@ -40,6 +40,18 @@ enum PrevalenceReportingType {
     NUM_OF_PREVALENCE_REPORTING_TYPES
 };
 
+// metrics order: inf arm 1, sym arm 1, dss arm 1, inf arm 2, sym arm 2, dss arm 2, p10k aar
+enum ProtoMetricType {
+    ARM_1_INF,
+    ARM_1_SYM,
+    ARM_1_DSS,
+    ARM_2_INF,
+    ARM_2_SYM,
+    ARM_2_DSS,
+    AAR,
+    NUM_OF_PROTO_METRIC_TYPES
+};
+
 // class Date {
 //   public:
 //     Date():_offset(0),_simulation_day(0) {};
@@ -105,7 +117,7 @@ const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 // Predeclare local functions
 Community* build_community(const Parameters* par);
 void seed_epidemic(const Parameters* par, Community* community);
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id = "0");
+map<ProtoMetricType, vector<int>> simulate_epidemic(const Parameters* par, Community* community, const string process_id = "0");
 void write_immunity_file(const Community* community, const string label, string filename, int runLength);
 void write_immunity_by_age_file(const Community* community, const int year, string filename="");
 void write_daily_buffer( vector<string>& buffer, const string process_id, string filename);
@@ -240,7 +252,8 @@ void _reporter(stringstream& ss, map<string, vector<int> > &periodic_incidence, 
 }
 
 
-void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, const Date& date, const string process_id, vector<int>& proto_metrics) {
+void periodic_output(const Parameters* par, const Community* community, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, const Date& date,
+                     const string process_id, map<ProtoMetricType, vector<int>> &proto_metrics) {
     stringstream ss;
 //if (date.day() >= 25*365 and date.day() < 36*365) {
 //if (date.day() >= 116*365) {                         // daily output starting in 1995, assuming Jan 1, 1879 simulation start
@@ -299,16 +312,16 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
         if (par->yearlyOutput) {
             _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( total ): ", date.year(), "yearly"); ss << endl;
         }
-        periodic_incidence["yearly"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
+        // periodic_incidence["yearly"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
 
         if (par->simulateTrial) {
-            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_INF]);
-            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_CASE]);
-            proto_metrics.push_back(periodic_incidence["yearly-arm1"][TOTAL_DSS]);
+            proto_metrics[ARM_1_INF].push_back(periodic_incidence["yearly-arm1"][TOTAL_INF]);
+            proto_metrics[ARM_1_SYM].push_back(periodic_incidence["yearly-arm1"][TOTAL_CASE]);
+            proto_metrics[ARM_1_DSS].push_back(periodic_incidence["yearly-arm1"][TOTAL_DSS]);
 
-            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_INF]);
-            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_CASE]);
-            proto_metrics.push_back(periodic_incidence["yearly-arm2"][TOTAL_DSS]);
+            proto_metrics[ARM_2_INF].push_back(periodic_incidence["yearly-arm2"][TOTAL_INF]);
+            proto_metrics[ARM_2_SYM].push_back(periodic_incidence["yearly-arm2"][TOTAL_CASE]);
+            proto_metrics[ARM_2_DSS].push_back(periodic_incidence["yearly-arm2"][TOTAL_DSS]);
 
             if (par->yearlyOutput) {
                 _reporter(ss, periodic_incidence, dummy, par, process_id, " year ( arm_1 ): ", date.year(), "yearly-arm1"); ss << endl;
@@ -317,11 +330,14 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
 
             periodic_incidence["yearly-arm1"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
             periodic_incidence["yearly-arm2"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
-        } else {
-            proto_metrics.push_back(periodic_incidence["yearly"][2]);
-        }
+        } //else {
+            // proto_metrics.push_back(periodic_incidence["yearly"][2]);
+        //}
+
+        proto_metrics[AAR].push_back(periodic_incidence["yearly"][TOTAL_INF]);
 
         if (par->yearlyPeopleOutputFilename.length() > 0) write_yearly_people_file(par, community, date.day());
+        periodic_incidence["yearly"] = vector<int>(NUM_OF_INCIDENCE_REPORTING_TYPES, 0);
 
     }
 
@@ -437,7 +453,8 @@ void update_extrinsic_incubation_period(const Parameters* par, Community* commun
 }
 
 
-void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence, int &nextMosquitoMultiplierIndex, int &nextEIPindex, vector<int> &proto_metrics) {
+void advance_simulator(const Parameters* par, Community* community, Date &date, const string process_id, map<string, vector<int> > &periodic_incidence, vector<int> &periodic_prevalence,
+                       int &nextMosquitoMultiplierIndex, int &nextEIPindex, map<ProtoMetricType, vector<int>> &proto_metrics) {
     update_mosquito_population(par, community, date, nextMosquitoMultiplierIndex);
     update_extrinsic_incubation_period(par, community, date, nextEIPindex);
     community->tick(date);
@@ -518,9 +535,9 @@ map<string, vector<int> > construct_tally() {
 }
 
 
-vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* community, const string process_id, bool capture_sero_prev, vector< vector<double> > &sero_prev, int sero_prev_aggregation_julian_start=0) {
+map<ProtoMetricType, vector<int>> simulate_epidemic_with_seroprev(const Parameters* par, Community* community, const string process_id, bool capture_sero_prev, vector< vector<double> > &sero_prev, int sero_prev_aggregation_julian_start=0) {
     sero_prev = vector< vector<double> > (5, vector<double>(par->nRunLength/365, 0.0)); // rows are infection history: 0, 1, and 2+ infections
-    vector<int> proto_metrics;
+    map<ProtoMetricType, vector<int>> proto_metrics;
     Date date(par);
     int nextMosquitoMultiplierIndex = 0;
     int nextEIPindex = 0;
@@ -564,119 +581,119 @@ vector<int> simulate_epidemic_with_seroprev(const Parameters* par, Community* co
 }
 
 
-vector<int> simulate_epidemic(const Parameters* par, Community* community, const string process_id) {
+map<ProtoMetricType, vector<int>> simulate_epidemic(const Parameters* par, Community* community, const string process_id) {
     vector< vector<double> > sero_prev;
     bool capture_sero_prev = false;
     return simulate_epidemic_with_seroprev(par, community, process_id, capture_sero_prev, sero_prev);
 }
 
 
-vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids) {
-    assert(serotested_ids.size() > 0);
-    vector<long double> metrics;
-    vector<int> proto_metrics;
-    Date date(par);
-    int nextMosquitoMultiplierIndex = 0;
-    int nextEIPindex = 0;
-
-    initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
-    vector<string> daily_output_buffer;
-
-    if (par->bSecondaryTransmission and not par->abcVerbose) {
-        daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
-        //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
-    }
-
-    map<string, vector<int> > periodic_incidence = construct_tally();
-    vector<int> periodic_prevalence(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
-
-    for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.julianDay() == 99 ) {
-                                                               // for a 135 year simulation
-            // calculate seroprevalence among 9 year old merida residents
-            double seropos_9yo = 0.0;
-            for (int id: serotested_ids) {
-                const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
-                seropos_9yo += seropos;
-            }
-            seropos_9yo /= serotested_ids.size();
-            metrics.push_back(seropos_9yo);
-        }
-
-        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
-    }
-
-    return metrics;
-}
-
-//c('0-4', '5-9', '10-14', '15-19', '20-29', '30-39', '40-49', '50-59', '60+')
-
-vector<int> simulate_abc(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids_87, double &seropos_87, vector<int> &serotested_ids_14, vector<double> &seropos_14_by_age) {
-    assert(serotested_ids_87.size() > 0);
-    vector<int> proto_metrics;
-    Date date(par);
-    int nextMosquitoMultiplierIndex = 0;
-    int nextEIPindex = 0;
-
-    initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
-    vector<string> daily_output_buffer;
-
-    if (par->bSecondaryTransmission and not par->abcVerbose) {
-        daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severe");
-    }
-
-    map<string, vector<int> > periodic_incidence = construct_tally();
-    vector<int> periodic_prevalence(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
-
-    const vector<int> upper_age_bound_14 = {4, 9, 14, 19, 29, 39, 49, 59, INT_MAX};
-    vector<int> seropos_14_sample_size(upper_age_bound_14.size(), 0);
-    assert(upper_age_bound_14.size() == seropos_14_by_age.size());
-
-    for (; date.day() < par->nRunLength; date.increment()) {
-        if ( date.julianDay() == 99 and date.year() == 108 ) { // This corresponds to April 9 (day 99) of 1987
-                                                               // for a simulation starting Jan 1, 1879
-            cerr << "1987 serosurvey\n";
-            // calculate seroprevalence among 8-14 year old merida residents
-            for (int id: serotested_ids_87) {
-                const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
-                seropos_87 += seropos;
-            }
-            seropos_87 /= serotested_ids_87.size();
-        } else if ( date.julianDay() == 99 and date.year() == 135 ) { // This corresponds to April 9 (day 99) of 2014
-            cerr << "2014 serosurvey\n";
-            // calculate seroprevalence among all merida residents
-            for (int id: serotested_ids_14) {
-                const Person* p = community->getPersonByID(id);
-                const int age = p->getAge();
-                assert(age >= 0);
-                unsigned int age_cat;
-                for (age_cat = 0; age_cat<upper_age_bound_14.size() and age>upper_age_bound_14[age_cat]; ++age_cat) {/*this space intentionally left blank*/}
-                const double seropos = p->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
-                seropos_14_by_age[age_cat] += seropos;
-                seropos_14_sample_size[age_cat]++;
-            }
-            for (unsigned int age_cat = 0; age_cat < seropos_14_by_age.size(); ++age_cat) {
-                seropos_14_by_age[age_cat] /= seropos_14_sample_size[age_cat];
-            }
-        }
-        advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
-
-/*        if ( date.julianDay() == 365 and date.year() == 121 ) { // December 31 (day 365) of 2000
-            string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2000." + process_id;
-            write_immunity_file(community, process_id, imm_filename, date.day());
-        }
-
-        if ( date.julianDay() == 99 and date.year() == 135 ) { // April 9 (day 99) of 2014
-            string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2014_04_09." + process_id;
-            write_immunity_file(community, process_id, imm_filename, date.day());
-        }*/
-    }
-
-    //string dailyfilename = "";
-    //write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
-
-    return proto_metrics;
-}
+// vector<long double> simulate_who_fitting(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids) {
+//     assert(serotested_ids.size() > 0);
+//     vector<long double> metrics;
+//     vector<int> proto_metrics;
+//     Date date(par);
+//     int nextMosquitoMultiplierIndex = 0;
+//     int nextEIPindex = 0;
+//
+//     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
+//     vector<string> daily_output_buffer;
+//
+//     if (par->bSecondaryTransmission and not par->abcVerbose) {
+//         daily_output_buffer.push_back("time,type,id,location,serotype,symptomatic,withdrawn,new_infection");
+//         //cout << "time,type,id,location,serotype,symptomatic,withdrawn,new_infection" << endl;
+//     }
+//
+//     map<string, vector<int> > periodic_incidence = construct_tally();
+//     vector<int> periodic_prevalence(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
+//
+//     for (; date.day() < par->nRunLength; date.increment()) {
+//         if ( date.julianDay() == 99 ) {
+//                                                                // for a 135 year simulation
+//             // calculate seroprevalence among 9 year old merida residents
+//             double seropos_9yo = 0.0;
+//             for (int id: serotested_ids) {
+//                 const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
+//                 seropos_9yo += seropos;
+//             }
+//             seropos_9yo /= serotested_ids.size();
+//             metrics.push_back(seropos_9yo);
+//         }
+//
+//         advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
+//     }
+//
+//     return metrics;
+// }
+//
+// //c('0-4', '5-9', '10-14', '15-19', '20-29', '30-39', '40-49', '50-59', '60+')
+//
+// vector<int> simulate_abc(const Parameters* par, Community* community, const string process_id, vector<int> &serotested_ids_87, double &seropos_87, vector<int> &serotested_ids_14, vector<double> &seropos_14_by_age) {
+//     assert(serotested_ids_87.size() > 0);
+//     vector<int> proto_metrics;
+//     Date date(par);
+//     int nextMosquitoMultiplierIndex = 0;
+//     int nextEIPindex = 0;
+//
+//     initialize_seasonality(par, community, nextMosquitoMultiplierIndex, nextEIPindex, date);
+//     vector<string> daily_output_buffer;
+//
+//     if (par->bSecondaryTransmission and not par->abcVerbose) {
+//         daily_output_buffer.push_back("day,year,id,age,location,vaccinated,serotype,symptomatic,severe");
+//     }
+//
+//     map<string, vector<int> > periodic_incidence = construct_tally();
+//     vector<int> periodic_prevalence(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
+//
+//     const vector<int> upper_age_bound_14 = {4, 9, 14, 19, 29, 39, 49, 59, INT_MAX};
+//     vector<int> seropos_14_sample_size(upper_age_bound_14.size(), 0);
+//     assert(upper_age_bound_14.size() == seropos_14_by_age.size());
+//
+//     for (; date.day() < par->nRunLength; date.increment()) {
+//         if ( date.julianDay() == 99 and date.year() == 108 ) { // This corresponds to April 9 (day 99) of 1987
+//                                                                // for a simulation starting Jan 1, 1879
+//             cerr << "1987 serosurvey\n";
+//             // calculate seroprevalence among 8-14 year old merida residents
+//             for (int id: serotested_ids_87) {
+//                 const double seropos = community->getPersonByID(id)->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
+//                 seropos_87 += seropos;
+//             }
+//             seropos_87 /= serotested_ids_87.size();
+//         } else if ( date.julianDay() == 99 and date.year() == 135 ) { // This corresponds to April 9 (day 99) of 2014
+//             cerr << "2014 serosurvey\n";
+//             // calculate seroprevalence among all merida residents
+//             for (int id: serotested_ids_14) {
+//                 const Person* p = community->getPersonByID(id);
+//                 const int age = p->getAge();
+//                 assert(age >= 0);
+//                 unsigned int age_cat;
+//                 for (age_cat = 0; age_cat<upper_age_bound_14.size() and age>upper_age_bound_14[age_cat]; ++age_cat) {/*this space intentionally left blank*/}
+//                 const double seropos = p->getNumNaturalInfections() > 0 ? 1.0 : 0.0;
+//                 seropos_14_by_age[age_cat] += seropos;
+//                 seropos_14_sample_size[age_cat]++;
+//             }
+//             for (unsigned int age_cat = 0; age_cat < seropos_14_by_age.size(); ++age_cat) {
+//                 seropos_14_by_age[age_cat] /= seropos_14_sample_size[age_cat];
+//             }
+//         }
+//         advance_simulator(par, community, date, process_id, periodic_incidence, periodic_prevalence, nextMosquitoMultiplierIndex, nextEIPindex, proto_metrics);
+//
+// /*        if ( date.julianDay() == 365 and date.year() == 121 ) { // December 31 (day 365) of 2000
+//             string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2000." + process_id;
+//             write_immunity_file(community, process_id, imm_filename, date.day());
+//         }
+//
+//         if ( date.julianDay() == 99 and date.year() == 135 ) { // April 9 (day 99) of 2014
+//             string imm_filename = "/ufrc/longini/tjhladish/imm_1000_yucatan-irs_refit/immunity2014_04_09." + process_id;
+//             write_immunity_file(community, process_id, imm_filename, date.day());
+//         }*/
+//     }
+//
+//     //string dailyfilename = "";
+//     //write_daily_buffer(daily_output_buffer, process_id, dailyfilename);
+//
+//     return proto_metrics;
+// }
 
 
 bool fileExists(const std::string& filename) {

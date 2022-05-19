@@ -24,7 +24,7 @@ const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
 const int RESTART_BURNIN    = 30; // was 100 for foi-effect analysis
-const int FORECAST_DURATION = 2; // normally 51; using 11 for efficacy duration sensitivity analysis
+const int FORECAST_DURATION = 20; // normally 51; using 11 for efficacy duration sensitivity analysis
 const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 const int JULIAN_START_YEAR = 2021;
@@ -364,7 +364,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     if (vector_control) {
         const LocationType locType = HOME;
-        const LocationSelectionStrategy lss = TIRS_STUDY_STRATEGY;
+        const LocationSelectionStrategy lss = (bool) args[19] ? UNIFORM_STRATEGY : TIRS_STUDY_STRATEGY;
         for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < RESTART_BURNIN + vc_years; vec_cont_year++) {
         //for (int vec_cont_year = RESTART_BURNIN; vec_cont_year < TOTAL_DURATION; vec_cont_year++) {
             // TODO - address situation where startDate could be negative if startDayOfYear is larger than vc_timing
@@ -379,7 +379,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }
 
     seed_epidemic(par, community);
-    vector<int> proto_metrics = simulate_epidemic(par, community, process_id);
+    map<ProtoMetricType, vector<int>> proto_metrics = simulate_epidemic(par, community, process_id);
 
     time (&end);
     double dif = difftime (end,start);
@@ -395,23 +395,54 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
         if (arm == TRIAL_ARM_1 or arm == TRIAL_ARM_2) { arm_size[(int) arm - 1]++; }
     }
 
-    const size_t metrics_per_year = proto_metrics.size() / (TOTAL_DURATION);
-    vector<double> trial_period_proto_metrics(proto_metrics.begin() + (RESTART_BURNIN * metrics_per_year), proto_metrics.end());
-    vector<double> metrics(trial_period_proto_metrics.size(), 0.0);
-    vector<size_t> metric_arm = {0,0,0, 1,1,1, 0,0,0, 1,1,1};
+    // const size_t metrics_per_year = proto_metrics.size() / (TOTAL_DURATION);
+    // vector<double> trial_period_proto_metrics(proto_metrics.begin() + (RESTART_BURNIN * metrics_per_year), proto_metrics.end());
+    // vector<double> metrics(trial_period_proto_metrics.size(), 0.0);
+    // vector<size_t> metric_arm = {0,0,0, 1,1,1, 0,0,0, 1,1,1};
+    //
+    // for (size_t i = 0; i < metrics.size(); ++i) {
+    //     metrics[i] = (double) trial_period_proto_metrics[i] / arm_size[metric_arm[i]];
+    // }
+    //
+    // vector< vector<int> > infected = community->getNumNewlyInfected();
+    // double cumul_inf = 0;
+    // for (size_t s=0; s<NUM_OF_SEROTYPES; s++) {
+    //     for (int t=0; t<par->nRunLength; t++) {
+    //         cumul_inf += infected[s][t];
+    //     }
+    // }
+    // metrics.push_back(cumul_inf / ((double) community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
 
-    for (size_t i = 0; i < metrics.size(); ++i) {
-        metrics[i] = (double) trial_period_proto_metrics[i] / arm_size[metric_arm[i]];
-    }
+    // metrics order: inf arm 1, sym arm 1, dss arm 1, inf arm 2, sym arm 2, dss arm 2, p10k aar
+    vector<double> metrics;
+    for (int pmt = 0; pmt < NUM_OF_PROTO_METRIC_TYPES; ++pmt) {
+        if ((ProtoMetricType) pmt == AAR) {
+            vector<double> tmp_aar(proto_metrics[(ProtoMetricType) pmt].begin(), proto_metrics[(ProtoMetricType) pmt].end());
+            const int pop = community->getNumPeople();
+            for (double &val : tmp_aar) { val /= (double) pop; }
 
-    vector< vector<int> > infected = community->getNumNewlyInfected();
-    double cumul_inf = 0;
-    for (size_t s=0; s<NUM_OF_SEROTYPES; s++) {
-        for (int t=0; t<par->nRunLength; t++) {
-            cumul_inf += infected[s][t];
+            metrics.insert(metrics.end(), tmp_aar.begin(), tmp_aar.end());
+        } else {
+            double arm_pop;
+            switch ((ProtoMetricType) pmt) {
+                case ARM_1_INF: [[fallthrough]];
+                case ARM_1_SYM: [[fallthrough]];
+                case ARM_1_DSS: arm_pop = arm_size[0]; break;
+                case ARM_2_INF: [[fallthrough]];
+                case ARM_2_SYM: [[fallthrough]];
+                case ARM_2_DSS: arm_pop = arm_size[1]; break;
+
+                case AAR:       [[fallthrough]];
+                case NUM_OF_PROTO_METRIC_TYPES: [[fallthrough]];
+                default: break;
+            }
+
+            vector<double> tmp_met(proto_metrics[(ProtoMetricType) pmt].begin(), proto_metrics[(ProtoMetricType) pmt].end());
+            for (double &val : tmp_met) { val /= arm_pop; }
+
+            metrics.insert(metrics.end(), tmp_met.begin() + RESTART_BURNIN, tmp_met.end());
         }
     }
-    metrics.push_back(cumul_inf / ((double) community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
 
     /*
     const size_t num_metrics = 6;
