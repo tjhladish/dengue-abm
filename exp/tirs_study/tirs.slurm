@@ -12,11 +12,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
 #SBATCH --time=24:00:00
-#SBATCH --array=0-999
+#SBATCH --array=0-2999
 
 module load gcc/9.3.0 gsl
 
 for i in `seq 1 150`;
 do
-    ./abc_sql abc_tirs_foi_exp.json --simulate
+    ./abc_sql abc_tirs_foi_exp-v3.0.json --simulate
 done

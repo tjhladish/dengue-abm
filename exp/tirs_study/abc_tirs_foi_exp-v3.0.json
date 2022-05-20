@@ -1,6 +1,6 @@
 {
     "smc_iterations" : 1,
-    "num_samples"    : 66000,
+    "num_samples"    : 792000,
     "predictive_prior_fraction" : 1.0,
     "pls_training_fraction"     : 1.0,
 
@@ -87,8 +87,8 @@
         {"name"       : "timing",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 150,
-         "par2"       : 150,
+         "par1"       : 135,
+         "par2"       : 135,
          "step"       : 0},
 
         {"name"       : "vc_coverage",
@@ -101,8 +101,8 @@
         {"name"       : "vc_efficacy",
          "dist_type"  : "PSEUDO",
          "num_type"   : "FLOAT",
-         "par1"       : 0.8,
-         "par2"       : 0.8},
+         "par1"       : 0.62,
+         "par2"       : 0.62},
 
         {"name"       : "foi_multiplier",
          "short_name" : "foi_mult",
@@ -116,16 +116,16 @@
          "short_name" : "strat_years",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 5,
-         "par2"       : 5,
+         "par1"       : 20,
+         "par2"       : 20,
          "step"       : 0},
 
         {"name"       : "efficacy_duration",
          "short_name" : "eff_days",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
-         "par1"       : 90,
-         "par2"       : 90,
+         "par1"       : 180,
+         "par2"       : 180,
          "step"       : 0},
 
         {"name"       : "foi_exp_parameter_changed",
@@ -145,7 +145,7 @@
          "step"       : 0.05},
 
         {"name"       : "generalized_vc_campaign",
-         "short_name" : "wide_vc_campaign",
+         "short_name" : "gen_vc",
          "dist_type"  : "PSEUDO",
          "num_type"   : "INT",
          "par1"       : 0,
