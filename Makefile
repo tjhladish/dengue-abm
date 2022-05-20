@@ -10,7 +10,7 @@ endif
 GSL_PATH = $(HOME)/work/AbcSmc/gsl_local
 
 MAKE     	= make --no-print-directory
-CFLAGS   	= -Wall -Wextra -pedantic -std=c++11
+CFLAGS   	= -Wall -Wextra -pedantic -std=c++17
 #OPTI     	= -g
 OPTI     	= -O2
 LDFLAGS	 	= -L$(GSL_PATH)/lib/ # $(HPC_GSL_LIB) $(TACC_GSL_LIB)
