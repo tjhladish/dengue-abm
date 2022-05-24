@@ -387,7 +387,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 //    const int pre_intervention_output = 5; // years
 //    const int desired_intervention_output = FORECAST_DURATION - 1;
 
-    vector<double> arm_size = {2, 0.0};
+    vector<double> arm_size(2, 0.0);
     for (Person* p: community->getPeople()) {
         const Location* home = p->getLocation(HOME_MORNING);
         const int age = p->getAge();
