@@ -491,7 +491,14 @@ void advance_simulator(const Parameters* par, Community* community, Date &date, 
                 if (par->simulateTrial) { // TODO check whether p is a surveilled person (e.g. a child, for TIRS study)
                     const int age = p->getAge();
                     const TrialArmState arm = home->isSurveilled() and age >= 2 and age <= 15 ? home->getTrialArm() : NOT_IN_TRIAL;
-
+{ // for Amy Crisp's analysis
+const int BURN_IN = 30; // in years
+// TODO - make this not suck.  implement a subtraction overload in the Date class
+const int DAYS_TO_TRIAL_START = 11092; // 30 years, from 01/01/2021, plus 135 days for the TIRS start day
+if (arm != NOT_IN_TRIAL and date.year() >= BURN_IN and date.year() <= BURN_IN + 2) { // output 3y of trial data
+    cerr << "AC " << date.day() - DAYS_TO_TRIAL_START << " " << arm << " " << p->getID() << " " << p->getHomeLoc()->getID() << " " << symp << " " << intro << endl;
+}
+}
                     if (arm == TRIAL_ARM_1) {
                         periodic_incidence["daily-arm1"][INTRO_INF]  += intro;
                         periodic_incidence["daily-arm1"][INTRO_CASE] += intro and symp;
