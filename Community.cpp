@@ -1022,7 +1022,9 @@ void Community::_modelMosquitoMovement() {
     return;
 }
 
+/*
 void Community::noSchoolOnWeekends(Date &date) {
+    // needs to be revisted if we want to do this
     if (date.isWeekend()) {
         for (Person* p : _people) {
             Location* home_loc = p->getLocation(HOME_MORNING);
@@ -1043,7 +1045,7 @@ void Community::noSchoolOnWeekends(Date &date) {
         }
     }
 }
-
+*/
 
 void Community::tick(Date &date) {
     _nDay = date.day();
@@ -1060,7 +1062,7 @@ void Community::tick(Date &date) {
 
     updateDiseaseStatus();                                            // make people stay home or return to work
 
-    noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
+//    noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
 
     mosquitoToHumanTransmission();                                    // infect people
 
