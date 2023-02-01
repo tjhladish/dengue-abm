@@ -11,12 +11,13 @@
 #SBATCH --chdir=/home/tjhladish/work/dengue/exp/tirs_study
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=4000
-#SBATCH --time=24:00:00
-#SBATCH --array=0-2999
+#SBATCH --time=4:00:00
+#SBATCH --array=0-999
 
-module load gcc/9.3.0 gsl
+module load gcc gsl
 
-for i in `seq 1 150`;
+for i in `seq 1 3`;
 do
-    ./abc_sql abc_tirs_foi_exp-v3.0.json --simulate
+    ./abc_sql abc_tirs_foi_exp-amy.json --simulate
+#    ./abc_sql abc_tirs_foi_exp-v3.0c.json --simulate
 done
