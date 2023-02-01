@@ -44,7 +44,7 @@ enum PrevalenceReportingType {
 //   public:
 //     Date():_offset(0),_simulation_day(0) {};
 //     Date(const Parameters* par):_offset(par->startDayOfYear-1),_simulation_day(0) {};
-// 
+//
 //     int offset()             const { return _offset; }
 //     inline int day()         const { return _simulation_day; }                // [0, ...]
 //     int julianDay()          const { return ((day() + offset()) % 365) + 1; } // [1, 365]
@@ -64,7 +64,7 @@ enum PrevalenceReportingType {
 //     }
 //     string monthName()       const { return MONTH_NAMES[julianMonth()-1]; }
 //     int year()               const { return (int) (day()/365); }
-// 
+//
 //     bool endOfPeriod(int n)  const { return (day()+1) % n == 0; }
 //     bool endOfWeek()         const { return (day()+1) % 7 == 0; }
 //     bool endOfMonth()        const {
@@ -77,12 +77,12 @@ enum PrevalenceReportingType {
 //     bool endOfYear()         const { return (day()+1) % 365 == 0; } // is it end of 365 day period
 //     bool startOfJulianYear() const { return julianDay() == 1; }     // is it Jan 1
 //     bool endOfJulianYear()   const { return julianDay() == 365; }   // is it Dec 31
-// 
+//
 //     void increment() {
 //         if(endOfMonth()) _month_ct++;
 //         _simulation_day++;
 //     }
-// 
+//
 //     void print() {
 //         cerr << day() << "\t" << julianDay() << "\t" << year()
 //              << "\t(" << monthName() << " " << dayOfMonth() << ")\t" << month() << "\t" << julianMonth();
@@ -93,7 +93,7 @@ enum PrevalenceReportingType {
 //         if (endOfJulianYear()) cerr << " EoJY";
 //         cerr << endl;
 //     }
-// 
+//
 //   private:
 //     const int _offset;
 //     int _simulation_day;
@@ -334,8 +334,8 @@ void periodic_output(const Parameters* par, const Community* community, map<stri
     periodic_prevalence         = vector<int>(NUM_OF_PREVALENCE_REPORTING_TYPES, 0);
 
     string output = ss.str();
-    //fputs(output.c_str(), stderr);
-    fputs(output.c_str(), stdout);
+    fputs(output.c_str(), stderr);
+    //fputs(output.c_str(), stdout);
 }
 
 void update_vaccinations(const Parameters* par, Community* community, const Date &date) {
@@ -834,4 +834,73 @@ void write_mosquito_location_data(const Community* community, string mos_filenam
         loc_file << loc->getCurrentInfectedMosquitoes() << endl;
     }
     loc_file.close();
+}
+
+void import_csv_to_db(string filename, string table, string db) {
+    stringstream ss;
+    ss << "sqlite3 " << db << " '.mode csv' '.import " << filename << ' ' << table << "'";
+    string cmd_str = ss.str();
+    int retval = system(cmd_str.c_str());
+    if (retval == -1) { cerr << "System failed to import " << table << " data to db\n"; }
+    return;
+}
+
+void generate_sim_data_db(const Parameters* par, const Community* community, const unsigned long int serial, vector<string> tables) {
+    vector<stringstream> filenames(tables.size());
+    for (size_t i = 0; i < tables.size(); ++i) {
+        filenames[i] << "./" << tables[i] << "_" << serial << ".csv";
+    }
+
+    map<string, ofstream> ofiles;
+    for (size_t i = 0; i < tables.size(); ++i) {
+        ofiles[tables[i]] = ofstream(filenames[i].str(), std::ios::trunc);
+    }
+
+    bool all_files_open = true;
+    for (const auto& [table, ofile] : ofiles) {
+        all_files_open = all_files_open and (bool)ofile;
+    }
+    if (not all_files_open) { cerr << "FILES FAILED TO OPEN" << endl; exit(-1); }
+
+    for (Person* p : community->getPeople()) {
+        for (Infection* inf : p->getInfectionHistory()) {
+            if (not inf) { continue; }
+            int inf_place_id = inf->getInfectedLoc() ? inf->getInfectedLoc()->getID() : -1;
+            int inf_by_id    = inf->getInfectedBy() ? inf->getInfectedBy()->getID() : -1;
+            int inf_owner_id = inf->getInfectionOwner() ? inf->getInfectionOwner()->getID() : -1;
+
+            ofiles["infection_history"] << inf << ','
+                                        << inf_place_id << ','
+                                        << inf_by_id << ','
+                                        << inf_owner_id << ','
+                                        << inf->getInfectedTime() << ','
+                                        << inf->getInfectiousTime() << ','
+                                        << inf->getSymptomTime() << ','
+                                        << inf->getRecoveryTime() << ','
+                                        << inf->getWithdrawnTime() << ','
+                                        << inf->isSevere() << ','
+                                        << inf->serotype() << endl;
+        }
+    }
+    for (auto& [table, ofile] : ofiles) { ofile.close(); }
+
+    stringstream ss, db;
+    db << "sim_data_" << serial << ".sqlite";
+    ss << "sqlite3 " << db.str() << " '.read gen_sim_db.sql'";
+
+    string cmd_str = ss.str();
+    int retval = system(cmd_str.c_str());
+    if (retval == -1) { cerr << "System call to `sqlite3 " << db.str() << " '.read gen_sim_db.sql'` failed\n"; }
+
+    for (size_t i = 0; i < tables.size(); ++i) {
+        import_csv_to_db(filenames[i].str(), tables[i], db.str());
+    }
+
+    ss.str(string());
+    ss << "rm";
+    for (size_t i = 0; i < filenames.size(); ++i) { ss << ' ' << filenames[i].str(); }
+
+    cmd_str = ss.str();
+    retval = system(cmd_str.c_str());
+    if (retval == -1) { cerr << "System call to delete infection csv files failed\n"; }
 }

@@ -71,7 +71,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->periodicOutput          = false;
     par->periodicOutputInterval  = 5;
     par->weeklyOutput            = false;
-    par->monthlyOutput           = true;
+    par->monthlyOutput           = false;
     par->yearlyOutput            = true;
     par->simulateTrial           = true;
     par->abcVerbose              = false; // needs to be false to get WHO daily output
@@ -177,6 +177,8 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->swapProbFilename         = ""; //pop_dir    + "/swap_probabilities-" + SIM_POP + ".txt";
     //par->mosquitoFilename         = output_dir + "/mos_mer_who/mos."       + to_string(process_id);
     //par->mosquitoLocationFilename = output_dir + "/mosloc_mer_who/mosloc." + to_string(process_id);
+
+    par->dump_simulation_data = false;
 
     return par;
 }
@@ -347,6 +349,19 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
 
     Community* community = build_community(par);
 
+//    vector<double> loc_type_ct(NUM_OF_LOCATION_TYPES, 0.0);
+//    vector<double> loc_mos_ct(NUM_OF_LOCATION_TYPES, 0.0);
+//
+//    for (Location* loc: community->getLocations()) {
+//        const LocationType locType = loc->getType();
+//        loc_type_ct[locType]++;
+//        loc_mos_ct[locType]  += loc->getBaseMosquitoCapacity();
+//    }
+//
+//    for (int i = 0; i < NUM_OF_LOCATION_TYPES; ++i) {
+//    cerr << "loc type, avg num mosquitoes: " << (LocationType) i << " " << loc_mos_ct[i] / loc_type_ct[i] << endl;
+//    }
+
     if (vector_control) {
         const LocationType locType = HOME;
         const LocationSelectionStrategy lss = TIRS_STUDY_STRATEGY;
@@ -396,7 +411,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
             cumul_inf += infected[s][t];
         }
     }
-    metrics.push_back(cumul_inf / (community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
+    metrics.push_back(cumul_inf / ((double) community->getNumPeople() * par->nRunLength / (1e4 * 365.0))); // number of infections per 10k people per year
 
     /*
     const size_t num_metrics = 6;
@@ -436,6 +451,13 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     }*/
 
     cout << flush;
+
+    if (par->dump_simulation_data) {
+        vector<string> tables = {
+            "infection_history"
+        };
+        generate_sim_data_db(par, community, serial, tables);
+    }
 
     delete par;
     delete community;

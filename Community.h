@@ -79,7 +79,7 @@ class Community {
 
         std::vector< std::vector<int> > tallyInfectionsByLocType(bool tally_tirs);
 
-        void noSchoolOnWeekends(Date &date);
+        //void noSchoolOnWeekends(Date &date);
 
     protected:
         static const Parameters* _par;

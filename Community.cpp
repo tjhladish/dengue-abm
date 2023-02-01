@@ -292,15 +292,15 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
     //dummy->setBaseMosquitoCapacity(_par->nDefaultMosquitoCapacity);
     //_location.push_back(dummy); // first val is a dummy, for backward compatibility
     // End of hack
-    char buffer[500];
+    // char buffer[500];
+    string buffer;
     int locID, trial_arm;
     bool surveilled;
     string locTypeStr;
     double locX, locY;
     istringstream line(buffer);
 
-    while (iss) {
-        iss.getline(buffer,500);
+    while ( getline(iss, buffer) ) {
         line.clear();
         line.str(buffer);
         // locid x y type arm center
@@ -348,8 +348,7 @@ bool Community::loadLocations(string locationFilename,string networkFilename) {
         return false;
     }
     int locID1, locID2;
-    while (iss) {
-        iss.getline(buffer,500);
+    while ( getline(iss, buffer) ) {
         line.clear();
         line.str(buffer);
         if (line >> locID1 >> locID2) { // data (non-header) line
@@ -1024,8 +1023,8 @@ void Community::_modelMosquitoMovement() {
 
 /*
 void Community::noSchoolOnWeekends(Date &date) {
-    // needs to be revisted if we want to do this
-    if (date.isWeekend()) {
+    // needs to be revisted if we want to do this -- probably don't want to actually move people btn locs
+    if (date.isWeekend()) { // currently moves people both saturday and sunday
         for (Person* p : _people) {
             Location* home_loc = p->getLocation(HOME_MORNING);
             Location* day_loc = p->getLocation(WORK_DAY);
@@ -1062,7 +1061,7 @@ void Community::tick(Date &date) {
 
     updateDiseaseStatus();                                            // make people stay home or return to work
 
-//    noSchoolOnWeekends(date);                                         // school students and staff stay home on weekends
+//    noSchoolOnWeekends(date);                                         // TODO - this isn't implemented correctly yet
 
     mosquitoToHumanTransmission();                                    // infect people
 
@@ -1079,6 +1078,60 @@ void Community::tick(Date &date) {
 //cerr << day << endl;
 //cerr << "HID 366282 (arm 1, no vc) ID, arm, nmos: " << arm1_loc->getID() << " " << arm1_loc->getTrialArm() << " " << arm1_nmos << endl
 //     << "HID 365682 (arm 2,    vc) ID, arm, nmos: " << arm2_loc->getID() << " " << arm2_loc->getTrialArm() << " " << arm2_nmos << endl << endl;
+
+//vector<double> loc_type_ct(NUM_OF_LOCATION_TYPES, 0.0);
+//vector<double> loc_inf_mos_ct(NUM_OF_LOCATION_TYPES, 0.0);
+//vector<double> loc_total_mos_ct(NUM_OF_LOCATION_TYPES, 0.0);
+//vector<double> loc_max(NUM_OF_LOCATION_TYPES, 0.0);
+//vector<int> loc_id(NUM_OF_LOCATION_TYPES, 0);
+//
+//for (Location* loc: getLocations()) {
+//    const LocationType locType = loc->getType();
+//    const double inf_mos = loc->getCurrentInfectedMosquitoes();
+//    loc_type_ct[locType]++;
+//    loc_inf_mos_ct[locType]    += inf_mos;
+//    loc_total_mos_ct[locType]  += loc->getBaseMosquitoCapacity() * (1.0-loc->getCurrentVectorControlEfficacy(_nDay)) * getMosquitoMultiplier();
+//    if (inf_mos > loc_max[locType]) {
+//        loc_max[locType] = inf_mos;
+//        loc_id[locType]  = loc->getID();
+//    }
+//
+//}
+//
+//cerr << "Day " << date.day() << endl;
+//cerr << "locType: avg inf ct, avg total capacity: ";
+//vector<string> labels = {"H", "W", "S"};
+//for (int i = 0; i < NUM_OF_LOCATION_TYPES; ++i) {
+//    cerr << " [" << labels[i] << ": " << loc_inf_mos_ct[i] / loc_type_ct[i] << ", " << loc_total_mos_ct[i] / loc_type_ct[i] << "]" ;
+//}
+//cerr << endl;
+//
+//cerr << "locType: ID, max: ";
+//for (int i = 0; i < NUM_OF_LOCATION_TYPES; ++i) {
+//    cerr << " [" << labels[i] << ": " << loc_id[i] << ", " << loc_max[i] << "]" ;
+//}
+//
+//Location* school = _location[58756];
+//assert( school->getID() == 58756 );
+//set<Location*> origins;
+//int local_inf_ct = 0;
+//int total_ct = 0;
+//
+//for(unsigned int i=0; i<_infectiousMosquitoQueue.size(); i++) {
+//    for(unsigned int j=0; j<_infectiousMosquitoQueue[i].size(); j++) {
+//        Mosquito* m = _infectiousMosquitoQueue[i][j];
+//        if (m->getLocation() == school) {
+//            total_ct++;
+//            Location* origin = m->getOriginLocation();
+//            local_inf_ct += (int) (origin == school);
+//            origins.insert(origin);
+//        }
+//    }
+//}
+//
+//cerr << "\nStarted here / total inf mos (number of origins): " << local_inf_ct << " / " << total_ct << " (" << origins.size() << ")\n";
+//
+//cerr << endl << endl;
     return;
 }
 
