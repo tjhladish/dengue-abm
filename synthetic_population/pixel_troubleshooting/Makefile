@@ -1,4 +1,4 @@
-PROJ_HOME = /home/tjhladish/work/dengue/synthetic_population/pixel_troubleshooting
+PROJ_HOME = $(HOME)/work/dengue-abm/synthetic_population/pixel_troubleshooting
 GDAL_LIB = $(PROJ_HOME)/dependencies/lib
 GDAL_INC = $(PROJ_HOME)/dependencies/include
 #GDAL_LIB = /usr/local/lib
@@ -25,5 +25,5 @@ winding_test: Makefile winding_test.cpp
 clean:
 	rm -f test
 
-# export LD_LIBRARY_PATH=$HOME/work/dengue/gis/eugene_work/gdal/lib
+# export LD_LIBRARY_PATH=$HOME/work/dengue-abm/gis/eugene_work/gdal/lib
 

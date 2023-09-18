@@ -1,4 +1,4 @@
-PROJ_HOME = /home/tjhladish/work/dengue/gis/extract_raster_data_by_region
+PROJ_HOME = $(HOME)/work/dengue-abm/gis/extract_raster_data_by_region
 #GDAL_LIB = $(PROJ_HOME)/gdal/lib
 #GDAL_INC = $(PROJ_HOME)/gdal/include
 GDAL_LIB = /usr/local/lib
@@ -22,5 +22,5 @@ pixel_failure_test: Makefile pixel_failure_test.cpp
 clean:
 	rm -f test
 
-# export LD_LIBRARY_PATH=$HOME/work/dengue/gis/eugene_work/gdal/lib
+# export LD_LIBRARY_PATH=$HOME/work/dengue-abm/gis/eugene_work/gdal/lib
 

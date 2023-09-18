@@ -12,7 +12,7 @@ CFLAGS = -O2 -std=c++11 -Wall -Wextra
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue-abm
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
-IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
+IMMDIR = $(DENDIR)/synthetic_population/initial_immunity
 SERDIR = $(DENDIR)/synthetic_population/serotype_runs
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
