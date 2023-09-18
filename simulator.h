@@ -845,7 +845,7 @@ void import_csv_to_db(string filename, string table, string db) {
     return;
 }
 
-void generate_sim_data_db(const Parameters* par, const Community* community, const unsigned long int serial, vector<string> tables) {
+void generate_sim_data_db(const Parameters* /*par*/, const Community* community, const unsigned long int serial, vector<string> tables) {
     vector<stringstream> filenames(tables.size());
     for (size_t i = 0; i < tables.size(); ++i) {
         filenames[i] << "./" << tables[i] << "_" << serial << ".csv";
