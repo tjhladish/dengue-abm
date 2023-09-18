@@ -10,7 +10,7 @@ endif
 #CFLAGS = -g -std=c++11 -pedantic -Wall -Wextra -Wno-deprecated-declarations
 CFLAGS = -O2 -std=c++11 -pedantic -Wall -Wextra -Wno-deprecated-declarations
 ABCDIR = $(HOME)/work/AbcSmc
-DENDIR = $(HOME)/work/dengue
+DENDIR = $(HOME)/work/dengue-abm
 GSL_PATH = $(HOME)/work/AbcSmc/gsl_local
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity

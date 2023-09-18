@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS = -O2 -std=c++11 -pedantic -Wall
-DENDIR = $(HOME)/work/dengue
+DENDIR = $(HOME)/work/dengue-abm
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(DENDIR)/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o

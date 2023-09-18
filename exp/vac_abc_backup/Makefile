@@ -3,7 +3,7 @@ CC=g++
 #CFLAGS = -g -std=c++11
 CFLAGS = -O2 -std=c++11
 ABCDIR = $(HOME)/work/AbcSmc
-DENDIR = $(HOME)/work/dengue
+DENDIR = $(HOME)/work/dengue-abm
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(HOME)/work/dengue/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
