@@ -6,7 +6,7 @@
 
     "database_filename"             : "irs_timing-refit0_intro-fix.sqlite",
     "posterior_database_filename"   : "posterior-refit0.sqlite",
-    "retain_posterior_rank"         : "true",
+    "retain_posterior_rank"         : true,
 
     "parameters" : [
         {"name"       : "mild_reported_fraction",

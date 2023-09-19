@@ -6,7 +6,7 @@
 
     "database_filename"             : "mpeak_incidence_response-expanded.sqlite",
     "posterior_database_filename"   : "new_yuc_posterior.sqlite",
-    "retain_posterior_rank"         : "true",
+    "retain_posterior_rank"         : true,
 
     "parameters" : [
         {"name"       : "mild_reported_fraction",

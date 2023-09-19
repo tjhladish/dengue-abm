@@ -6,7 +6,7 @@
 
     "database_filename"             : "vacvec-new_yuc-ivn_lag258-reduced_catchup.sqlite",
     "posterior_database_filename"   : "new_yuc_posterior.sqlite",
-    "retain_posterior_rank"         : "true",
+    "retain_posterior_rank"         : true,
 
     "parameters" : [
         {"name"       : "mild_reported_fraction",
