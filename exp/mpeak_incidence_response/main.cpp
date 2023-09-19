@@ -29,7 +29,7 @@ const bool RUN_FORECAST     = true;
 const int TOTAL_DURATION    = RUN_FORECAST ? RESTART_BURNIN + FORECAST_DURATION : RESTART_BURNIN;
 
 //Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed) {
-Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
+Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string /*process_id*/) {
     Parameters* par = new Parameters();
     par->define_defaults();
     par->serial = serial;

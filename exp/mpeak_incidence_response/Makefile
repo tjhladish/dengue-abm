@@ -1,32 +1,6 @@
-SHELL=/bin/bash
-G++VER := $(shell command -v g++-4.9)
+-include ../common.mk
 
-ifndef G++VER
-CXX:=g++
-else
-CXX:=g++-4.9
-endif
-
-#CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
-CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
-ABCDIR = $(HOME)/work/AbcSmc
-DENDIR = $(HOME)/work/dengue-abm
-GSL_PATH = $(HOME)/work/AbcSmc/gsl_local
-DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
-IMMDIR = $(DENDIR)/synthetic_population/initial_immunity
-IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
-SQLDIR = $(ABCDIR)/sqdb
-
-INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/
-#ifdef TACC_GSL_INC
-#INCLUDE += -I$$TACC_GSL_INC
-#endif
-#ifdef HPC_GSL_INC
-#INCLUDE += -I$$HPC_GSL_INC
-#endif
-
-ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
-GSL_LIB = -lm -L$(GSL_PATH)/lib/ -lgsl -lgslcblas -lpthread -ldl
+default: abc_sql
 
 libabc:
 	$(MAKE) -C $(ABCDIR) -f Makefile
