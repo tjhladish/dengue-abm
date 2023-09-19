@@ -1,5 +1,5 @@
 #include "mpi.h"
-#include "AbcSmc.h"
+#include <AbcSmc/AbcSmc.h>
 #include "mpi_simulator.h"
 #include <cstdlib>
 #include "CCRC32.h"

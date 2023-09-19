@@ -1,6 +1,6 @@
 #include "mpi.h"
 #include <unistd.h>
-#include "AbcSmc.h"
+#include <AbcSmc/AbcSmc.h>
 #include "simulator.h"
 #include <cstdlib>
 #include "CCRC32.h"

@@ -1,4 +1,4 @@
-#include "AbcSmc.h"
+#include <AbcSmc/AbcSmc.h>
 
 using namespace std;
 
