@@ -1,25 +1,21 @@
 -include local.mk
 
-SHELL=/bin/bash
-G++VER := $(shell command -v g++-4.9)
-
-ifndef G++VER
-CPP:=g++
-else
-CPP:=g++-4.9
-endif
-
+CPP = g++
 #CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 CFLAGS = -O2 -std=c++17 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue-abm
-GSL_PATH = $(HOME)/work/AbcSmc/gsl_local
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(DENDIR)/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
 
-INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/ -I$(ABCDIR)/jsoncpp/include
+INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(ABCDIR)/jsoncpp/include
+
+INCLUDE += -I$(ABCDIR)/include -I$(ABCDIR)/lib -I$(ABCDIR)/lib/sqdb/include
+INCLUDE += -I$(ABCDIR)/lib/CCRC32/include -I$(ABCDIR)/lib/PLS/include
+INCLUDE += -I$(ABCDIR)/lib/PLS/lib/eigen -I$(ABCDIR)/lib/jsoncpp/include
+
 #ifdef TACC_GSL_INC
 #INCLUDE += -I$$TACC_GSL_INC
 #endif
@@ -27,8 +23,8 @@ INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(GSL_PATH)/include/ -I$(ABCDIR)
 #INCLUDE += -I$$HPC_GSL_INC
 #endif
 
-ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
-GSL_LIB = -lm -L$(GSL_PATH)/lib/ -lgsl -lgslcblas -lpthread -ldl
+ABC_LIB := -L$(ABCDIR)/build -L$(ABCDIR)/build/PLS -labc -lpls -ljsoncpp -lm
+GSL_LIB = -lm -lgsl -lgslcblas -lpthread -ldl
 
 default: libabc abc_sql
 
