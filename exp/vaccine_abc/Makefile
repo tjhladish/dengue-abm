@@ -2,9 +2,9 @@ SHELL=/bin/bash
 G++VER := $(shell command -v g++-4.9)
 
 ifndef G++VER
-CPP:=g++
+CXX:=g++
 else
-CPP:=g++-4.9
+CXX:=g++-4.9
 endif
 
 #CFLAGS = -g -std=c++11 -Wall
@@ -37,10 +37,10 @@ dengue:
 	$(MAKE) -C $(DENDIR) -f Makefile model
 
 abc_sql: libabc dengue main_sql.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 test_sql: libabc_no_mpi dengue_no_mpi test_sql.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

@@ -1,6 +1,6 @@
 -include local.mk
 
-CPP = g++
+CXX = g++
 
 #CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 CFLAGS = -O2 -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
@@ -30,17 +30,17 @@ dengue:
 	$(MAKE) -C $(DENDIR) -f Makefile
 
 abc_sql: libabc dengue main.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_sql-foi_gen: libabc dengue main.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-generate_alt_foi_immunity_files.cpp -o abc_sql-foi_gen $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-generate_alt_foi_immunity_files.cpp -o abc_sql-foi_gen $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_sql-ivn_lag: libabc dengue main.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-ivn_lag.cpp -o abc_sql-ivn_lag $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main-ivn_lag.cpp -o abc_sql-ivn_lag $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 process_who: libabc process_daily_output.cpp
-	#$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
-	$(CPP) $(CFLAGS) -fopenmp $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
+	#$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
+	$(CXX) $(CFLAGS) -fopenmp $(INCLUDE) -I$(SQLDIR) process_daily_output.cpp -o process_who $(ABC_LIB) -L$(ABCDIR) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

@@ -2,9 +2,9 @@ SHELL=/bin/bash
 G++VER := $(shell command -v g++-4.9)
 
 ifndef G++VER
-CPP:=g++
+CXX:=g++
 else
-CPP:=g++-4.9
+CXX:=g++-4.9
 endif
 
 #CFLAGS = -g -std=c++11 -Wall
@@ -38,13 +38,13 @@ dengue:
 	$(MAKE) -C $(DENDIR) -f Makefile model
 
 abc_sql: libabc dengue main.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) -I$(SERDIR) main.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_thai: libabc dengue main_sql-thai.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql-thai.cpp -o abc_thai $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql-thai.cpp -o abc_thai $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 abc_deb: libabc dengue main_deb.cpp
-	$(CPP) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_deb.cpp -o main_deb $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CXX) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_deb.cpp -o main_deb $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean

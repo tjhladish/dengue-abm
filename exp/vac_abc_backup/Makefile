@@ -1,17 +1,26 @@
+-include local.mk
+
 CC=g++
 #CC=mpicxx
-#CFLAGS = -g -std=c++11
-CFLAGS = -O2 -std=c++11
+#CFLAGS = -g -std=c++11 -Wall -Wextra -Wno-deprecated-declarations --pedantic
+CFLAGS = -O2 -std=c++17 -Wall -Wextra -Wno-deprecated-declarations --pedantic
 ABCDIR = $(HOME)/work/AbcSmc
 DENDIR = $(HOME)/work/dengue-abm
 DENOBJ = $(DENDIR)/Person.o $(DENDIR)/Location.o $(DENDIR)/Mosquito.o $(DENDIR)/Community.o $(DENDIR)/Parameters.o $(DENDIR)/Utility.o
 IMMDIR = $(DENDIR)/synthetic_population/initial_immunity
 IMMOBJ = $(IMMDIR)/ImmunityGenerator.o
 SQLDIR = $(ABCDIR)/sqdb
-INCLUDES = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$$TACC_GSL_INC $$HPC_GSL_INC
+
+INCLUDE = -I$(ABCDIR) -I$(DENDIR) -I$(IMMDIR) -I$(ABCDIR)/jsoncpp/include
+#ifdef TACC_GSL_INC
+#INCLUDE += -I$$TACC_GSL_INC
+#endif
+#ifdef HPC_GSL_INC
+#INCLUDE += -I$$HPC_GSL_INC
+#endif
 
 ABC_LIB = -L$(ABCDIR) -L$(DENDIR) -labc -ljsoncpp -lsqdb $(ABCDIR)/sqlite3.o
-GSL_LIB = -lm -L$$TACC_GSL_LIB/ -L$$HPC_GSL_LIB/ -lgsl -lgslcblas -lpthread -ldl
+GSL_LIB = -lm -lgsl -lgslcblas -lpthread -ldl
 
 default: all_no_mpi
 
@@ -38,13 +47,13 @@ immunity_mpi:
 	$(MAKE) -C $(IMMDIR) -f Makefile all_mpi
 
 abc: main.cpp
-	$(CC) $(CFLAGS) main.cpp -o abc $(INCLUDES) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) main.cpp -o abc $(INCLUDE) $(ABC_LIB) $(GSL_LIB)
 
 abc_sql: libabc_no_mpi dengue_no_mpi main_sql.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) main_sql.cpp -o abc_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 test_sql: libabc_no_mpi dengue_no_mpi test_sql.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
+	$(CC) $(CFLAGS) $(INCLUDE) -I$(SQLDIR) test_sql.cpp -o test_sql $(DENOBJ) $(ABC_LIB) $(GSL_LIB)
 
 clean:
 	$(MAKE) -C $(ABCDIR) -f Makefile clean
