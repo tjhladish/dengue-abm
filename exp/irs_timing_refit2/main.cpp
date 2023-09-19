@@ -271,7 +271,7 @@ vector<double> simulator(vector<double> args, const unsigned long int rng_seed, 
     report_process_id(args, serial, mp, start);
 
     cerr << "SCENARIO " << rng_seed;
-    for (auto _p: args) cerr << " " << _p; cerr << endl;
+    for (auto _p: args) { cerr << " " << _p; } cerr << endl;
 
     Parameters* par = define_simulator_parameters(args, rng_seed, serial, process_id);
     //00   "mild_rf",
