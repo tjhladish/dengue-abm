@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main() {
     const gsl_rng* RNG = gsl_rng_alloc (gsl_rng_taus2);
 
     int first_year = 1969;
@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     vector< vector<StreakState> > all_series = generate_serotype_sequences(RNG, first_year, first_observed_year, last_year, NO_TRANSFORM);
 
     for(auto s: all_series) {
-        for (auto v: s) cerr << v << " "; cerr << endl;
+        for (auto v: s) { cerr << v << " "; } cerr << endl;
     }
 
     return 0;

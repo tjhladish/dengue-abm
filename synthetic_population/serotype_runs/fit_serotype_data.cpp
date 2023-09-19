@@ -2,7 +2,7 @@
 #include <vector>
 #include <numeric>
 #include <unistd.h>
-#include "AbcSmc.h"
+#include <AbcSmc/AbcSmc.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
@@ -15,7 +15,7 @@ const vector<int> INTRO_YEARS = {0, 7, 17, 5}; // First year that each serotype 
 const vector<int> UNOBSERVED_YEARS = {19, 20, 21, 24};
 int serotype = 1;
 
-vector<long double> revisedSerotypeGenerator(vector<long double> args, const unsigned long int rng_seed, const MPI_par* mp) {
+vector<double> revisedSerotypeGenerator(vector<double> args, const unsigned long int rng_seed, const unsigned long int /*serial*/, const ABC::MPI_par* /*mp*/) {
     gsl_rng_set(RNG, rng_seed);
     //const int serotype = (int) args[0] - 1;
     const long double geometric_mean_run = args[0];
@@ -23,7 +23,7 @@ vector<long double> revisedSerotypeGenerator(vector<long double> args, const uns
     const float p_gap = 1.0/geometric_mean_gap;
     const float p_run = 1.0/geometric_mean_run;
 
-    vector<long double> obs_run_and_gap_means(2, 0.0);
+    vector<double> obs_run_and_gap_means(2, 0.0);
 
     enum State {GAP, RUN, NEITHER};
     vector<State> series(INTRO_YEARS[serotype], NEITHER);
@@ -64,9 +64,9 @@ vector<long double> revisedSerotypeGenerator(vector<long double> args, const uns
             gaps.push_back(tally);
     }
 
-    for (auto i: series) cerr << i << " "; cerr << endl;
-    for (auto i: runs) cerr << i << " "; cerr << endl;
-    for (auto i: gaps) cerr << i << " "; cerr << endl;
+    for (auto i: series) { cerr << i << " "; } cerr << endl;
+    for (auto i: runs)   { cerr << i << " "; } cerr << endl;
+    for (auto i: gaps)   { cerr << i << " "; } cerr << endl;
 
     if (runs.size() > 0) {
         obs_run_and_gap_means[0] = accumulate(runs.begin(), runs.end(), 0.0) / runs.size();
