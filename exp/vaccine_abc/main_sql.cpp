@@ -14,7 +14,6 @@ using dengue::util::to_string;
 using dengue::util::mean;
 using dengue::util::stdev;
 using dengue::util::max_element;
-using ABC::float_type;
 
 time_t GLOBAL_START_TIME;
 /* Notes
@@ -28,7 +27,7 @@ time_t GLOBAL_START_TIME;
  *
  */
 
-string calculate_process_id(vector< long double> &args, string &argstring);
+string calculate_process_id(vector<double> &args, string &argstring);
 const string SIM_POP = "yucatan";
 
 const int FIRST_YEAR          = 1879;                                 // inclusive
@@ -44,7 +43,7 @@ const int TOTAL_DURATION      = HISTORICAL_DURATION + FORECAST_DURATION - BURNIN
 
 const bool CLIMATE_CHANGE     = true;
 
-Parameters* define_simulator_parameters(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
+Parameters* define_simulator_parameters(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const string process_id) {
     Parameters* par = new Parameters();
     par->define_defaults();
     par->serial = serial;
@@ -78,7 +77,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     //if ( SIM_POP == "merida") {
     par->annualIntroductionsCoef = pow(10, _exp_coef);
     //} else if ( SIM_POP == "yucatan" ) {
-    //    // assuming parameter fitting was done on merida population 
+    //    // assuming parameter fitting was done on merida population
     //    par->annualIntroductionsCoef = pow(10, _exp_coef)*1819498.0/839660.0;
     //} else {
     //    cerr << "ERROR: Unknown simulation population (SIM_POP): " << SIM_POP << endl;
@@ -190,12 +189,12 @@ vector<int> ordered(vector<int> const& values) {
 }
 
 
-string calculate_process_id(vector< long double> &args, string &argstring) {
+string calculate_process_id(vector<double> &args, string &argstring) {
     // CCRC32 checksum based on string version of argument values
     CCRC32 crc32;
     crc32.Initialize();
 
-    for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((long double) args[i]) + " ";
+    for (unsigned int i = 0; i < args.size(); i++) argstring += to_string((double) args[i]) + " ";
 
     const unsigned char* argchars = reinterpret_cast<const unsigned char*> (argstring.c_str());
     const int len = argstring.length();
@@ -205,7 +204,7 @@ string calculate_process_id(vector< long double> &args, string &argstring) {
 }
 
 
-string report_process_id (vector<long double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
+string report_process_id (vector<double> &args, const unsigned long int serial, const ABC::MPI_par* mp, const time_t start_time) {
     double dif = difftime (start_time, GLOBAL_START_TIME);
 
     string argstring;
@@ -220,16 +219,16 @@ string report_process_id (vector<long double> &args, const unsigned long int ser
 }
 
 
-void append_if_finite(vector<long double> &vec, double val) {
-    if (isfinite(val)) { 
-        vec.push_back((long double) val);
+void append_if_finite(vector<double> &vec, double val) {
+    if (isfinite(val)) {
+        vec.push_back((double) val);
     } else {
         vec.push_back(0);
     }
 }
 
 
-vector<long double> tally_counts(const Parameters* par, Community* community, const int discard_days, const int output_years) {
+vector<double> tally_counts(const Parameters* par, Community* community, const int discard_days, const int output_years) {
     ///////////////////////////////////////////////////////////////////////////////////////////
     //                                  IMPORTANT:                                           //
     // Update dummy metrics vector in calling function if number of metrics is changed here! //
@@ -242,7 +241,7 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     vector<vector<int> > symptomatic_tally(NUM_OF_SEROTYPES, vector<int>(output_years, 0)); // (any extra fraction of a year will be discarded)
     vector<vector<int> > infected_tally(NUM_OF_SEROTYPES, vector<int>(output_years, 0));
 
-    vector<long double> metrics;
+    vector<double> metrics;
     for (int t=discard_days; t<par->nRunLength; t++) {
         // use epidemic years, instead of calendar years
         const int y = (t-discard_days)/365;
@@ -271,13 +270,13 @@ vector<long double> tally_counts(const Parameters* par, Community* community, co
     return metrics;
 }
 
-vector<long double> simulator(vector<long double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
+vector<double> simulator(vector<double> args, const unsigned long int rng_seed, const unsigned long int serial, const ABC::MPI_par* mp) {
     gsl_rng_set(RNG, rng_seed); // seed the rng using sys time and the process id
     // initialize bookkeeping for run
     time_t start ,end;
     time (&start);
 
-    vector<long double> abc_args(&args[0], &args[7]);
+    vector<double> abc_args(&args[0], &args[7]);
     const unsigned int realization = (int) args[7];
     const string process_id = report_process_id(abc_args, serial, mp, start) + "." + to_string(realization);
 
@@ -338,7 +337,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     if ((vaccine_duration == -1) and boosting) { nonsensical_parameters = true; }
     if (nonsensical_parameters) {
         // 3 is because vaccinated cases, total cases, and infections are reported
-        vector<long double> dummy(output_years*NUM_OF_SEROTYPES*3, 0.0);
+        vector<double> dummy(output_years*NUM_OF_SEROTYPES*3, 0.0);
         delete par;
         return dummy;
     }
@@ -368,12 +367,12 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
 
         if (catchup) {
             for (int catchup_age = target + 1; catchup_age <= catchup_to; catchup_age++) {
-                par->vaccinationEvents.emplace_back(catchup_age, vac_start_year*365, catchup_coverage);
+                par->catchupVaccinationEvents.emplace_back(catchup_age, vac_start_year*365, catchup_coverage);
             }
-        } 
+        }
 
         for (int vacc_year = vac_start_year; vacc_year < TOTAL_DURATION; vacc_year++) {
-            par->vaccinationEvents.emplace_back(target, vacc_year*365, target_coverage);
+            par->catchupVaccinationEvents.emplace_back(target, vacc_year*365, target_coverage);
         }
     }
 
@@ -399,7 +398,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     }
 
     if (vector_reduction > 0.0) {
-        assert( vector_reduction <= 1.0); 
+        assert( vector_reduction <= 1.0);
         assert( vr_end_day <= (signed) par->mosquitoMultipliers.size() );
         const float vector_coeff = 1.0 - vector_reduction; // normally, there's no reduction in vectors
         for (int i = vr_start_day; i < vr_end_day; ++i) {
@@ -414,7 +413,7 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     time (&end);
     double dif = difftime (end,start);
 
-    vector<long double> metrics = tally_counts(par, community, discard_days, output_years);
+    vector<double> metrics = tally_counts(par, community, discard_days, output_years);
 
     stringstream ss;
     ss << mp->mpi_rank << " end " << hex << process_id << " " << dec << serial << " " << dif << " ";
@@ -427,9 +426,9 @@ vector<long double> simulator(vector<long double> args, const unsigned long int 
     fputs(output.c_str(), stderr);
 
     /*const int pop_size = community->getNumPerson();
-    for (unsigned int i = 0; i < epi_sizes.size(); i++) { 
+    for (unsigned int i = 0; i < epi_sizes.size(); i++) {
         // convert infections to cases per 1,000
-        metrics[i] = ((long double) 1e3*epi_sizes[i])/pop_size; 
+        metrics[i] = ((double) 1e3*epi_sizes[i])/pop_size;
     }*/
 
     delete par;
