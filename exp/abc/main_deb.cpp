@@ -31,7 +31,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betamp   = args[4]; // mp and pm and not separately
     double _betapm   = args[4]; // identifiable, so they're the same
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-toy"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-toy"; 
     vector<long double> abc_args(&args[0], &args[5]);
     string argstring;
     const string process_id = to_string(calculate_process_id(abc_args, argstring));

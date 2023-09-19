@@ -42,7 +42,7 @@ Parameters* define_default_parameters(const int years_simulated) {
     double _betamp   = 0.14;
     double _betapm   = 0.14;
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";
@@ -272,7 +272,7 @@ vector<long double> simulator(vector<long double> args, const MPI_par* mp) {
     par->nDefaultMosquitoCapacity = (int) args[6];
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan";
+    string pop_dir = HOME + "/work/dengue-abm/pop-yucatan";
     if (par->nDefaultMosquitoCapacity == 50) { 
         par->immunityFilename = pop_dir + "/immunity.mfoi.100yr.1";
     } else if (par->nDefaultMosquitoCapacity == 80) {

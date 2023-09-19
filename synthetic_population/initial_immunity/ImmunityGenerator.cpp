@@ -304,7 +304,7 @@ vector<vector<vector<int>>> simulate_immune_dynamics(const float EXPANSION_FACTO
     }*/
 
     string HOME(std::getenv("HOME"));
-    string census_dir = HOME + "/work/dengue/synthetic_population/initial_immunity/";
+    string census_dir = HOME + "/work/dengue-abm/synthetic_population/initial_immunity/";
 
     map<int, vector<AgeTally> > census = import_census_data(census_dir + "interpolated_ages-yucatan.out");
     vector<vector<vector<int> > > full_pop = initialize_full_population(census, FIRST_YEAR);

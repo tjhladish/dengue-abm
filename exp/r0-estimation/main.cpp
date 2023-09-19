@@ -39,7 +39,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, _mild_RF, _severe_RF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
+    string pop_dir = HOME + "/work/dengue-abm/pop-" + SIM_POP;
     vector<double> abc_args(&args[0], &args[7]); // args[8] if passing in EIP for R0 sensitivity analysis
     string argstring;
     //const string process_id = to_string(calculate_process_id(abc_args, argstring));

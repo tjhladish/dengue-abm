@@ -31,7 +31,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betamp   = args[4]; // these two aren't independently identifiable
     double _betapm   = args[4];
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-yucatan"; 
 
     string imm_dir("/scratch/lfs/thladish/imm_posterior_files");
     vector<long double> abc_args(&args[0], &args[5]);

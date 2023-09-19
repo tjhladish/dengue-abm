@@ -30,7 +30,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     double _betamp   = args[4]; // mp and pm and not separately
     double _betapm   = args[4]; // identifiable, so they're the same
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-bangphae"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-bangphae"; 
     string output_dir = "/scratch/lfs/thladish";
 
     vector<long double> abc_args(&args[0], &args[5]);

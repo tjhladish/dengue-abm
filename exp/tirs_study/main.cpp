@@ -19,7 +19,7 @@ time_t GLOBAL_START_TIME;
 string calculate_process_id(vector<double> &args, string &argstring);
 const string SIM_POP = "merida";
 const string HOME_DIR(std::getenv("HOME"));
-const string pop_dir = HOME_DIR + "/work/dengue/pop/" + SIM_POP + "-tirs";
+const string pop_dir = HOME_DIR + "/work/dengue-abm/pop/" + SIM_POP + "-tirs";
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit");
 
@@ -170,7 +170,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->populationFilename       = pop_dir    + "/population-"         + SIM_POP + ".txt";
     //par->immunityFilename         = "/ufrc/longini/tjhladish/imm_who-baseline-seroprev-july2016/immunity." + imm_file_pid;
     //par->immunityFilename         = imm_dir    + "/immunity2015."       + process_id;
-    //par->immunityFilename         = "/home/tjhladish/work/dengue/pop-yucatan/immunity2030-irs_refit2-rank0.csv";
+    //par->immunityFilename         = "/home/tjhladish/work/dengue-abm/pop-yucatan/immunity2030-irs_refit2-rank0.csv";
     par->immunityFilename         = "";
     par->locationFilename         = pop_dir    + "/locations-"          + SIM_POP + ".txt";
     par->networkFilename          = pop_dir    + "/network-"            + SIM_POP + ".txt";

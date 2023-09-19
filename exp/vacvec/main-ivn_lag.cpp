@@ -19,7 +19,7 @@ time_t GLOBAL_START_TIME;
 string calculate_process_id(vector<double> &args, string &argstring);
 const string SIM_POP = "yucatan";
 const string HOME_DIR(std::getenv("HOME"));
-const string pop_dir = HOME_DIR + "/work/dengue/pop-" + SIM_POP;
+const string pop_dir = HOME_DIR + "/work/dengue-abm/pop-" + SIM_POP;
 const string output_dir("/ufrc/longini/tjhladish/");
 const string imm_dir(output_dir + "imm_1000_yucatan-irs_refit3");
 

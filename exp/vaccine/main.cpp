@@ -38,7 +38,7 @@ Parameters* define_default_parameters(const int years_simulated) {
     double _betamp   = 0.25;
     double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";

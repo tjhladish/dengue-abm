@@ -30,7 +30,7 @@ Parameters* define_simulator_parameters(vector<long double> args, const unsigned
     //double _betamp   = 0.25;
     //double _betapm   = 0.1;
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-yucatan"; 
+    string pop_dir = HOME + "/work/dengue-abm/pop-yucatan"; 
 //    string WORK(std::getenv("WORK"));
 //    string imm_dir = WORK + "/initial_immunity";
 //    string imm_dir = pop_dir + "/immunity";

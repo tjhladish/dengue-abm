@@ -19,7 +19,7 @@ time_t GLOBAL_START_TIME;
 const unsigned int calculate_process_id(vector< long double> &args, string &argstring);
 const string SIM_POP = "merida";
 const string HOME(std::getenv("HOME"));
-const string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
+const string pop_dir = HOME + "/work/dengue-abm/pop-" + SIM_POP;
 const string output_dir("/scratch/lfs/thladish");
 
 const int RESTART_BURNIN     = 80;

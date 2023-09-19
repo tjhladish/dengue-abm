@@ -63,7 +63,7 @@ Parameters* define_simulator_parameters(vector<double> args, const unsigned long
     par->reportedFraction = {0.0, 1.0/_mild_EF, 1.0/_severe_EF}; // no asymptomatic infections are reported
 
     string HOME(std::getenv("HOME"));
-    string pop_dir = HOME + "/work/dengue/pop-" + SIM_POP;
+    string pop_dir = HOME + "/work/dengue-abm/pop-" + SIM_POP;
     //string output_dir = "/scratch/lfs/thladish";
     //string imm_dir(output_dir + "/imm_1000_yucatan");
 
