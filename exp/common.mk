@@ -17,9 +17,14 @@ INCLUDE += -I$(ABCDIR)/lib/PLS/lib/eigen -I$(ABCDIR)/lib/jsoncpp/include
 #ifdef TACC_GSL_INC
 #INCLUDE += -I$$TACC_GSL_INC
 #endif
-#ifdef HPC_GSL_INC
-#INCLUDE += -I$$HPC_GSL_INC
-#endif
+
+ifdef HPC_GSL_INC
+INCLUDE += -I$$HPC_GSL_INC
+endif
+
+ifdef HPC_GSL_LIB
+GSL_LIB = -L$$HPC_GSL_LIB
+endif
 
 ABC_LIB := -L$(ABCDIR)/build -L$(ABCDIR)/build/PLS -labc -lpls -ljsoncpp -lm
-GSL_LIB = -lm -lgsl -lgslcblas -lpthread -ldl
+GSL_LIB += -lm -lgsl -lgslcblas -lpthread -ldl
